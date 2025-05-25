@@ -6,6 +6,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import EmailField from "./fields/EmailField";
 import PasswordField from "./fields/PasswordField";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 export default function LoginForm() {
   const methods = useForm<LoginSchema>({
@@ -17,8 +18,12 @@ export default function LoginForm() {
   });
 
   const onSubmit = (data: LoginSchema) => {
-    console.log("Login data:", data);
-    // Gọi API login ở đây nếu cần
+    axios
+      .post("/auth/login", data)
+      .then((response) => {
+        console.log("Login successful:", response.data);
+        // Handle successful login (e.g., redirect, show success message)
+      })
   };
 
   return (
