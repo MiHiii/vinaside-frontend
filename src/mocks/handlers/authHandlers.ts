@@ -30,7 +30,7 @@ interface LoginPayload {
 
 // Mock data lưu user
 const mockUsers: User[] = [
-  { id: '1', email: 'mock@user.com', name: 'Mock User' },
+  { id: '1', email: 'mock@user.com', name: 'Mock User', password:'123456' },
 ]
 
 export const authHandlers = [
