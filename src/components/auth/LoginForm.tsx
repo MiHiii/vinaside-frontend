@@ -5,9 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import EmailField from "./fields/EmailField";
 import PasswordField from "./fields/PasswordField";
-import { Link } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import { login } from "@/store/slices/authSlice";
+import { unwrapResult } from "@reduxjs/toolkit";
+import toast from "react-hot-toast";
+import { useEffect } from "react";
 export default function LoginForm() {
+  const token = useAppSelector((state) => state.auth.token);
+  const user = useAppSelector((state) => state.auth.user);
+
+  useEffect(() => {
+    if (token && user) {
+      console.log("Token đã cập nhật từ Redux:", token, user);
+    }
+  }, [token, user]);
+
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const methods = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -16,9 +31,19 @@ export default function LoginForm() {
     },
   });
 
-  const onSubmit = (data: LoginSchema) => {
-    console.log("Login data:", data);
-    // Gọi API login ở đây nếu cần
+  const onSubmit = async (data: LoginSchema) => {
+    try {
+      const actionResult = await dispatch(login(data));
+      unwrapResult(actionResult);
+
+      toast.success("Đăng nhập thành công!");
+      navigate("/");
+    } catch (error) {
+      toast.error(
+        "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập."
+      );
+      console.error("Login error:", error);
+    }
   };
 
   return (

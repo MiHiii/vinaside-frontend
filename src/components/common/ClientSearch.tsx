@@ -85,9 +85,9 @@ export default function ClientSearch() {
   ];
 
   return (
-    <div className="relative p-3 bg-gray-100 flex justify-center items-center ">
+    <div className="relative p-3 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] flex justify-center items-center ">
       {/* Main search bar container with proper rounded border */}
-      <div className="flex h-16 w-full max-w-[900px] items-center rounded-full border border-gray-300 bg-white shadow-sm hover:shadow-md md:w-auto overflow-hidden">
+      <div className="flex h-16 w-full max-w-[900px] items-center bg-[hsl(var(--background))] text-[hsl(var(--foreground))] rounded-full border border-gray-300  shadow-sm hover:shadow-md md:w-auto overflow-hidden">
         {/* Location Section */}
         <Popover
           open={activeSection === "location"}

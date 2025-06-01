@@ -4,13 +4,13 @@ import ClientHeader from "./ClientHeader";
 
 const ClientLayout = () => {
   return (
-    <>
+    <div className="bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       <ClientHeader />
-      <div className="min-h-[80vh] w-[1500px] m-auto">
+      <main className="flex-1 w-full max-w-[1500px] mx-auto min-h-[80vh]">
         <Outlet />
-      </div>
+      </main>
       <ClientFooter />
-    </>
+    </div>
   );
 };
 

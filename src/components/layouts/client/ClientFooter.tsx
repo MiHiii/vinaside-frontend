@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 
 export default function ClientFooter() {
   return (
-    <footer className="w-full border-t border-gray-200 bg-gray-100 py-8 text-sm">
+    <footer className="w-full border-t border-gray-200bg-[hsl(var(--background))] text-[hsl(var(--foreground))] py-8 text-sm">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {/* Support Column */}
@@ -171,5 +171,5 @@ export default function ClientFooter() {
         </div>
       </div>
     </footer>
-  )
+  );
 }

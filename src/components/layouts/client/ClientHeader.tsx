@@ -10,12 +10,13 @@ import {
 import { useMobile } from "@/hooks/useMobile";
 import ClientSearch from "../../common/ClientSearch";
 import { Globe, Menu, User } from "lucide-react";
+import ThemeToggle from "../common/ThemeToggle";
 
 export default function ClientHeader() {
   const isMobile = useMobile();
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-gray-100">
+    <header className="sticky top-0 z-50 w-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       <div className="w-[1500px] m-auto flex h-26 items-center justify-between px-3 md:px-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
@@ -37,7 +38,8 @@ export default function ClientHeader() {
 
         <ClientSearch />
         {/* User Menu */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2xl ">
+          <ThemeToggle />
           {!isMobile && (
             <Button
               variant="ghost"
@@ -55,6 +57,7 @@ export default function ClientHeader() {
             <Globe className="h-5 w-5" />
             <span className="sr-only">Language</span>
           </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -68,7 +71,12 @@ export default function ClientHeader() {
             <DropdownMenuContent
               align="end"
               sideOffset={8}
-              className="z-50 mt-2 w-56 rounded-2xl border border-gray-100 bg-white p-3 shadow-2xl"
+              className={`
+                  z-50 mt-2 w-56 rounded-2xl
+                  border border-[hsl(var(--border))]
+                  bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]
+                  p-3 shadow-2xl
+                `}
             >
               <DropdownMenuItem className="font-medium">
                 <Link to="/register" className="w-full">

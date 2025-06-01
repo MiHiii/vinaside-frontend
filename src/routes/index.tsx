@@ -6,12 +6,16 @@ import ForgotPassword from "@/pages/auth/ForgotPasswordPage";
 import ResetPassword from "@/pages/auth/ResetPasswordPage";
 import ErrorPage from "@/pages/errorPage";
 import ClientLayout from "@/components/layouts/client/ClientLayout";
+
 import UserProfilePage from "@/pages/useProfile/ProfilePage";
 import PastTrip from "@/components/useProfile/PastTrip";
 import Connection from "@/components/useProfile/Connection";
 import EditProfile from "@/components/useProfile/EditProfile";
 
 
+
+
+import OtpPage from "@/pages/auth/OtpPage";
 
 
 const routes: RouteObject[] = [
@@ -22,6 +26,7 @@ const routes: RouteObject[] = [
       { index: true, element: <HomePage /> },
       { path: "register", element: <Register /> },
       { path: "login", element: <Login /> },
+      { path: "verify-otp", element: <OtpPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
       { path: "profilepage", element: < UserProfilePage/> },
