@@ -36,6 +36,8 @@ interface OtpPayload {
 }
 // Mock data lưu user
 const mockUsers: User[] = [
+
+
   { id: "1", email: "mock@user.com", name: "Mock User", phone: "123456789" },
 ];
 const otpMap: Record<
@@ -46,6 +48,7 @@ const otpMap: Record<
 const OTP_COOLDOWN = 60 * 1000;
 const MAX_ATTEMPTS = 3;
 const WINDOW_DURATION = 5 * 60 * 1000;
+
 
 export const authHandlers = [
   // Đăng nhập
