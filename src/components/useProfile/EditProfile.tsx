@@ -42,7 +42,7 @@ export default function ProfilePage() {
 
 
   return (
-    <div className="min-h-screen bg-white flex justify-center items-start p-6 mt-10">
+    <div className="min-h-screen flex justify-center items-start p-6 mt-10">
       <div className="flex flex-col sm:flex-row gap-12 w-full max-w-6xl">
 
         {/* Left: Avatar */}

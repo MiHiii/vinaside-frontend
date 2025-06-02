@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "../../ui/button";
 import {
   DropdownMenu,
@@ -14,10 +15,11 @@ import ThemeToggle from "../common/ThemeToggle";
 
 export default function ClientHeader() {
   const isMobile = useMobile();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
-      <div className="w-[1500px] m-auto flex h-26 items-center justify-between px-3 md:px-6">
+    <header className="sticky top-0 z-50 w-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm">
+      <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-4 md:px-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <div className="text-rose-500">
@@ -36,10 +38,15 @@ export default function ClientHeader() {
           </span>
         </Link>
 
-        <ClientSearch />
-        {/* User Menu */}
-        <div className="flex items-center gap-2xl ">
+        {/* Search - ẩn ở mobile */}
+        <div className="hidden flex-1 md:block">
+          <ClientSearch />
+        </div>
+
+        {/* Menu */}
+        <div className="flex items-center gap-2">
           <ThemeToggle />
+
           {!isMobile && (
             <Button
               variant="ghost"
@@ -58,44 +65,76 @@ export default function ClientHeader() {
             <span className="sr-only">Language</span>
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="flex gap-2 rounded-full border-gray-200 px-4 py-2"
+          {/* Dropdown desktop */}
+          {!isMobile && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex gap-2 rounded-full border-gray-200 px-4 py-2"
+                >
+                  <Menu className="h-5 w-5" />
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="z-50 mt-2 w-56 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] p-3 shadow-2xl"
               >
-                <Menu className="h-5 w-5" />
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              sideOffset={8}
-              className={`
-                  z-50 mt-2 w-56 rounded-2xl
-                  border border-[hsl(var(--border))]
-                  bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]
-                  p-3 shadow-2xl
-                `}
+                <DropdownMenuItem className="font-medium">
+                  <Link to="/register" className="w-full">
+                    Sign up
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link to="/login" className="w-full">
+                    Log in
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Airbnb your home</DropdownMenuItem>
+                <DropdownMenuItem>Host an experience</DropdownMenuItem>
+                <DropdownMenuItem>Help</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Mobile Menu Toggle */}
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             >
-              <DropdownMenuItem className="font-medium">
-                <Link to="/register" className="w-full">
-                  Sign up
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link to="/login" className="w-full">
-                  Log in
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Airbnb your home</DropdownMenuItem>
-              <DropdownMenuItem>Host an experience</DropdownMenuItem>
-              <DropdownMenuItem>Help</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <Menu className="h-6 w-6" />
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Mobile Dropdown */}
+      {isMobile && isMobileMenuOpen && (
+        <div className="md:hidden space-y-2 px-4 pb-4">
+          <Link to="/register" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
+            Sign up
+          </Link>
+          <Link to="/login" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
+            Log in
+          </Link>
+          <hr />
+          <Link to="/" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
+            Airbnb your home
+          </Link>
+          <Link to="/" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
+            Host an experience
+          </Link>
+          <Link to="/" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
+            Help
+          </Link>
+        </div>
+      )}
     </header>
   );
 }

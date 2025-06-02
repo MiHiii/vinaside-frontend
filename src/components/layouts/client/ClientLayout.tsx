@@ -1,17 +1,20 @@
 import { Outlet } from "react-router-dom";
-import ClientFooter from "./ClientFooter";
 import ClientHeader from "./ClientHeader";
+import ClientFooter from "./ClientFooter";
 
-const ClientLayout = () => {
+export default function ClientLayout() {
   return (
-    <div className="bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
       <ClientHeader />
-      <main className="flex-1 w-full max-w-[1500px] mx-auto min-h-[80vh]">
+      
+      {/* Main Content */}
+      <main className="flex-1 w-full">
         <Outlet />
       </main>
+      
+      {/* Footer */}
       <ClientFooter />
     </div>
   );
-};
-
-export default ClientLayout;
+}
