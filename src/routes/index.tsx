@@ -12,10 +12,9 @@ import PastTrip from "@/components/useProfile/PastTrip";
 import Connection from "@/components/useProfile/Connection";
 import EditProfile from "@/components/useProfile/EditProfile";
 
-
-
-
 import OtpPage from "@/pages/auth/OtpPage";
+import Overview from "@/pages/hostRegister/Overview";
+import Location from "@/pages/hostRegister/Location";
 
 
 const routes: RouteObject[] = [
@@ -36,9 +35,17 @@ const routes: RouteObject[] = [
     ],
   },
   {
+    path: "/overview",
+    element: <Overview />
+  },
+  {
+    path: "/location",
+    element: <Location />
+  },
+  {
     path: "*",
     element: <ErrorPage />,
-  },
+  }
 ];
 
 export const router = createBrowserRouter(routes);
