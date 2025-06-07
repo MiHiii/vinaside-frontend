@@ -13,7 +13,7 @@ import ClientSearch from "../../common/ClientSearch";
 import { Globe, Menu, User } from "lucide-react";
 import ThemeToggle from "../common/ThemeToggle";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { logout } from "@/store/slices/authSlice"; // Thêm action logout
+import { logout } from "@/store/slices/authSlice";
 import { useNavigate } from "react-router-dom";
 
 export default function ClientHeader() {
@@ -22,18 +22,11 @@ export default function ClientHeader() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  // Lấy token và user từ Redux store
-  const token = useAppSelector((state) => state.auth.token)
-  console.log(token);
-  
-  // const user = useAppSelector((state) => state.auth.user);
-  // console.log(user);
-  
+  const token = useAppSelector((state) => state.auth.token);
 
-  // Hàm đăng xuất
   const handleLogout = () => {
-    dispatch(logout()); // Gọi action logout trong Redux
-    navigate("/login"); // Điều hướng đến trang login
+    dispatch(logout());
+    navigate("/login");
   };
 
   return (
@@ -57,7 +50,7 @@ export default function ClientHeader() {
           </span>
         </Link>
 
-        {/* Search - ẩn ở mobile */}
+        {/* Search - ẩn trên mobile */}
         <div className="hidden flex-1 md:block">
           <ClientSearch />
         </div>
@@ -101,16 +94,32 @@ export default function ClientHeader() {
                 sideOffset={8}
                 className="z-50 mt-2 w-56 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] p-3 shadow-2xl"
               >
-                <DropdownMenuItem className="font-medium">
-                  <Link to="/register" className="w-full">
-                    Sign up
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link to="/login" className="w-full">
-                    Log in
-                  </Link>
-                </DropdownMenuItem>
+                {!token ? (
+                  <>
+                    <DropdownMenuItem className="font-medium">
+                      <Link to="/register" className="w-full">
+                        Sign up
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link to="/login" className="w-full">
+                        Log in
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem className="font-medium">
+                      <Link to="/profilepage" className="w-full">
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      Đăng xuất
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Airbnb your home</DropdownMenuItem>
                 <DropdownMenuItem>Host an experience</DropdownMenuItem>
@@ -130,68 +139,62 @@ export default function ClientHeader() {
               <Menu className="h-6 w-6" />
             </Button>
           )}
-                <Menu className="h-5 w-5" />
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              sideOffset={8}
-              className={`z-50 mt-2 w-56 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] p-3 shadow-2xl`}
-            >
-              {/* Kiểm tra xem người dùng đã đăng nhập hay chưa */}
-              {!token ? (
-                <>
-                  <DropdownMenuItem className="font-medium">
-                    <Link to="/register" className="w-full">
-                      Sign up
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link to="/login" className="w-full">
-                      Log in
-                    </Link>
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuItem className="font-medium">
-                    <Link to="/profilepage" className="w-full">
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    Đăng xuất
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Airbnb your home</DropdownMenuItem>
-              <DropdownMenuItem>Host an experience</DropdownMenuItem>
-              <DropdownMenuItem>Help</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 
       {/* Mobile Dropdown */}
       {isMobile && isMobileMenuOpen && (
         <div className="md:hidden space-y-2 px-4 pb-4">
-          <Link to="/register" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
-            Sign up
-          </Link>
-          <Link to="/login" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
-            Log in
-          </Link>
+          {!token ? (
+            <>
+              <Link
+                to="/register"
+                className="block text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                Sign up
+              </Link>
+              <Link
+                to="/login"
+                className="block text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                Log in
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/profilepage"
+                className="block text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                Profile
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                Đăng xuất
+              </button>
+            </>
+          )}
+
           <hr />
-          <Link to="/" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
+
+          <Link
+            to="/"
+            className="block text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
             Airbnb your home
           </Link>
-          <Link to="/" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
+          <Link
+            to="/"
+            className="block text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
             Host an experience
           </Link>
-          <Link to="/" className="block text-sm font-medium text-gray-700 hover:text-gray-900">
+          <Link
+            to="/"
+            className="block text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
             Help
           </Link>
         </div>
