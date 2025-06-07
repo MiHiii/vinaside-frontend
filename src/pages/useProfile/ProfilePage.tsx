@@ -43,7 +43,7 @@ export default function UserProfilePage() {
     isVerified: true, // Ví dụ cho trạng thái xác minh
   };
 
-  const handleSidebarSelect = (item ) => {
+  const handleSidebarSelect = (item : string ) => {
     setActiveSidebarItem(item);
     // Có thể fetch thêm dữ liệu theo từng mục nếu muốn
   };
