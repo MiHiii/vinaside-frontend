@@ -131,7 +131,7 @@ export const authHandlers = [
     };
 
     mockUsers.push(user);
-    delete otpMap[email]; // OTP đã dùng xong
+    delete otpMap[email]; 
 
     return HttpResponse.json(
       {
@@ -148,12 +148,9 @@ export const authHandlers = [
 
     const { email } = data;
     const now = Date.now();
-
     const record = otpMap[email];
-
     if (record) {
       const timeDiff = now - record.createdAt;
-
       if (timeDiff < OTP_COOLDOWN) {
         const waitSec = Math.ceil((OTP_COOLDOWN - timeDiff) / 1000);
         return HttpResponse.json(
@@ -161,7 +158,6 @@ export const authHandlers = [
           { status: 429 }
         );
       }
-
       if (timeDiff < WINDOW_DURATION && record.attempts >= MAX_ATTEMPTS) {
         return HttpResponse.json(
           { message: "Bạn đã gửi lại OTP quá nhiều lần. Thử lại sau." },

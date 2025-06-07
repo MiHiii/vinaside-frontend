@@ -11,7 +11,7 @@ export default function OtpPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const email = useAppSelector((state) => state.auth.user?.email);
+  const email = useAppSelector((state) => state.auth.verifyEmail);
   const handleVerifyOtp = async (otp: string) => {
     if (!email) {
       toast.error("Không tìm thấy email. Vui lòng đăng nhập lại.");
@@ -39,12 +39,20 @@ export default function OtpPage() {
 
     setIsResending(true);
     try {
-      await dispatch(resendOtp({ email }));
+      const response = await dispatch(resendOtp({ email }));
+      if (response.meta.requestStatus === "fulfilled") {
+        toast.success("OTP đã được gửi lại.");
+      } else {
+        toast.error("Gửi lại OTP thất bại.");
+      }
     } catch (error) {
       console.error("Lỗi gửi lại OTP:", error);
       toast.error("Gửi lại OTP không thành công. Vui lòng thử lại.");
+    } finally {
+      setIsResending(false); // ✅ Đảm bảo UI trở về trạng thái bình thường
     }
   };
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">

@@ -11,9 +11,28 @@ import { useMobile } from "@/hooks/useMobile";
 import ClientSearch from "../../common/ClientSearch";
 import { Globe, Menu, User } from "lucide-react";
 import ThemeToggle from "../common/ThemeToggle";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import { logout } from "@/store/slices/authSlice"; // Thêm action logout
+import { useNavigate } from "react-router-dom";
 
 export default function ClientHeader() {
   const isMobile = useMobile();
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  // Lấy token và user từ Redux store
+  const token = useAppSelector((state) => state.auth.token)
+  console.log(token);
+  
+  // const user = useAppSelector((state) => state.auth.user);
+  // console.log(user);
+  
+
+  // Hàm đăng xuất
+  const handleLogout = () => {
+    dispatch(logout()); // Gọi action logout trong Redux
+    navigate("/login"); // Điều hướng đến trang login
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
@@ -71,23 +90,35 @@ export default function ClientHeader() {
             <DropdownMenuContent
               align="end"
               sideOffset={8}
-              className={`
-                  z-50 mt-2 w-56 rounded-2xl
-                  border border-[hsl(var(--border))]
-                  bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]
-                  p-3 shadow-2xl
-                `}
+              className={`z-50 mt-2 w-56 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] p-3 shadow-2xl`}
             >
-              <DropdownMenuItem className="font-medium">
-                <Link to="/register" className="w-full">
-                  Sign up
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link to="/login" className="w-full">
-                  Log in
-                </Link>
-              </DropdownMenuItem>
+              {/* Kiểm tra xem người dùng đã đăng nhập hay chưa */}
+              {!token ? (
+                <>
+                  <DropdownMenuItem className="font-medium">
+                    <Link to="/register" className="w-full">
+                      Sign up
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link to="/login" className="w-full">
+                      Log in
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem className="font-medium">
+                    <Link to="/profilepage" className="w-full">
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    Đăng xuất
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem>Airbnb your home</DropdownMenuItem>
               <DropdownMenuItem>Host an experience</DropdownMenuItem>
