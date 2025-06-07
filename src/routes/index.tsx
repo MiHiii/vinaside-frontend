@@ -13,10 +13,11 @@ import Connection from "@/components/useProfile/Connection";
 import EditProfile from "@/components/useProfile/EditProfile";
 
 import OtpPage from "@/pages/auth/OtpPage";
+
+import RoomDeatil from "@/pages/RoomDeatil";
 import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
 import Overview from "@/pages/hostRegister/Overview";
 import Location from "@/pages/hostRegister/Location";
-
 
 
 const routes: RouteObject[] = [
@@ -31,10 +32,12 @@ const routes: RouteObject[] = [
       { path : "verify-email" , element:<VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
-      { path: "profilepage", element: <UserProfilePage /> },
-      { path: "past-trip", element: <PastTrip /> },
-      { path: "connection", element: <Connection /> },
-      { path: "edit-profile", element: <EditProfile /> },
+      { path: "profilepage", element: < UserProfilePage/> },
+      { path: "past-trip", element: < PastTrip/> },
+      { path: "connection", element: < Connection/> },
+      { path: "edit-profile", element: < EditProfile/> },
+       { path: "room-detail", element: < RoomDeatil/> },
+
     ],
   },
   {

@@ -32,8 +32,8 @@ export default function ProfileSidebar({
   };
 
   return (
-    <aside className="w-64 h-screen bg-white mr-[112px] px-4 py-8" role="navigation" aria-label="Profile sidebar">
-      <div className="absolute top-0 left-135 h-[975px] w-[1px] bg-gray-200"></div>
+    <aside className="w-64 h-screen mr-[112px] px-4 py-8" role="navigation" aria-label="Profile sidebar">
+      <div className="absolute top-0 left-130 h-[980px] w-[1px] bg-gray-200"></div>
       <h2 className="text-2xl font-bold mb-6">Hồ sơ</h2>
       <nav className="space-y-1">
         {sidebarItems.map((item) => {
