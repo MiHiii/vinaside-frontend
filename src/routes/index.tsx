@@ -16,6 +16,7 @@ import EditProfile from "@/components/useProfile/EditProfile";
 
 
 import OtpPage from "@/pages/auth/OtpPage";
+import RoomDeatil from "@/pages/RoomDeatil";
 
 
 const routes: RouteObject[] = [
@@ -33,6 +34,7 @@ const routes: RouteObject[] = [
       { path: "past-trip", element: < PastTrip/> },
       { path: "connection", element: < Connection/> },
       { path: "edit-profile", element: < EditProfile/> },
+       { path: "room-detail", element: < RoomDeatil/> },
     ],
   },
   {
