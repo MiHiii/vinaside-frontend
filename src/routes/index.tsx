@@ -12,11 +12,12 @@ import PastTrip from "@/components/useProfile/PastTrip";
 import Connection from "@/components/useProfile/Connection";
 import EditProfile from "@/components/useProfile/EditProfile";
 
-
-
-
 import OtpPage from "@/pages/auth/OtpPage";
+
 import RoomDeatil from "@/pages/RoomDeatil";
+import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
+import Overview from "@/pages/hostRegister/Overview";
+import Location from "@/pages/hostRegister/Location";
 
 
 const routes: RouteObject[] = [
@@ -28,6 +29,7 @@ const routes: RouteObject[] = [
       { path: "register", element: <Register /> },
       { path: "login", element: <Login /> },
       { path: "verify-otp", element: <OtpPage /> },
+      { path : "verify-email" , element:<VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
       { path: "profilepage", element: < UserProfilePage/> },
@@ -35,12 +37,21 @@ const routes: RouteObject[] = [
       { path: "connection", element: < Connection/> },
       { path: "edit-profile", element: < EditProfile/> },
        { path: "room-detail", element: < RoomDeatil/> },
+
     ],
+  },
+  {
+    path: "/overview",
+    element: <Overview />
+  },
+  {
+    path: "/location",
+    element: <Location />
   },
   {
     path: "*",
     element: <ErrorPage />,
-  },
+  }
 ];
 
 export const router = createBrowserRouter(routes);
