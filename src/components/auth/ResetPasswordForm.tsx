@@ -4,6 +4,10 @@ import { resetPasswordSchema, ResetPasswordSchema } from "./Schema";
 import PasswordField from "./fields/PasswordField";
 import ConfirmPasswordField from "./fields/ConfirmPasswordField";
 import { Button } from "@/components/ui/button";
+import { useAppDispatch } from "@/hooks/useRedux";
+import { resetPassword } from "@/store/slices/authSlice";
+import toast from "react-hot-toast";
+import {  useSearchParams } from "react-router-dom";
 
 export default function ResetPasswordForm() {
   const methods = useForm<ResetPasswordSchema>({
@@ -13,10 +17,23 @@ export default function ResetPasswordForm() {
       confirmPassword: "",
     },
   });
-
-  const onSubmit = (data: ResetPasswordSchema) => {
-    console.log("Đặt lại mật khẩu:", data.password);
-    // Gọi API: POST /reset-password?token=...
+  
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
+  const dispatch = useAppDispatch() 
+  const onSubmit = async (data: ResetPasswordSchema) => {
+ 
+    try {
+      if (!token) {
+        toast.error("Token không tồn tại hoặc không hợp lệ");
+        return;
+      }
+      await dispatch(resetPassword({token , newPassword : data.password})).unwrap(); // unwrap giúp bắt lỗi chính xác
+      toast.success("Mật khẩu đã được đặt lại thành công!");
+      // Optional: điều hướng người dùng về trang đăng nhập nếu muốn
+    } catch (error) {
+      toast.error((error as string) || "Đặt lại mật khẩu thất bại");
+    }
   };
 
   return (

@@ -19,7 +19,7 @@ export default function OtpInput() {
   return (
     <div className="space-y-7 ml-10">
       <InputOTP
-        maxLength={6}
+        maxLength={8}
         value={otp || ""}
         onChange={(val) => setValue("otp", val)}
       >
@@ -33,6 +33,8 @@ export default function OtpInput() {
           <InputOTPSlot index={3} />
           <InputOTPSlot index={4} />
           <InputOTPSlot index={5} />
+          <InputOTPSlot index={6} />
+          <InputOTPSlot index={7} />
         </InputOTPGroup>
       </InputOTP>
 
