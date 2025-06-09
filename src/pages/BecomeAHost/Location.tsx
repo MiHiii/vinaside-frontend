@@ -6,14 +6,18 @@ import type { LatLngExpression, Map as LeafletMap } from "leaflet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Search, Navigation, X, MapPin } from "lucide-react";
+import { Search, Navigation, X, MapPin, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Header } from "@/components/BecomeAHost/Header";
 
 // Fix Leaflet default markers - safer approach
 const DefaultIcon = L.icon({
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -25,7 +29,9 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 // Custom red marker for Airbnb style
 const customIcon = new L.Icon({
-  iconUrl: "data:image/svg+xml;base64," + btoa(`
+  iconUrl:
+    "data:image/svg+xml;base64," +
+    btoa(`
     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="16" cy="16" r="16" fill="#FF385C"/>
       <circle cx="16" cy="16" r="12" fill="white"/>
@@ -38,7 +44,11 @@ const customIcon = new L.Icon({
 });
 
 // Component to handle map clicks
-function MapClickHandler({ onLocationSelect }: { onLocationSelect: (latlng: LatLngExpression) => void }) {
+function MapClickHandler({
+  onLocationSelect,
+}: {
+  onLocationSelect: (latlng: LatLngExpression) => void;
+}) {
   useMapEvents({
     click: (e) => {
       onLocationSelect([e.latlng.lat, e.latlng.lng]);
@@ -61,7 +71,9 @@ interface LocationSuggestion {
 }
 
 export default function Location() {
-  const [position, setPosition] = useState<LatLngExpression>([21.0285, 105.8542]); // Hanoi coordinates
+  const [position, setPosition] = useState<LatLngExpression>([
+    21.0285, 105.8542,
+  ]); // Hanoi coordinates
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -101,21 +113,23 @@ export default function Location() {
   // Clear search input
   const clearSearch = () => {
     setAddress("");
-      setSuggestions([]);
-      setShowSuggestions(false);
+    setSuggestions([]);
+    setShowSuggestions(false);
   };
 
   // Reverse geocoding to get address from coordinates
   const reverseGeocode = async (coords: LatLngExpression) => {
     try {
-      const [lat, lng] = Array.isArray(coords) ? coords : [coords.lat, coords.lng];
+      const [lat, lng] = Array.isArray(coords)
+        ? coords
+        : [coords.lat, coords.lng];
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
-  );
+      );
       const data = await response.json();
       if (data.display_name) {
         setAddress(data.display_name);
-}
+      }
     } catch (error) {
       console.error("Error reverse geocoding:", error);
     }
@@ -149,12 +163,12 @@ export default function Location() {
   // Handle address input change with debouncing
   const handleAddressChange = (value: string) => {
     setAddress(value);
-    
+
     // Clear previous timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     // Set new timeout for search
     searchTimeoutRef.current = setTimeout(() => {
       searchAddress(value);
@@ -195,11 +209,14 @@ export default function Location() {
   useEffect(() => {
     // Close suggestions when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
         setShowSuggestions(false);
       }
     };
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -212,45 +229,7 @@ export default function Location() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 sm:h-20">
-            {/* Logo */}
-            <Link to="/" className="flex items-center">
-              <div className="text-rose-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-8 w-8"
-            >
-              <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
-              <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
-            </svg>
-          </div>
-              <span className="ml-2 text-xl font-bold text-gray-900 hidden sm:block">
-                Vinaside
-              </span>
-            </Link>
-
-            {/* Navigation */}
-            <div className="flex items-center gap-3">
-                <Button 
-                    variant="outline" 
-                    className="rounded-full px-4 py-2 text-sm border border-gray-300 hover:border-gray-400 transition-colors"
-                >
-                    Bạn có thắc mắc?
-                </Button>
-                <Button 
-                    variant="outline" 
-                    className="rounded-full px-4 py-2 text-sm border border-gray-300 hover:border-gray-400 transition-colors"
-                >
-                    Lưu và thoát
-                </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -262,7 +241,8 @@ export default function Location() {
                 Chỗ ở của bạn nằm ở đâu?
               </h1>
               <p className="mt-4 text-lg text-gray-600 leading-relaxed">
-                Địa chỉ của bạn chỉ được chia sẻ với khách sau khi họ đặt phòng thành công.
+                Địa chỉ của bạn chỉ được chia sẻ với khách sau khi họ đặt phòng
+                thành công.
               </p>
             </div>
 
@@ -278,7 +258,7 @@ export default function Location() {
                     onChange={(e) => handleAddressChange(e.target.value)}
                     className="pl-12 pr-12 py-4 text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white"
                   />
-                  
+
                   {/* Clear button */}
                   {address && (
                     <button
@@ -288,7 +268,7 @@ export default function Location() {
                       <X className="h-5 w-5" />
                     </button>
                   )}
-                  
+
                   {/* Loading spinner */}
                   {isSearching && (
                     <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
@@ -313,7 +293,9 @@ export default function Location() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-gray-900">
-                              {isLoading ? "Đang lấy vị trí..." : "Sử dụng vị trí hiện tại của tôi"}
+                              {isLoading
+                                ? "Đang lấy vị trí..."
+                                : "Sử dụng vị trí hiện tại của tôi"}
                             </p>
                             <p className="text-xs text-gray-500">
                               Tự động xác định vị trí của bạn
@@ -333,7 +315,10 @@ export default function Location() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                                {suggestion.display_name.split(",").slice(0, 2).join(", ")}
+                                {suggestion.display_name
+                                  .split(",")
+                                  .slice(0, 2)
+                                  .join(", ")}
                               </p>
                               <p className="text-xs text-gray-500 line-clamp-2 mt-1">
                                 {suggestion.display_name}
@@ -347,21 +332,24 @@ export default function Location() {
                 )}
 
                 {/* No results message */}
-                {showSuggestions && suggestions.length === 0 && address.length >= 3 && !isSearching && (
-                  <div className="absolute top-full left-0 right-0 mt-2 z-50">
-                    <Card className="shadow-xl border border-gray-200 bg-white rounded-xl p-4">
-                      <div className="text-center py-4">
-                        <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">
-                          Không tìm thấy địa chỉ phù hợp
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Hãy thử nhập địa chỉ khác
-                        </p>
-                      </div>
-                    </Card>
-                  </div>
-                )}
+                {showSuggestions &&
+                  suggestions.length === 0 &&
+                  address.length >= 3 &&
+                  !isSearching && (
+                    <div className="absolute top-full left-0 right-0 mt-2 z-50">
+                      <Card className="shadow-xl border border-gray-200 bg-white rounded-xl p-4">
+                        <div className="text-center py-4">
+                          <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">
+                            Không tìm thấy địa chỉ phù hợp
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Hãy thử nhập địa chỉ khác
+                          </p>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
               </div>
 
               {/* Current Location Button */}
@@ -372,7 +360,9 @@ export default function Location() {
                 className="w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-6 border-gray-300 hover:border-gray-400 rounded-lg transition-colors"
               >
                 <Navigation className="h-4 w-4" />
-                {isLoading ? "Đang lấy vị trí..." : "Sử dụng vị trí hiện tại của tôi"}
+                {isLoading
+                  ? "Đang lấy vị trí..."
+                  : "Sử dụng vị trí hiện tại của tôi"}
               </Button>
             </div>
 
@@ -388,7 +378,9 @@ export default function Location() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                  <span>Kéo thả điểm đánh dấu để điều chỉnh vị trí chính xác</span>
+                  <span>
+                    Kéo thả điểm đánh dấu để điều chỉnh vị trí chính xác
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
@@ -408,7 +400,7 @@ export default function Location() {
                 ref={mapRef}
                 zoomControl={true}
                 scrollWheelZoom={true}
-                style={{ borderRadius: '0.75rem' }}
+                style={{ borderRadius: "0.75rem" }}
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -433,31 +425,24 @@ export default function Location() {
       {/* Footer */}
       <footer className="sticky bottom-0 bg-white border-t border-gray-200 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            {/* Progress */}
-            <div className="hidden sm:flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
-                <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-              </div>
-              <span className="text-sm text-gray-500">Bước 1 trong 3</span>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex justify-between items-center w-full">
+            {/* Nút quay lại bên trái */}
+            <Link to="/about-your-place">
               <Button
                 variant="ghost"
-                className="hidden sm:flex text-gray-600 hover:text-gray-900 font-medium"
+                className="text-gray-600 hover:text-gray-900 font-medium"
               >
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Quay lại
               </Button>
-              <Button 
-                className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                Tiếp tục
+            </Link>
+
+            {/* Nút tiếp theo bên phải */}
+            <Link to="/floor-plan">
+              <Button className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200">
+                Tiếp theo
               </Button>
-            </div>
+            </Link>
           </div>
         </div>
       </footer>

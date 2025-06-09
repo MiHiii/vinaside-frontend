@@ -6,18 +6,25 @@ import ForgotPassword from "@/pages/auth/ForgotPasswordPage";
 import ResetPassword from "@/pages/auth/ResetPasswordPage";
 import ErrorPage from "@/pages/errorPage";
 import ClientLayout from "@/components/layouts/client/ClientLayout";
-
 import UserProfilePage from "@/pages/useProfile/ProfilePage";
 import PastTrip from "@/components/useProfile/PastTrip";
 import Connection from "@/components/useProfile/Connection";
 import EditProfile from "@/components/useProfile/EditProfile";
-
 import OtpPage from "@/pages/auth/OtpPage";
-
 import RoomDeatil from "@/pages/RoomDeatil";
 import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
-import Overview from "@/pages/hostRegister/Overview";
-import Location from "@/pages/hostRegister/Location";
+// import BecomeAHost
+import Overview from "@/pages/BecomeAHost/Overview";
+import Location from "@/pages/BecomeAHost/Location";
+import AboutYourPlace from "@/pages/BecomeAHost/AboutYourPlace";
+import FloorPlan from "@/pages/BecomeAHost/FloorPlan";
+import StandOut from "@/pages/BecomeAHost/StandOut";
+import Amenities from "@/pages/BecomeAHost/Amenities";
+import UploadPhotos from "@/pages/BecomeAHost/Photos";
+import Title from "@/pages/BecomeAHost/Title";
+import Description from "@/pages/BecomeAHost/Description";
+import FinishSetup from "@/pages/BecomeAHost/FinishSetup";
+import Price from "@/pages/BecomeAHost/Price";
 
 
 const routes: RouteObject[] = [
@@ -40,14 +47,17 @@ const routes: RouteObject[] = [
 
     ],
   },
-  {
-    path: "/overview",
-    element: <Overview />
-  },
-  {
-    path: "/location",
-    element: <Location />
-  },
+  {path: "/overview",element: <Overview />},
+  {path: "/location",element: <Location />},
+  {path: "/about-your-place",element: <AboutYourPlace />},
+  {path: "/floor-plan",element: <FloorPlan />},
+  {path: "/stand-out",element: <StandOut />},
+  {path: "/amenities",element: <Amenities />},
+  {path: "/photos",element: <UploadPhotos />},
+  {path: "/title",element: <Title />},
+  {path: "/description",element: <Description />},
+  {path: "/finish-setup",element: <FinishSetup />},
+  {path: "/price",element: <Price />},
   {
     path: "*",
     element: <ErrorPage />,
