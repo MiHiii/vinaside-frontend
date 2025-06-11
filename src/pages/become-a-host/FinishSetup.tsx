@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Home, ArrowLeft } from "lucide-react";
-import { Header } from "@/components/BecomeAHost/Header";
+import { Header } from "@/components/become-a-host/Header";
 
-export default function AboutYourPlace() {
+export default function FinishSetup() {
   return (
     <div className="h-screen bg-white flex flex-col">
       {/* Header */}
@@ -17,20 +17,20 @@ export default function AboutYourPlace() {
             <div className="space-y-4 lg:space-y-6">
               {/* Step indicator */}
               <div className="text-lg font-medium text-black tracking-wide">
-                Bước 1
+                Bước 3
               </div>
 
               {/* Main heading */}
               <div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-black leading-tight">
-                  Chia sẻ thông tin về chỗ ở của bạn cho chúng tôi
+                  Hoàn thiện và đăng
                 </h1>
               </div>
 
               {/* Description */}
               <div className="space-y-3">
                 <p className="text-base sm:text-lg text-[#222] leading-relaxed">
-                  Trong bước này, chúng tôi sẽ hỏi xem bạn cho thuê loại chỗ ở nào và bạn muốn cho khách đặt toàn bộ nhà hay chỉ một phòng cụ thể. Sau đó, hãy cho chúng tôi biết vị trí và số lượng khách có thể ở tại đó.
+                  Cuối cùng, bạn sẽ chọn cài đặt đặt phòng, thiết lập giá và đăng mục cho thuê.
                 </p>
               </div>
             </div>
@@ -47,7 +47,7 @@ export default function AboutYourPlace() {
                     preload="metadata"
                   >
                     <source
-                      src="https://stream.media.muscache.com/zFaydEaihX6LP01x8TSCl76WHblb01Z01RrFELxyCXoNek.mp4?v_q=high"
+                      src="https://stream.media.muscache.com/KeNKUpa01dRaT5g00SSBV95FqXYkqf01DJdzn01F1aT00vCI.mp4?v_q=high"
                       type="video/mp4"
                     />
                     {/* Fallback for browsers that don't support video */}
@@ -85,7 +85,7 @@ export default function AboutYourPlace() {
             </Link>
 
             {/* Right side - Next button */}
-            <Link to="/location">
+            <Link to="/price">
               <Button
                 className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200"
               >

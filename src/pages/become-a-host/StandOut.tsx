@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Home, ArrowLeft } from "lucide-react";
-import { Header } from "@/components/BecomeAHost/Header";
+import { Header } from "@/components/become-a-host/Header";
 
 export default function StandOut() {
   return (

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Header } from "@/components/BecomeAHost/Header";
+import { Header } from "@/components/become-a-host/Header";
 
 export default function Description() {
   const [description, setDescription] = useState("");

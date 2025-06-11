@@ -4,8 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";  // Shadcn UI component for input fields
 import { Label } from "@/components/ui/label";  // Shadcn UI component for labels
-import { FormatPrice } from "@/components/BecomeAHost/FormatPrice"; // Import FormatPrice component
-import { Header } from "@/components/BecomeAHost/Header";
+import { FormatPrice } from "@/components/become-a-host/FormatPrice"; // Import FormatPrice component
+import { Header } from "@/components/become-a-host/Header";
 
 export default function Price() {
   const [price, setPrice] = useState("");
