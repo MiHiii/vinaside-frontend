@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropzoneUpload } from "@/components/BecomeAHost/DropzoneUpload";
-import { Header } from "@/components/BecomeAHost/Header";
+import { DropzoneUpload } from "@/components/become-a-host/DropzoneUpload";
+import { Header } from "@/components/become-a-host/Header";
 
 export default function UploadPhotos() {
   const [images, setImages] = useState<File[]>([]);

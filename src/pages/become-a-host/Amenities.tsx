@@ -23,7 +23,7 @@ import {
   ShieldCheck, 
   Siren
 } from "lucide-react";
-import { Header } from "@/components/BecomeAHost/Header";
+import { Header } from "@/components/become-a-host/Header";
 
 // Define amenity type
 interface Amenity {

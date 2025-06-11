@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Search, Navigation, X, MapPin, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Header } from "@/components/BecomeAHost/Header";
+import { Header } from "@/components/become-a-host/Header";
 
 // Fix Leaflet default markers - safer approach
 const DefaultIcon = L.icon({

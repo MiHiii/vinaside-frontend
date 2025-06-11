@@ -8,8 +8,8 @@ import { useState, useEffect } from "react";
 
 // Import Collapsible components từ Shadcn UI
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import QuantityCounter from "@/components/BecomeAHost/QuantityCounter"; // Đảm bảo đường dẫn đúng
-import { Header } from "@/components/BecomeAHost/Header";
+import QuantityCounter from "@/components/become-a-host/QuantityCounter"; // Đảm bảo đường dẫn đúng
+import { Header } from "@/components/become-a-host/Header";
 
 // Define type cho lựa chọn loại chỗ ở
 type PropertyType = 'entire-home' | 'private-room' | 'shared-room' | null;

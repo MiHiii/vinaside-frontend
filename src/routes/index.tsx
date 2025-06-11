@@ -14,17 +14,20 @@ import OtpPage from "@/pages/auth/OtpPage";
 import RoomDeatil from "@/pages/RoomDeatil";
 import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
 // import BecomeAHost
-import Overview from "@/pages/BecomeAHost/Overview";
-import Location from "@/pages/BecomeAHost/Location";
-import AboutYourPlace from "@/pages/BecomeAHost/AboutYourPlace";
-import FloorPlan from "@/pages/BecomeAHost/FloorPlan";
-import StandOut from "@/pages/BecomeAHost/StandOut";
-import Amenities from "@/pages/BecomeAHost/Amenities";
-import UploadPhotos from "@/pages/BecomeAHost/Photos";
-import Title from "@/pages/BecomeAHost/Title";
-import Description from "@/pages/BecomeAHost/Description";
-import FinishSetup from "@/pages/BecomeAHost/FinishSetup";
-import Price from "@/pages/BecomeAHost/Price";
+import Overview from "@/pages/become-a-host/Overview";
+import Location from "@/pages/become-a-host/Location";
+import AboutYourPlace from "@/pages/become-a-host/AboutYourPlace";
+import FloorPlan from "@/pages/become-a-host/FloorPlan";
+import StandOut from "@/pages/become-a-host/StandOut";
+import Amenities from "@/pages/become-a-host/Amenities";
+import UploadPhotos from "@/pages/become-a-host/Photos";
+import Title from "@/pages/become-a-host/Title";
+import Description from "@/pages/become-a-host/Description";
+import FinishSetup from "@/pages/become-a-host/FinishSetup";
+import Price from "@/pages/become-a-host/Price";
+import HostLayout from "@/components/layouts/host/HostLayout";
+import Hosting from "@/pages/hosting/Hosting";
+import Listing from "@/pages/hosting/Listing";
 
 
 const routes: RouteObject[] = [
@@ -44,9 +47,10 @@ const routes: RouteObject[] = [
       { path: "connection", element: < Connection/> },
       { path: "edit-profile", element: < EditProfile/> },
        { path: "room-detail", element: < RoomDeatil/> },
-
     ],
   },
+
+  //router Become a host
   {path: "/overview",element: <Overview />},
   {path: "/location",element: <Location />},
   {path: "/about-your-place",element: <AboutYourPlace />},
@@ -58,6 +62,15 @@ const routes: RouteObject[] = [
   {path: "/description",element: <Description />},
   {path: "/finish-setup",element: <FinishSetup />},
   {path: "/price",element: <Price />},
+
+  //hosting
+  {path: "/hosting",
+    element: <HostLayout />,
+    children: [
+      {index: true, element: <Hosting />},
+      {path: "listings",element: <Listing />},
+    ]
+  },
   {
     path: "*",
     element: <ErrorPage />,
