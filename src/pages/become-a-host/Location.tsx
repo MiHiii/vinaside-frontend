@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Search, Navigation, X, MapPin, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Header } from "@/components/become-a-host/Header";
 
 // Fix Leaflet default markers - safer approach
 const DefaultIcon = L.icon({
@@ -228,8 +227,6 @@ export default function Location() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <Header />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -427,7 +424,7 @@ export default function Location() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-between items-center w-full">
             {/* Nút quay lại bên trái */}
-            <Link to="/about-your-place">
+            <Link to="/become-a-host/about-your-place">
               <Button
                 variant="ghost"
                 className="text-gray-600 hover:text-gray-900 font-medium"
@@ -438,7 +435,7 @@ export default function Location() {
             </Link>
 
             {/* Nút tiếp theo bên phải */}
-            <Link to="/floor-plan">
+            <Link to="/become-a-host/floor-plan">
               <Button className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200">
                 Tiếp theo
               </Button>

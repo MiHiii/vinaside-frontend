@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { CustomPagination } from "@/components/host/Pagination";
 import { Button } from "@/components/ui/button";
+import { ListingPopup } from "@/components/host/ListingPopup";
+import { Link } from "react-router-dom";
 
 type PostStatus = "Cần hành động" | "Đang thực hiện";
 
@@ -46,6 +48,29 @@ export default function Listing() {
   const pageSize = 6;
   const totalPages = Math.ceil(posts.length / pageSize);
   const paginatedPosts = posts.slice((page - 1) * pageSize, page * pageSize);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null); // Thêm state cho post được chọn
+  // Xử lý mở popup
+  const handleOpenPopup = (post: Post) => {
+    setSelectedPost(post);
+  };
+
+  // Xử lý đóng popup
+  const handleClosePopup = () => {
+    setSelectedPost(null);
+  };
+
+  // Xử lý chỉnh sửa
+  const handleEdit = () => {
+    console.log("Chỉnh sửa post:", selectedPost?.id);
+    handleClosePopup();
+  };
+
+  // Xử lý xoá
+  const handleDelete = () => {
+    console.log("Xoá post:", selectedPost?.id);
+    handleClosePopup();
+  };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 relative">
@@ -53,12 +78,14 @@ export default function Listing() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Bài đăng của bạn</h1>
         <div className="flex gap-2">
-          <Button size="icon"  
-          className="bg-gray-100 hover:bg-gray-200 border border-gray-100 rounded-full w-12 h-12 flex items-center justify-center"
-          aria-label="Thêm phòng"
-          >
-            <Plus className="w-14 h-14" />
-          </Button>
+          <Link to={"/become-a-host"}>
+            <Button size="icon"
+            className="bg-gray-100 hover:bg-gray-200 border border-gray-100 rounded-full w-12 h-12 flex items-center justify-center"
+            aria-label="Thêm phòng"
+            >
+              <Plus className="w-14 h-14" />
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -66,6 +93,7 @@ export default function Listing() {
         {paginatedPosts.map((post) => (
           <div
             key={post.id}
+            onClick={() => handleOpenPopup(post)}
             className="relative rounded-2xl shadow bg-white p-4 transition-all duration-300 hover:shadow-xl hover:scale-105 group"
           >
             {/* Hình ảnh */}
@@ -101,6 +129,19 @@ export default function Listing() {
           onPageChange={setPage}
         />
       </div>
+
+      {/* Thêm popup vào cuối component */}
+      {selectedPost && (
+        <ListingPopup
+          open={!!selectedPost}
+          onClose={handleClosePopup}
+          image={selectedPost.image}
+          title={selectedPost.title}
+          location={selectedPost.location}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   );
 }

@@ -28,6 +28,8 @@ import Price from "@/pages/become-a-host/Price";
 import HostLayout from "@/components/layouts/host/HostLayout";
 import Hosting from "@/pages/hosting/Hosting";
 import Listing from "@/pages/hosting/Listing";
+import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLayout";
+import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
 
 
 const routes: RouteObject[] = [
@@ -51,18 +53,24 @@ const routes: RouteObject[] = [
   },
 
   //router Become a host
+  {path: "/become-a-host",
+    element: <BecomeAHostLayout />,
+    children: [
+      {index: true, element: <BecomeAHost />},
+      {path: "about-your-place",element: <AboutYourPlace />},
+      {path: "location",element: <Location />},
+      {path: "floor-plan",element: <FloorPlan />},
+      {path: "stand-out",element: <StandOut />},
+      {path: "amenities",element: <Amenities />},
+      {path: "photos",element: <UploadPhotos />},
+      {path: "title",element: <Title />},
+      {path: "description",element: <Description />},
+      {path: "finish-setup",element: <FinishSetup />},
+      {path: "price",element: <Price />},
+    ]
+  },
   {path: "/overview",element: <Overview />},
-  {path: "/location",element: <Location />},
-  {path: "/about-your-place",element: <AboutYourPlace />},
-  {path: "/floor-plan",element: <FloorPlan />},
-  {path: "/stand-out",element: <StandOut />},
-  {path: "/amenities",element: <Amenities />},
-  {path: "/photos",element: <UploadPhotos />},
-  {path: "/title",element: <Title />},
-  {path: "/description",element: <Description />},
-  {path: "/finish-setup",element: <FinishSetup />},
-  {path: "/price",element: <Price />},
-
+  
   //hosting
   {path: "/hosting",
     element: <HostLayout />,

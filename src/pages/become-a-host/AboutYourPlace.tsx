@@ -1,14 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Home, ArrowLeft } from "lucide-react";
-import { Header } from "@/components/become-a-host/Header";
 
 export default function AboutYourPlace() {
   return (
     <div className="h-screen bg-white flex flex-col">
-      {/* Header */}
-      <Header />
-
       {/* Main Content - Đã chỉnh sửa */}
       <main className="flex-grow flex items-center justify-center p-8"> {/* Đã xóa max-w-7xl, mx-auto, py-8, sm:py-12 ở đây */}
         <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8"> {/* Thêm wrapper để giới hạn chiều rộng nội dung */}
@@ -85,7 +81,7 @@ export default function AboutYourPlace() {
             </Link>
 
             {/* Right side - Next button */}
-            <Link to="/location">
+            <Link to="/become-a-host/location">
               <Button
                 className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200"
               >
