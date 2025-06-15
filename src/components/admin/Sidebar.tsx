@@ -1,0 +1,364 @@
+import {
+  Home,
+  ListChecks,
+  AppWindow,
+  MessageCircle,
+  Users,
+  Settings,
+  Lock,
+  LifeBuoy,
+  User,
+  ShieldCheck,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+
+interface SidebarItemProps {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  badge?: string | number;
+  small?: boolean;
+  collapsed?: boolean;
+}
+
+interface SidebarCollapseProps {
+  icon: React.ReactNode;
+  label: string;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  children: React.ReactNode;
+  id: string;
+  active: boolean;
+  collapsed?: boolean;
+}
+
+interface SidebarSectionProps {
+  label: string;
+  children: React.ReactNode;
+  collapsed?: boolean;
+}
+
+function SidebarSection({ label, children, collapsed }: SidebarSectionProps) {
+  if (collapsed) return <div className="space-y-1">{children}</div>;
+  return (
+    <div className="mt-4">
+      <div className="px-4 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        {label}
+      </div>
+      <div className="space-y-1">{children}</div>
+    </div>
+  );
+}
+
+function SidebarItem({
+  to,
+  icon,
+  label,
+  active = false,
+  badge,
+  small = false,
+  collapsed = false,
+}: SidebarItemProps) {
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-3 rounded-md transition-colors 
+        ${
+          small
+            ? "text-xs pl-2 py-1"
+            : collapsed
+            ? "justify-center px-2 py-2"
+            : "text-sm px-4 py-2"
+        }
+        ${
+          active
+            ? "bg-gray-200 text-primary font-semibold"
+            : "text-muted-foreground hover:bg-gray-100 hover:text-foreground"
+        }`}
+    >
+      {icon}
+      {!collapsed && <span>{label}</span>}
+      {!collapsed && badge && (
+        <span className="ml-auto bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full">
+          {badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function SidebarCollapse({
+  icon,
+  label,
+  open,
+  setOpen,
+  children,
+  active,
+  collapsed = false,
+}: SidebarCollapseProps) {
+  return (
+    <div>
+      {!collapsed ? (
+        <button
+          type="button"
+          className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm w-full transition-colors
+            ${
+              active
+                ? "bg-gray-200 text-primary font-semibold"
+                : "text-muted-foreground hover:bg-gray-200 hover:text-accent-foreground"
+            }
+          `}
+          onClick={() => setOpen(!open)}
+        >
+          {icon}
+          <span>{label}</span>
+          {open ? (
+            <ChevronDown className="ml-auto h-4 w-4" />
+          ) : (
+            <ChevronRight className="ml-auto h-4 w-4" />
+          )}
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="flex items-center justify-center w-full p-2 rounded-md transition-colors hover:bg-gray-100"
+          onClick={() => setOpen(!open)}
+        >
+          {icon}
+        </button>
+      )}
+      {open && <div>{children}</div>}
+    </div>
+  );
+}
+
+interface SidebarProps {
+  collapsed: boolean;
+}
+
+export function Sidebar({ collapsed }: SidebarProps) {
+  const { pathname } = useLocation();
+  const [openSecured, setOpenSecured] = useState(false);
+  const [openAuth, setOpenAuth] = useState(false);
+  const [openErrors, setOpenErrors] = useState(false);
+  const [activeCollapseId, setActiveCollapseId] = useState<string | null>(null);
+
+  const toggleSecured = (open: boolean) => {
+    setOpenSecured(open);
+    setActiveCollapseId(open ? "secured" : null);
+  };
+
+  const toggleAuth = (open: boolean) => {
+    setOpenAuth(open);
+    setActiveCollapseId(open ? "auth" : null);
+  };
+
+  const toggleErrors = (open: boolean) => {
+    setOpenErrors(open);
+    setActiveCollapseId(open ? "errors" : null);
+  };
+
+  return (
+    <aside
+      className={`transition-all duration-300 bg-background min-h-screen flex flex-col rounded-xl shadow-xl m-2 overflow-hidden shrink-0 ${
+        collapsed ? "w-16" : "w-64"
+      } `}
+    >
+      {/* Header */}
+      <div
+        className={`flex items-center h-16 px-2 ${
+          collapsed ? "justify-center" : "px-6"
+        }`}
+      >
+        <div className="bg-primary/10 p-2 rounded-lg">
+          <Home className="h-6 w-6 text-primary" />
+        </div>
+        {!collapsed && (
+          <div>
+            <div className="font-bold text-lg">Shadcn Admin</div>
+            <div className="text-xs text-muted-foreground">Vite + ShadcnUI</div>
+          </div>
+        )}
+        {!collapsed && (
+          <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
+        )}
+      </div>
+
+      {/* Menu */}
+      <nav className="flex-1 overflow-y-auto px-2 py-4">
+        {/* General */}
+        <SidebarSection label="General" collapsed={collapsed}>
+          <SidebarItem
+            to="/admin"
+            icon={<Home className="h-4 w-4" />}
+            label="Dashboard"
+            active={pathname === "/admin"}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/tasks"
+            icon={<ListChecks className="h-4 w-4" />}
+            label="Tasks"
+            active={pathname === "/admin/tasks"}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/apps"
+            icon={<AppWindow className="h-4 w-4" />}
+            label="Apps"
+            active={pathname === "/admin/apps"}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/chats"
+            icon={<MessageCircle className="h-4 w-4" />}
+            label="Chats"
+            active={pathname === "/admin/chats"}
+            badge="3"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/users"
+            icon={<Users className="h-4 w-4" />}
+            label="Users"
+            active={pathname === "/admin/users"}
+            collapsed={collapsed}
+          />
+          <SidebarCollapse
+            icon={<ShieldCheck className="h-4 w-4" />}
+            label="Secured by Clerk"
+            open={openSecured}
+            setOpen={toggleSecured}
+            id="secured"
+            active={activeCollapseId === "secured"}
+            collapsed={collapsed}
+          >
+            <div className="pl-7 space-y-1">
+              <SidebarItem
+                to="/admin/secured/profile"
+                icon={<User className="h-4 w-4" />}
+                label="Profile"
+                active={pathname === "/admin/secured/profile"}
+                small
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                to="/admin/secured/settings"
+                icon={<Settings className="h-4 w-4" />}
+                label="Secured Settings"
+                active={pathname === "/admin/secured/settings"}
+                small
+                collapsed={collapsed}
+              />
+            </div>
+          </SidebarCollapse>
+        </SidebarSection>
+
+        {/* Pages */}
+        <SidebarSection label="Pages" collapsed={collapsed}>
+          <SidebarCollapse
+            icon={<Lock className="h-4 w-4" />}
+            label="Auth"
+            open={openAuth}
+            setOpen={toggleAuth}
+            id="auth"
+            active={activeCollapseId === "auth"}
+            collapsed={collapsed}
+          >
+            <div className="pl-7 space-y-1">
+              <SidebarItem
+                to="/admin/auth/login"
+                icon={<User className="h-4 w-4" />}
+                label="Login"
+                active={pathname === "/admin/auth/login"}
+                small
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                to="/admin/auth/register"
+                icon={<User className="h-4 w-4" />}
+                label="Register"
+                active={pathname === "/admin/auth/register"}
+                small
+                collapsed={collapsed}
+              />
+            </div>
+          </SidebarCollapse>
+          <SidebarCollapse
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="404 & Errors"
+            open={openErrors}
+            setOpen={toggleErrors}
+            id="errors"
+            active={activeCollapseId === "errors"}
+            collapsed={collapsed}
+          >
+            <div className="pl-7 space-y-1">
+              <SidebarItem
+                to="/admin/errors/404"
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label="404"
+                active={pathname === "/admin/errors/404"}
+                small
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                to="/admin/errors/500"
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label="500"
+                active={pathname === "/admin/errors/500"}
+                small
+                collapsed={collapsed}
+              />
+            </div>
+          </SidebarCollapse>
+        </SidebarSection>
+
+        {/* Other */}
+        <SidebarSection label="Other" collapsed={collapsed}>
+          <SidebarItem
+            to="/admin/settings"
+            icon={<Settings className="h-4 w-4" />}
+            label="Settings"
+            active={pathname === "/admin/settings"}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/help"
+            icon={<LifeBuoy className="h-4 w-4" />}
+            label="Help Center"
+            active={pathname === "/admin/help"}
+            collapsed={collapsed}
+          />
+        </SidebarSection>
+      </nav>
+
+      {/* Footer */}
+      <div
+        className={`p-4 flex items-center ${
+          collapsed ? "justify-center" : "gap-3"
+        }`}
+      >
+        <div className="bg-muted rounded-full h-10 w-10 flex items-center justify-center font-semibold text-sm text-primary">
+          SN
+        </div>
+        {!collapsed && (
+          <>
+            <div className="flex-1">
+              <div className="font-medium text-sm">satnaing</div>
+              <div className="text-xs text-muted-foreground">
+                satnaingdev@gmail.com
+              </div>
+            </div>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </>
+        )}
+      </div>
+    </aside>
+  );
+}

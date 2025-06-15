@@ -30,6 +30,11 @@ import Hosting from "@/pages/hosting/Hosting";
 import Listing from "@/pages/hosting/Listing";
 import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLayout";
 import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
+// Admin Pages
+import AdminLayout from "@/pages/admin/AdminLayout";
+import { DashboardContent } from "@/components/admin/DashboardContent";
+import Tasks from "@/components/admin/Tasks";
+
 
 
 const routes: RouteObject[] = [
@@ -41,16 +46,33 @@ const routes: RouteObject[] = [
       { path: "register", element: <Register /> },
       { path: "login", element: <Login /> },
       { path: "verify-otp", element: <OtpPage /> },
-      { path : "verify-email" , element:<VerifyEmailPage /> },
+      { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
-      { path: "profilepage", element: < UserProfilePage/> },
-      { path: "past-trip", element: < PastTrip/> },
-      { path: "connection", element: < Connection/> },
-      { path: "edit-profile", element: < EditProfile/> },
-       { path: "room-detail", element: < RoomDeatil/> },
+
+      { path: "profilepage", element: <UserProfilePage /> },
+      { path: "past-trip", element: <PastTrip /> },
+      { path: "connection", element: <Connection /> },
+      { path: "edit-profile", element: <EditProfile /> },
+      { path: "room-detail", element: <RoomDeatil /> },
     ],
   },
+  { path: "/overview", element: <Overview /> },
+  { path: "/location", element: <Location /> },
+  { path: "/about-your-place", element: <AboutYourPlace /> },
+  { path: "/floor-plan", element: <FloorPlan /> },
+  { path: "/stand-out", element: <StandOut /> },
+  { path: "/amenities", element: <Amenities /> },
+  { path: "/photos", element: <UploadPhotos /> },
+  { path: "/title", element: <Title /> },
+  { path: "/description", element: <Description /> },
+  { path: "/finish-setup", element: <FinishSetup /> },
+  { path: "/price", element: <Price /> },
+
+
+
+
+
 
   //router Become a host
   {path: "/become-a-host",
@@ -79,10 +101,21 @@ const routes: RouteObject[] = [
       {path: "listings",element: <Listing />},
     ]
   },
+
+   // admin routes
+  {
+    path: "/admin",
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <DashboardContent /> },
+      { path: "tasks", element: <Tasks /> },
+    ],
+  },
+  // Catch-all route for 404 errors
   {
     path: "*",
     element: <ErrorPage />,
-  }
+  },
 ];
 
 export const router = createBrowserRouter(routes);
