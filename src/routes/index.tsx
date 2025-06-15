@@ -14,20 +14,28 @@ import OtpPage from "@/pages/auth/OtpPage";
 import RoomDeatil from "@/pages/RoomDeatil";
 import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
 // import BecomeAHost
-import Overview from "@/pages/BecomeAHost/Overview";
-import Location from "@/pages/BecomeAHost/Location";
-import AboutYourPlace from "@/pages/BecomeAHost/AboutYourPlace";
-import FloorPlan from "@/pages/BecomeAHost/FloorPlan";
-import StandOut from "@/pages/BecomeAHost/StandOut";
-import Amenities from "@/pages/BecomeAHost/Amenities";
-import UploadPhotos from "@/pages/BecomeAHost/Photos";
-import Title from "@/pages/BecomeAHost/Title";
-import Description from "@/pages/BecomeAHost/Description";
-import FinishSetup from "@/pages/BecomeAHost/FinishSetup";
-import Price from "@/pages/BecomeAHost/Price";
-import AdminLayout from "@/pages/admin/adminlayout";
+import Overview from "@/pages/become-a-host/Overview";
+import Location from "@/pages/become-a-host/Location";
+import AboutYourPlace from "@/pages/become-a-host/AboutYourPlace";
+import FloorPlan from "@/pages/become-a-host/FloorPlan";
+import StandOut from "@/pages/become-a-host/StandOut";
+import Amenities from "@/pages/become-a-host/Amenities";
+import UploadPhotos from "@/pages/become-a-host/Photos";
+import Title from "@/pages/become-a-host/Title";
+import Description from "@/pages/become-a-host/Description";
+import FinishSetup from "@/pages/become-a-host/FinishSetup";
+import Price from "@/pages/become-a-host/Price";
+import HostLayout from "@/components/layouts/host/HostLayout";
+import Hosting from "@/pages/hosting/Hosting";
+import Listing from "@/pages/hosting/Listing";
+import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLayout";
+import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
+// Admin Pages
+import AdminLayout from "@/pages/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
+
+
 
 const routes: RouteObject[] = [
   {
@@ -41,6 +49,7 @@ const routes: RouteObject[] = [
       { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
+
       { path: "profilepage", element: <UserProfilePage /> },
       { path: "past-trip", element: <PastTrip /> },
       { path: "connection", element: <Connection /> },
@@ -60,6 +69,40 @@ const routes: RouteObject[] = [
   { path: "/finish-setup", element: <FinishSetup /> },
   { path: "/price", element: <Price /> },
 
+
+
+
+
+
+  //router Become a host
+  {path: "/become-a-host",
+    element: <BecomeAHostLayout />,
+    children: [
+      {index: true, element: <BecomeAHost />},
+      {path: "about-your-place",element: <AboutYourPlace />},
+      {path: "location",element: <Location />},
+      {path: "floor-plan",element: <FloorPlan />},
+      {path: "stand-out",element: <StandOut />},
+      {path: "amenities",element: <Amenities />},
+      {path: "photos",element: <UploadPhotos />},
+      {path: "title",element: <Title />},
+      {path: "description",element: <Description />},
+      {path: "finish-setup",element: <FinishSetup />},
+      {path: "price",element: <Price />},
+    ]
+  },
+  {path: "/overview",element: <Overview />},
+  
+  //hosting
+  {path: "/hosting",
+    element: <HostLayout />,
+    children: [
+      {index: true, element: <Hosting />},
+      {path: "listings",element: <Listing />},
+    ]
+  },
+
+   // admin routes
   {
     path: "/admin",
     element: <AdminLayout />,
@@ -68,7 +111,7 @@ const routes: RouteObject[] = [
       { path: "tasks", element: <Tasks /> },
     ],
   },
-
+  // Catch-all route for 404 errors
   {
     path: "*",
     element: <ErrorPage />,

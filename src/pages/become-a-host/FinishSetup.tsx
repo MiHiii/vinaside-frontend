@@ -1,14 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Home, ArrowLeft } from "lucide-react";
-import { Header } from "@/components/BecomeAHost/Header";
 
-export default function StandOut() {
+export default function FinishSetup() {
   return (
     <div className="h-screen bg-white flex flex-col">
-      {/* Header */}
-      <Header />
-
       {/* Main Content - Đã chỉnh sửa */}
       <main className="flex-grow flex items-center justify-center p-8"> {/* Đã xóa max-w-7xl, mx-auto, py-8, sm:py-12 ở đây */}
         <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8"> {/* Thêm wrapper để giới hạn chiều rộng nội dung */}
@@ -17,20 +13,20 @@ export default function StandOut() {
             <div className="space-y-4 lg:space-y-6">
               {/* Step indicator */}
               <div className="text-lg font-medium text-black tracking-wide">
-                Bước 2
+                Bước 3
               </div>
 
               {/* Main heading */}
               <div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-black leading-tight">
-                  Làm cho chỗ ở của bạn trở nên nổi bật
+                  Hoàn thiện và đăng
                 </h1>
               </div>
 
               {/* Description */}
               <div className="space-y-3">
                 <p className="text-base sm:text-lg text-[#222] leading-relaxed">
-                  Ở bước này, bạn sẽ thêm một số tiện nghi được cung cấp tại chỗ ở của bạn, cùng với 5 bức ảnh trở lên. Sau đó, bạn sẽ soạn tiêu đề và nội dung mô tả.
+                  Cuối cùng, bạn sẽ chọn cài đặt đặt phòng, thiết lập giá và đăng mục cho thuê.
                 </p>
               </div>
             </div>
@@ -47,7 +43,7 @@ export default function StandOut() {
                     preload="metadata"
                   >
                     <source
-                      src="https://stream.media.muscache.com/H0101WTUG2qWbyFhy02jlOggSkpsM9H02VOWN52g02oxhDVM.mp4?v_q=high"
+                      src="https://stream.media.muscache.com/KeNKUpa01dRaT5g00SSBV95FqXYkqf01DJdzn01F1aT00vCI.mp4?v_q=high"
                       type="video/mp4"
                     />
                     {/* Fallback for browsers that don't support video */}
@@ -74,7 +70,7 @@ export default function StandOut() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-between items-center">
             {/* Left side - Back button */}
-            <Link to="/floor-plan">
+            <Link to="/become-a-host/description">
               <Button
                 variant="ghost"
                 className="flex items-center text-gray-600 hover:text-gray-900 font-medium"
@@ -85,7 +81,7 @@ export default function StandOut() {
             </Link>
 
             {/* Right side - Next button */}
-            <Link to="/amenities">
+            <Link to="/become-a-host/price">
               <Button
                 className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200"
               >

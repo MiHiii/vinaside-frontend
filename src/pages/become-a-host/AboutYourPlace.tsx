@@ -1,14 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Home, ArrowLeft } from "lucide-react";
-import { Header } from "@/components/BecomeAHost/Header";
 
-export default function FinishSetup() {
+export default function AboutYourPlace() {
   return (
     <div className="h-screen bg-white flex flex-col">
-      {/* Header */}
-      <Header />
-
       {/* Main Content - Đã chỉnh sửa */}
       <main className="flex-grow flex items-center justify-center p-8"> {/* Đã xóa max-w-7xl, mx-auto, py-8, sm:py-12 ở đây */}
         <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8"> {/* Thêm wrapper để giới hạn chiều rộng nội dung */}
@@ -17,20 +13,20 @@ export default function FinishSetup() {
             <div className="space-y-4 lg:space-y-6">
               {/* Step indicator */}
               <div className="text-lg font-medium text-black tracking-wide">
-                Bước 3
+                Bước 1
               </div>
 
               {/* Main heading */}
               <div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-black leading-tight">
-                  Hoàn thiện và đăng
+                  Chia sẻ thông tin về chỗ ở của bạn cho chúng tôi
                 </h1>
               </div>
 
               {/* Description */}
               <div className="space-y-3">
                 <p className="text-base sm:text-lg text-[#222] leading-relaxed">
-                  Cuối cùng, bạn sẽ chọn cài đặt đặt phòng, thiết lập giá và đăng mục cho thuê.
+                  Trong bước này, chúng tôi sẽ hỏi xem bạn cho thuê loại chỗ ở nào và bạn muốn cho khách đặt toàn bộ nhà hay chỉ một phòng cụ thể. Sau đó, hãy cho chúng tôi biết vị trí và số lượng khách có thể ở tại đó.
                 </p>
               </div>
             </div>
@@ -47,7 +43,7 @@ export default function FinishSetup() {
                     preload="metadata"
                   >
                     <source
-                      src="https://stream.media.muscache.com/KeNKUpa01dRaT5g00SSBV95FqXYkqf01DJdzn01F1aT00vCI.mp4?v_q=high"
+                      src="https://stream.media.muscache.com/zFaydEaihX6LP01x8TSCl76WHblb01Z01RrFELxyCXoNek.mp4?v_q=high"
                       type="video/mp4"
                     />
                     {/* Fallback for browsers that don't support video */}
@@ -85,7 +81,7 @@ export default function FinishSetup() {
             </Link>
 
             {/* Right side - Next button */}
-            <Link to="/price">
+            <Link to="/become-a-host/location">
               <Button
                 className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200"
               >

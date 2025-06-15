@@ -3,16 +3,12 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Header } from "@/components/BecomeAHost/Header";
 
 export default function Description() {
   const [description, setDescription] = useState("");
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Header */}
-      <Header />
-
       {/* Main */}
       <main className="flex-grow flex items-center justify-center px-6 py-12 bg-white">
         <div className="w-full max-w-3xl">
@@ -45,7 +41,7 @@ export default function Description() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-between items-center">
             {/* Left side - Back button */}
-            <Link to="/title">
+            <Link to="/become-a-host/title">
               <Button
                 variant="ghost"
                 className="flex items-center text-gray-600 hover:text-gray-900 font-medium"
@@ -56,7 +52,7 @@ export default function Description() {
             </Link>
 
             {/* Right side - Next button */}
-            <Link to={"/finish-setup"}>
+            <Link to={"/become-a-host/finish-setup"}>
               <Button
                 className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200"
               >

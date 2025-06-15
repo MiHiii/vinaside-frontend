@@ -119,7 +119,7 @@ export default function Overview() {
       <footer className="sticky bottom-0 bg-white border-t border-gray-200 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-end">
-            <Link to="/about-your-place">
+            <Link to="/become-a-host/about-your-place">
               <Button className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200">
               Bắt đầu
               </Button>

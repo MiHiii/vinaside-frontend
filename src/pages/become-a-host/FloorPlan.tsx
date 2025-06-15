@@ -8,8 +8,7 @@ import { useState, useEffect } from "react";
 
 // Import Collapsible components từ Shadcn UI
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import QuantityCounter from "@/components/BecomeAHost/QuantityCounter"; // Đảm bảo đường dẫn đúng
-import { Header } from "@/components/BecomeAHost/Header";
+import QuantityCounter from "@/components/become-a-host/QuantityCounter"; // Đảm bảo đường dẫn đúng
 
 // Define type cho lựa chọn loại chỗ ở
 type PropertyType = 'entire-home' | 'private-room' | 'shared-room' | null;
@@ -88,14 +87,11 @@ export default function FloorPlan() {
       entireHomeDetails: { guests: entireHomeGuests, bedrooms: entireHomeBedrooms, beds: entireHomeBeds, bathrooms: entireHomeBathrooms },
       privateRoomDetails: { guests: privateRoomGuests, bedrooms: privateRoomBedrooms, beds: privateRoomBeds, hasRoomLock: privateRoomHasLock }
     });
-    navigate(`/stand-out`); // Navigate to the next dummy page
+    navigate(`/become-a-host/stand-out`); // Navigate to the next dummy page
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
-      {/* Header */}
-      <Header />
-
       {/* Main Content */}
       <main className="flex-grow flex flex-col items-center justify-center p-8 bg-white">
         <h1 className="text-3xl font-semibold mb-10 text-gray-800 text-center">
@@ -262,7 +258,7 @@ export default function FloorPlan() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-between items-center w-full">
             {/* Nút quay lại bên trái */}
-            <Link to="/location">
+            <Link to="/become-a-host/location">
               <Button
                 variant="ghost"
                 className="text-gray-600 hover:text-gray-900 font-medium"
