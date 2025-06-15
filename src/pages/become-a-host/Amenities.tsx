@@ -23,7 +23,6 @@ import {
   ShieldCheck, 
   Siren
 } from "lucide-react";
-import { Header } from "@/components/become-a-host/Header";
 
 // Define amenity type
 interface Amenity {
@@ -110,8 +109,6 @@ export default function Amenities() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
-      {/* Header */}
-      <Header />
 
       {/* Main Content */}
       <main className="flex-grow flex flex-col items-center p-8 bg-white">
@@ -157,7 +154,7 @@ export default function Amenities() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-between items-center w-full">
             {/* Nút quay lại bên trái */}
-            <Link to="/stand-out">
+            <Link to="/become-a-host/stand-out">
               <Button
                 variant="ghost"
                 className="text-gray-600 hover:text-gray-900 font-medium"
@@ -168,7 +165,7 @@ export default function Amenities() {
             </Link>
 
             {/* Nút tiếp theo bên phải */}
-            <Link to="/photos">
+            <Link to="/become-a-host/photos">
               <Button
                 className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transition-all duration-200"
                 onClick={handleNext}

@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Header } from "@/components/become-a-host/Header";
 
 export default function Title() {
   const [title, setTitle] = useState("");
@@ -12,7 +11,7 @@ export default function Title() {
   const handleNextClick = () => {
     if (title) {
       // Nếu đã nhập tiêu đề, chuyển trang
-      navigate("/description");
+      navigate("/become-a-host/description");
     } else {
       // Nếu chưa nhập tiêu đề, không làm gì (chặn chuyển trang)
       alert("Vui lòng nhập tiêu đề trước khi tiếp tục.");
@@ -21,9 +20,6 @@ export default function Title() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Header */}
-      <Header />
-
       {/* Main */}
       <main className="flex-grow flex items-center justify-center px-6 py-12 bg-white">
         <div className="w-full max-w-3xl">
@@ -56,7 +52,7 @@ export default function Title() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-between items-center">
             {/* Left side - Back button */}
-            <Link to="/photos">
+            <Link to="/become-a-host/photos">
               <Button
                 variant="ghost"
                 className="flex items-center text-gray-600 hover:text-gray-900 font-medium"
