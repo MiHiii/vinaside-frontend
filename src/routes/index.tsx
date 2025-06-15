@@ -25,7 +25,9 @@ import Title from "@/pages/BecomeAHost/Title";
 import Description from "@/pages/BecomeAHost/Description";
 import FinishSetup from "@/pages/BecomeAHost/FinishSetup";
 import Price from "@/pages/BecomeAHost/Price";
-
+import AdminLayout from "@/pages/admin/adminlayout";
+import { DashboardContent } from "@/components/admin/DashboardContent";
+import Tasks from "@/components/admin/Tasks";
 
 const routes: RouteObject[] = [
   {
@@ -36,32 +38,41 @@ const routes: RouteObject[] = [
       { path: "register", element: <Register /> },
       { path: "login", element: <Login /> },
       { path: "verify-otp", element: <OtpPage /> },
-      { path : "verify-email" , element:<VerifyEmailPage /> },
+      { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
-      { path: "profilepage", element: < UserProfilePage/> },
-      { path: "past-trip", element: < PastTrip/> },
-      { path: "connection", element: < Connection/> },
-      { path: "edit-profile", element: < EditProfile/> },
-       { path: "room-detail", element: < RoomDeatil/> },
-
+      { path: "profilepage", element: <UserProfilePage /> },
+      { path: "past-trip", element: <PastTrip /> },
+      { path: "connection", element: <Connection /> },
+      { path: "edit-profile", element: <EditProfile /> },
+      { path: "room-detail", element: <RoomDeatil /> },
     ],
   },
-  {path: "/overview",element: <Overview />},
-  {path: "/location",element: <Location />},
-  {path: "/about-your-place",element: <AboutYourPlace />},
-  {path: "/floor-plan",element: <FloorPlan />},
-  {path: "/stand-out",element: <StandOut />},
-  {path: "/amenities",element: <Amenities />},
-  {path: "/photos",element: <UploadPhotos />},
-  {path: "/title",element: <Title />},
-  {path: "/description",element: <Description />},
-  {path: "/finish-setup",element: <FinishSetup />},
-  {path: "/price",element: <Price />},
+  { path: "/overview", element: <Overview /> },
+  { path: "/location", element: <Location /> },
+  { path: "/about-your-place", element: <AboutYourPlace /> },
+  { path: "/floor-plan", element: <FloorPlan /> },
+  { path: "/stand-out", element: <StandOut /> },
+  { path: "/amenities", element: <Amenities /> },
+  { path: "/photos", element: <UploadPhotos /> },
+  { path: "/title", element: <Title /> },
+  { path: "/description", element: <Description /> },
+  { path: "/finish-setup", element: <FinishSetup /> },
+  { path: "/price", element: <Price /> },
+
+  {
+    path: "/admin",
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <DashboardContent /> },
+      { path: "tasks", element: <Tasks /> },
+    ],
+  },
+
   {
     path: "*",
     element: <ErrorPage />,
-  }
+  },
 ];
 
 export const router = createBrowserRouter(routes);
