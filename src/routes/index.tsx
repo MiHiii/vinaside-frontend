@@ -34,6 +34,7 @@ import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
 import AdminLayout from "@/pages/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
 
 
 
@@ -45,7 +46,14 @@ const routes: RouteObject[] = [
       { index: true, element: <HomePage /> },
       { path: "register", element: <Register /> },
       { path: "login", element: <Login /> },
-      { path: "verify-otp", element: <OtpPage /> },
+      {
+        path: "verify-otp",
+        element: (
+          <ProtectedRoute>
+            <OtpPage />
+          </ProtectedRoute>
+        ),
+      },
       { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
@@ -69,40 +77,37 @@ const routes: RouteObject[] = [
   { path: "/finish-setup", element: <FinishSetup /> },
   { path: "/price", element: <Price /> },
 
-
-
-
-
-
   //router Become a host
-  {path: "/become-a-host",
+  {
+    path: "/become-a-host",
     element: <BecomeAHostLayout />,
     children: [
-      {index: true, element: <BecomeAHost />},
-      {path: "about-your-place",element: <AboutYourPlace />},
-      {path: "location",element: <Location />},
-      {path: "floor-plan",element: <FloorPlan />},
-      {path: "stand-out",element: <StandOut />},
-      {path: "amenities",element: <Amenities />},
-      {path: "photos",element: <UploadPhotos />},
-      {path: "title",element: <Title />},
-      {path: "description",element: <Description />},
-      {path: "finish-setup",element: <FinishSetup />},
-      {path: "price",element: <Price />},
-    ]
+      { index: true, element: <BecomeAHost /> },
+      { path: "about-your-place", element: <AboutYourPlace /> },
+      { path: "location", element: <Location /> },
+      { path: "floor-plan", element: <FloorPlan /> },
+      { path: "stand-out", element: <StandOut /> },
+      { path: "amenities", element: <Amenities /> },
+      { path: "photos", element: <UploadPhotos /> },
+      { path: "title", element: <Title /> },
+      { path: "description", element: <Description /> },
+      { path: "finish-setup", element: <FinishSetup /> },
+      { path: "price", element: <Price /> },
+    ],
   },
-  {path: "/overview",element: <Overview />},
-  
+  { path: "/overview", element: <Overview /> },
+
   //hosting
-  {path: "/hosting",
+  {
+    path: "/hosting",
     element: <HostLayout />,
     children: [
-      {index: true, element: <Hosting />},
-      {path: "listings",element: <Listing />},
-    ]
+      { index: true, element: <Hosting /> },
+      { path: "listings", element: <Listing /> },
+    ],
   },
 
-   // admin routes
+  // admin routes
   {
     path: "/admin",
     element: <AdminLayout />,
