@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {  useState } from "react";
 import ProfileSidebar from "@/components/useProfile/profileSidebar";
 import ProfileIntroductionCard from "@/components/useProfile/ProfileIntroductionCard";
 import CompleteProfilePrompt from "@/components/useProfile/CompleteProfilePrompt";
@@ -6,46 +6,20 @@ import { Button } from "@/components/ui/button";
 import PastTrip from "@/components/useProfile/PastTrip";
 import Connection from "@/components/useProfile/Connection";
 import { Link } from "react-router-dom";
-import { api } from "@/services/api"; // Axios instance đã cấu hình interceptor
-import { useAppSelector } from "@/hooks/useRedux";
 
 export default function UserProfilePage() {
   const [activeSidebarItem, setActiveSidebarItem] = useState("introduction");
-  const [apiError, setApiError] = useState<string | null>(null);
 
-  // Lấy token từ Redux (bạn có thể không cần dùng trực tiếp token ở đây, nhưng có thể muốn listen khi token đổi)
-  const token = useAppSelector((state) => state.auth.token);
-
-  // Khi vào trang, tự động gọi API để test token còn hạn/refresh token
-  useEffect(() => {
-    api
-      .get("/auth/me")
-      .then((res) => {
-        console.log("✅ Lấy thông tin user thành công:", res.data);
-        setApiError(null);
-      })
-      .catch((err) => {
-        if (err?.response?.status === 401) {
-          setApiError("Token hết hạn hoặc không hợp lệ!");
-          console.log("❌ Token hết hạn hoặc không hợp lệ (401 Unauthorized)");
-        } else {
-          setApiError("Lỗi khác khi gọi API!");
-          console.log("Lỗi khác:", err);
-        }
-      });
-  }, [token]); // Nếu token đổi sẽ gọi lại (ví dụ vừa refresh)
-
-  // Dữ liệu mẫu, bạn sẽ thay thế bằng dữ liệu thực tế từ API, context, hoặc props
   const userData = {
     name: "Minh Quang",
     role: "Khách",
     avatarInitial: "M",
-    isVerified: true, // Ví dụ cho trạng thái xác minh
+    isVerified: true, 
   };
 
   const handleSidebarSelect = (item : string ) => {
     setActiveSidebarItem(item);
-    // Có thể fetch thêm dữ liệu theo từng mục nếu muốn
+
   };
 
   return (
@@ -62,10 +36,6 @@ export default function UserProfilePage() {
 
         {/* Main Content */}
         <main className="flex-1 lg:w-3/4 xl:w-4/5 lg:ml-[200px]">
-          {/* Hiển thị lỗi nếu có */}
-          {apiError && (
-            <div className="text-red-500 text-sm mb-4">{apiError}</div>
-          )}
 
           {activeSidebarItem === "introduction" && (
             <section aria-labelledby="introduction-section-title">

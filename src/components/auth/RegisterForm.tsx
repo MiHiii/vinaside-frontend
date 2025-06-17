@@ -7,9 +7,9 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import NameField from "./fields/NameField";
 import EmailField from "./fields/EmailField";
 import PasswordField from "./fields/PasswordField";
+import PhoneField from "./fields/PhoneField";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { register } from "@/store/slices/authSlice";
-import PhoneField from "./fields/PhoneField";
 import { useNavigate } from "react-router-dom";
 
 export default function RegisterForm() {
@@ -25,12 +25,12 @@ export default function RegisterForm() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { loading, error, verifyEmail } = useAppSelector((state) => state.auth);
+
   const onSubmit = async (data: RegisterSchema) => {
     await dispatch(register(data));
   };
 
   useEffect(() => {
-    console.log("User:", verifyEmail);
     if (verifyEmail) {
       methods.reset({
         name: "",
@@ -43,28 +43,47 @@ export default function RegisterForm() {
   }, [verifyEmail, methods, navigate]);
 
   return (
-    <Card className="max-w-md mx-auto p-6 mt-22  ">
-      <CardHeader>
-        <CardTitle>Đăng ký</CardTitle>
-      </CardHeader>
-      <CardContent className="">
-        <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
-            <NameField />
-            <EmailField />
-            <PhoneField />
-            <PasswordField />
-            {error && <div className="text-red-500 text-sm">{error}</div>}
-            <Button
-              type="submit"
-              className="w-full bg-black text-white"
-              disabled={loading}
+    <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">
+      <Card
+        className="w-full max-w-md mx-auto p-8 rounded-2xl shadow-lg
+         text-[hsl(var(--card-foreground))]
+          border border-[hsl(var(--border))]
+          flex flex-col items-center justify-center min-h-[60vh]
+        "
+      >
+        <CardHeader className="w-full">
+          <CardTitle className="text-2xl font-bold mb-2">Đăng ký</CardTitle>
+        </CardHeader>
+        <CardContent className="w-full">
+          <FormProvider {...methods}>
+            <form
+              onSubmit={methods.handleSubmit(onSubmit)}
+              className="space-y-4"
             >
-              {loading ? "Đang xử lý..." : "Đăng ký"}
-            </Button>
-          </form>
-        </FormProvider>
-      </CardContent>
-    </Card>
+              <NameField />
+              <EmailField />
+              <PhoneField />
+                <PasswordField />
+                {error && <div className="text-red-500 text-sm">{error}</div>}
+              <Button
+                type="submit"
+                className="
+        w-full mt-4 py-3 rounded-xl
+    bg-[hsl(var(--background))]
+    text-[hsl(var(--foreground))]
+    dark:bg-[hsl(var(--foreground))]
+    dark:text-[hsl(var(--background))]
+    font-semibold text-base shadow-md 
+    transition
+  "
+                disabled={loading}
+              >
+                {loading ? "Đang xử lý..." : "Đăng ký"}
+              </Button>
+            </form>
+          </FormProvider>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

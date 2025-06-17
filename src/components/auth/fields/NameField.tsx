@@ -17,9 +17,21 @@ export default function NameField() {
       name="name"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Tên</FormLabel>
+          <FormLabel>Họ Tên</FormLabel>
           <FormControl>
-            <Input placeholder="Nguyễn Văn A" {...field} />
+            <Input
+              placeholder="Họ Tên"
+              className="
+              bg-[hsl(var(--card))]
+              border border-[hsl(var(--border))]
+              text-[hsl(var(--card-foreground))]
+              placeholder:text-[hsl(var(--muted-foreground))]
+              rounded-md w-full py-2 px-4
+              focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]
+              transition
+            "
+              {...field}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

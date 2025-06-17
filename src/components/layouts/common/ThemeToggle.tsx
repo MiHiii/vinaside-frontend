@@ -11,7 +11,7 @@ const ThemeToggle = () => {
   
 
   return (
-    <Button onClick={() => dispatch(toggleTheme())} variant="outline">
+    <Button onClick={() => dispatch(toggleTheme())} >
       {mode === "light" ? "🌞" : "🌙"}
     </Button> 
   );

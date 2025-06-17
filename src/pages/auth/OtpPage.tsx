@@ -12,31 +12,32 @@ export default function OtpPage() {
   const navigate = useNavigate();
 
   const email = useAppSelector((state) => state.auth.verifyEmail);
+
   const handleVerifyOtp = async (otp: string) => {
     if (!email) {
       toast.error("Không tìm thấy email. Vui lòng đăng nhập lại.");
       return;
     }
-
     try {
       const response = await dispatch(verifyOtp({ email, otp }));
       if (response.meta.requestStatus === "fulfilled") {
-        console.log("OTP xác thực thành công");
-        toast.success("Xác thực OTP thành công vui lòng đăng nhập lại.");
+        toast.success("Xác thực OTP thành công. Vui lòng đăng nhập lại.");
         navigate("/login");
       } else {
         toast.error("Xác thực OTP không thành công. Vui lòng thử lại.");
       }
     } catch (error) {
-      console.error("Lỗi xác thực OTP:", error);
+      console.log(error);
+      
+      toast.error("Có lỗi xảy ra. Vui lòng thử lại.");
     }
   };
+
   const handleResend = async () => {
     if (!email) {
       toast.error("Không tìm thấy email. Vui lòng đăng nhập lại.");
       return;
     }
-
     setIsResending(true);
     try {
       const response = await dispatch(resendOtp({ email }));
@@ -46,19 +47,28 @@ export default function OtpPage() {
         toast.error("Gửi lại OTP thất bại.");
       }
     } catch (error) {
-      console.error("Lỗi gửi lại OTP:", error);
-      toast.error("Gửi lại OTP không thành công. Vui lòng thử lại.");
+      console.log(error);
+      
+      toast.error("Có lỗi khi gửi lại OTP.");
     } finally {
-      setIsResending(false); // ✅ Đảm bảo UI trở về trạng thái bình thường
+      setIsResending(false);
     }
   };
-  
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      <Card className="w-full max-w-sm shadow-lg">
-        <CardContent className="py-8 space-y-6">
-          <h2 className="text-xl font-semibold text-center">Xác minh OTP</h2>
+    <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">
+      <Card
+        className="
+        w-full max-w-lg p-8 rounded-xl shadow-xl
+         text-[hsl(var(--card-foreground))]
+        border border-[hsl(var(--border))]
+        flex flex-col items-center
+      "
+      >
+        <CardContent className="w-full flex flex-col items-center px-0 py-8 gap-6">
+          <h2 className="text-2xl font-bold text-center text-[hsl(var(--card-foreground))] mb-2">
+            Xác minh OTP
+          </h2>
           <OtpForm
             onSubmitOtp={handleVerifyOtp}
             onResendOtp={handleResend}
