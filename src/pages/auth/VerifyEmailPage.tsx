@@ -1,4 +1,4 @@
-import {  useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { verifyEmailByToken } from "@/store/slices/authSlice";
@@ -17,27 +17,40 @@ export default function VerifyEmailPage() {
     if (token) {
       dispatch(verifyEmailByToken(token));
     }
+    // eslint-disable-next-line
   }, [token]);
 
   useEffect(() => {
     if (verifyStatus === "succeeded") {
       toast.success("✅ Xác minh email thành công!");
-      setTimeout(() => navigate("/login"), 3000);
+      setTimeout(() => navigate("/login"), 2000);
     } else if (verifyStatus === "failed") {
       toast.error(`❌ Xác minh thất bại: ${error || "Token không hợp lệ"}`);
     }
+    // eslint-disable-next-line
   }, [verifyStatus]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-blue-100 px-4">
-      <Card className="max-w-md w-full shadow-xl rounded-2xl">
-        <CardContent className="p-6 text-center space-y-4">
-          <h2 className="text-xl font-semibold text-blue-800 mb-4">
-            Xác minh tài khoản...
+    <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">
+      <Card
+        className="
+        max-w-md w-full rounded-2xl shadow-xl
+        border border-[hsl(var(--border))]
+        text-[hsl(var(--card-foreground))]
+        flex flex-col items-center
+      "
+      >
+        <CardContent className="p-8 text-center space-y-6 w-full flex flex-col items-center">
+          <h2 className="text-2xl font-bold mb-4 text-[hsl(var(--card-foreground))]">
+            Đang xác minh tài khoản...
           </h2>
-          <Skeleton className="w-24 h-24 rounded-full mx-auto" />
-          <Skeleton className="h-6 w-3/4 mx-auto" />
-          <Skeleton className="h-4 w-1/2 mx-auto" />
+          {/* Skeleton loading hiệu ứng */}
+          <Skeleton className="w-20 h-20 rounded-full mx-auto bg-[hsl(var(--muted))]" />
+          <Skeleton className="h-5 w-1/2 mx-auto bg-[hsl(var(--muted))]" />
+          <Skeleton className="h-3 w-1/3 mx-auto bg-[hsl(var(--muted))]" />
+          <div className="text-sm text-[hsl(var(--muted-foreground))] mt-4">
+            Vui lòng chờ trong giây lát...
+          </div>
         </CardContent>
       </Card>
     </div>

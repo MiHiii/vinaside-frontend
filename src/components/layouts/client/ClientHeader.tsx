@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "../../ui/button";
 import {
@@ -10,11 +10,10 @@ import {
 } from "../../ui/dropdown-menu";
 import { useMobile } from "@/hooks/useMobile";
 import ClientSearch from "../../common/ClientSearch";
-import { Globe, Menu, User } from "lucide-react";
+import { Globe, Menu } from "lucide-react";
 import ThemeToggle from "../common/ThemeToggle";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { logout } from "@/store/slices/authSlice";
-import { useNavigate } from "react-router-dom";
 
 export default function ClientHeader() {
   const isMobile = useMobile();
@@ -22,7 +21,10 @@ export default function ClientHeader() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  // Lấy thông tin token và user từ Redux
   const token = useAppSelector((state) => state.auth.token);
+  const user = useAppSelector((state) => state.auth.user);
+  const isAdmin = user?.role === "admin";
 
   const handleLogout = () => {
     dispatch(logout());
@@ -32,8 +34,8 @@ export default function ClientHeader() {
   return (
     <header className="sticky top-0 z-50 w-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-4 md:px-6">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
+        {/* Logo SÁT TRÁI ngoài cùng */}
+        <Link to="/" className="flex items-center gap-2 mr-6">
           <div className="text-rose-500">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -55,29 +57,35 @@ export default function ClientHeader() {
           <ClientSearch />
         </div>
 
-        {/* Menu */}
+        {/* Menu & Buttons phải */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
 
+          {/* Nút "Trở thành host" desktop */}
+          {!isMobile && (
+            <Link to={"/overview"}>
+              <Button
+                variant="ghost"
+                className="hidden rounded-full text-sm font-medium md:flex transition hover:bg-gray-100 hover:text-rose-500"
+              >
+                Trở thành host
+              </Button>
+            </Link>
+          )}
+
+          {/* Nút globe chọn ngôn ngữ */}
           {!isMobile && (
             <Button
               variant="ghost"
-              className="hidden rounded-full text-sm font-medium md:flex"
+              size="icon"
+              className="hidden rounded-full md:flex transition hover:bg-gray-100 hover:text-rose-500"
             >
-              Trở thành host
+              <Globe className="h-5 w-5" />
+              <span className="sr-only">Language</span>
             </Button>
           )}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden rounded-full md:flex"
-          >
-            <Globe className="h-5 w-5" />
-            <span className="sr-only">Language</span>
-          </Button>
-
-          {/* Dropdown desktop */}
+          {/* Dropdown desktop chỉ còn Menu icon */}
           {!isMobile && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -86,7 +94,6 @@ export default function ClientHeader() {
                   className="flex gap-2 rounded-full border-gray-200 px-4 py-2"
                 >
                   <Menu className="h-5 w-5" />
-                  <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -114,6 +121,13 @@ export default function ClientHeader() {
                         Profile
                       </Link>
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem className="font-medium">
+                        <Link to="/admin" className="w-full text-red-600">
+                          Vào trang Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       Đăng xuất
@@ -121,9 +135,6 @@ export default function ClientHeader() {
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Airbnb your home</DropdownMenuItem>
-                <DropdownMenuItem>Host an experience</DropdownMenuItem>
-                <DropdownMenuItem>Help</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -168,6 +179,14 @@ export default function ClientHeader() {
               >
                 Profile
               </Link>
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="block text-sm font-medium text-red-600 hover:text-red-800"
+                >
+                  Vào trang Admin
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="block w-full text-left text-sm font-medium text-gray-700 hover:text-gray-900"
@@ -176,27 +195,6 @@ export default function ClientHeader() {
               </button>
             </>
           )}
-
-          <hr />
-
-          <Link
-            to="/"
-            className="block text-sm font-medium text-gray-700 hover:text-gray-900"
-          >
-            Airbnb your home
-          </Link>
-          <Link
-            to="/"
-            className="block text-sm font-medium text-gray-700 hover:text-gray-900"
-          >
-            Host an experience
-          </Link>
-          <Link
-            to="/"
-            className="block text-sm font-medium text-gray-700 hover:text-gray-900"
-          >
-            Help
-          </Link>
         </div>
       )}
     </header>

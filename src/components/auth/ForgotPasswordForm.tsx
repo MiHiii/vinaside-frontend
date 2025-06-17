@@ -14,11 +14,11 @@ export default function ForgotPasswordForm() {
     defaultValues: { email: "" },
   });
 
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
 
   const onSubmit = async (data: ForgotPasswordSchema) => {
     try {
-      await dispatch(forgotPassword(data)).unwrap(); 
+      await dispatch(forgotPassword(data)).unwrap();
       toast.success("Liên kết khôi phục đã được gửi tới email của bạn");
       methods.reset(); // Reset lại form
     } catch (error) {
@@ -27,22 +27,39 @@ export default function ForgotPasswordForm() {
   };
 
   return (
-    <FormProvider {...methods}>
-      <form
-        onSubmit={methods.handleSubmit(onSubmit)}
-        className="max-w-md mx-auto p-8 mt-20 border border-black rounded-lg shadow-sm"
-      >
-        <EmailField />
-        <Button
-          type="submit"
-          className="w-full bg-black text-white mt-4"
-          disabled={methods.formState.isSubmitting}
+    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))]">
+      <FormProvider {...methods}>
+        <form
+          onSubmit={methods.handleSubmit(onSubmit)}
+          className="
+            max-w-md w-full p-8 rounded-2xl shadow-lg
+            border border-[hsl(var(--border))]
+            text-[hsl(var(--card-foreground))]
+          "
         >
-          {methods.formState.isSubmitting
-            ? "Đang gửi..."
-            : "Gửi liên kết khôi phục"}
-        </Button>
-      </form>
-    </FormProvider>
+          <h2 className="text-2xl font-bold mb-6 text-center text-[hsl(var(--card-foreground))]">
+            Quên mật khẩu
+          </h2>
+          <EmailField />
+          <Button
+            type="submit"
+            className="
+        w-full mt-4 py-3 rounded-xl
+    bg-[hsl(var(--background))]
+    text-[hsl(var(--foreground))]
+    dark:bg-[hsl(var(--foreground))]
+    dark:text-[hsl(var(--background))]
+    font-semibold text-base shadow-md 
+    transition
+  "
+            disabled={methods.formState.isSubmitting}
+          >
+            {methods.formState.isSubmitting
+              ? "Đang gửi..."
+              : "Gửi liên kết khôi phục"}
+          </Button>
+        </form>
+      </FormProvider>
+    </div>
   );
 }

@@ -19,7 +19,20 @@ export default function EmailField() {
         <FormItem>
           <FormLabel>Email</FormLabel>
           <FormControl>
-            <Input type="email" placeholder="example@email.com" {...field} />
+            <Input
+              type="email"
+              className="
+              bg-[hsl(var(--card))]
+              border border-[hsl(var(--border))]
+              text-[hsl(var(--card-foreground))]
+              placeholder:text-[hsl(var(--muted-foreground))]
+              rounded-md w-full py-2 px-4
+              focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]
+              transition
+            "
+              placeholder="Email"
+              {...field}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

@@ -29,7 +29,18 @@ export default function OtpForm({
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <OtpInput />
-        <Button type="submit" className="w-full bg-black text-white">
+        <Button
+          type="submit"
+          className="
+        w-full mt-4 py-3 rounded-xl
+    bg-[hsl(var(--background))]
+    text-[hsl(var(--foreground))]
+    dark:bg-[hsl(var(--foreground))]
+    dark:text-[hsl(var(--background))]
+    font-semibold text-base shadow-md 
+    transition
+  "
+        >
           Xác nhận
         </Button>
         <Button

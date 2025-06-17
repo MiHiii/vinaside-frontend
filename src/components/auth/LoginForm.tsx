@@ -46,31 +46,54 @@ export default function LoginForm() {
     }
   };
 
+
   return (
-    <Card className="max-w-md mx-auto p-6 mt-22">
-      <CardHeader>
-        <CardTitle>Đăng nhập</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
-            <EmailField />
-            <PasswordField />
-            <p>
-              Quên mật khẩu?{" "}
-              <Link
-                to="/forgot-password"
-                className="text-blue-600 hover:underline"
+    <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">
+      <Card
+        className="w-full max-w-md mx-auto p-8 rounded-2xl shadow-lg
+         text-[hsl(var(--card-foreground))]
+          border border-[hsl(var(--border))]
+          flex flex-col items-center justify-center min-h-[60vh]
+        "
+      >
+        <CardHeader>
+          <CardTitle>Đăng nhập</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FormProvider {...methods}>
+            <form
+              onSubmit={methods.handleSubmit(onSubmit)}
+              className="space-y-4"
+            >
+              <EmailField />
+              <PasswordField />
+              <p>
+                Quên mật khẩu?{" "}
+                <Link
+                  to="/forgot-password"
+                  className="text-blue-600 hover:underline"
+                >
+                  Nhấn vào đây
+                </Link>
+              </p>
+              <Button
+                type="submit"
+                className="
+        w-full mt-4 py-3 rounded-xl
+    bg-[hsl(var(--background))]
+    text-[hsl(var(--foreground))]
+    dark:bg-[hsl(var(--foreground))]
+    dark:text-[hsl(var(--background))]
+    font-semibold text-base shadow-md 
+    transition
+  "
               >
-                Nhấn vào đây
-              </Link>
-            </p>
-            <Button type="submit" className="w-full  bg-black text-white">
-              Đăng nhập
-            </Button>
-          </form>
-        </FormProvider>
-      </CardContent>
-    </Card>
+                Đăng nhập
+              </Button>
+            </form>
+          </FormProvider>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

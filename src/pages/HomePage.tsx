@@ -1,16 +1,11 @@
-"use client";
-
 import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { NavLink } from "react-router-dom";
-import ButtonWishlist from "@/components/common/ButtonWishlist";
 
 export default function HomePage() {
-  const scrollContainerRef1 = React.useRef<HTMLDivElement>(null);
-  const scrollContainerRef2 = React.useRef<HTMLDivElement>(null);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   const scroll = (
     ref: React.RefObject<HTMLDivElement | null>,
@@ -18,81 +13,47 @@ export default function HomePage() {
   ) => {
     if (!ref.current) return;
     const scrollAmount = 340;
-    if (direction === "left") {
-      ref.current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
-    } else {
-      ref.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
-    }
+    ref.current.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* First Section */}
-      <div className="mb-12">
-        <div className="flex items-center justify-between mb-4">
-          <NavLink to={""} className="text-xl font-bold">
-            Còn phòng tại Huyện Văn Giang vào cuối tuần này ›
-          </NavLink>
-          <div className="flex gap-2">
-            <Button
-              size="icon"
-              className="rounded-full bg-gray-100 cursor-pointer"
-              onClick={() => scroll(scrollContainerRef1, "left")}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              className="rounded-full bg-gray-100 cursor-pointer"
-              onClick={() => scroll(scrollContainerRef1, "right")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div
-          ref={scrollContainerRef1}
-          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {vanGiangProperties.map((property, index) => (
-            <PropertyCard key={index} property={property} />
-          ))}
+      {/* Section title & scroll */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-card-foreground">
+          Nơi lưu trú được ưa chuộng tại Hồ Chí Minh{" "}
+          <span className="text-2xl">›</span>
+        </h2>
+        <div className="flex gap-2">
+          <Button
+            size="icon"
+            className="rounded-full bg-muted hover:bg-muted/70"
+            onClick={() => scroll(scrollContainerRef, "left")}
+          >
+            <ChevronLeft className="h-5 w-5 text-foreground" />
+          </Button>
+          <Button
+            size="icon"
+            className="rounded-full bg-muted hover:bg-muted/70"
+            onClick={() => scroll(scrollContainerRef, "right")}
+          >
+            <ChevronRight className="h-5 w-5 text-foreground" />
+          </Button>
         </div>
       </div>
 
-      {/* Second Section */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Nơi lưu trú tại Quận 1 ›</h2>
-          <div className="flex gap-2">
-            <Button
-              size="icon"
-              className="rounded-full bg-gray-100 cursor-pointer"
-              onClick={() => scroll(scrollContainerRef2, "left")}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              className="rounded-full bg-gray-100 cursor-pointer"
-              onClick={() => scroll(scrollContainerRef2, "right")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div
-          ref={scrollContainerRef2}
-          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {district1Properties.map((property, index) => (
-            <PropertyCard key={index} property={property} />
-          ))}
-        </div>
+      {/* List cards horizontal */}
+      <div
+        ref={scrollContainerRef}
+        className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {airbnbProperties.map((property) => (
+          <PropertyCard key={property.id} property={property} />
+        ))}
       </div>
     </div>
   );
@@ -109,32 +70,45 @@ interface Property {
 }
 
 function PropertyCard({ property }: { property: Property }) {
+  // Wishlist state giả lập
+  const [liked, setLiked] = React.useState(property.isFavorite);
+
   return (
-    <Card className="min-w-[280px] max-w-[280px] overflow-hidden border-none shadow-none">
+    <Card className="min-w-[280px] max-w-[280px] rounded-2xl bg-card border-none shadow hover:shadow-lg transition">
       <div className="relative">
+        {/* Ảnh phòng */}
         <img
           src={property.image}
           alt={property.name}
-          className="h-[250px] w-full object-cover rounded-2xl cursor-pointer"
+          className="h-[220px] w-full object-cover rounded-2xl"
         />
-        <ButtonWishlist />
-        <Badge className="absolute top-3 left-3 bg-gray-100 text-black font-normal">
+        {/* Badge */}
+        <Badge className="absolute top-3 left-3 bg-muted text-foreground font-medium rounded-xl shadow px-3 py-1 backdrop-blur">
           Được khách yêu thích
         </Badge>
+        {/* Nút tim thả wishlist */}
+        <button
+          onClick={() => setLiked((v) => !v)}
+          className="absolute top-3 right-3 rounded-full bg-muted/80 p-2 shadow hover:bg-muted"
+        >
+          <Heart
+            className={`w-6 h-6 ${
+              liked ? "fill-rose-500 text-rose-500" : "text-muted-foreground"
+            }`}
+          />
+        </button>
       </div>
-      <CardContent className="p-2">
-        <div className="flex justify-between items-center gap-2">
-          <h3 className="font-medium text-sm truncate">{property.name}</h3>
-          <div className="flex items-center gap-1 text-sm">
+      <CardContent className="p-3 pb-2">
+        <div className="flex justify-between items-center gap-2 mb-1">
+          <h3 className="font-semibold text-base truncate text-card-foreground">
+            {property.name}
+          </h3>
+          <div className="flex items-center gap-1 text-base font-medium text-card-foreground">
             <span>★</span>
             <span>{property.rating.toFixed(property.rating % 1 ? 2 : 1)}</span>
           </div>
         </div>
-        <div className="text-[16px] text-gray-500">
-          <p>Chủ nhà: Quốc bảo</p>
-          <p className="truncate">Pinehill Tu Hieu Hue Homestay </p>
-        </div>
-        <div className="text-[16px] text-gray-800 mt-1.5">
+        <div className="text-[15px] text-muted-foreground mb-0.5">
           {property.price} cho {property.nights} đêm
         </div>
       </CardContent>
@@ -142,136 +116,69 @@ function PropertyCard({ property }: { property: Property }) {
   );
 }
 
-// Sample data for Van Giang properties
-const vanGiangProperties: Property[] = [
+// Data giống hình
+const airbnbProperties: Property[] = [
   {
     id: "1",
-    name: "Căn hộ tại Văn Giang",
-    price: "₫1.130.739",
+    name: "Phòng tại Quận 3",
+    price: "₫880.000",
     nights: 2,
     rating: 5.0,
-    image: "https://picsum.photos/300/200?random=1",
-    isFavorite: false,
+    image: "https://picsum.photos/id/1018/400/300",
+    isFavorite: true,
   },
   {
     id: "2",
-    name: "Căn hộ tại Văn Giang",
-    price: "₫1.261.022",
+    name: "Phòng tại Thành phố Hồ Chí Minh",
+    price: "₫560.000",
     nights: 2,
     rating: 5.0,
-    image: "https://picsum.photos/300/200?random=2",
+    image: "https://picsum.photos/id/1021/400/300",
     isFavorite: false,
   },
   {
     id: "3",
-    name: "Căn hộ tại tt. Văn Giang",
-    price: "₫1.531.460",
+    name: "Phòng chung tại Thành phố Hồ Chí Minh",
+    price: "₫323.935",
     nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/300/200?random=3",
+    rating: 4.86,
+    image: "https://picsum.photos/id/1025/400/300",
     isFavorite: false,
   },
   {
     id: "4",
-    name: "Căn hộ chung cư cao cấp tại Văn Giang",
-    price: "₫1.300.600",
+    name: "Phòng tại Tân Phú district",
+    price: "₫798.824",
     nights: 2,
-    rating: 4.88,
-    image: "https://picsum.photos/300/200?random=4",
+    rating: 4.87,
+    image: "https://picsum.photos/id/1027/400/300",
     isFavorite: false,
   },
   {
     id: "5",
-    name: "Căn hộ tại Xuân Quan",
-    price: "₫1.478.493",
+    name: "Nơi ở tại Thành phố Hồ Chí Minh",
+    price: "₫776.000",
     nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/300/200?random=5",
+    rating: 4.97,
+    image: "https://picsum.photos/id/1035/400/300",
     isFavorite: false,
   },
   {
     id: "6",
-    name: "Căn hộ tại Văn Giang",
-    price: "₫1.261.644",
+    name: "Nơi ở tại Thành phố Hồ Chí Minh",
+    price: "₫910.550",
     nights: 2,
     rating: 4.94,
-    image: "https://picsum.photos/300/200?random=6",
+    image: "https://picsum.photos/id/1033/400/300",
     isFavorite: false,
   },
   {
     id: "7",
-    name: "Phòng tại Văn Giang",
-    price: "₫1.474.401",
-    nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/300/200?random=7",
-    isFavorite: false,
-  },
-];
-
-// Sample data for District 1 properties
-const district1Properties: Property[] = [
-  {
-    id: "8",
-    name: "Căn hộ tại Thành phố Hồ Chí Minh",
-    price: "₫884.412",
-    nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/300/200?random=8",
-    isFavorite: false,
-  },
-  {
-    id: "9",
-    name: "Phòng tại Đa Kao",
-    price: "₫113.783",
-    nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/300/200?random=9",
-    isFavorite: false,
-  },
-  {
-    id: "10",
-    name: "Căn hộ khách sạn tại Nguyễn Cư Trinh",
-    price: "₫836.164",
-    nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/300/200?random=10",
-    isFavorite: false,
-  },
-  {
-    id: "11",
     name: "Phòng tại Thành phố Hồ Chí Minh",
-    price: "₫1.304.308",
+    price: "₫600.000",
     nights: 2,
     rating: 5.0,
-    image: "https://picsum.photos/300/200?random=11",
-    isFavorite: false,
-  },
-  {
-    id: "12",
-    name: "Phòng tại Thành phố Hồ Chí Minh",
-    price: "₫1.538.629",
-    nights: 2,
-    rating: 4.85,
-    image: "https://picsum.photos/300/200?random=12",
-    isFavorite: false,
-  },
-  {
-    id: "13",
-    name: "Phòng tại Thành phố Hồ Chí Minh",
-    price: "₫1.024.777",
-    nights: 2,
-    rating: 4.92,
-    image: "https://picsum.photos/300/200?random=13",
-    isFavorite: false,
-  },
-  {
-    id: "14",
-    name: "Căn hộ tại Thành phố Hồ Chí Minh",
-    price: "₫1.025.925",
-    nights: 2,
-    rating: 4.81,
-    image: "https://picsum.photos/300/200?random=14",
+    image: "https://picsum.photos/id/1032/400/300",
     isFavorite: false,
   },
 ];

@@ -34,7 +34,7 @@ import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
 import AdminLayout from "@/pages/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
-import ProtectedRoute from "@/components/common/ProtectedRoute";
+// import ProtectedRoute from "@/components/common/ProtectedRoute";
 
 
 
@@ -49,9 +49,9 @@ const routes: RouteObject[] = [
       {
         path: "verify-otp",
         element: (
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <OtpPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         ),
       },
       { path: "verify-email", element: <VerifyEmailPage /> },
