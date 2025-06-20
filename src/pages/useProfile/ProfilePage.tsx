@@ -1,26 +1,58 @@
-import {  useState } from "react";
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { fetchCurrentUser } from "@/store/slices/authSlice";
 import ProfileSidebar from "@/components/useProfile/profileSidebar";
 import ProfileIntroductionCard from "@/components/useProfile/ProfileIntroductionCard";
 import CompleteProfilePrompt from "@/components/useProfile/CompleteProfilePrompt";
 import { Button } from "@/components/ui/button";
 import PastTrip from "@/components/useProfile/PastTrip";
 import Connection from "@/components/useProfile/Connection";
-import { Link } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
+import { RootState } from "@/store";
+import { useAppDispatch } from "@/hooks/useRedux";
+import toast from "react-hot-toast";
 export default function UserProfilePage() {
   const [activeSidebarItem, setActiveSidebarItem] = useState("introduction");
+  const dispatch = useAppDispatch();
+  const { user, loading, error } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const navigate = useNavigate();
+  useEffect(() => {
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
 
-  const userData = {
-    name: "Minh Quang",
-    role: "Khách",
-    avatarInitial: "M",
-    isVerified: true, 
-  };
+  useEffect(() => {
+    if (error) {
+      toast.error("Vui lòng đăng nhập"); 
+      setTimeout(() => {
+        navigate("/login"); 
+      }, 1000); 
+    }
+  }, [error, navigate]);
 
-  const handleSidebarSelect = (item : string ) => {
+  const handleSidebarSelect = (item: string) => {
     setActiveSidebarItem(item);
-
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-gray-500 text-lg">
+          Không tìm thấy thông tin người dùng
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -30,13 +62,12 @@ export default function UserProfilePage() {
           <ProfileSidebar
             activeItem={activeSidebarItem}
             onSelectItem={handleSidebarSelect}
-            avatarFallback="M"
+            avatarFallback={user.email?.toUpperCase()[0] || "U"}
           />
         </aside>
 
         {/* Main Content */}
         <main className="flex-1 lg:w-3/4 xl:w-4/5 lg:ml-[200px]">
-
           {activeSidebarItem === "introduction" && (
             <section aria-labelledby="introduction-section-title">
               <div className="flex items-center gap-2 mb-6">
@@ -59,13 +90,12 @@ export default function UserProfilePage() {
                 </Button>
               </div>
 
-              {/* Bố cục cho thẻ giới thiệu và thẻ hoàn tất hồ sơ */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-22 items-start">
-                <div className="md:col-span-12 lg:col-span-5 xl:col-span-4 w-[1200px] ">
+                <div className="md:col-span-12 lg:col-span-5 xl:col-span-4 w-[1200px]">
                   <ProfileIntroductionCard
-                    userName={userData.name}
-                    userRole={userData.role}
-                    avatarFallback={userData.avatarInitial}
+                    userName={user.name}
+                    userRole={user.role || "Khách"}
+                    avatarFallback={user.email?.toUpperCase()[0] || "U"}
                   />
                 </div>
                 <div className="md:col-span-12 lg:col-span-7 xl:col-span-5">
@@ -73,13 +103,10 @@ export default function UserProfilePage() {
                 </div>
               </div>
 
-              {/* Phần "Đánh giá đã giới thiệu" hoặc thông tin xác minh */}
               <div className="mt-10 pt-8 border-t border-gray-200">
                 <button
                   className="w-[200px] h-[50px] flex items-center space-x-2 hover:bg-gray-100 p-2 rounded-xl focus:outline-none"
-                  onClick={() => {
-                    console.log("Đánh giá tôi đã viết clicked");
-                  }}
+                  onClick={() => console.log("Đánh giá tôi đã viết clicked")}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
