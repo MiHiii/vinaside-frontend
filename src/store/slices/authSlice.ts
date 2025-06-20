@@ -11,6 +11,7 @@ const initialState: AuthState = {
   error: null,
   verifyStatus: null,
   verifyEmail: null,
+  isCheckingAuth: true,
 };
 
 // Action verifyEmailByToken
@@ -163,6 +164,21 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+export const fetchCurrentUser = createAsyncThunk(
+  "auth/fetchCurrentUser",
+  async (_, thunkAPI) => {
+    try {
+      const { data } = await api.get("/auth/me");
+      return data;
+    } catch (err : unknown) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      return thunkAPI.rejectWithValue(
+        axiosErr.response?.data?.message || "Không lấy được user"
+      );
+    }
+  }
+);
+
 
 const authSlice = createSlice({
   name: "auth",
@@ -174,6 +190,7 @@ const authSlice = createSlice({
       state.token = null;
       state.verifyEmail = null;
       state.verifyStatus = null;
+       state.isCheckingAuth = false; 
     },
   },
   extraReducers: (builder) => {
@@ -279,6 +296,26 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.loading = true;
+        state.isCheckingAuth = true; // đang check user từ token
+        state.error = null;
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isCheckingAuth = false;
+        state.user = action.payload.data.user || null;
+      })
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        state.loading = false;
+        state.isCheckingAuth = false;
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem("access_token");
+        state.error = action.payload as string;
+      });
+      
+      
   },
 });
 

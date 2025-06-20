@@ -52,6 +52,8 @@ api.interceptors.request.use(
     const token = localStorage.getItem("access_token");
     if (token && config.headers) {
       config.headers["Authorization"] = `Bearer ${token}`;
+      console.log("[axios] Đính kèm token:", token, "URL:", config.url);
+      
     }
     return config;
   },

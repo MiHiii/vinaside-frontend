@@ -36,6 +36,7 @@ export default function PasswordField() {
                 transition
               "
                 type={showPassword ? "text" : "password"}
+                
                 placeholder="********"
                 {...field}
               />

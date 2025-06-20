@@ -1,3 +1,4 @@
+
 import { User } from "./user";
 
 export interface AuthState {
@@ -6,7 +7,8 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   verifyStatus: "idle" | "loading" | "succeeded" | "failed" | null;
-  verifyEmail: string | null; 
+  verifyEmail: string | null;
+  isCheckingAuth: boolean;
 }
 
 // Khi đăng ký hoặc verify OTP, backend thường trả về như sau:
