@@ -30,6 +30,7 @@ import Hosting from "@/pages/hosting/Hosting";
 import Listing from "@/pages/hosting/Listing";
 import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLayout";
 import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
+import Messages from "@/components/host/Messages";
 // Admin Pages
 import AdminLayout from "@/pages/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
@@ -104,6 +105,7 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <Hosting /> },
       { path: "listings", element: <Listing /> },
+      { path: "messages", element: <Messages /> },
     ],
   },
 

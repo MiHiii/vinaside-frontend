@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { LogoPerson } from "../LogoPerson";
+import Messages from "@/components/host/Messages";
 
 export function HostHeader() {
   return (
@@ -70,7 +71,7 @@ export function HostHeader() {
             </li>
             <li>
               <NavLink
-                to="/messages"
+                to="/hosting/messages"
                 className={({ isActive }) =>
                   `whitespace-nowrap relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-black after:transition-all ${
                     isActive

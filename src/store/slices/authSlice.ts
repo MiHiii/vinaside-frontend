@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { AxiosError } from "axios";
-import { AuthState,  LoginResponse, RegisterResponse } from "@/types/auth";
+import { AuthState, LoginResponse, RegisterResponse } from "@/types/auth";
+import { User } from "@/types/user";
 import { api } from "@/services/api";
 
-
 const initialState: AuthState = {
-  user: null,
+  user: JSON.parse(localStorage.getItem("user") || "null"),
   token: localStorage.getItem("access_token") || null,
   loading: false,
   error: null,
@@ -108,10 +108,6 @@ export const login = createAsyncThunk(
   ) => {
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      // Lưu vào localStorage (nếu muốn)
-      if (data?.data?.access_token) {
-        localStorage.setItem("access_token", data.data.access_token);
-      }
       return data;
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<{ message?: string }>;
@@ -163,17 +159,22 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
-
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
     logout: (state) => {
       state.user = null;
-      localStorage.removeItem("access_token");
       state.token = null;
       state.verifyEmail = null;
       state.verifyStatus = null;
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("user");
+    },
+    setUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+      localStorage.setItem("user", JSON.stringify(action.payload));
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -186,9 +187,15 @@ const authSlice = createSlice({
         login.fulfilled,
         (state, action: PayloadAction<LoginResponse>) => {
           state.loading = false;
-          // Cập nhật thông tin khi đăng nhập thành công
-          state.user = action.payload.data.user || null; // Lưu thông tin user
-          state.token = action.payload.data.access_token || null; // Lưu access token
+          if (action.payload.success) {
+            state.user = action.payload.data.user;
+            state.token = action.payload.data.access_token;
+            // Lưu vào localStorage
+            localStorage.setItem("access_token", action.payload.data.access_token);
+            localStorage.setItem("user", JSON.stringify(action.payload.data.user));
+          } else {
+            state.error = action.payload.message || "Login failed";
+          }
         }
       )
       .addCase(login.rejected, (state, action) => {
@@ -282,5 +289,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setUser } = authSlice.actions;
 export default authSlice.reducer;
