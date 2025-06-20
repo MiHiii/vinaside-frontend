@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { AxiosError } from "axios";
-import { AuthState,  LoginResponse, RegisterResponse } from "@/types/auth";
+import { AuthState, LoginResponse, RegisterResponse } from "@/types/auth";
 import { api } from "@/services/api";
-
 
 const initialState: AuthState = {
   user: null,
@@ -142,10 +141,7 @@ export const forgotPassword = createAsyncThunk(
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async (
-    {
-      token,
-      newPassword,
-    }: { token: string; newPassword: string },
+    { token, newPassword }: { token: string; newPassword: string },
     thunkAPI
   ) => {
     try {
@@ -158,6 +154,39 @@ export const resetPassword = createAsyncThunk(
       const axiosErr = err as AxiosError<{ message?: string }>;
       return thunkAPI.rejectWithValue(
         axiosErr.response?.data?.message || "Đặt lại mật khẩu thất bại"
+      );
+    }
+  }
+);
+
+//profile
+export const fetchCurrentUser = createAsyncThunk(
+  "auth/fetchCurrentUser",
+  async (_, thunkAPI) => {
+    try {
+      const { data } = await api.get("/auth/me"); 
+    
+      return data;
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      return thunkAPI.rejectWithValue(
+        axiosErr.response?.data?.message || "Không lấy được user"
+      );
+    }
+  }
+);
+// DELETE-ACTION: Xoá tài khoản
+  // authSlice.ts
+export const deleteAccount = createAsyncThunk(
+  "auth/deleteAccount",
+  async (_, thunkAPI) => {
+    try {
+      await api.delete("/auth/delete-account");
+      return true;
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      return thunkAPI.rejectWithValue(
+        axiosErr.response?.data?.message || "Xóa tài khoản thất bại"
       );
     }
   }
@@ -279,6 +308,44 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+      //profile
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        console.log("User payload:", action.payload);
+        state.loading = false;
+        state.user = action.payload.data.user || null;
+      })
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        console.log(
+          "[fetchCurrentUser] rejected",
+          action.error,
+          action.payload
+        );
+        state.loading = false;
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem("access_token");
+        state.error = action.payload as string;
+      })
+      // Xoá tài khoản
+    .addCase(deleteAccount.pending, (state) => {
+      state.loading = true;
+    })
+    .addCase(deleteAccount.fulfilled, (state) => {
+      state.loading = false;
+      state.user = null;
+      state.token = null;
+      localStorage.removeItem("access_token");
+    })
+    .addCase(deleteAccount.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+     
+      
   },
 });
 

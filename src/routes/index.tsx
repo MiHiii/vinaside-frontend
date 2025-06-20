@@ -31,7 +31,7 @@ import Listing from "@/pages/hosting/Listing";
 import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLayout";
 import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
 // Admin Pages
-import AdminLayout from "@/pages/admin/AdminLayout";
+import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
 // import ProtectedRoute from "@/components/common/ProtectedRoute";
@@ -57,7 +57,6 @@ const routes: RouteObject[] = [
       { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
-
       { path: "profilepage", element: <UserProfilePage /> },
       { path: "past-trip", element: <PastTrip /> },
       { path: "connection", element: <Connection /> },

@@ -1,9 +1,9 @@
-import ProfilePage from "@/components/useProfile/EditProfile";
+import EditProfiles from "@/components/useProfile/EditProfile";
 
 export default function EditProfile() {
       return (
             <div>
-                  <ProfilePage/>
+                  <EditProfiles/>
             </div>
       );
 }
