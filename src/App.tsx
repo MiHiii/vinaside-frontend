@@ -23,12 +23,8 @@ function App() {
   }, [token, dispatch]);
 
   if (isCheckingAuth) {
-    return <div>Đang xác thực tài khoản...</div>; // hoặc splash/loading screen
+    return <div>Đang xác thực tài khoản...</div>;
   }
-
- 
-
-
   return (
     <>
       <RouterProvider router={router} />

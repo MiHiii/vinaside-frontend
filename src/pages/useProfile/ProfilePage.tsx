@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { fetchCurrentUser } from "@/store/slices/authSlice";
 import ProfileSidebar from "@/components/useProfile/profileSidebar";
 import ProfileIntroductionCard from "@/components/useProfile/ProfileIntroductionCard";
 import CompleteProfilePrompt from "@/components/useProfile/CompleteProfilePrompt";
@@ -9,25 +8,20 @@ import PastTrip from "@/components/useProfile/PastTrip";
 import Connection from "@/components/useProfile/Connection";
 import { Link, useNavigate } from "react-router-dom";
 import { RootState } from "@/store";
-import { useAppDispatch } from "@/hooks/useRedux";
 import toast from "react-hot-toast";
 export default function UserProfilePage() {
   const [activeSidebarItem, setActiveSidebarItem] = useState("introduction");
-  const dispatch = useAppDispatch();
   const { user, loading, error } = useSelector(
     (state: RootState) => state.auth
   );
   const navigate = useNavigate();
-  useEffect(() => {
-    dispatch(fetchCurrentUser());
-  }, [dispatch]);
 
   useEffect(() => {
     if (error) {
-      toast.error("Vui lòng đăng nhập"); 
+      toast.error("Vui lòng đăng nhập");
       setTimeout(() => {
-        navigate("/login"); 
-      }, 1000); 
+        navigate("/login");
+      }, 1000);
     }
   }, [error, navigate]);
 
@@ -42,7 +36,6 @@ export default function UserProfilePage() {
       </div>
     );
   }
-
 
   if (!user) {
     return (
