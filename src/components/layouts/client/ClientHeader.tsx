@@ -11,7 +11,7 @@ import {
 import { useMobile } from "@/hooks/useMobile";
 import ClientSearch from "../../common/ClientSearch";
 import { Globe, Menu } from "lucide-react";
-import ThemeToggle from "../common/ThemeToggle";
+import ThemeToggle from "../../common/ThemeToggle";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { deleteAccount, logout } from "@/store/slices/authSlice";
 import toast from "react-hot-toast";
@@ -78,7 +78,7 @@ export default function ClientHeader() {
           {!isMobile &&
             (user ? (
               <div className="flex items-center gap-4">
-                <Link to={"#"}>
+                <Link to={""}>
                   <Button
                     variant="ghost"
                     className="rounded-full text-sm font-medium transition hover:bg-gray-100 hover:text-rose-500"

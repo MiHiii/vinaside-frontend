@@ -1,5 +1,5 @@
 import { LayoutPanelLeft, Bell } from "lucide-react";
-import ThemeToggle from "../layouts/common/ThemeToggle";
+import ThemeToggle from "../common/ThemeToggle";
 
 interface HeaderProps {
   collapsed: boolean;
@@ -54,7 +54,7 @@ export function Header({ collapsed, onToggleSidebar }: HeaderProps) {
         </div>
 
         {/* Theme toggle */}
-      <ThemeToggle/>
+        <ThemeToggle />
 
         {/* Chuông thông báo */}
         <button className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 relative">
