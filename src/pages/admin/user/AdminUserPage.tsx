@@ -16,23 +16,32 @@ const AdminUserPage: React.FC = () => {
   const error = useSelector(selectUsersError);
   const total = useSelector(selectUsersTotal);
 
-  // State cho filter và phân trang
-  const [filterParams, setFilterParams] = useState <QueryUserDto>({});
-  const [page, setPage] = useState(1);
 
-  // Xử lý áp dụng filter mới
-  const handleFilter = (params: QueryUserDto) => {
-    setFilterParams(params);
-    setPage(1); // Khi lọc reset về trang 1
+  const [filterParams, setFilterParams] = useState<QueryUserDto>({});
+  const [page, setPage] = useState(1);
+  const handleFilter = (params: {
+    search?: string;
+    role?: string;
+    is_verified?: string;
+    isDeleted?: string;
+  }) => {
+    const mappedParams: QueryUserDto = {
+      ...params,
+      isDeleted:
+        params.isDeleted === "true"
+          ? true
+          : params.isDeleted === "false"
+          ? false
+          : undefined,
+    };
+    setFilterParams(mappedParams);
+    setPage(1); 
   };
 
-  // Xử lý reset filter
   const handleReset = () => {
     setFilterParams({});
     setPage(1);
   };
-
-  // Fetch users khi filter hoặc page thay đổi
   useEffect(() => {
     dispatch(
       fetchUsers({

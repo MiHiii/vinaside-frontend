@@ -47,3 +47,5 @@ export interface QueryUserDto {
   isDeleted?: boolean  ;
   select?: string;
 }
+
+

@@ -3,10 +3,9 @@ import { Button } from "@/components/ui/button";
 import { User } from "@/types/user";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { useAppDispatch } from "@/hooks/useRedux";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { deleteUser } from "@/store/slices/userSlice";
 import { getErrorMessage } from "@/helper/message";
-
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -25,8 +24,20 @@ interface Props {
 
 const UserTableRow: React.FC<Props> = ({ user }) => {
   const dispatch = useAppDispatch();
+  const currentUserId = useAppSelector(
+    (state) => state.auth.user?._id || state.auth.user?.id
+  );
+  console.log("Current User ID:", currentUserId);
 
   const handleDelete = async () => {
+    if (String(user._id) === String(currentUserId)) {
+      toast.error("Bạn không thể xóa tài khoản của chính mình!");
+      return;
+    }
+    if (!user._id) {
+      toast.error("Không xác định được ID người dùng để xóa!");
+      return;
+    }
     try {
       await dispatch(deleteUser(user._id)).unwrap();
       toast.success("Xóa người dùng thành công!");
@@ -85,7 +96,7 @@ const UserTableRow: React.FC<Props> = ({ user }) => {
               Xóa
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[340px] bg-white rounded-2xl shadow-xl z-50 p-6">
             <AlertDialogHeader>
               <AlertDialogTitle>
                 Bạn có chắc chắn muốn xóa người dùng này?

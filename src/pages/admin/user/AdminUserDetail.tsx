@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { useAppDispatch } from "@/hooks/useRedux";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
   fetchUserById,
   updateUser,
@@ -15,7 +15,7 @@ import { UpdateUserDto, User } from "@/types/user";
 import UserAvatarAndStatus from "@/components/admin/user/UserAvatarAndStatus";
 import UserDetailView from "@/components/admin/user/UserDetailView";
 import UserEditForm from "@/components/admin/user/UserEditForm";
-
+import toast from "react-hot-toast";
 
 const getUpdatableFields = (form: Partial<UpdateUserDto>) => {
   const { name, phone, role, language, is_verified, isDeleted } = form;
@@ -29,6 +29,7 @@ const AdminUserDetail: React.FC = () => {
   const loading = useSelector(selectUsersLoading);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<Partial<UpdateUserDto>>({});
+  const currentUser = useAppSelector((state) => state.auth.user?._id || state.auth.user?.id);
 
   useEffect(() => {
     if (userId) dispatch(fetchUserById(userId));
@@ -60,6 +61,10 @@ const AdminUserDetail: React.FC = () => {
   };
 
   const handleToggleStatus = () => {
+    if (user.id === currentUser) {
+      toast.error("Bạn không thể khóa tài khoản của chính mình!");
+      return;
+    }
     dispatch(toggleUserStatus(user.id)).then(() =>
       dispatch(fetchUserById(user.id))
     );
