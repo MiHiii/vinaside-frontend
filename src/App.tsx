@@ -1,20 +1,33 @@
 import { useEffect } from "react";
-import { useAppDispatch } from "@/hooks/useRedux";
-import { fetchCurrentUser } from "@/store/slices/authSlice";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import { fetchCurrentUser, logout } from "@/store/slices/authSlice";
 import { RouterProvider } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { router } from "./routes";
+import { RootState } from "./store";
 
 function App() {
   const dispatch = useAppDispatch();
 
-  // Tự động fetch user khi có token trong localStorage
+  const token = useAppSelector((state: RootState) => state.auth.token);
+  const isCheckingAuth = useAppSelector(
+    (state: RootState) => state.auth.isCheckingAuth
+  );
+
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
     if (token) {
       dispatch(fetchCurrentUser());
+    } else {
+      dispatch(logout()); 
     }
-  }, [dispatch]);
+  }, [token, dispatch]);
+
+  if (isCheckingAuth) {
+    return <div>Đang xác thực tài khoản...</div>; // hoặc splash/loading screen
+  }
+
+ 
+
 
   return (
     <>

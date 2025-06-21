@@ -20,6 +20,7 @@ export default function NameField() {
           <FormLabel>Họ Tên</FormLabel>
           <FormControl>
             <Input
+             
               placeholder="Họ Tên"
               className="
               bg-[hsl(var(--card))]
@@ -30,6 +31,7 @@ export default function NameField() {
               focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]
               transition
             "
+            
               {...field}
             />
           </FormControl>

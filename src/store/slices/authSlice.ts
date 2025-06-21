@@ -10,6 +10,7 @@ const initialState: AuthState = {
   error: null,
   verifyStatus: null,
   verifyEmail: null,
+  isCheckingAuth: true,
 };
 
 // Action verifyEmailByToken
@@ -159,7 +160,7 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
-//profile
+
 export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
   async (_, thunkAPI) => {
@@ -175,8 +176,7 @@ export const fetchCurrentUser = createAsyncThunk(
     }
   }
 );
-// DELETE-ACTION: Xoá tài khoản
-  // authSlice.ts
+
 export const deleteAccount = createAsyncThunk(
   "auth/deleteAccount",
   async (_, thunkAPI) => {
@@ -193,6 +193,7 @@ export const deleteAccount = createAsyncThunk(
 );
 
 
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -203,6 +204,7 @@ const authSlice = createSlice({
       state.token = null;
       state.verifyEmail = null;
       state.verifyStatus = null;
+       state.isCheckingAuth = false; 
     },
   },
   extraReducers: (builder) => {
@@ -308,23 +310,19 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      //profile
       .addCase(fetchCurrentUser.pending, (state) => {
         state.loading = true;
+        state.isCheckingAuth = true; // đang check user từ token
         state.error = null;
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
-        console.log("User payload:", action.payload);
         state.loading = false;
+        state.isCheckingAuth = false;
         state.user = action.payload.data.user || null;
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {
-        console.log(
-          "[fetchCurrentUser] rejected",
-          action.error,
-          action.payload
-        );
         state.loading = false;
+        state.isCheckingAuth = false;
         state.user = null;
         state.token = null;
         localStorage.removeItem("access_token");

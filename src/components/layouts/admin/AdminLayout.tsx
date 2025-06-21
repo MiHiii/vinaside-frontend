@@ -7,7 +7,7 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen  dark:bg-slate-950">
+    <div className="flex min-h-screen ">
       <Sidebar collapsed={collapsed} />
       <div className="flex-1 flex flex-col">
         <Header
