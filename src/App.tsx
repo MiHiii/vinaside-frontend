@@ -1,13 +1,14 @@
+import { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import { fetchCurrentUser, logout } from "@/store/slices/authSlice";
 import { RouterProvider } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { router } from "./routes";
-import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "./hooks/useRedux";
-import { fetchCurrentUser, logout } from "./store/slices/authSlice";
 import { RootState } from "./store";
 
 function App() {
   const dispatch = useAppDispatch();
+
   const token = useAppSelector((state: RootState) => state.auth.token);
   const isCheckingAuth = useAppSelector(
     (state: RootState) => state.auth.isCheckingAuth
@@ -21,13 +22,12 @@ function App() {
     }
   }, [token, dispatch]);
 
-
-
   if (isCheckingAuth) {
     return <div>Đang xác thực tài khoản...</div>; // hoặc splash/loading screen
   }
 
  
+
 
   return (
     <>
