@@ -57,8 +57,6 @@ const routes: RouteObject[] = [
       { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
-<<<<<<< HEAD
-
       {
         path: "profilepage",
         element: (
@@ -91,12 +89,6 @@ const routes: RouteObject[] = [
           </ProtectedRoute>
         ),
       },
-=======
-      { path: "profilepage", element: <UserProfilePage /> },
-      { path: "past-trip", element: <PastTrip /> },
-      { path: "connection", element: <Connection /> },
-      { path: "edit-profile", element: <EditProfile /> },
->>>>>>> cde4791bbeeb19b9d0e75f3b817f9ce70b4e2876
       { path: "room-detail", element: <RoomDeatil /> },
     ],
   },
