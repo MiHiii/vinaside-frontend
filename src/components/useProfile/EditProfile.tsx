@@ -12,8 +12,9 @@ import {
   ClockIcon,
   HeartIcon,
 } from "lucide-react";
+import { FiCamera } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
-import { ProfileFormDialog } from "./FormProflie"; // Điều chỉnh path nếu cần
+import { ProfileFormDialog } from "./FormProflie";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProfileTextareaDialog } from "./FormTextarea";
 import { Switch } from "@/components/ui/switch";
@@ -21,6 +22,9 @@ import { Plus } from "lucide-react";
 import { ProfileHobbyDialog } from "./ProfileHobby";
 import { NavLink } from "react-router-dom";
 import { useAppSelector } from "@/hooks/useRedux";
+import { useRef } from "react";
+import { uploadAvatar } from "@/utils/uploadAvatar ";
+import { ChangeEvent } from "react";
 const profileItems = [
   { text: "Nơi tôi từng theo học", icon: BookOpenIcon },
   { text: "Nơi tôi luôn muốn đến", icon: MapPinIcon },
@@ -41,6 +45,29 @@ export default function EditProfiles() {
   const [isIntroDialogOpen, setIsIntroDialogOpen] = useState(false);
   const [showEditButton, setShowEditButton] = useState(false);
   const [isHobbyDialogOpen, setIsHobbyDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const token = localStorage.getItem("access_token") || "";
+      const imageUrl = await uploadAvatar(file, token);
+      console.log("Upload thành công, ảnh mới:", imageUrl);
+      // Có thể cập nhật avatar mới ở đây (Redux hoặc state)
+    } catch (error) {
+      console.error("Lỗi upload:", (error as Error).message);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen flex justify-center items-start p-6 mt-10">
@@ -48,15 +75,33 @@ export default function EditProfiles() {
         {/* Left: Avatar */}
         <div className="flex flex-col items-center sm:items-start ml-10">
           <div className="relative mb-4">
-            <div className="w-50 h-50 bg-black text-white rounded-full flex items-center justify-center text-8xl font-bold relative">
-              {user ? user.email?.[0]?.toUpperCase() : "U"}
+            <div className="w-50 h-50  text-white rounded-full flex items-center justify-center text-8xl font-bold relative">
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt="Avatar"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                <span className="w-full h-full flex items-center justify-center rounded-full bg-black text-white text-8xl font-bold">
+                  {user?.email?.[0]?.toUpperCase() || "U"}
+                </span>
+              )}
 
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
               <Button
-                variant="secondary"
-                size="sm"
+                onClick={() => fileInputRef.current?.click()}
                 className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white text-gray-800 px-6 py-1 text-[16px] rounded-full shadow-md hover:bg-gray-100 transition"
+                disabled={isUploading}
               >
-                Thêm
+                <FiCamera className="mr-2" />
+                {isUploading ? "Đang tải lên..." : "Chỉnh sửa"}
               </Button>
             </div>
           </div>

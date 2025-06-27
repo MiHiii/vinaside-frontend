@@ -87,8 +87,18 @@ export default function ClientHeader() {
                   </Button>
                 </Link>
                 <Link to={"/profilepage"}>
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white font-bold text-lg">
-                    {user.email?.[0]?.toUpperCase() || "U"}
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-lg">
+                     {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt="Avatar"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                <span className="w-full h-full flex items-center justify-center rounded-full bg-black text-white text-8xl font-bold">
+                  {user?.email?.[0]?.toUpperCase() || "U"}
+                </span>
+              )}
                   </div>
                 </Link>
               </div>
