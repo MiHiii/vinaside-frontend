@@ -55,6 +55,7 @@ export default function UserProfilePage() {
           <ProfileSidebar
             activeItem={activeSidebarItem}
             onSelectItem={handleSidebarSelect}
+            avatarUrl={user.avatar_url}
             avatarFallback={user.email?.toUpperCase()[0] || "U"}
           />
         </aside>
@@ -88,6 +89,7 @@ export default function UserProfilePage() {
                   <ProfileIntroductionCard
                     userName={user.name}
                     userRole={user.role || "Khách"}
+                    avatarUrl={user.avatar_url}
                     avatarFallback={user.email?.toUpperCase()[0] || "U"}
                   />
                 </div>

@@ -39,6 +39,7 @@ import ProtectedRoute from "@/components/common/ProtectedRoute";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import AdminUserDetail from "@/pages/admin/user/AdminUserDetail";
 import CreateUserPage from "@/pages/admin/user/CreateUserPage";
+import PaymentPage from "@/pages/payment/PaymentPage";
 
 const routes: RouteObject[] = [
   {
@@ -90,7 +91,16 @@ const routes: RouteObject[] = [
         ),
       },
       { path: "room-detail", element: <RoomDeatil /> },
+     
     ],
+  },
+  {
+    path: "/payment",
+    element: (
+      <ProtectedRoute>
+        <PaymentPage />
+      </ProtectedRoute>
+    ),
   },
 
   // Các route trở thành host, có thể cho phép tất cả user đăng nhập, hoặc chỉ một số role, nếu cần thì wrap bằng ProtectedRoute luôn
