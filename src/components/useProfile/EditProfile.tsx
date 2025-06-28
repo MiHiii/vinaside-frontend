@@ -21,10 +21,15 @@ import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
 import { ProfileHobbyDialog } from "./ProfileHobby";
 import { NavLink } from "react-router-dom";
-import { useAppSelector } from "@/hooks/useRedux";
+import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import { useRef } from "react";
-import { uploadAvatar } from "@/utils/uploadAvatar ";
+import { uploadUserAvatar } from "@/store/slices/userSlice";
 import { ChangeEvent } from "react";
+import toast from "react-hot-toast";
+import { fetchCurrentUser } from "@/store/slices/authSlice";
+// import { createAsyncThunk } from "@reduxjs/toolkit";
+// import { api } from "@/services/api";
+import { updateMyAvatar } from "@/store/slices/userSlice";
 const profileItems = [
   { text: "Nơi tôi từng theo học", icon: BookOpenIcon },
   { text: "Nơi tôi luôn muốn đến", icon: MapPinIcon },
@@ -38,8 +43,24 @@ const profileItems = [
   { text: "Thứ mà tôi luôn nghĩ đến", icon: HeartIcon },
 ];
 
+// export const updateMyAvatar = createAsyncThunk<
+//     unknown,
+//   { avatar_url: string },
+//   { rejectValue: string }
+// >("users/updateMyAvatar", async (data, { rejectWithValue }) => {
+//   try {
+//     const response = await api.patch("/users/profile/avatar", data);
+//     return response.data;
+//   } catch (error) {
+//     const err = error as { response?: { data?: { message?: string } } };
+//     return rejectWithValue(err?.response?.data?.message || "Cập nhật avatar thất bại!");
+//   }
+// });
+
 export default function EditProfiles() {
   const user = useAppSelector((state) => state.auth.user);
+  const { uploadAvatarLoading, uploadAvatarError } = useAppSelector((state) => state.users);
+  const dispatch = useAppDispatch();
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [isIntroDialogOpen, setIsIntroDialogOpen] = useState(false);
@@ -47,25 +68,24 @@ export default function EditProfiles() {
   const [isHobbyDialogOpen, setIsHobbyDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [isUploading, setIsUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user?.avatar_url);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const token = localStorage.getItem("access_token") || "";
-      const imageUrl = await uploadAvatar(file, token);
-      console.log("Upload thành công, ảnh mới:", imageUrl);
-      // Có thể cập nhật avatar mới ở đây (Redux hoặc state)
-    } catch (error) {
-      console.error("Lỗi upload:", (error as Error).message);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    // Gọi upload thunk
+    const result = await dispatch(uploadUserAvatar(file));
+    if (uploadUserAvatar.fulfilled.match(result)) {
+      const url = result.payload;
+      await dispatch(updateMyAvatar({ avatar_url: url }));
+      await dispatch(fetchCurrentUser()); // Đồng bộ lại user hiện tại
+      setAvatarPreview(url); // Set lại preview bằng url thực tế từ cloud
+      toast.success("Cập nhật ảnh đại diện thành công!");
+    } else {
+      toast.error((result.payload as string) || "Upload avatar thất bại!");
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -78,7 +98,7 @@ export default function EditProfiles() {
             <div className="w-50 h-50  text-white rounded-full flex items-center justify-center text-8xl font-bold relative">
               {user?.avatar_url ? (
                 <img
-                  src={user.avatar_url}
+                  src={avatarPreview}
                   alt="Avatar"
                   className="w-full h-full rounded-full object-cover"
                 />
@@ -98,12 +118,15 @@ export default function EditProfiles() {
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white text-gray-800 px-6 py-1 text-[16px] rounded-full shadow-md hover:bg-gray-100 transition"
-                disabled={isUploading}
+                disabled={uploadAvatarLoading}
               >
                 <FiCamera className="mr-2" />
-                {isUploading ? "Đang tải lên..." : "Chỉnh sửa"}
+                {uploadAvatarLoading ? "Đang tải lên..." : "Chỉnh sửa"}
               </Button>
             </div>
+            {uploadAvatarError && (
+              <div className="text-sm text-red-500 mt-2">{uploadAvatarError}</div>
+            )}
           </div>
         </div>
 
