@@ -1,14 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import themeReducer from "./slices/themeSlice";
-import usersReducer from "./slices/userSlice"; // Nên đổi tên file thành usersSlice.ts cho thống nhất
+import usersReducer from "./slices/userSlice";
+import listingReducer from "./slices/listingSlice";
+import bookingReducer from "./slices/bookingSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     theme: themeReducer,
     users: usersReducer,
-
+    listing: listingReducer,
+    booking: bookingReducer,
   },
 });
 

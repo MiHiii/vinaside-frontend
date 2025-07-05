@@ -1,11 +1,27 @@
-// Định nghĩa kiểu cho props
-type PriceDetailModalProps = {
+import React from "react";
+
+interface PriceDetailModalProps {
   open: boolean;
   onClose: () => void;
-};
+  pricePerNight: number;
+  nights: number;
+  discount: number;
+}
 
-const PriceDetailModal: React.FC<PriceDetailModalProps> = ({ open, onClose }) => {
+const PriceDetailModal: React.FC<PriceDetailModalProps> = ({
+  open,
+  onClose,
+  pricePerNight,
+  nights,
+  discount,
+}) => {
   if (!open) return null;
+
+  const totalBeforeDiscount = pricePerNight * nights;
+  const serviceFee = 16500;
+  const totalAfterDiscount = totalBeforeDiscount - discount;
+  const totalWithFee = totalAfterDiscount * 1.08 + serviceFee;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
@@ -13,34 +29,42 @@ const PriceDetailModal: React.FC<PriceDetailModalProps> = ({ open, onClose }) =>
     >
       <div
         className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 relative"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <button
           className="absolute top-5 right-6 text-2xl text-gray-400 hover:text-black"
           onClick={onClose}
-          aria-label="Đóng"
         >
           ×
         </button>
         <h2 className="text-lg font-semibold text-center mb-6">Chi tiết giá</h2>
         <div className="space-y-3 text-base">
-          <div>2 đêm · 1 – 3 thg 8</div>
+          <div>{nights} đêm</div>
           <div className="flex justify-between">
             <span>Giá</span>
-            <span>₫700.000</span>
+            <span>₫{totalBeforeDiscount.toLocaleString()}</span>
+          </div>
+          {discount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-green-600">Giảm giá</span>
+              <span className="text-green-600">
+                -₫{discount.toLocaleString()}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span>Phí dịch vụ</span>
+            <span>₫{serviceFee.toLocaleString()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-green-600">Giảm giá cho khách đặt sớm</span>
-            <span className="text-green-600">-₫105.000</span>
-          </div>
-          <div className="text-gray-500 text-sm">
-            L&L Nest có ưu đãi giảm giá cho thời gian ở được đặt trước 30 ngày trở lên.
+            <span>Thuế (8%)</span>
+            <span>₫{(totalAfterDiscount * 0.08).toLocaleString()}</span>
           </div>
           <div className="flex justify-between font-semibold border-t pt-4 mt-4">
             <span>
               Tổng <span className="underline">VND</span>
             </span>
-            <span>₫595.000</span>
+            <span>₫{totalWithFee.toLocaleString()}</span>
           </div>
         </div>
       </div>

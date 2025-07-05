@@ -90,7 +90,7 @@ const routes: RouteObject[] = [
           </ProtectedRoute>
         ),
       },
-      { path: "room-detail", element: <RoomDeatil /> },
+      { path: "list/:id", element: <RoomDeatil /> },
      
     ],
   },

@@ -3,9 +3,26 @@ import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/hooks/useRedux";
+import { fetchListings, fetchListingById } from "@/store/slices/listingSlice";
+import type { RootState } from "@/store";
+import { IListing } from "@/types/listing";
+import { useNavigate } from "react-router-dom";
 
 export default function HomePage() {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  const { listings, loading, error } = useSelector(
+    (state: RootState) => state.listing
+  );
+
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    dispatch(fetchListings({ limit: 10 }));
+  }, [dispatch]);
 
   const scroll = (
     ref: React.RefObject<HTMLDivElement | null>,
@@ -17,6 +34,15 @@ export default function HomePage() {
       left: direction === "left" ? -scrollAmount : scrollAmount,
       behavior: "smooth",
     });
+  };
+
+  const handleViewDetail = async (id: string) => {
+    try {
+      await dispatch(fetchListingById(id));
+      navigate(`/list/${id}`);
+    } catch (error) {
+      console.error("Lỗi khi lấy chi tiết listing:", error);
+    }
   };
 
   return (
@@ -51,44 +77,55 @@ export default function HomePage() {
         className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {airbnbProperties.map((property) => (
-          <PropertyCard key={property.id} property={property} />
-        ))}
+        {loading && (
+          <p className="text-muted-foreground">Đang tải dữ liệu...</p>
+        )}
+        {error && <p className="text-red-500">{error}</p>}
+        {!loading &&
+          !error &&
+          listings.map((property) => (
+            <PropertyCard
+              key={property._id}
+              property={property}
+              onViewDetail={handleViewDetail}
+            />
+          ))}
       </div>
     </div>
   );
 }
 
-interface Property {
-  id: string;
-  name: string;
-  price: string;
-  nights: number;
-  rating: number;
-  image: string;
-  isFavorite: boolean;
-}
-
-function PropertyCard({ property }: { property: Property }) {
-  // Wishlist state giả lập
-  const [liked, setLiked] = React.useState(property.isFavorite);
+function PropertyCard({
+  property,
+  onViewDetail,
+}: {
+  property: IListing;
+  onViewDetail: (id: string) => void;
+}) {
+  const [liked, setLiked] = React.useState(property.is_verified);
+  const imageUrl = property.images?.[0]?.startsWith("http")
+    ? property.images[0]
+    : `https://yourcdn.com${property.images?.[0]}`;
 
   return (
-    <Card className="min-w-[280px] max-w-[280px] rounded-2xl bg-card border-none shadow hover:shadow-lg transition">
+    <Card
+      onClick={() => onViewDetail(property._id)}
+      className="min-w-[280px] max-w-[280px] rounded-2xl bg-card border-none shadow hover:shadow-lg transition cursor-pointer"
+    >
       <div className="relative">
-        {/* Ảnh phòng */}
         <img
-          src={property.image}
-          alt={property.name}
+          src={imageUrl || "https://placehold.co/400x300"}
+          alt={property.title}
           className="h-[220px] w-full object-cover rounded-2xl"
         />
-        {/* Badge */}
         <Badge className="absolute top-3 left-3 bg-muted text-foreground font-medium rounded-xl shadow px-3 py-1 backdrop-blur">
           Được khách yêu thích
         </Badge>
-        {/* Nút tim thả wishlist */}
         <button
-          onClick={() => setLiked((v) => !v)}
+          onClick={(e) => {
+            e.stopPropagation(); // để không trigger onClick Card
+            setLiked((v) => !v);
+          }}
           className="absolute top-3 right-3 rounded-full bg-muted/80 p-2 shadow hover:bg-muted"
         >
           <Heart
@@ -101,84 +138,18 @@ function PropertyCard({ property }: { property: Property }) {
       <CardContent className="p-3 pb-2">
         <div className="flex justify-between items-center gap-2 mb-1">
           <h3 className="font-semibold text-base truncate text-card-foreground">
-            {property.name}
+            {property.title}
           </h3>
           <div className="flex items-center gap-1 text-base font-medium text-card-foreground">
             <span>★</span>
-            <span>{property.rating.toFixed(property.rating % 1 ? 2 : 1)}</span>
+            <span>{property.price_per_night}</span>
           </div>
         </div>
         <div className="text-[15px] text-muted-foreground mb-0.5">
-          {property.price} cho {property.nights} đêm
+          {property.price_per_night.toLocaleString()}₫ cho{" "}
+          {property.guests ?? 2} khách
         </div>
       </CardContent>
     </Card>
   );
 }
-
-// Data giống hình
-const airbnbProperties: Property[] = [
-  {
-    id: "1",
-    name: "Phòng tại Quận 3",
-    price: "₫880.000",
-    nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/id/1018/400/300",
-    isFavorite: true,
-  },
-  {
-    id: "2",
-    name: "Phòng tại Thành phố Hồ Chí Minh",
-    price: "₫560.000",
-    nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/id/1021/400/300",
-    isFavorite: false,
-  },
-  {
-    id: "3",
-    name: "Phòng chung tại Thành phố Hồ Chí Minh",
-    price: "₫323.935",
-    nights: 2,
-    rating: 4.86,
-    image: "https://picsum.photos/id/1025/400/300",
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    name: "Phòng tại Tân Phú district",
-    price: "₫798.824",
-    nights: 2,
-    rating: 4.87,
-    image: "https://picsum.photos/id/1027/400/300",
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    name: "Nơi ở tại Thành phố Hồ Chí Minh",
-    price: "₫776.000",
-    nights: 2,
-    rating: 4.97,
-    image: "https://picsum.photos/id/1035/400/300",
-    isFavorite: false,
-  },
-  {
-    id: "6",
-    name: "Nơi ở tại Thành phố Hồ Chí Minh",
-    price: "₫910.550",
-    nights: 2,
-    rating: 4.94,
-    image: "https://picsum.photos/id/1033/400/300",
-    isFavorite: false,
-  },
-  {
-    id: "7",
-    name: "Phòng tại Thành phố Hồ Chí Minh",
-    price: "₫600.000",
-    nights: 2,
-    rating: 5.0,
-    image: "https://picsum.photos/id/1032/400/300",
-    isFavorite: false,
-  },
-];
