@@ -1,16 +1,17 @@
 import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import {  useSelector } from "react-redux";
 import { fetchBookingStatisticsOverview } from "@/store/slices/bookingSlice";
 import { RootState } from "@/store";
+import { useAppDispatch } from "@/hooks/useRedux";
 
 const BookingDashboard: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { statisticsOverview, loading, error } = useSelector(
     (state: RootState) => state.booking
   );
 
   useEffect(() => {
-    dispatch(fetchBookingStatisticsOverview() as any);
+    dispatch(fetchBookingStatisticsOverview());
   }, [dispatch]);
 
   if (loading) return <p>Đang tải...</p>;

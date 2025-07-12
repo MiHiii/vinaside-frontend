@@ -52,6 +52,13 @@ export default function PaymentLayout() {
                 guestCount={guestCount}
                 nights={nights}
                 totalPrice={totalPrice}
+                bookingId={searchParams.get("bookingId") || ""} 
+                propertyId={
+                  typeof listing.propertyId === "object"
+                    ? listing.propertyId._id
+                    : listing.propertyId || ""
+                }
+                bookedDates={[]}  
               />
             ) : (
               <p>Đang tải thông tin đặt chỗ...</p>
