@@ -43,19 +43,6 @@ const profileItems = [
   { text: "Thứ mà tôi luôn nghĩ đến", icon: HeartIcon },
 ];
 
-// export const updateMyAvatar = createAsyncThunk<
-//     unknown,
-//   { avatar_url: string },
-//   { rejectValue: string }
-// >("users/updateMyAvatar", async (data, { rejectWithValue }) => {
-//   try {
-//     const response = await api.patch("/users/profile/avatar", data);
-//     return response.data;
-//   } catch (error) {
-//     const err = error as { response?: { data?: { message?: string } } };
-//     return rejectWithValue(err?.response?.data?.message || "Cập nhật avatar thất bại!");
-//   }
-// });
 
 export default function EditProfiles() {
   const user = useAppSelector((state) => state.auth.user);
