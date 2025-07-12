@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 export function DashboardContent() {
   const [tab, setTab] = useState<
@@ -9,7 +11,12 @@ export function DashboardContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <Link to="/admin/test-upload">
+          <Button variant="outline">Test Upload Images</Button>
+        </Link>
+      </div>
 
       {/* Tabs */}
       <div className="flex space-x-2  dark:bg-slate-800 p-1 rounded">

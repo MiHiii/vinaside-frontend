@@ -39,7 +39,25 @@ import ProtectedRoute from "@/components/common/ProtectedRoute";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import AdminUserDetail from "@/pages/admin/user/AdminUserDetail";
 import CreateUserPage from "@/pages/admin/user/CreateUserPage";
+
+
 import PaymentPage from "@/pages/payment/PaymentPage";
+//properties
+import PropertiesPage from "@/pages/admin/property/PropertiesPage";
+import CreatePropertyPage from "@/pages/admin/property/CreatePropertyPage";
+import EditPropertyPage from "@/pages/admin/property/EditPropertyPage";
+import PropertyDetailPage from "@/pages/admin/property/PropertyDetailPage";
+import PropertyDeletedPage from "@/pages/admin/property/PropertyDeletedPage";
+//listing
+import ListingsPage from "@/pages/admin/listing/ListingsPage";
+import EditListingPage from "@/pages/admin/listing/EditListingPage";
+import ListingDetailPage from "@/pages/admin/listing/ListingDetailPage";
+import CreateListingPage from "@/pages/admin/listing/CreateListingPage";
+import DeleteListingsPage from "@/pages/admin/listing/DeleteListingsPage";
+import AmenitiesPage from "@/pages/admin/amenities/AmenitiesPage";
+import CreateAmenities from "@/components/admin/amenities/CreateAmenities";
+import EditAmenities from "@/components/admin/amenities/EditAmenities";
+
 
 const routes: RouteObject[] = [
   {
@@ -167,6 +185,22 @@ const routes: RouteObject[] = [
       { path: "user", element: <AdminUserPage /> },
       { path: "user/:id", element: <AdminUserDetail /> },
       { path: "user/create", element: <CreateUserPage /> },
+      //listing
+      { path: "listings", element: <ListingsPage /> },
+      { path: "listings/create", element: <CreateListingPage /> },
+      { path: "listings/edit/:id", element: <EditListingPage /> },
+      { path: "listings/:id", element: <ListingDetailPage /> },
+      //properties
+      { path: "properties", element: <PropertiesPage /> },
+      { path: "listings/deleted", element: <DeleteListingsPage/> },
+      { path: "properties/create", element: <CreatePropertyPage /> },
+      { path: "properties/edit/:id", element: <EditPropertyPage /> },
+      { path: "properties/:id", element: <PropertyDetailPage /> },
+      { path: "properties/deleted", element: <PropertyDeletedPage /> },
+      //amenities
+      { path: "amenities", element: <AmenitiesPage /> },
+      { path: "amenities/create", element: <CreateAmenities /> },
+      { path: "amenities/edit/:id", element: <EditAmenities /> },
     ],
   },
 
