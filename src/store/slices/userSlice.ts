@@ -10,6 +10,9 @@ interface UserState {
   total: number;
   loading: boolean;
   error: string | null;
+  uploadAvatarLoading?: boolean;
+  uploadAvatarError?: string | null;
+  uploadedAvatarUrl?: string;
 }
 
 const initialState: UserState = {
@@ -18,6 +21,9 @@ const initialState: UserState = {
   total: 0,
   loading: false,
   error: null,
+  uploadAvatarLoading: false,
+  uploadAvatarError: null,
+  uploadedAvatarUrl: undefined,
 };
 
 // 1. Lấy danh sách users
@@ -127,6 +133,48 @@ export const deleteUser = createAsyncThunk(
     }
 );
 
+// 8. Upload user avatar
+export const uploadUserAvatar = createAsyncThunk<
+  string, // trả về url
+  File,
+  { rejectValue: string }
+>("users/uploadUserAvatar", async (file, { rejectWithValue }) => {
+  try {
+    const formData = new FormData();
+    formData.append("files", file);
+    const token = localStorage.getItem("access_token");
+    const response = await api.post("/upload/user", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const data = response.data;
+    if (
+      !data?.data?.urls ||
+      !Array.isArray(data.data.urls) ||
+      data.data.urls.length === 0
+    )
+      throw new Error("Không nhận được url ảnh!");
+    return data.data.urls[0];
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error));
+  }
+});
+
+export const updateMyAvatar = createAsyncThunk<
+  unknown,
+  { avatar_url: string },
+  { rejectValue: string }
+>("users/updateMyAvatar", async (data, { rejectWithValue }) => {
+  try {
+    const response = await api.patch("/users/profile/avatar", data);
+    return response.data;
+  } catch (error) {
+    const err = error as { response?: { data?: { message?: string } } };
+    return rejectWithValue(err?.response?.data?.message || "Cập nhật avatar thất bại!");
+  }
+});
 
 const usersSlice = createSlice({
   name: "users",
@@ -262,6 +310,21 @@ const usersSlice = createSlice({
       .addCase(deleteUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+
+      // uploadUserAvatar
+      .addCase(uploadUserAvatar.pending, (state) => {
+        state.uploadAvatarLoading = true;
+        state.uploadAvatarError = null;
+        state.uploadedAvatarUrl = undefined;
+      })
+      .addCase(uploadUserAvatar.fulfilled, (state, action: PayloadAction<string>) => {
+        state.uploadAvatarLoading = false;
+        state.uploadedAvatarUrl = action.payload;
+      })
+      .addCase(uploadUserAvatar.rejected, (state, action) => {
+        state.uploadAvatarLoading = false;
+        state.uploadAvatarError = (action.payload as string) || action.error.message || "Upload avatar thất bại!";
       });
   },
 });
