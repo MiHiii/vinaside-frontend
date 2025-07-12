@@ -25,6 +25,7 @@ import { ReviewModal } from "./ReviewModal";
 import ModalContent from "./ModalContent";
 import AmenitiesModal,{defaultGroups} from "./AmenitiesModal";
 import DateRangePicker from "./DateRangePicker ";
+import type { DateRange } from "react-day-picker";
 interface RoomInfoProps {
   roomData?: {
     title: string;
@@ -162,6 +163,8 @@ interface RoomInfoProps {
     },
     // Bạn có thể thêm nhiều review mẫu nữa để test scroll...
   ];
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   return (
     <>
@@ -320,7 +323,7 @@ interface RoomInfoProps {
             Chọn ngày nhận phòng
           </h3>
           <p className="text-gray-600">Thêm ngày đi để xem giá chính xác</p>
-          <DateRangePicker />
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
         </div>
       </div>
       <ReviewModal
