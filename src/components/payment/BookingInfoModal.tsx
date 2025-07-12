@@ -73,6 +73,32 @@ const BookingInfoModal: React.FC<BookingInfoModalProps> = ({
     return dates;
   };
 
+  const handleSelect = (range: DateRange | undefined) => {
+    if (!range?.from || !range?.to) {
+      setDateRange(range);
+      return;
+    }
+    // Kiểm tra có ngày nào trong range bị disable không
+    const current = new Date(range.from);
+    let invalid = false;
+    while (current <= range.to) {
+      if (
+        (bookedDates || []).some(
+          (d) => d.toDateString() === current.toDateString()
+        )
+      ) {
+        invalid = true;
+        break;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    if (invalid) {
+      setDateRange(undefined);
+      return;
+    }
+    setDateRange(range);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="p-0 bg-white rounded-2xl shadow-lg">
@@ -114,7 +140,7 @@ const BookingInfoModal: React.FC<BookingInfoModalProps> = ({
             <Calendar
               mode="range"
               selected={dateRange}
-              onSelect={setDateRange}
+              onSelect={handleSelect}
               numberOfMonths={2}
               disabled={bookedDates || []}
               modifiers={{
@@ -125,7 +151,7 @@ const BookingInfoModal: React.FC<BookingInfoModalProps> = ({
               }}
               modifiersClassNames={{
                 booked:
-                  "bg-red-100 text-red-700 line-through opacity-50 cursor-not-allowed",
+                  "bg-gray-300 text-gray-500 line-through opacity-60 cursor-not-allowed",
                 "selected-hover":
                   "hover:bg-blue-100 hover:text-blue-700 cursor-pointer",
               }}

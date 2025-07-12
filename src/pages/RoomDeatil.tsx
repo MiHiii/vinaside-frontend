@@ -9,7 +9,8 @@ import { IListing } from "@/types/listing";
 import { Button } from "@/components/ui/button";
 import GallerySection from "@/components/roomdetail/GallerySection";
 import RoomInfo from "@/components/roomdetail/RoomInfo";
-
+import BookingForm from "@/components/roomdetail/BookingForm";
+import { useBookedDates } from "@/hooks/useBookedDates";
 
 export default function RoomDetailPage() {
   const { id } = useParams();
@@ -18,6 +19,22 @@ export default function RoomDetailPage() {
     (state) => state.listing
   );
   const [isFavorite, setIsFavorite] = useState(false);
+
+  // Move hooks to top, use fallback values
+  const [checkIn, setCheckIn] = useState<Date | null>(null);
+  const [checkOut, setCheckOut] = useState<Date | null>(null);
+  const [nights, setNights] = useState<number>(0);
+  const [dateOpen, setDateOpen] = useState(false);
+  const [guestOpen, setGuestOpen] = useState(false);
+  // listingId fallback for hook
+  const listingId = selectedListing?._id || "";
+  const { bookedDates } = useBookedDates(listingId);
+  // guests fallback for state
+  const [guests, setGuests] = useState({
+    adults: selectedListing?.guests || 1,
+    infants: selectedListing?.allow_infants ? 1 : 0,
+    pets: selectedListing?.allow_pets ? 0 : 0,
+  });
 
   // Gọi API lấy thông tin phòng
   useEffect(() => {
@@ -31,8 +48,8 @@ export default function RoomDetailPage() {
 
   // Dữ liệu phòng đã được lấy
   const listing: IListing = selectedListing;
-  
-console.log("Listing data:", listing.propertyId);
+
+  console.log("Listing data:", listing.propertyId);
 
   return (
     <div className="min-h-screen">
@@ -40,12 +57,11 @@ console.log("Listing data:", listing.propertyId);
         {/* Tiêu đề & nút chia sẻ/lưu */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold">{listing.propertyId?.name}</h1>
-            
-            
+            <h1 className="text-2xl font-semibold">
+              {listing.propertyId?.name}
+            </h1>
           </div>
           <div className="hidden sm:flex items-center gap-2 flex-shrink-0 underline">
-        
             <Button
               variant="ghost"
               className="flex items-center gap-2 text-gray-700 hover:bg-gray-100"
@@ -62,19 +78,36 @@ console.log("Listing data:", listing.propertyId);
         </div>
 
         {/* Lưới bố cục các phần */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
           {/* Gallery ảnh */}
-          <div className="lg:col-span-3">
+          <div className="col-span-full">
             <GallerySection images={listing.images} title={listing.title} />
           </div>
 
-          {/* Thông tin phòng */}
-          <div className="lg:col-span-2 space-y-6 lg:space-y-8">
+          {/* Thông tin phòng và mô tả */}
+          <div className="space-y-6 lg:space-y-8">
             <RoomInfo listing={listing} />
           </div>
+          {/* Booking Form ngoài cùng bên phải */}
+          <div className="hidden lg:block">
+            <BookingForm
+              listing={listing}
+              checkIn={checkIn}
+              checkOut={checkOut}
+              setCheckIn={setCheckIn}
+              setCheckOut={setCheckOut}
+              nights={nights}
+              setNights={setNights}
+              guests={guests}
+              setGuests={setGuests}
+              bookedDates={bookedDates}
+              dateOpen={dateOpen}
+              setDateOpen={setDateOpen}
+              guestOpen={guestOpen}
+              setGuestOpen={setGuestOpen}
+            />
+          </div>
         </div>
-
-  
 
         {/* Google Map */}
         {/* <div className="mt-12 border-t border-gray-200 pt-8">

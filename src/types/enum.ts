@@ -28,3 +28,19 @@ export enum CancelPolicy {
   /** Nghiêm ngặt - không hoàn tiền nếu quá hạn */
   STRICT = "STRICT",
 }
+
+   export enum PaymentStatus {
+     PENDING = "pending",
+     PAID = "paid",
+     REFUNDED = "refunded",
+     FAILED = "failed",
+   }
+
+   export enum BookingStatus {
+     PENDING = "pending",
+     CONFIRMED = "confirmed",
+     CANCELLED = "cancelled",
+     COMPLETED = "completed",
+     REJECTED = "rejected",
+   }
+

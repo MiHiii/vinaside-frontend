@@ -35,6 +35,36 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  const handleSelect = (range: { from?: Date; to?: Date } | undefined) => {
+    if (!range?.from || !range?.to) {
+      setCheckIn(range?.from ?? null);
+      setCheckOut(range?.to ?? null);
+      setNights(0);
+      return;
+    }
+    // Kiểm tra có ngày nào trong range bị disable không
+    const current = new Date(range.from);
+    let invalid = false;
+    while (current <= range.to) {
+      if (
+        bookedDates.some((d) => d.toDateString() === current.toDateString())
+      ) {
+        invalid = true;
+        break;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    if (invalid) {
+      setCheckIn(null);
+      setCheckOut(null);
+      setNights(0);
+      return;
+    }
+    setCheckIn(range.from);
+    setCheckOut(range.to);
+    setNights(calculateNights(range.from, range.to));
+  };
+
   return (
     <Popover open={dateOpen} onOpenChange={setDateOpen}>
       <PopoverTrigger asChild>
@@ -57,18 +87,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             from: checkIn ?? undefined,
             to: checkOut ?? undefined,
           }}
-          onSelect={(range) => {
-            const from = range?.from ?? null;
-            const to = range?.to ?? null;
-            setCheckIn(from);
-            setCheckOut(to);
-            setNights(calculateNights(from, to));
-          }}
+          onSelect={handleSelect}
           numberOfMonths={2}
           disabled={bookedDates}
           modifiers={{ booked: bookedDates }}
           modifiersClassNames={{
-            booked: "bg-red-100 text-red-700 line-through",
+            booked:
+              "bg-gray-300 text-gray-500 line-through opacity-60 cursor-not-allowed",
           }}
         />
 

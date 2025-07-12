@@ -97,6 +97,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
     <div className="w-full lg:w-[50%] p-6 rounded-xl border shadow space-y-4 h-fit lg:sticky lg:top-24">
       <h3 className="text-lg font-semibold">Thêm ngày để xem giá</h3>
 
+      {checkIn && checkOut && (
+        <div className="mb-2">
+          <div className="text-xl font-semibold">{nights} đêm</div>
+          <div className="text-gray-600">
+            {format(checkIn, "dd 'thg' MM yyyy")} -{" "}
+            {format(checkOut, "dd 'thg' MM yyyy")}
+          </div>
+        </div>
+      )}
+
       <BookingCalendar
         checkIn={checkIn}
         checkOut={checkOut}

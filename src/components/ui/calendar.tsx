@@ -7,12 +7,15 @@ import { DayPicker } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  excludeDisabled?: boolean;
+};
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  excludeDisabled,
   ...props
 }: CalendarProps) {
   return (
@@ -59,6 +62,7 @@ function Calendar({
           <ChevronRight className="h-4 w-4" {...props} />
         ),
       }}
+      excludeDisabled={excludeDisabled}
       {...props}
     />
   );

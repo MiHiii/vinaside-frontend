@@ -40,6 +40,9 @@ import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import AdminUserDetail from "@/pages/admin/user/AdminUserDetail";
 import CreateUserPage from "@/pages/admin/user/CreateUserPage";
 import PaymentPage from "@/pages/payment/PaymentPage";
+import { BookingManagementPage } from "@/pages/admin";
+import AdminBookingStatisticsPage from "@/components/admin/booking/BookingStatistics";
+import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
 
 const routes: RouteObject[] = [
   {
@@ -51,9 +54,7 @@ const routes: RouteObject[] = [
       { path: "login", element: <Login /> },
       {
         path: "verify-otp",
-        element:
-          
-            <OtpPage />
+        element: <OtpPage />,
       },
       { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
@@ -91,7 +92,6 @@ const routes: RouteObject[] = [
         ),
       },
       { path: "list/:id", element: <RoomDeatil /> },
-     
     ],
   },
   {
@@ -167,6 +167,12 @@ const routes: RouteObject[] = [
       { path: "user", element: <AdminUserPage /> },
       { path: "user/:id", element: <AdminUserDetail /> },
       { path: "user/create", element: <CreateUserPage /> },
+      { path: "bookings", element: <BookingManagementPage /> },
+      { path: "booking-statistics", element: <AdminBookingStatisticsPage /> },
+      {
+        path: "bookings/:propertyId/:bookingId",
+        element: <BookingDetailPage />,
+      },
     ],
   },
 

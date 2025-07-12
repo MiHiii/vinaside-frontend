@@ -1,18 +1,67 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { api } from "@/services/api";
 import { BookingData } from "@/types/booking";
+import { Booking } from "@/types/booking.interface";
+import { BookingStatus, PaymentStatus } from "@/types/enum";
+// Thêm type RawBooking để hỗ trợ dữ liệu trả về từ API có thể có check_out_date
+export type RawBooking = BookingData & { check_out_date?: string };
 
+// Định nghĩa type tạm thời cho Booking và Statistics
+export interface User {
+  _id: string;
+  name?: string;
+  email?: string;
+  [key: string]: unknown;
+}
+
+export interface Property {
+  _id: string;
+  name?: string;
+  address?: string;
+  [key: string]: unknown;
+}
+
+export interface BookingStatistics {
+  total?: number;
+  revenue?: number;
+  customers?: number;
+  [key: string]: number | undefined;
+}
 
 interface BookingState {
   bookingData: BookingData | null;
   loading: boolean;
   error: string | null;
+  myBookingHistory: BookingData[];
+  guestBookingHistory: BookingData[];
+  allBookings: Booking[];
+  guestBookings: Booking[];
+  staffBookings: Booking[];
+  bookingDetail: Booking | null;
+  statisticsOverview: BookingStatistics | null;
+  statisticsFinancial: BookingStatistics | null;
+  statisticsCustomers: BookingStatistics | null;
+  adminBookings: Booking[];
+  adminTotal: number;
+  adminBookingDetail: Booking | null;
 }
 
 const initialState: BookingState = {
   bookingData: null,
   loading: false,
   error: null,
+  myBookingHistory: [],
+  guestBookingHistory: [],
+  allBookings: [],
+  guestBookings: [],
+  staffBookings: [],
+  bookingDetail: null,
+  statisticsOverview: null,
+  statisticsFinancial: null,
+  statisticsCustomers: null,
+  adminBookings: [],
+  adminTotal: 0,
+  adminBookingDetail: null,
 };
 
 // Async thunk để tạo booking
@@ -61,30 +110,233 @@ export const updateBooking = createAsyncThunk(
   }
 );
 
-// Async thunk để lấy danh sách booking của user
-export const fetchUserBookings = createAsyncThunk(
-  "booking/fetchUserBookings",
-  async (userId: string) => {
-    const response = await api.get(`/bookings/user/${userId}`);
-    return response.data?.data;
+// Lấy lịch sử booking của chính user (lịch sử đã trả, đã hủy, đã hoàn thành)
+export const getMyBookingHistory = createAsyncThunk<
+  BookingData[],
+  Record<string, unknown> | undefined
+>("booking/getMyBookingHistory", async (params, { rejectWithValue }) => {
+  try {
+    const response = await api.get("/bookings/my-history", { params });
+    const bookings = (
+      Array.isArray(response.data?.data?.bookings)
+        ? response.data.data.bookings
+        : []
+    ).map((b: RawBooking) => ({
+      ...b,
+      checkOutDate: b.checkOutDate || b.check_out_date,
+    }));
+    return bookings;
+  } catch (error) {
+    console.log(error);
+    return rejectWithValue("Lỗi khi lấy lịch sử booking của tôi");
+  }
+});
+
+// Lấy các booking hiện tại/sắp tới của user (my-bookings)
+export const getMyBookings = createAsyncThunk<
+  BookingData[],
+  Record<string, unknown> | undefined
+>("booking/getMyBookings", async (params) => {
+  const response = await api.get("/bookings/my-bookings", { params });
+  return Array.isArray(response.data?.data) ? response.data.data : [];
+});
+
+// Thunk khôi phục booking
+export const restoreBooking = createAsyncThunk<
+  Booking,
+  string,
+  { rejectValue: string }
+>("booking/restoreBooking", async (id, { rejectWithValue }) => {
+  try {
+    const res = await api.patch(`/bookings/${id}/restore`);
+    return res.data.data;
+  } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && "response" in err) {
+      const axiosErr = err as { response?: { data?: unknown } };
+      return rejectWithValue(
+        (axiosErr.response?.data as string) || "Unknown error"
+      );
+    }
+    return rejectWithValue("Unknown error");
+  }
+});
+
+// Thống kê tổng quan booking
+export const fetchBookingStatisticsOverview = createAsyncThunk<
+  BookingStatistics,
+  void,
+  { rejectValue: string }
+>("booking/fetchBookingStatisticsOverview", async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get("/bookings/statistics/overview");
+    console.log(res);
+
+    return res.data.data;
+  } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && "response" in err) {
+      // axios error: truy cập err.response từ unknown, do axios error không có type chuẩn
+      const axiosErr = err as { response?: { data?: unknown } };
+      return rejectWithValue(
+        (axiosErr.response?.data as string) || "Unknown error"
+      );
+    }
+    return rejectWithValue("Unknown error");
+  }
+});
+
+// Thống kê tài chính booking
+export const fetchBookingStatisticsFinancial = createAsyncThunk<
+  BookingStatistics,
+  void,
+  { rejectValue: string }
+>("booking/fetchBookingStatisticsFinancial", async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get("/bookings/statistics/financial");
+    return res.data.data;
+  } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && "response" in err) {
+      
+      const axiosErr = err as { response?: { data?: unknown } };
+      return rejectWithValue(
+        (axiosErr.response?.data as string) || "Unknown error"
+      );
+    }
+    return rejectWithValue("Unknown error");
+  }
+});
+
+// Thống kê khách hàng booking
+export const fetchBookingStatisticsCustomers = createAsyncThunk<
+  BookingStatistics,
+  void,
+  { rejectValue: string }
+>("booking/fetchBookingStatisticsCustomers", async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get("/bookings/statistics/customers");
+    return res.data.data;
+  } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && "response" in err) {
+      // axios error: truy cập err.response từ unknown, do axios error không có type chuẩn
+      const axiosErr = err as { response?: { data?: unknown } };
+      return rejectWithValue(
+        (axiosErr.response?.data as string) || "Unknown error"
+      );
+    }
+    return rejectWithValue("Unknown error");
+  }
+});
+
+// ADMIN BOOKING THUNKS
+export const fetchAdminBookings = createAsyncThunk<
+  { data: Booking[]; total: number },
+  { status?: BookingStatus; paymentStatus?: PaymentStatus } & Record<
+    string,
+    unknown
+  >,
+  { rejectValue: string }
+>("booking/adminFetchBookings", async (params, { rejectWithValue }) => {
+  try {
+    // Đảm bảo status và paymentStatus là đúng enum (chữ thường)
+    const queryParams = { ...params };
+    if (
+      queryParams.status &&
+      !Object.values(BookingStatus).includes(
+        queryParams.status as BookingStatus
+      )
+    ) {
+      queryParams.status = undefined;
+    }
+    if (
+      queryParams.paymentStatus &&
+      !Object.values(PaymentStatus).includes(
+        queryParams.paymentStatus as PaymentStatus
+      )
+    ) {
+      queryParams.paymentStatus = undefined;
+    }
+    const res = await api.get("/bookings", { params: queryParams });
+    console.log("sdsdsdsds : "  , res.data.data);
+    
+    return res.data.data;
+  } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && "response" in err) {
+      const axiosErr = err as { response?: { data?: unknown } };
+      return rejectWithValue(
+        (axiosErr.response?.data as string) || "Unknown error"
+      );
+    }
+    return rejectWithValue("Unknown error");
+  }
+});
+
+export const fetchAdminBookingDetail = createAsyncThunk<
+  Booking,
+  { propertyId: string; id: string },
+  { rejectValue: string }
+>(
+  "booking/adminFetchBookingDetail",
+  async ({ propertyId, id }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/bookings/property/${propertyId}/${id}`);
+      console.log("fdfdfdfdf : ", res.data.data);
+
+      return res.data.data;
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: unknown } };
+        return rejectWithValue(
+          (axiosErr.response?.data as string) || "Unknown error"
+        );
+      }
+      return rejectWithValue("Unknown error");
+    }
   }
 );
 
-// Async thunk để lấy chi tiết booking
-export const fetchBookingDetail = createAsyncThunk(
-  "booking/fetchBookingDetail",
-  async (bookingId: string) => {
-    const response = await api.get(`/bookings/${bookingId}`);
-    return response.data?.data;
+export const updateAdminBookingStatus = createAsyncThunk<
+  Booking,
+  { propertyId: string; id: string; data: Partial<Booking> },
+  { rejectValue: string }
+>(
+  "booking/adminUpdateBookingStatus",
+  async ({ propertyId, id, data }, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(
+        `/bookings/property/${propertyId}/${id}`,
+        data
+      );
+      return res.data;
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: unknown } };
+        return rejectWithValue(
+          (axiosErr.response?.data as string) || "Unknown error"
+        );
+      }
+      return rejectWithValue("Unknown error");
+    }
   }
 );
 
-// Async thunk để hủy booking
-export const cancelBooking = createAsyncThunk(
-  "booking/cancelBooking",
-  async (bookingId: string) => {
-    const response = await api.patch(`/bookings/${bookingId}/cancel`);
-    return response.data?.data;
+export const deleteAdminBooking = createAsyncThunk<
+  string,
+  { propertyId: string; id: string },
+  { rejectValue: string }
+>(
+  "booking/adminDeleteBooking",
+  async ({ propertyId, id }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/bookings/property/${propertyId}/${id}`);
+      return id;
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: unknown } };
+        return rejectWithValue(
+          (axiosErr.response?.data as string) || "Unknown error"
+        );
+      }
+      return rejectWithValue("Unknown error");
+    }
   }
 );
 
@@ -118,7 +370,7 @@ const bookingSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Lỗi khi tạo booking";
       })
-      // Update booking
+      // Cập nhật booking (user)
       .addCase(updateBooking.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -131,44 +383,154 @@ const bookingSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Lỗi khi cập nhật booking";
       })
-      // Fetch user bookings
-      .addCase(fetchUserBookings.pending, (state) => {
+      // Cập nhật booking (system)
+
+      // Lấy lịch sử booking của chính user
+      .addCase(getMyBookingHistory.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchUserBookings.fulfilled, (state) => {
+      .addCase(getMyBookingHistory.fulfilled, (state, action) => {
         state.loading = false;
-        // Có thể thêm state để lưu danh sách bookings nếu cần
+        state.myBookingHistory = action.payload;
       })
-      .addCase(fetchUserBookings.rejected, (state, action) => {
+      .addCase(getMyBookingHistory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Lỗi khi lấy danh sách booking";
+        state.error =
+          action.error.message || "Lỗi khi lấy lịch sử booking của tôi";
       })
-      // Fetch booking detail
-      .addCase(fetchBookingDetail.pending, (state) => {
+
+      // Thống kê overview
+      .addCase(fetchBookingStatisticsOverview.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchBookingDetail.fulfilled, (state, action) => {
+      .addCase(fetchBookingStatisticsOverview.fulfilled, (state, action) => {
         state.loading = false;
-        state.bookingData = action.payload;
+        state.statisticsOverview = action.payload;
       })
-      .addCase(fetchBookingDetail.rejected, (state, action) => {
+      .addCase(fetchBookingStatisticsOverview.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Lỗi khi lấy chi tiết booking";
+        state.error = action.payload as string;
       })
-      // Cancel booking
-      .addCase(cancelBooking.pending, (state) => {
+      // Thống kê financial
+      .addCase(fetchBookingStatisticsFinancial.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(cancelBooking.fulfilled, (state, action) => {
+      .addCase(fetchBookingStatisticsFinancial.fulfilled, (state, action) => {
         state.loading = false;
-        state.bookingData = action.payload;
+        state.statisticsFinancial = action.payload;
       })
-      .addCase(cancelBooking.rejected, (state, action) => {
+      .addCase(fetchBookingStatisticsFinancial.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Lỗi khi hủy booking";
+        state.error = action.payload as string;
+      })
+      // Thống kê customers
+      .addCase(fetchBookingStatisticsCustomers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchBookingStatisticsCustomers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.statisticsCustomers = action.payload;
+      })
+      .addCase(fetchBookingStatisticsCustomers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Xoá booking
+
+      // ADMIN: Danh sách booking
+      .addCase(fetchAdminBookings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminBookings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.adminBookings = Array.isArray(action.payload.data)
+          ? action.payload.data
+          : [];
+        state.adminTotal = action.payload.total || 0;
+      })
+      .addCase(fetchAdminBookings.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : typeof action.payload === "object" &&
+              action.payload &&
+              "error" in action.payload
+            ? (action.payload as { error?: string }).error ?? "Đã xảy ra lỗi"
+            : JSON.stringify(action.payload) || "Đã xảy ra lỗi";
+      })
+      // ADMIN: Chi tiết booking
+      .addCase(fetchAdminBookingDetail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminBookingDetail.fulfilled, (state, action) => {
+        state.loading = false;
+        state.adminBookingDetail = action.payload;
+      })
+      .addCase(fetchAdminBookingDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : typeof action.payload === "object" &&
+              action.payload &&
+              "error" in action.payload
+            ? (action.payload as { error?: string }).error ?? "Đã xảy ra lỗi"
+            : JSON.stringify(action.payload) || "Đã xảy ra lỗi";
+      })
+      // ADMIN: Cập nhật trạng thái
+      .addCase(updateAdminBookingStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateAdminBookingStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.adminBookingDetail = action.payload;
+      })
+      .addCase(updateAdminBookingStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : typeof action.payload === "object" &&
+              action.payload &&
+              "error" in action.payload
+            ? (action.payload as { error?: string }).error ?? "Đã xảy ra lỗi"
+            : JSON.stringify(action.payload) || "Đã xảy ra lỗi";
+      })
+      // ADMIN: Xóa booking
+      .addCase(deleteAdminBooking.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteAdminBooking.fulfilled, (state, action) => {
+        state.loading = false;
+        state.adminBookings = state.adminBookings.map((b) =>
+          b._id === action.payload ? { ...b, deleted: true } : b
+        );
+      })
+      .addCase(deleteAdminBooking.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : typeof action.payload === "object" &&
+              action.payload &&
+              "error" in action.payload
+            ? (action.payload as { error?: string }).error ?? "Đã xảy ra lỗi"
+            : JSON.stringify(action.payload) || "Đã xảy ra lỗi";
+      })
+      // ADMIN: Khôi phục booking
+      .addCase(restoreBooking.fulfilled, (state, action) => {
+        state.adminBookings = state.adminBookings.map((b) =>
+          b._id === action.payload._id ? { ...b, deleted: false } : b
+        );
       });
   },
 });
