@@ -2,9 +2,9 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { IListing } from "@/types/listing";
 import BookingCalendar from "./BookingCalendar";
 import GuestSelector from "./GuestSelector";
+import { IListing } from "@/types/listing";
 
 interface BookingFormProps {
   listing: IListing;
