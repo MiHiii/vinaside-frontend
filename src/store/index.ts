@@ -6,6 +6,7 @@ import listingsReducer from "./slices/listingSlice";
 import propertiesReducer from "./slices/propertySlice";
 import amenityReducer from "./slices/amenitySlice";
 import reviewReducer from "./slices/reviewSlice";
+import bookingReducer from "./slices/bookingSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     properties: propertiesReducer,
     amenities: amenityReducer,
     reviews: reviewReducer,
+    booking: bookingReducer,
   },
 });
 

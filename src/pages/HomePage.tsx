@@ -15,7 +15,7 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   const { listings, loading, error } = useSelector(
-    (state: RootState) => state.listing
+    (state: RootState) => state.listings
   );
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -83,7 +83,7 @@ export default function HomePage() {
         {error && <p className="text-red-500">{error}</p>}
         {!loading &&
           !error &&
-          listings.map((property) => (
+          listings.map((property: any) => (
             <PropertyCard
               key={property._id}
               property={property}

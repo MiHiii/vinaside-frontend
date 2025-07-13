@@ -16,7 +16,7 @@ export default function RoomDetailPage() {
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const { selectedListing, loading, error } = useAppSelector(
-    (state) => state.listing
+    (state) => state.listings
   );
   const [isFavorite, setIsFavorite] = useState(false);
 

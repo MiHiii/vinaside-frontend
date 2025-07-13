@@ -11,7 +11,9 @@ export default function PaymentLayout() {
   const dispatch = useAppDispatch();
 
   // Sử dụng listing từ listingSlice thay vì bookingSlice
-  const { selectedListing, loading } = useAppSelector((state) => state.listing);
+  const { selectedListing, loading } = useAppSelector(
+    (state) => state.listings
+  );
 
   const tripStart = searchParams.get("checkInDate") || "";
   const tripEnd = searchParams.get("checkOutDate") || "";
