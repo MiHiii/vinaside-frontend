@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  Building2,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -228,6 +229,26 @@ export function Sidebar({ collapsed }: SidebarProps) {
             label="Users"
             active={pathname === "/admin/users"}
             collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/listings"
+            icon={<Building2 className="h-4 w-4" />}
+            label="Listings"
+            active={pathname.startsWith("/admin/listings")}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/properties"
+            icon={<Home className="h-4 w-4" />}
+            label="Properties"
+            active={pathname.startsWith("/admin/properties")}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/amenities"
+            icon={<ListChecks className="h-4 w-4" />}
+            label="Tiện ích"
+            active={pathname.startsWith("/admin/amenities")}
           />
           <SidebarCollapse
             icon={<ShieldCheck className="h-4 w-4" />}

@@ -13,6 +13,9 @@ interface UserState {
   uploadAvatarLoading?: boolean;
   uploadAvatarError?: string | null;
   uploadedAvatarUrl?: string;
+  staffList?: User[];
+  staffLoading?: boolean;
+  staffError?: string | null;
 }
 
 const initialState: UserState = {
@@ -24,6 +27,9 @@ const initialState: UserState = {
   uploadAvatarLoading: false,
   uploadAvatarError: null,
   uploadedAvatarUrl: undefined,
+  staffList: [],
+  staffLoading: false,
+  staffError: null,
 };
 
 // 1. Lấy danh sách users
@@ -119,18 +125,18 @@ export const createUser = createAsyncThunk<
   }
 });
 
-// 7. Delete user 
+// 7. Delete user
 export const deleteUser = createAsyncThunk(
   "users/deleteUser",
   async (id: string, { rejectWithValue }) => {
     try {
       await api.delete(`/users/${id}`);
 
-      return id; 
+      return id;
     } catch (error) {
       return rejectWithValue(getErrorMessage(error));
     }
-    }
+  }
 );
 
 // 8. Upload user avatar
@@ -162,17 +168,33 @@ export const uploadUserAvatar = createAsyncThunk<
   }
 });
 
+// Thunk lấy danh sách staff
+export const fetchStaffList = createAsyncThunk<
+  User[],
+  void,
+  { rejectValue: string }
+>("users/fetchStaffList", async (_, { rejectWithValue }) => {
+  try {
+    const arr = (await api.get("/users/staff")).data?.data?.data;
+    return Array.isArray(arr) ? arr : [];
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error));
+  }
+});
+
 export const updateMyAvatar = createAsyncThunk<
   unknown,
   { avatar_url: string },
   { rejectValue: string }
 >("users/updateMyAvatar", async (data, { rejectWithValue }) => {
   try {
-    const response = await api.patch("/users/profile/avatar", data);
+    const response = await api.patch("/upload/user", data);
     return response.data;
   } catch (error) {
     const err = error as { response?: { data?: { message?: string } } };
-    return rejectWithValue(err?.response?.data?.message || "Cập nhật avatar thất bại!");
+    return rejectWithValue(
+      err?.response?.data?.message || "Cập nhật avatar thất bại!"
+    );
   }
 });
 
@@ -298,14 +320,16 @@ const usersSlice = createSlice({
           action.error.message ||
           "Tạo người dùng thất bại!";
       })
-      
+
       .addCase(deleteUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = state.users.filter((user: User) => user.id !== action.payload);
+        state.users = state.users.filter(
+          (user: User) => user.id !== action.payload
+        );
       })
       .addCase(deleteUser.rejected, (state, action) => {
         state.loading = false;
@@ -318,19 +342,44 @@ const usersSlice = createSlice({
         state.uploadAvatarError = null;
         state.uploadedAvatarUrl = undefined;
       })
-      .addCase(uploadUserAvatar.fulfilled, (state, action: PayloadAction<string>) => {
-        state.uploadAvatarLoading = false;
-        state.uploadedAvatarUrl = action.payload;
-      })
+      .addCase(
+        uploadUserAvatar.fulfilled,
+        (state, action: PayloadAction<string>) => {
+          state.uploadAvatarLoading = false;
+          state.uploadedAvatarUrl = action.payload;
+        }
+      )
       .addCase(uploadUserAvatar.rejected, (state, action) => {
         state.uploadAvatarLoading = false;
-        state.uploadAvatarError = (action.payload as string) || action.error.message || "Upload avatar thất bại!";
+        state.uploadAvatarError =
+          (action.payload as string) ||
+          action.error.message ||
+          "Upload avatar thất bại!";
+      })
+
+      // fetchStaffList
+      .addCase(fetchStaffList.pending, (state) => {
+        state.staffLoading = true;
+        state.staffError = null;
+      })
+      .addCase(fetchStaffList.fulfilled, (state, action: PayloadAction<User[]>) => {
+        state.staffLoading = false;
+        state.staffList = action.payload;
+      })
+      .addCase(fetchStaffList.rejected, (state, action) => {
+        state.staffLoading = false;
+        state.staffError = action.payload as string;
       });
   },
 });
 
 export const { clearUser } = usersSlice.actions;
 export default usersSlice.reducer;
+
+// Selector cho staffList
+export const selectStaffList = (state: RootState) => Array.isArray(state.users.staffList) ? state.users.staffList : [];
+export const selectStaffLoading = (state: RootState) => state.users.staffLoading;
+export const selectStaffError = (state: RootState) => state.users.staffError;
 
 // Selectors
 export const selectUsers = (state: RootState) => state.users.users ?? [];
