@@ -1,9 +1,9 @@
 // components/roomdetail/SearchableGoogleMap.tsx
-import React, { useState } from 'react';
-import { Search } from 'lucide-react';
+import React, { useState } from "react";
+import { Search } from "lucide-react";
 
 export default function SearchableGoogleMap() {
-  const [input, setInput] = useState('Quận 1, Thành phố Hồ Chí Minh, Việt Nam');
+  const [input, setInput] = useState("Quận 1, Thành phố Hồ Chí Minh, Việt Nam");
   const [query, setQuery] = useState(input);
 
   const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(

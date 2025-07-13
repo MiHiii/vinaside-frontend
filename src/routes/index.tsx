@@ -40,7 +40,6 @@ import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import AdminUserDetail from "@/pages/admin/user/AdminUserDetail";
 import CreateUserPage from "@/pages/admin/user/CreateUserPage";
 
-
 import PaymentPage from "@/pages/payment/PaymentPage";
 //properties
 import PropertiesPage from "@/pages/admin/property/PropertiesPage";
@@ -58,7 +57,6 @@ import AmenitiesPage from "@/pages/admin/amenities/AmenitiesPage";
 import CreateAmenities from "@/components/admin/amenities/CreateAmenities";
 import EditAmenities from "@/components/admin/amenities/EditAmenities";
 
-
 const routes: RouteObject[] = [
   {
     path: "/",
@@ -69,9 +67,7 @@ const routes: RouteObject[] = [
       { path: "login", element: <Login /> },
       {
         path: "verify-otp",
-        element:
-          
-            <OtpPage />
+        element: <OtpPage />,
       },
       { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
@@ -108,8 +104,7 @@ const routes: RouteObject[] = [
           </ProtectedRoute>
         ),
       },
-      { path: "room-detail", element: <RoomDeatil /> },
-     
+      { path: "list/:id", element: <RoomDeatil /> },
     ],
   },
   {
@@ -192,7 +187,7 @@ const routes: RouteObject[] = [
       { path: "listings/:id", element: <ListingDetailPage /> },
       //properties
       { path: "properties", element: <PropertiesPage /> },
-      { path: "listings/deleted", element: <DeleteListingsPage/> },
+      { path: "listings/deleted", element: <DeleteListingsPage /> },
       { path: "properties/create", element: <CreatePropertyPage /> },
       { path: "properties/edit/:id", element: <EditPropertyPage /> },
       { path: "properties/:id", element: <PropertyDetailPage /> },

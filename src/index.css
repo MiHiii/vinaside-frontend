@@ -6,13 +6,10 @@
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-      /* light: white */
-      --card-foreground: 222.2 84% 4.9%;
-      /* light: text dark */
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
     --primary: 346 77% 49%;
-    /* Đỏ hồng nổi bật */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -30,37 +27,24 @@
 
   .dark {
     --background: 240 10% 3.9%;
-    /* #09090b */
     --foreground: 0 0% 98%;
-    /* #fafafa */
-    --card: 240 5% 10%;                 /* dark: #18181b hoặc gần giống, tuỳ ý */
-    --card-foreground: 0 0% 100%;  
-    /* #fafafa */
+    --card: 240 5% 10%;
+    --card-foreground: 0 0% 100%;
     --popover: 240 10% 4%;
-    /* #121317 */
     --popover-foreground: 0 0% 98%;
     --primary: 346 77% 49%;
-    /* Đỏ hồng airbnb/shadcn */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 3.7% 15.9%;
-    /* #232328 */
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
-    /* #232328 */
     --muted-foreground: 240 5% 64.9%;
-    /* #a1a1aa */
     --accent: 240 3.7% 15.9%;
-    /* #232328 */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
-    /* #991b1b */
     --destructive-foreground: 0 0% 98%;
     --border: 240 4.9% 26.9%;
-    /* #3a3a41 */
     --input: 240 4.9% 26.9%;
-    /* #3a3a41 */
     --ring: 346 77% 49%;
-    /* same as primary */
     --radius: 0.5rem;
   }
 
@@ -69,6 +53,27 @@
   #root {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    transition: background-color .3s, color .3s;
+    transition: background-color 0.3s, color 0.3s;
   }
+}
+
+/* ✅ Class custom phải để ngoài @layer */
+.rdp-day_booked {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+  text-decoration: line-through;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Ngày được chọn nằm trong range nhưng KHÔNG phải ngày đã disable */
+.rdp-day_selected:not(.rdp-day_booked) {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  border-radius: 50%;
+}
+
+/* Hover trên ngày đã chọn nhưng không phải ngày disable */
+.rdp-day_selected:not(.rdp-day_booked):hover {
+  background-color: #2563eb !important;
 }

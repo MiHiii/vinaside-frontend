@@ -50,11 +50,10 @@ const shouldRefreshToken = (originalRequest: AxiosRequestConfig) => {
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
-    
+
     if (token && config.headers) {
       config.headers["Authorization"] = `Bearer ${token}`;
       console.log("[axios] Đính kèm token:", token, "URL:", config.url);
-      
     }
     return config;
   },
@@ -143,3 +142,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+
