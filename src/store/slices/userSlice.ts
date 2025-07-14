@@ -147,22 +147,22 @@ export const uploadUserAvatar = createAsyncThunk<
 >("users/uploadUserAvatar", async (file, { rejectWithValue }) => {
   try {
     const formData = new FormData();
-    formData.append("files", file);
+    formData.append("file", file); // Đúng field backend yêu cầu
     const token = localStorage.getItem("access_token");
-    const response = await api.post("/upload/user", formData, {
+    const response = await api.post("/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
-    const data = response.data;
+    const data = response.data.data; // Lấy đúng object chứa urls
     if (
-      !data?.data?.urls ||
-      !Array.isArray(data.data.urls) ||
-      data.data.urls.length === 0
+      !data?.urls ||
+      !Array.isArray(data.urls) ||
+      data.urls.length === 0
     )
       throw new Error("Không nhận được url ảnh!");
-    return data.data.urls[0];
+    return data.urls[0];
   } catch (error) {
     return rejectWithValue(getErrorMessage(error));
   }
@@ -188,7 +188,7 @@ export const updateMyAvatar = createAsyncThunk<
   { rejectValue: string }
 >("users/updateMyAvatar", async (data, { rejectWithValue }) => {
   try {
-    const response = await api.patch("/upload/user", data);
+    const response = await api.patch("/users/me", data);
     return response.data;
   } catch (error) {
     const err = error as { response?: { data?: { message?: string } } };
