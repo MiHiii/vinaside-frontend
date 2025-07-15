@@ -21,7 +21,7 @@ const BookingManagementPage: React.FC = () => {
           onBack={() => setSelectedBooking(null)}
         />
       ) : (
-        <BookingList onSelectBooking={setSelectedBooking} />
+        <BookingList  />
       )}
     </div>
   );

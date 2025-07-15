@@ -31,13 +31,7 @@ type BookingWithDeleted = Booking & {
 
 type PropertyRef = { _id: string; name?: string } | string;
 
-type BookingListProps = {
-  onSelectBooking?: (
-    booking: { propertyId: string; id: string } | null
-  ) => void;
-};
-
-const BookingList: React.FC<BookingListProps> = ({ onSelectBooking }) => {
+const BookingList: React.FC = () => {
   const dispatch = useAppDispatch();
   const { adminBookings, loading, error, pagination } = useSelector(
     (state: RootState) =>
@@ -129,15 +123,7 @@ const BookingList: React.FC<BookingListProps> = ({ onSelectBooking }) => {
                     </TableCell>
                     <TableCell className="space-x-2">
                       <Button asChild size="sm" variant="outline">
-                        <Link
-                          to="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (onSelectBooking) {
-                              onSelectBooking({ propertyId, id: b._id });
-                            }
-                          }}
-                        >
+                        <Link to={`/admin/bookings/${propertyId}/${b._id}`}>
                           Chi tiết
                         </Link>
                       </Button>
