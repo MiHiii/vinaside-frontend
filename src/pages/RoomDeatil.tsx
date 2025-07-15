@@ -57,8 +57,12 @@ export default function RoomDetailPage() {
           </div>
 
         </div>
+
+        
         <div className=" ">
         <ReviewsSection />
+
+
       </div>
         <div>
           <div className="mt-12 border-t border-gray-200 pt-8">

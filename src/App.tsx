@@ -15,12 +15,13 @@ function App() {
   );
 
   useEffect(() => {
-    if (token) {
+    const accessToken = localStorage.getItem("access_token");
+    if (accessToken) {
       dispatch(fetchCurrentUser());
     } else {
-      dispatch(logout()); 
+      dispatch(logout());
     }
-  }, [token, dispatch]);
+  }, [dispatch]);
 
   if (isCheckingAuth) {
     return <div>Đang xác thực tài khoản...</div>;

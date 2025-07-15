@@ -147,9 +147,9 @@ export const uploadUserAvatar = createAsyncThunk<
 >("users/uploadUserAvatar", async (file, { rejectWithValue }) => {
   try {
     const formData = new FormData();
-    formData.append("files", file);
+    formData.append("file", file);
     const token = localStorage.getItem("access_token");
-    const response = await api.post("/upload/user", formData, {
+    const response = await api.post("/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -362,10 +362,13 @@ const usersSlice = createSlice({
         state.staffLoading = true;
         state.staffError = null;
       })
-      .addCase(fetchStaffList.fulfilled, (state, action: PayloadAction<User[]>) => {
-        state.staffLoading = false;
-        state.staffList = action.payload;
-      })
+      .addCase(
+        fetchStaffList.fulfilled,
+        (state, action: PayloadAction<User[]>) => {
+          state.staffLoading = false;
+          state.staffList = action.payload;
+        }
+      )
       .addCase(fetchStaffList.rejected, (state, action) => {
         state.staffLoading = false;
         state.staffError = action.payload as string;
@@ -377,8 +380,10 @@ export const { clearUser } = usersSlice.actions;
 export default usersSlice.reducer;
 
 // Selector cho staffList
-export const selectStaffList = (state: RootState) => Array.isArray(state.users.staffList) ? state.users.staffList : [];
-export const selectStaffLoading = (state: RootState) => state.users.staffLoading;
+export const selectStaffList = (state: RootState) =>
+  Array.isArray(state.users.staffList) ? state.users.staffList : [];
+export const selectStaffLoading = (state: RootState) =>
+  state.users.staffLoading;
 export const selectStaffError = (state: RootState) => state.users.staffError;
 
 // Selectors

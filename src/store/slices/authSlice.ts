@@ -197,6 +197,7 @@ const authSlice = createSlice({
       state.token = null;
       state.verifyEmail = null;
       state.verifyStatus = null;
+      state.isCheckingAuth = false;
       localStorage.removeItem("access_token");
       localStorage.removeItem("user");
     },

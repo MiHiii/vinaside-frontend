@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import {
   MoreHorizontal,
   Paperclip,
@@ -10,570 +10,73 @@ import {
   Send,
   Check,
   CheckCheck,
-  MoreVertical,
   Trash2,
-  Edit,
-  Plus,
-} from 'lucide-react';
+  Reply,
+  X,
+  Search,
+  Settings,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import EmojiPicker from 'emoji-picker-react';
-import chatService, { Message, MessageReaction, ReactionType } from '@/services/chat.service';
-import socketService from '@/services/socket.service';
-import { format } from 'date-fns';
-import { useAppSelector } from '@/hooks/useRedux';
-import { RootState } from '@/store';
-import { User } from '@/types/user';
-
-interface SocketMessage {
-  _id?: string;
-  id?: string;
-  content: string;
-  sender_id?: { _id?: string } | string;
-  senderId?: string;
-  receiver_id?: { _id?: string } | string;
-  receiverId?: string;
-  conversation_id?: string;
-  conversationId?: string;
-  sent_at?: string;
-  createdAt?: string;
-  is_read?: string | boolean;
-}
-
-interface Conversation {
-  participants: string[];
-  lastMessage?: Message;
-  unreadCount: number;
-}
+} from "@/components/ui/dropdown-menu";
+import EmojiPicker from "emoji-picker-react";
+import { MessageReaction } from "@/services/chat.service";
+import { useMessages } from "@/hooks/useMessages";
 
 export default function Messages() {
-  const { user, token } = useAppSelector((state: RootState) => state.auth);
-  const [messageInput, setMessageInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; avatar?: string } | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const {
+    // States
+    messageInput,
+    messages,
+    selectedUser,
+    textareaHeight,
+    conversations,
+    users,
+    messagesEndRef,
+    unreadCounts,
+    showEmojiPicker,
+    showReactionPicker,
+    isLoadingMoreMessages,
+    hasMoreMessages,
+    replyingTo,
+    displayedMessages,
+    quickReactions,
+    myId,
+    user,
+    token,
 
-  const myId = user?._id;
+    // State setters
+    setMessageInput,
+    setShowEmojiPicker,
+    setShowReactionPicker,
 
-  // Debug effect - remove duplicate logging
-  useEffect(() => {
-    console.log('🔍 Debug render effect:', { usersLength: users.length, myId });
-  }, [users.length, myId]); // Only log when length changes, not full array
+    // Handlers
+    handleConnect,
+    handleSendMessage,
+    handleKeyPress,
+    handleTextareaChange,
+    handleEmojiSelect,
+    handleToggleReaction,
+    handleReplyMessage,
+    handleCancelReply,
+    handleDeleteMessage,
+    handleLoadMoreMessages,
 
-  // Load selected user from localStorage on component mount
-  useEffect(() => {
-    const savedSelectedUser = localStorage.getItem('selectedUser');
-    if (savedSelectedUser && users.length > 0) {
-      try {
-        const parsedUser = JSON.parse(savedSelectedUser);
-        const userExists = users.find((u) => u._id === parsedUser.id);
-        if (userExists) {
-          setSelectedUser(parsedUser);
-          // Load messages for this user
-          chatService
-            .getConversation(parsedUser.id)
-            .then((messages) => {
-              setMessages(messages);
-              scrollToBottom();
-            })
-            .catch((err) => console.error('Error loading saved conversation:', err));
-        }
-      } catch (error) {
-        console.error('Error parsing saved selected user:', error);
-        localStorage.removeItem('selectedUser');
-      }
-    }
-  }, [users.length]); // Only trigger when users array length changes
-
-  // Save selected user to localStorage whenever it changes
-  useEffect(() => {
-    if (selectedUser) {
-      localStorage.setItem('selectedUser', JSON.stringify(selectedUser));
-    } else {
-      localStorage.removeItem('selectedUser');
-    }
-  }, [selectedUser]);
-
-  // Optimize socket message handling
-  useEffect(() => {
-    if (!token || !myId) return;
-
-    const handleNewMessage = (message: SocketMessage) => {
-      console.log('🎉 New message received in component:', message);
-
-      const senderId =
-        typeof message.sender_id === 'object'
-          ? message.sender_id?._id || ''
-          : message.sender_id || message.senderId || '';
-      const receiverId =
-        typeof message.receiver_id === 'object'
-          ? message.receiver_id?._id || ''
-          : message.receiver_id || message.receiverId || '';
-
-      const isCurrentChat = selectedUser && (senderId === selectedUser.id || receiverId === selectedUser.id);
-
-      const normalizedMessage: Message = {
-        id: message._id || message.id || `temp_${Date.now()}`,
-        content: message.content,
-        senderId,
-        receiverId,
-        conversationId: message.conversation_id || message.conversationId || '',
-        createdAt: message.sent_at || message.createdAt || new Date().toISOString(),
-        isRead: message.is_read === 'read',
-      };
-
-      // Update unread counts
-      setUnreadCounts((prev) => {
-        const newCounts = { ...prev };
-
-        // Only increment if I'm the receiver and not viewing this conversation
-        if (receiverId === myId && (!selectedUser || selectedUser.id !== senderId)) {
-          newCounts[senderId] = (newCounts[senderId] || 0) + 1;
-        }
-
-        return newCounts;
-      });
-
-      // ✅ Update conversations
-      setConversations((prev) => {
-        if (!senderId || !receiverId) return Array.isArray(prev) ? prev : [];
-
-        const currentConversations = Array.isArray(prev) ? prev : [];
-        const updatedConversations = [...currentConversations];
-
-        const idx = updatedConversations.findIndex(
-          (c) =>
-            c &&
-            Array.isArray(c.participants) &&
-            c.participants.includes(senderId) &&
-            c.participants.includes(receiverId),
-        );
-
-        if (idx !== -1) {
-          updatedConversations[idx] = {
-            ...updatedConversations[idx],
-            lastMessage: normalizedMessage,
-            unreadCount: unreadCounts[senderId] || 0,
-          };
-        } else {
-          const initialUnreadCount = receiverId === myId && (!selectedUser || selectedUser.id !== senderId) ? 1 : 0;
-          updatedConversations.unshift({
-            participants: [senderId, receiverId],
-            lastMessage: normalizedMessage,
-            unreadCount: initialUnreadCount,
-          });
-        }
-
-        return updatedConversations;
-      });
-
-      // ✅ Update messages if in current chat
-      if (isCurrentChat) {
-        setMessages((prev) => {
-          const currentMessages = Array.isArray(prev) ? prev : [];
-          // Enhanced duplicate detection
-          const isDuplicate = currentMessages.some(
-            (msg) =>
-              msg.id === normalizedMessage.id ||
-              (msg.content === normalizedMessage.content &&
-                msg.senderId === normalizedMessage.senderId &&
-                Math.abs(new Date(msg.createdAt).getTime() - new Date(normalizedMessage.createdAt).getTime()) < 2000),
-          );
-
-          if (isDuplicate) {
-            console.log('Duplicate message detected, skipping');
-            return currentMessages;
-          }
-
-          const newMessages = [...currentMessages, normalizedMessage];
-          setTimeout(() => scrollToBottom(), 100);
-          return newMessages;
-        });
-      }
-    };
-
-    // Socket setup
-    if (socketService.isConnected()) {
-      console.log('✅ Socket already connected, just registering handlers');
-    } else {
-      console.log('🔌 Connecting to socket...');
-      socketService.connect(token, myId);
-    }
-
-    const unsubscribe = socketService.onNewMessage(handleNewMessage);
-
-    // Listen for reaction updates
-    const unsubscribeReactions = socketService.onReactionUpdate((data) => {
-      console.log('🎉 Reaction update received in component:', data);
-
-      // Update message reactions in real-time
-      setMessages((prev) =>
-        prev.map((msg) => {
-          if (msg.id === data.messageId) {
-            return {
-              ...msg,
-              reactions: data.reactions as MessageReaction[],
-            };
-          }
-          return msg;
-        }),
-      );
-    });
-
-    const connectionCheckTimeout = setTimeout(() => {
-      if (!socketService.isConnected()) {
-        console.warn('⚠️ Socket not connected after 5 seconds, attempting force reconnect');
-        socketService.forceReconnect(token, myId);
-      }
-    }, 5000);
-
-    return () => {
-      console.log('🧹 Cleaning up socket listeners');
-      unsubscribe();
-      unsubscribeReactions();
-      clearTimeout(connectionCheckTimeout);
-    };
-  }, [token, myId, selectedUser?.id, unreadCounts]);
-
-  useEffect(() => {
-    if (!token || !myId) return;
-
-    const fetchInitialData = async () => {
-      try {
-        console.log('🔄 Fetching initial data...');
-        const [usersRes, conversationsRes] = await Promise.all([
-          chatService.getUsers(),
-          chatService.getConversations(),
-        ]);
-
-        console.log('👥 Users API response:', usersRes);
-        console.log('💬 Conversations API response:', conversationsRes);
-
-        // Handle users data - convert object to array
-        let processedUsers = [];
-        if (usersRes?.success && Array.isArray(usersRes.data)) {
-          // New API format with success flag
-          processedUsers = usersRes.data;
-        } else if (usersRes?.data && Array.isArray(usersRes.data)) {
-          // Direct data array
-          processedUsers = usersRes.data;
-        } else if (usersRes?.data && typeof usersRes.data === 'object') {
-          // Old format - convert object to array
-          const usersObject = usersRes.data;
-          // Only convert numeric keys to avoid including success, statusCode, message
-          const numericKeys = Object.keys(usersObject).filter((key) => !isNaN(Number(key)));
-          processedUsers = numericKeys.map((key) => usersObject[key as keyof typeof usersObject]);
-          console.log('🔄 Converting users object to array:', processedUsers);
-          console.log('🔄 Numeric keys found:', numericKeys);
-          console.log('🔄 Is processed users array?', Array.isArray(processedUsers));
-        } else {
-          // Fallback for other formats - removed .users access
-          const fallbackUsers = usersRes?.data || usersRes || [];
-          processedUsers = Array.isArray(fallbackUsers) ? fallbackUsers : [];
-        }
-
-        // Handle conversations data - NEW API FORMAT
-        let processedConversations: Conversation[] = [];
-
-        const conversationsData = conversationsRes as unknown as { success?: boolean; data?: Record<string, unknown> };
-
-        if (conversationsData?.success && conversationsData.data && typeof conversationsData.data === 'object') {
-          // New API format: data is object with numeric keys
-          const conversationsObject = conversationsData.data;
-          const numericKeys = Object.keys(conversationsObject).filter((key) => !isNaN(Number(key)));
-
-          processedConversations = numericKeys.map((key) => {
-            const conv = conversationsObject[key] as {
-              _id: string;
-              lastMessage?: {
-                _id: string;
-                sender_id: string;
-                receiver_id: string;
-                content: string;
-                sent_at: string;
-                createdAt?: string;
-                is_read: string;
-              };
-              unreadCount?: number;
-            };
-            return {
-              participants: conv.lastMessage
-                ? [conv.lastMessage.sender_id, conv.lastMessage.receiver_id]
-                : [myId, conv._id],
-              lastMessage: conv.lastMessage
-                ? {
-                    id: conv.lastMessage._id,
-                    content: conv.lastMessage.content,
-                    senderId: conv.lastMessage.sender_id,
-                    receiverId: conv.lastMessage.receiver_id,
-                    conversationId: '',
-                    createdAt: conv.lastMessage.sent_at || conv.lastMessage.createdAt || new Date().toISOString(),
-                    isRead: conv.lastMessage.is_read === 'read', // Only "read" counts as read
-                  }
-                : undefined,
-              unreadCount: conv.unreadCount || 0,
-            };
-          });
-        } else {
-          // Fallback for other formats
-          const conversations = Array.isArray(conversationsRes)
-            ? conversationsRes
-            : (conversationsRes as unknown as { data?: unknown })?.data || [];
-          processedConversations = Array.isArray(conversations) ? (conversations as unknown as Conversation[]) : [];
-        }
-
-        console.log('👥 Processed users (final):', processedUsers);
-        console.log('💬 Processed conversations:', processedConversations);
-
-        setUsers(processedUsers as User[]);
-        setConversations(processedConversations);
-      } catch (err) {
-        console.error('❌ Error fetching initial data:', err);
-        const error = err as { response?: { data?: unknown; status?: number } };
-        console.error('Error details:', {
-          message: err instanceof Error ? err.message : 'Unknown error',
-          response: error?.response?.data,
-          status: error?.response?.status,
-        });
-      }
-    };
-
-    fetchInitialData();
-  }, [token, myId]);
-
-  const handleConnect = async (userId: string) => {
-    if (!user || !myId) return;
-    try {
-      const selected = users.find((u) => u?._id === userId);
-      if (!selected) return;
-
-      setSelectedUser({
-        id: userId,
-        name: selected?.name || `User ${userId}`,
-        avatar: selected?.avatar || '/placeholder.svg',
-      });
-
-      const messages = await chatService.getConversation(userId);
-      setMessages(messages);
-
-      // Reset unread count for this conversation immediately
-      setUnreadCounts((prev) => {
-        const newCounts = { ...prev };
-        delete newCounts[userId]; // Remove unread count for this user
-        return newCounts;
-      });
-
-      setConversations((prev) => {
-        if (!Array.isArray(prev)) return [];
-        return prev.map((c) => {
-          // Reset unread count for the conversation with this user
-          if (c.participants.includes(userId) && c.participants.includes(myId)) {
-            return { ...c, unreadCount: 0 };
-          }
-          return c;
-        });
-      });
-
-      // Mark conversation as read using the new API
-      try {
-        const result = await chatService.markConversationAsRead(userId, myId);
-        console.log('✅ Conversation marked as read:', result);
-
-        // Refresh messages to get updated read status
-        if (result.success) {
-          const updatedMessages = await chatService.getConversation(userId);
-          setMessages(updatedMessages);
-          console.log('🔄 Messages refreshed with updated read status');
-        }
-      } catch (error) {
-        console.error('❌ Error marking conversation as read:', error);
-      }
-
-      scrollToBottom();
-    } catch (error) {
-      console.error('Error connecting to chat:', error);
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (messageInput.trim() && selectedUser && user && myId) {
-      try {
-        // Fixed: Updated to match new API - only need receiverId and content (no senderId parameter)
-        const response = await chatService.sendMessage(selectedUser.id, messageInput);
-        console.log('Send message response:', response);
-
-        // Handle the new API response format
-        const responseData = response?.data || response;
-        const newMessage = {
-          id: responseData._id || `temp_${Date.now()}`,
-          content: responseData.content || messageInput,
-          senderId: responseData.sender_id || myId,
-          receiverId: responseData.receiver_id || selectedUser.id,
-          conversationId: (responseData as unknown as { conversation_id?: string }).conversation_id || '',
-          createdAt: responseData.sent_at || responseData.createdAt || new Date().toISOString(),
-          isRead: responseData.is_read === 'read', // Only "read" counts as read, not "delivered"
-        };
-
-        console.log('📤 Processed new message:', newMessage);
-
-        // Immediately add message to UI
-        setMessages((prev) => {
-          const currentMessages = Array.isArray(prev) ? prev : [];
-          // Check if message already exists to prevent duplicates
-          if (
-            currentMessages.some(
-              (msg) =>
-                msg.id === newMessage.id ||
-                (msg.content === newMessage.content &&
-                  Math.abs(new Date(msg.createdAt).getTime() - new Date(newMessage.createdAt).getTime()) < 1000),
-            )
-          ) {
-            console.log('Message already exists, skipping add');
-            return currentMessages;
-          }
-          console.log('💬 Adding sent message to UI');
-          return [...currentMessages, newMessage];
-        });
-
-        setMessageInput('');
-        scrollToBottom();
-
-        // Update conversations - optimize to prevent duplicate updates
-        setConversations((prev) => {
-          if (!Array.isArray(prev)) return [];
-          const updatedConversations = [...prev];
-          const conversationIndex = updatedConversations.findIndex(
-            (c) => c.participants.includes(myId) && c.participants.includes(selectedUser.id),
-          );
-
-          if (conversationIndex !== -1) {
-            // Only update if the message is newer
-            const existingMessage = updatedConversations[conversationIndex].lastMessage;
-            if (!existingMessage || new Date(newMessage.createdAt) > new Date(existingMessage.createdAt)) {
-              updatedConversations[conversationIndex] = {
-                ...updatedConversations[conversationIndex],
-                lastMessage: newMessage,
-              };
-            }
-          } else {
-            updatedConversations.unshift({
-              participants: [myId, selectedUser.id],
-              lastMessage: newMessage,
-              unreadCount: 0,
-            });
-          }
-
-          return updatedConversations;
-        });
-
-        // Emit message via socket for real-time to other users
-        if (socketService.isConnected()) {
-          console.log('📡 Emitting message via socket for real-time');
-          socketService.sendMessage({
-            content: newMessage.content,
-            receiverId: selectedUser.id,
-          });
-        } else {
-          console.warn('⚠️ Socket not connected, message sent via HTTP only');
-        }
-      } catch (error) {
-        console.error('Error sending message:', error);
-        const axiosError = error as {
-          response?: { status: number; statusText: string; data: unknown; headers: unknown };
-        };
-        if (axiosError.response) {
-          console.error('❌ Backend error response:', {
-            status: axiosError.response.status,
-            statusText: axiosError.response.statusText,
-            data: axiosError.response.data,
-            headers: axiosError.response.headers,
-          });
-        }
-      }
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'end',
-    });
-  };
-
-  // Enhanced auto-scroll when messages change
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      scrollToBottom();
-    }, 100);
-    return () => clearTimeout(timeoutId);
-  }, [messages]);
-
-  // Scroll to bottom when selecting a new conversation
-  useEffect(() => {
-    if (selectedUser && messages.length > 0) {
-      setTimeout(() => scrollToBottom(), 200);
-    }
-  }, [selectedUser]);
-
-  // Quick reactions mapping (Instagram style with ReactionType)
-  const quickReactions: { emoji: string; type: ReactionType }[] = [
-    { emoji: '👍', type: ReactionType.LIKE },
-    { emoji: '❤️', type: ReactionType.LOVE },
-    { emoji: '😂', type: ReactionType.LAUGH },
-    { emoji: '😮', type: ReactionType.WOW },
-    { emoji: '😢', type: ReactionType.SAD },
-    { emoji: '😡', type: ReactionType.ANGRY },
-  ];
-
-  // Handle emoji selection from picker
-  const handleEmojiSelect = (emojiData: { emoji: string }) => {
-    setMessageInput((prev) => prev + emojiData.emoji);
-    setShowEmojiPicker(false);
-  };
-
-  // Handle toggling reaction (recommended approach)
-  const handleToggleReaction = async (messageId: string, reactionType: ReactionType) => {
-    try {
-      const response = await chatService.toggleReaction(messageId, reactionType);
-
-      // Update message in local state based on response
-      setMessages((prev) =>
-        prev.map((msg) => {
-          if (msg.id === messageId) {
-            // Assume response contains updated reactions array
-            return {
-              ...msg,
-              reactions: response.data?.reactions || msg.reactions || [],
-            };
-          }
-          return msg;
-        }),
-      );
-
-      setShowReactionPicker(null);
-    } catch (error) {
-      console.error('❌ Error toggling reaction:', error);
-    }
-  };
+    // Utilities
+    hasValidParticipants,
+    scrollToBottom,
+    format,
+  } = useMessages();
 
   if (!user || !user._id || !token) {
-    return <div className='flex h-screen items-center justify-center'>Loading...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -639,13 +142,131 @@ export default function Messages() {
           transform: translateY(-1px);
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+        
+        /* Message hover effect to show buttons */
+        .message-bubble:hover .group-hover\\:opacity-100 {
+          opacity: 1 !important;
+        }
+        
+        /* Ensure buttons are visible */
+        .message-bubble {
+          position: relative;
+        }
+        
+        /* Button visibility */
+        .message-menu-btn {
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        
+        .message-bubble:hover .message-menu-btn {
+          opacity: 1;
+        }
+        
+        /* Reply preview styling */
+        .reply-preview {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          border-left: 3px solid #3b82f6;
+        }
+        
+        /* Line clamp utility */
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        
+        /* Quoted message styling */
+        .quoted-message {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .quoted-message::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 3px;
+          background: currentColor;
+          opacity: 0.5;
+        }
+        
+        /* Custom border width for reply messages */
+        .border-l-3 {
+          border-left-width: 3px;
+        }
+        
+        /* Reply message container styling */
+        .reply-container {
+          position: relative;
+          margin-bottom: 2px;
+        }
+        
+        /* Connection line between quoted message and main message */
+        .reply-container::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 3px;
+          right: 3px;
+          height: 2px;
+          background: currentColor;
+          opacity: 0.2;
+          border-radius: 1px;
+        }
+        
+        /* Enhanced visual separation */
+        .message-with-reply {
+          border-top-left-radius: 4px !important;
+          border-top-right-radius: 4px !important;
+        }
+        
+        /* Smooth transitions for all reply elements */
+        .reply-container, .message-bubble {
+          transition: all 0.2s ease-in-out;
+        }
+        
+        /* Hover effect for reply messages */
+        .reply-container:hover {
+          transform: translateY(-1px);
+        }
+        
+        /* Auto-expanding textarea styling */
+        .auto-expand-textarea {
+          transition: height 0.2s ease-in-out;
+          line-height: 1.5;
+        }
+        
+        /* Input area expands upward */
+        .input-area-container {
+          transform-origin: bottom;
+          transition: all 0.2s ease-in-out;
+        }
       `}</style>
 
-      <div className='flex h-screen bg-white'>
-        <div className='w-64 border-r border-gray-200 p-4'>
-          <div className='space-y-4'>
+      <div className="flex w-[1250px] mx-auto h-[calc(100vh-100px)] bg-white">
+        <div className="w-[340px] border-r border-gray-200 p-2">
+          <div className="bg-white mt-3">
+            <div className="flex items-center justify-between space-x-4">
+              <h1 className="text-xl font-semibold">Tin nhắn</h1>
+              <div className="flex space-x-2">
+                <button className="p-2 bg-gray-200 rounded-full">
+                  <Search className="w-4 h-4" />
+                </button>
+                <button className="p-2 bg-gray-200 rounded-full">
+                  <Settings className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-4 mt-4">
             {users.length === 0 && (
-              <div className='text-center text-gray-500 py-4'>Đang tải danh sách người dùng...</div>
+              <div className="text-center text-gray-500 py-4">
+                Đang tải danh sách người dùng...
+              </div>
             )}
             {users
               .filter((u) => {
@@ -655,51 +276,62 @@ export default function Messages() {
               })
               .map((u) => {
                 const conversation = Array.isArray(conversations)
-                  ? conversations.find(
-                      (c) =>
-                        c &&
-                        Array.isArray(c.participants) &&
-                        u &&
-                        u._id &&
-                        user &&
-                        user._id &&
-                        c.participants.includes(u._id) &&
-                        c.participants.includes(user._id),
+                  ? conversations.find((c) =>
+                      hasValidParticipants(c, u._id, user._id)
                     )
                   : undefined;
                 return (
                   <div
                     key={u._id}
-                    className={`flex items-center gap-3 cursor-pointer p-3 rounded hover:bg-gray-100 ${
-                      selectedUser?.id === u._id ? 'bg-gray-200' : ''
+                    className={`mt-8 flex items-center gap-3 cursor-pointer p-3 rounded-2xl hover:bg-gray-200 ${
+                      selectedUser?.id === u._id ? "bg-gray-100" : ""
                     }`}
-                    onClick={() => handleConnect(u._id)}>
-                    <Avatar className='h-10 w-10'>
-                      <AvatarImage src={u.avatar || '/placeholder.svg'} alt={u.name} />
-                      <AvatarFallback>{u.name?.charAt(0) || 'U'}</AvatarFallback>
+                    onClick={() => handleConnect(u._id!)}
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage
+                        src={u.avatar_url || "/placeholder.svg"}
+                        alt={u.name}
+                      />
+                      <AvatarFallback>
+                        {u.name?.charAt(0) || "U"}
+                      </AvatarFallback>
                     </Avatar>
-                    <div className='flex-1'>
-                      <div className='flex justify-between'>
-                        <div className='font-medium'>{u.name || `User ${u._id}`}</div>
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <div className="font-medium">
+                          {u.name || `User ${u._id}`}
+                        </div>
                         {conversation?.lastMessage?.createdAt && (
-                          <div className='text-xs text-gray-500'>
+                          <div className="text-xs text-gray-500">
                             {(() => {
                               const date = conversation?.lastMessage?.createdAt;
-                              if (!date) return '';
+                              if (!date) return "";
                               const d = new Date(date);
-                              return isNaN(d.getTime()) ? 'N/A' : format(d, 'HH:mm');
+                              return isNaN(d.getTime())
+                                ? "N/A"
+                                : format(d, "HH:mm");
                             })()}
                           </div>
                         )}
                       </div>
-                      <div className='text-sm text-gray-500 truncate'>
-                        {conversation?.lastMessage?.content || 'No messages yet'}
+                      <div className="text-sm text-gray-500 truncate max-w-[200px]">
+                        {conversation?.lastMessage?.content
+                          ? conversation.lastMessage.content.length > 30
+                            ? `${conversation.lastMessage.content.substring(
+                                0,
+                                30
+                              )}...`
+                            : conversation.lastMessage.content
+                          : "No messages"}
                       </div>
-                      {conversation && conversation.unreadCount > 0 && (
-                        <div className='inline-flex items-center justify-center bg-blue-500 text-white text-xs font-medium rounded-full min-w-[20px] h-5 px-1.5 mt-1'>
-                          {conversation.unreadCount}
-                        </div>
-                      )}
+                      {conversation &&
+                        typeof conversation.unreadCount === "number" &&
+                        conversation.unreadCount > 0 && (
+                          <div className="inline-flex items-center justify-center bg-blue-500 text-white text-xs font-medium rounded-full min-w-[20px] h-5 px-1.5 mt-1">
+                            {conversation.unreadCount}
+                          </div>
+                        )}
                     </div>
                   </div>
                 );
@@ -707,37 +339,91 @@ export default function Messages() {
           </div>
         </div>
 
-        <div className='flex-1 flex flex-col'>
-          <div className='p-4 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm'>
-            <div className='flex items-center gap-3'>
-              <Avatar className='h-10 w-10'>
-                <AvatarImage src={selectedUser?.avatar || '/placeholder.svg'} alt={selectedUser?.name || 'User'} />
-                <AvatarFallback>{selectedUser?.name?.charAt(0) || 'U'}</AvatarFallback>
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm flex-shrink-0">
+            <div className="flex items-center gap-3 ml-5">
+              <Avatar className="h-12 w-12">
+                <AvatarImage
+                  src={selectedUser?.avatar}
+                  alt={selectedUser?.name || "User"}
+                />
+                <AvatarFallback>
+                  {selectedUser?.name?.charAt(0) || "U"}
+                </AvatarFallback>
               </Avatar>
               <div>
-                <h2 className='font-semibold text-gray-900'>{selectedUser?.name || 'Select a user'}</h2>
-                <p className='text-sm text-green-600'>Đang hoạt động</p>
+                <h2 className="font-semibold text-gray-900 text-[20px]">
+                  {selectedUser?.name || "Select a user"}
+                </h2>
               </div>
             </div>
-            <Button variant='ghost' size='icon'>
-              <MoreHorizontal className='h-4 w-4' />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
-          <ScrollArea className='flex-1 p-4 bg-gray-50 messages-scroll' style={{ maxHeight: 'calc(100vh - 200px)' }}>
-            <div className='space-y-4 max-w-3xl mx-auto'>
-              {messages && messages.length > 0 ? (
-                messages.map((message, index) => {
+          <ScrollArea
+            className="flex-1 pt-4 messages-scroll"
+            style={{
+              height: `calc(100vh - ${
+                280 + (textareaHeight - 40) + (replyingTo ? 120 : 0)
+              }px)`,
+            }}
+          >
+            <div className="space-y-4 max-w-[790px] mx-auto">
+              {/* Load more messages button */}
+              {hasMoreMessages && messages.length > 0 && (
+                <div className="text-center py-2">
+                  <Button
+                    onClick={handleLoadMoreMessages}
+                    disabled={isLoadingMoreMessages}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                  >
+                    {isLoadingMoreMessages
+                      ? "Đang tải..."
+                      : "Tải tin nhắn cũ hơn"}
+                  </Button>
+                </div>
+              )}
+
+              {/* Show indicator if there are more messages */}
+              {messages.length > displayedMessages.length && (
+                <div className="text-center py-2">
+                  <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    Hiển thị {displayedMessages.length} tin nhắn gần nhất (
+                    {messages.length - displayedMessages.length} tin cũ hơn)
+                  </span>
+                </div>
+              )}
+
+              {displayedMessages && displayedMessages.length > 0 ? (
+                displayedMessages.map((message, index) => {
                   const myId = user?._id;
-                  const isOwnMessage = message && myId && message.senderId === myId;
+                  const isOwnMessage =
+                    message && myId && message.senderId === myId;
                   const sender = isOwnMessage
                     ? user
-                    : users.find((u) => u?._id && message && message.senderId && u._id === message.senderId);
+                    : users.find(
+                        (u) =>
+                          u?._id &&
+                          message &&
+                          message.senderId &&
+                          u._id === message.senderId
+                      );
                   const showAvatar =
-                    !isOwnMessage && (!messages[index - 1] || messages[index - 1].senderId !== message.senderId);
+                    !isOwnMessage &&
+                    (!displayedMessages[index - 1] ||
+                      displayedMessages[index - 1].senderId !==
+                        message.senderId);
 
                   // Determine if this is the last message in a sequence from the same sender
-                  const isLastInSequence = !messages[index + 1] || messages[index + 1].senderId !== message.senderId;
+                  const isLastInSequence =
+                    !displayedMessages[index + 1] ||
+                    displayedMessages[index + 1].senderId !== message.senderId;
 
                   // Only show read status for own messages that are last in sequence
                   const shouldShowReadStatus = isOwnMessage && isLastInSequence;
@@ -749,205 +435,392 @@ export default function Messages() {
                     const sequenceMessages = [];
                     let i = index;
                     // Go backwards to find start of sequence
-                    while (i >= 0 && messages[i].senderId === message.senderId) {
-                      sequenceMessages.unshift(messages[i]);
+                    while (
+                      i >= 0 &&
+                      displayedMessages[i]?.senderId === message.senderId
+                    ) {
+                      sequenceMessages.unshift(displayedMessages[i]);
                       i--;
                     }
                     // Go forwards to find end of sequence
                     i = index + 1;
-                    while (i < messages.length && messages[i].senderId === message.senderId) {
-                      sequenceMessages.push(messages[i]);
+                    while (
+                      i < displayedMessages.length &&
+                      displayedMessages[i]?.senderId === message.senderId
+                    ) {
+                      sequenceMessages.push(displayedMessages[i]);
                       i++;
                     }
 
                     // Check if ALL messages in sequence are read
-                    sequenceReadStatus = sequenceMessages.every((msg) => msg.isRead);
+                    sequenceReadStatus = sequenceMessages.every(
+                      (msg) => msg.isRead
+                    );
                   }
 
                   return (
                     <div
                       key={message.id || index}
-                      className={`flex gap-2 ${isOwnMessage ? 'justify-end' : 'justify-start'} animate-fade-in group`}>
+                      className={`flex gap-2 ${
+                        isOwnMessage ? "justify-end" : "justify-start"
+                      } animate-fade-in group`}
+                    >
                       {showAvatar && !isOwnMessage && (
-                        <Avatar className='h-8 w-8 mt-auto'>
-                          <AvatarImage src={sender?.avatar || '/placeholder.svg'} alt={sender?.name || 'User'} />
-                          <AvatarFallback>{sender?.name?.charAt ? sender?.name.charAt(0) : 'U'}</AvatarFallback>
+                        <Avatar className="h-8 w-8 mt-10">
+                          <AvatarImage
+                            src={sender?.avatar_url || "/placeholder.svg"}
+                            alt={sender?.name || "User"}
+                          />
+                          <AvatarFallback>
+                            {sender?.name?.charAt
+                              ? sender?.name.charAt(0)
+                              : "U"}
+                          </AvatarFallback>
                         </Avatar>
                       )}
-                      {!showAvatar && !isOwnMessage && <div className='w-8' />}
-                      <div className={`max-w-[70%] ${isOwnMessage ? 'order-1' : ''}`}>
-                        {showAvatar && !isOwnMessage && (
-                          <div className='text-sm font-medium text-gray-900 mb-1'>{sender?.name || 'Unknown'}</div>
-                        )}
-                        <div
-                          className={`p-3 rounded-2xl transition-all duration-200 hover:shadow-md relative group message-bubble ${
-                            isOwnMessage ? 'bg-blue-500 text-white' : 'bg-white text-gray-900 shadow-sm'
-                          }`}>
-                          <p className='text-sm whitespace-pre-wrap break-words'>{message.content}</p>
-
-                          {/* Quick reaction button - only for other users' messages with real IDs */}
-                          {!isOwnMessage && message.id && !message.id.startsWith('temp_') && (
-                            <div className='absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity'>
-                              <DropdownMenu
-                                open={showReactionPicker === message.id}
-                                onOpenChange={(open) => setShowReactionPicker(open ? message.id : null)}>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant='outline'
-                                    size='sm'
-                                    className='h-6 w-6 rounded-full p-0 bg-white border shadow-md hover:bg-gray-50 reaction-btn'>
-                                    <Plus className='h-3 w-3' />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className='p-2'>
-                                  <div className='flex gap-1'>
-                                    {quickReactions.map(({ emoji, type }) => (
-                                      <Button
-                                        key={emoji}
-                                        variant='ghost'
-                                        size='sm'
-                                        className='h-8 w-8 p-0 text-lg hover:bg-gray-100 reaction-btn'
-                                        onClick={() => handleToggleReaction(message.id, type)}>
-                                        {emoji}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          )}
+                      {!showAvatar && !isOwnMessage && <div className="w-8" />}
+                      <div
+                        className={`max-w-[70%] ${
+                          isOwnMessage ? "order-1" : ""
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex-1">
+                            {showAvatar && !isOwnMessage && (
+                              <span className="text-[12px] font-semibold text-gray-600 ml-1">
+                                {sender?.name || "Unknown"}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-gray-400 ml-2">
+                            {(() => {
+                              const date = message?.createdAt;
+                              if (!date) return "";
+                              const d = new Date(date);
+                              return isNaN(d.getTime())
+                                ? "N/A"
+                                : format(d, "HH:mm");
+                            })()}
+                          </span>
                         </div>
 
-                        {/* Reactions display */}
-                        {message.reactions && message.reactions.length > 0 && (
-                          <div className='flex gap-1 mt-1 flex-wrap'>
-                            {Object.entries(
-                              message.reactions.reduce((acc, reaction) => {
-                                const key = reaction.type || reaction.emoji; // Support both type and emoji
-                                acc[key] = (acc[key] || []).concat(reaction);
-                                return acc;
-                              }, {} as Record<string, MessageReaction[]>),
-                            ).map(([reactionKey, reactions]) => {
-                              const userReacted = reactions.some((r) => r.userId === myId);
-                              const reactionType = reactions[0].type;
-                              const emoji =
-                                reactions[0].emoji ||
-                                quickReactions.find((qr) => qr.type === reactionType)?.emoji ||
-                                reactionKey;
-
-                              return (
-                                <button
-                                  key={reactionKey}
-                                  onClick={() => handleToggleReaction(message.id, reactionType)}
-                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors message-reaction ${
-                                    userReacted
-                                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                  }`}>
-                                  <span>{emoji}</span>
-                                  {reactions.length > 1 && <span>{reactions.length}</span>}
-                                </button>
-                              );
-                            })}
+                        {/* Reply/Quote Message - Outside bubble */}
+                        {message.replyTo && !message.isRecalled && (
+                          <div
+                            key={`reply-${message.id}-${message.replyTo.messageId}`}
+                            className={`mb-2 reply-container ${
+                              isOwnMessage ? "ml-auto" : "mr-auto"
+                            }`}
+                            style={{ maxWidth: "calc(100% - 0px)" }}
+                            title={`Debug: Reply to ${message.replyTo.messageId} from ${message.replyTo.senderName}`}
+                          >
+                            <div
+                              className={`p-2 rounded-t-lg rounded-b-sm border-l-2 border-solid text-sm relative ${
+                                isOwnMessage
+                                  ? "bg-blue-50 border-blue-400"
+                                  : "bg-gray-50 border-gray-400"
+                              }`}
+                            >
+                              <div className="text-[11px] mb-1 opacity-70">
+                                Đang trả lời {message.replyTo.senderName}
+                              </div>
+                              <div className="text-[15px] text-dark opacity-80 line-clamp-2">
+                                {message.replyTo.content.length > 60
+                                  ? `${message.replyTo.content.substring(
+                                      0,
+                                      60
+                                    )}...`
+                                  : message.replyTo.content}
+                              </div>
+                            </div>
                           </div>
                         )}
 
                         <div
-                          className={`flex items-center gap-1 mt-1 text-xs text-gray-500 ${
-                            isOwnMessage ? 'justify-end' : 'justify-start'
-                          }`}>
-                          <span>
-                            {(() => {
-                              const date = message?.createdAt;
-                              if (!date) return '';
-                              const d = new Date(date);
-                              return isNaN(d.getTime()) ? 'N/A' : format(d, 'HH:mm');
-                            })()}
-                          </span>
-                          {shouldShowReadStatus && (
-                            <div className='flex items-center gap-1'>
-                              {sequenceReadStatus ? (
-                                <span title='Đã đọc'>
-                                  <CheckCheck className='h-3 w-3 text-blue-400' />
-                                </span>
-                              ) : (
-                                <span title='Đã gửi'>
-                                  <Check className='h-3 w-3 text-gray-400' />
-                                </span>
-                              )}
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant='ghost'
-                                    size='sm'
-                                    className='h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity'>
-                                    <MoreVertical className='h-3 w-3' />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align='end' className='w-40'>
-                                  <DropdownMenuItem onClick={() => handleEditMessage(message.id)}>
-                                    <Edit className='h-3 w-3 mr-2' />
-                                    Chỉnh sửa
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteMessage(message.id)}
-                                    className='text-red-600 focus:text-red-600'>
-                                    <Trash2 className='h-3 w-3 mr-2' />
-                                    Thu hồi
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                          className={`p-3 transition-all duration-200 hover:shadow-md relative group message-bubble ${
+                            message.replyTo && !message.isRecalled
+                              ? "rounded-t-sm rounded-b-2xl message-with-reply"
+                              : "rounded-2xl"
+                          } ${
+                            message.isRecalled
+                              ? "bg-gray-50 border border-gray-200"
+                              : isOwnMessage
+                              ? "bg-sky-600 text-white"
+                              : "bg-gray-100 text-gray-900 shadow-sm"
+                          }`}
+                          style={{ minHeight: "40px" }}
+                        >
+                          <p
+                            className={`text-[16px] whitespace-pre-wrap break-words ${
+                              message.isRecalled ? "text-gray-500 italic" : ""
+                            }`}
+                          >
+                            {message.content}
+                          </p>
+
+                          {/* Quick reaction button - for all messages (own and others) with real IDs and not recalled */}
+                          {!message.isRecalled &&
+                            message.id &&
+                            !message.id.startsWith("temp_") && (
+                              <div
+                                className={`absolute top-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 ${
+                                  isOwnMessage ? "-left-8" : "-right-8"
+                                }`}
+                              >
+                                <DropdownMenu
+                                  open={showReactionPicker === message.id}
+                                  onOpenChange={(open) =>
+                                    setShowReactionPicker(
+                                      open ? message.id : null
+                                    )
+                                  }
+                                >
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 w-7 rounded-full p-0 bg-white border-gray-300 shadow-md hover:bg-gray-50 cursor-pointer reaction-btn z-10"
+                                    >
+                                      <Smile className="h-5 w-5 text-gray-800" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    className="p-2 mb-2 bg-white border-gray-300 rounded-full"
+                                    side={isOwnMessage ? "left" : "right"}
+                                    align="center"
+                                  >
+                                    <div className="flex gap-1">
+                                      {quickReactions.map(({ emoji, type }) => (
+                                        <Button
+                                          key={emoji}
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 p-0 text-lg hover:bg-gray-100 reaction-btn"
+                                          onClick={() =>
+                                            handleToggleReaction(
+                                              message.id,
+                                              type
+                                            )
+                                          }
+                                        >
+                                          {emoji}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
+
+                          {/* Menu button - for all messages (own and others) with real IDs and not recalled */}
+                          {!message.isRecalled &&
+                            message.id &&
+                            !message.id.startsWith("temp_") && (
+                              <div
+                                className={`absolute top-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 ${
+                                  isOwnMessage ? "-left-16" : "-right-16"
+                                }`}
+                              >
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 w-7 rounded-full bg-white border-gray-300 shadow-md hover:bg-gray-200 cursor-pointer z-10"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4 text-gray-800" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align={isOwnMessage ? "start" : "end"}
+                                    className="w-40 bg-white border-gray-300 rounded-lg mt-5 mr-20"
+                                  >
+                                    {isOwnMessage ? (
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleDeleteMessage(message.id)
+                                        }
+                                        className="text-red-600 focus:text-red-600"
+                                      >
+                                        <Trash2 className="h-3 w-3 mr-2" />
+                                        Thu hồi
+                                      </DropdownMenuItem>
+                                    ) : (
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleReplyMessage(message)
+                                        }
+                                        className="text-gray-900 focus:text-gray-600"
+                                      >
+                                        <Reply className="h-3 w-3 mr-2" />
+                                        Trả lời
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
+                        </div>
+
+                        {/* Reactions display - hide for recalled messages */}
+                        {!message.isRecalled &&
+                          message.reactions &&
+                          message.reactions.length > 0 && (
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {Object.entries(
+                                message.reactions.reduce((acc, reaction) => {
+                                  const key = reaction.type || reaction.emoji; // Support both type and emoji
+                                  acc[key] = (acc[key] || []).concat(reaction);
+                                  return acc;
+                                }, {} as Record<string, MessageReaction[]>)
+                              ).map(([reactionKey, reactions]) => {
+                                const userReacted = reactions.some(
+                                  (r) => r.userId === myId
+                                );
+                                const reactionType = reactions[0].type;
+
+                                // Better emoji resolution logic
+                                let emoji = reactions[0].emoji;
+                                if (!emoji) {
+                                  // Find emoji from quickReactions array
+                                  const quickReaction = quickReactions.find(
+                                    (qr) => qr.type === reactionType
+                                  );
+                                  emoji = quickReaction?.emoji || "👍"; // fallback
+                                }
+
+                                return (
+                                  <button
+                                    key={reactionKey}
+                                    onClick={() =>
+                                      handleToggleReaction(
+                                        message.id,
+                                        reactionType
+                                      )
+                                    }
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors message-reaction ${
+                                      userReacted
+                                        ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    }`}
+                                  >
+                                    <span>{emoji}</span>
+                                    {reactions.length > 1 && (
+                                      <span>{reactions.length}</span>
+                                    )}
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
-                        </div>
+
+                        {/* Show read status for own messages */}
+                        {isOwnMessage && shouldShowReadStatus && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 justify-end">
+                            {sequenceReadStatus ? (
+                              <span title="Đã đọc">
+                                <CheckCheck className="h-3 w-3 text-blue-400" />
+                              </span>
+                            ) : (
+                              <span title="Đã gửi">
+                                <Check className="h-3 w-3 text-gray-400" />
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <div className='text-center text-gray-500 py-8'>
-                  {selectedUser ? 'Chưa có tin nhắn nào' : 'Chọn một người dùng để bắt đầu chat'}
+                <div className="text-center text-gray-500 py-8">
+                  {selectedUser
+                    ? "Chưa có tin nhắn nào"
+                    : "Chọn một người dùng để bắt đầu chat"}
                 </div>
               )}
-              <div ref={messagesEndRef} className='h-1' />
+              <div ref={messagesEndRef} className="h-1" />
             </div>
           </ScrollArea>
 
-          <div className='p-4 border-t border-gray-200 bg-white'>
-            <div className='flex items-center gap-2 max-w-3xl mx-auto relative'>
-              <div className='flex-1 relative'>
-                <Input
+          <div className="p-4 border-t border-gray-200 bg-white shadow-sm flex-shrink-0 input-area-container">
+            {/* Reply Preview */}
+            {replyingTo && (
+              <div className="max-w-[790px] mx-auto mb-3 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Reply className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-medium text-blue-500">
+                        Đang trả lời{" "}
+                        {replyingTo.senderId === myId
+                          ? "chính mình"
+                          : users.find((u) => u._id === replyingTo.senderId)
+                              ?.name || "người dùng"}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-700 bg-white rounded-lg px-3 py-2 border-l-3 border-blue-400 shadow-sm">
+                      {replyingTo.content.length > 80
+                        ? `${replyingTo.content.substring(0, 80)}...`
+                        : replyingTo.content}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCancelReply}
+                    className="ml-2 mb-10 p-1.5 hover:bg-blue-200 rounded-full transition-colors"
+                    title="Hủy trả lời"
+                  >
+                    <X className="h-4 w-4  text-blue-600" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-end gap-2 max-w-[790px] mx-auto relative">
+              <div className="flex-1 relative">
+                <Textarea
                   value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
+                  onChange={handleTextareaChange}
                   onKeyPress={handleKeyPress}
-                  placeholder='Aa'
-                  className='pr-20 rounded-full border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  placeholder="Soạn tin nhắn..."
+                  className="w-full pr-20 rounded-xl border-gray-300 focus:ring-sky-500 resize-none py-2 px-4 min-h-[40px] max-h-[120px] auto-expand-textarea"
                   disabled={!selectedUser}
+                  rows={1}
+                  style={{
+                    height: `${textareaHeight}px`,
+                    overflowY: textareaHeight >= 120 ? "auto" : "hidden",
+                  }}
                 />
-                <div className='absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1'>
-                  <Button variant='ghost' size='icon' className='h-6 w-6 hover:bg-gray-100'>
-                    <Paperclip className='h-4 w-4 text-gray-500' />
+                <div className="absolute right-3 bottom-2 flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 hover:bg-gray-100"
+                  >
+                    <Paperclip className="h-4 w-4 text-gray-500" />
                   </Button>
                   <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-6 w-6 hover:bg-gray-100'
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                    <Smile className='h-4 w-4 text-gray-500' />
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 hover:bg-gray-100"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  >
+                    <Smile className="h-4 w-4 text-gray-500" />
                   </Button>
                 </div>
               </div>
               <Button
                 onClick={handleSendMessage}
-                size='icon'
-                className='rounded-full bg-blue-500 hover:bg-blue-600'
-                disabled={!messageInput.trim() || !selectedUser}>
-                <Send className='h-4 w-4' />
+                size="icon"
+                className="rounded-full bg-blue-500 hover:bg-blue-600 h-10 w-10 flex-shrink-0"
+                disabled={!messageInput.trim() || !selectedUser}
+              >
+                <Send className="h-4 w-4" />
               </Button>
 
               {/* Emoji Picker */}
               {showEmojiPicker && (
-                <div className='absolute bottom-full right-0 mb-2 z-50'>
+                <div className="absolute bottom-full right-0 mb-2 z-50">
                   <EmojiPicker
                     onEmojiClick={handleEmojiSelect}
                     width={300}
@@ -966,29 +839,4 @@ export default function Messages() {
       </div>
     </>
   );
-
-  // Handle message edit
-  const handleEditMessage = async (messageId: string) => {
-    try {
-      console.log('✏️ Edit message:', messageId);
-      // TODO: Implement edit functionality
-    } catch (error) {
-      console.error('❌ Error editing message:', error);
-    }
-  };
-
-  // Handle message delete
-  const handleDeleteMessage = async (messageId: string) => {
-    try {
-      console.log('🗑️ Delete message:', messageId);
-      await chatService.deleteMessage(messageId);
-
-      // Remove message from UI
-      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
-
-      console.log('✅ Message deleted successfully');
-    } catch (error) {
-      console.error('❌ Error deleting message:', error);
-    }
-  };
 }
