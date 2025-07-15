@@ -12,7 +12,13 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+<<<<<<< Updated upstream
   Building2,
+=======
+  BookOpen,
+  Ticket,
+  Briefcase,
+>>>>>>> Stashed changes
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -231,6 +237,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
             collapsed={collapsed}
           />
           <SidebarItem
+<<<<<<< Updated upstream
             to="/admin/listings"
             icon={<Building2 className="h-4 w-4" />}
             label="Listings"
@@ -249,6 +256,41 @@ export function Sidebar({ collapsed }: SidebarProps) {
             icon={<ListChecks className="h-4 w-4" />}
             label="Tiện ích"
             active={pathname.startsWith("/admin/amenities")}
+=======
+            to="/admin/house-rules"
+            icon={<BookOpen className="h-4 w-4" />}
+            label="Quản lý quy tắc nhà"
+            active={pathname === "/admin/house-rules"}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/permissions-manager"
+            icon={<ShieldCheck className="h-4 w-4" />}
+            label="Quản lý vai trò"
+            active={pathname === "/admin/permissions-manager"}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/vouchers"
+            icon={<Ticket className="h-4 w-4" />}
+            label="Voucher"
+            active={pathname === "/admin/vouchers"}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/services"
+            icon={<Briefcase className="h-4 w-4" />}
+            label="Dịch vụ"
+            active={pathname === "/admin/services"}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/admin/safety-features"
+            icon={<ShieldCheck className="h-4 w-4" />}
+            label="Chính sách an toàn"
+            active={pathname === "/admin/safety-features"}
+            collapsed={collapsed}
+>>>>>>> Stashed changes
           />
           <SidebarCollapse
             icon={<ShieldCheck className="h-4 w-4" />}

@@ -14,6 +14,7 @@ import EditProfile from "@/components/useProfile/EditProfile";
 import OtpPage from "@/pages/auth/OtpPage";
 import RoomDeatil from "@/pages/RoomDeatil";
 import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
+
 // Become a host
 import Overview from "@/pages/become-a-host/Overview";
 import Location from "@/pages/become-a-host/Location";
@@ -56,6 +57,13 @@ import DeleteListingsPage from "@/pages/admin/listing/DeleteListingsPage";
 import AmenitiesPage from "@/pages/admin/amenities/AmenitiesPage";
 import CreateAmenities from "@/components/admin/amenities/CreateAmenities";
 import EditAmenities from "@/components/admin/amenities/EditAmenities";
+// House Rules
+import RoleManagementPage from "@/pages/admin/roles/RoleManagementPage";
+import RoleCreatePage from "@/pages/admin/roles/RoleCreatePage";
+import VoucherListPage from "@/pages/admin/voucher/VoucherListPage";
+import ServiceListPage from "@/pages/admin/service/ServiceListPage";
+import SafetyFeatureListPage from "@/pages/admin/safety-feature/SafetyFeatureListPage";
+import HouseRuleListPage from "@/pages/admin/house-rule/HouseRuleListPage";
 
 const routes: RouteObject[] = [
   {
@@ -105,6 +113,7 @@ const routes: RouteObject[] = [
         ),
       },
       { path: "list/:id", element: <RoomDeatil /> },
+      { path: "room-detail", element: <RoomDeatil /> },
     ],
   },
   {
@@ -156,7 +165,7 @@ const routes: RouteObject[] = [
   {
     path: "/hosting",
     element: (
-      <ProtectedRoute requiredRole={["host", "admin"]}>
+      <ProtectedRoute requiredRole={["staff", "admin"]}>
         <HostLayout />
       </ProtectedRoute>
     ),
@@ -180,6 +189,7 @@ const routes: RouteObject[] = [
       { path: "user", element: <AdminUserPage /> },
       { path: "user/:id", element: <AdminUserDetail /> },
       { path: "user/create", element: <CreateUserPage /> },
+
       //listing
       { path: "listings", element: <ListingsPage /> },
       { path: "listings/create", element: <CreateListingPage /> },
@@ -196,6 +206,13 @@ const routes: RouteObject[] = [
       { path: "amenities", element: <AmenitiesPage /> },
       { path: "amenities/create", element: <CreateAmenities /> },
       { path: "amenities/edit/:id", element: <EditAmenities /> },
+      
+      { path: "permissions-manager", element: <RoleManagementPage /> },
+      { path: "permissions/create", element: <RoleCreatePage /> },
+      { path: "vouchers", element: <VoucherListPage /> },
+      { path: "services", element: <ServiceListPage /> },
+      { path: "safety-features", element: <SafetyFeatureListPage /> },
+      { path: "house-rules", element: <HouseRuleListPage /> },
     ],
   },
 

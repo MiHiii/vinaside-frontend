@@ -1,4 +1,4 @@
-export type UserRole = "guest" | "host" | "admin";
+export type UserRole = "guest" | "staff" | "admin";
 export type UserLanguage = "vi" | "en";
 
 export interface User {
