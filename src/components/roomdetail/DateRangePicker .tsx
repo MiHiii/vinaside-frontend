@@ -1,62 +1,54 @@
-import React, { useState } from "react"
+import React from "react"
 import { Calendar } from "@/components/ui/calendar"
 import type { DateRange } from "react-day-picker"
 
-export default function DateRangePickerInline() {
-  const [range, setRange] = useState<DateRange | undefined>()
+interface DateRangePickerProps {
+  value: DateRange | undefined
+  onChange: (range: DateRange | undefined) => void
+}
 
+export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   return (
-    <div className="relative w-fit p-4 rounded-lg">
-      {/* Tùy chỉnh spacing giữa 2 tháng */}
+    <div className="relative w-fit p-4 bg-white shadow-md rounded-xl">
       <style>
         {`
           .rdp-months {
             display: flex !important;
             gap: 3rem !important;
           }
-
-          /* Loại bỏ viền và hiệu ứng cho các nút điều hướng */
           .rdp-nav_button {
             border: none !important;
             box-shadow: none !important;
             outline: none !important;
             background: transparent !important;
-            color: inherit !important; /* Đảm bảo mũi tên có màu sắc giống với văn bản */
+            color: inherit !important;
             font-size: 6rem !important;
           }
-
-          /* Loại bỏ viền cho các nút chuyển tháng */
           .rdp-button {
             border: none !important;
             box-shadow: none !important;
             background: transparent !important;
           }
-
-          /* Tùy chỉnh màu sắc và hiệu ứng hover */
           .rdp-button:hover {
             background: transparent !important;
-            color: #000 !important; /* Thay đổi màu chữ nếu cần */
+            color: #000 !important;
           }
-      .rdp-nav_button svg {
-            transform: scale(3.5); /* Tăng kích thước mũi tên */
+          .rdp-nav_button svg {
+            transform: scale(3.5);
           }
         `}
       </style>
-
-      {/* Lịch 2 tháng */}
       <Calendar
         mode="range"
-        selected={range}
-        onSelect={setRange}
+        selected={value}
+        onSelect={onChange}
         numberOfMonths={2}
         className="bg-transparent shadow-none border-none width-full"
       />
-
-      {/* Nút xóa ngày: đặt đúng vị trí */}
       <button
         className="absolute text-sm hover:underline mr-8"
         style={{ right: '0', top: '100%' }}
-        onClick={() => setRange(undefined)}
+        onClick={() => onChange(undefined)}
       >
         Xóa ngày
       </button>

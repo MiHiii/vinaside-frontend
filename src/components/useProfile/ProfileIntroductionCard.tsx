@@ -1,21 +1,24 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface ProfileIntroductionCardProps {
   userName: string;
   userRole: string;
+  avatarUrl?: string;
   avatarFallback: string;
 }
 
 export default function ProfileIntroductionCard({
   userName,
   userRole,
+  avatarUrl,
   avatarFallback,
 }: ProfileIntroductionCardProps) {
   return (
-    <Card className="w-full max-w-xs rounded-xl shadow-lg border-none  hover:shadow-xl transition-shadow duration-300 ease-in-out">
+    <Card className="w-full max-w-xs rounded-xl shadow-lg border-none hover:shadow-xl transition-shadow duration-300 ease-in-out">
       <CardContent className="flex flex-col items-center justify-center p-6 space-y-3">
         <Avatar className="h-24 w-24">
+          <AvatarImage src={avatarUrl} />
           <AvatarFallback className="text-4xl bg-black text-white">
             {avatarFallback}
           </AvatarFallback>

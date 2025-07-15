@@ -1,5 +1,5 @@
 import { LayoutPanelLeft, Bell } from "lucide-react";
-import ThemeToggle from "./ThemeToggle ";
+import ThemeToggle from "../common/ThemeToggle";
 
 interface HeaderProps {
   collapsed: boolean;
@@ -8,15 +8,15 @@ interface HeaderProps {
 
 export function Header({ collapsed, onToggleSidebar }: HeaderProps) {
   return (
-    <header className="h-16 flex items-center justify-between px-3 sm:px-6  dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
+    <header className="h-16 flex items-center justify-between px-3 sm:px-6  border-gray-200 dark:border-slate-700">
       {/* Menu */}
       <nav className="flex items-center space-x-4 sm:space-x-6">
         <button
           className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${
             collapsed
-              ? "bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600"
-              : "bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
-          } hover:bg-gray-200 dark:hover:bg-slate-700`}
+              ? "bg-gray-200 border-gray-300"
+              : "bg-gray-100  border-gray-200"
+          } hover:bg-gray-200`}
           onClick={onToggleSidebar}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
@@ -46,9 +46,9 @@ export function Header({ collapsed, onToggleSidebar }: HeaderProps) {
           <input
             type="text"
             placeholder="Search"
-            className="pl-4 pr-12 py-2 w-40 sm:w-56 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-b"
+            className="pl-4 pr-12 py-2 w-40 sm:w-56 rounded-lg bg-gray-100border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-b"
           />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs bg-gray-200 dark:bg-slate-700 px-1.5 py-0.5 rounded border">
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs bg-gray-200  px-1.5 py-0.5 rounded border">
             ⌘K
           </span>
         </div>

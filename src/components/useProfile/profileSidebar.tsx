@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ComponentType } from "react";
 
 export interface ProfileSidebarProps {
   activeItem: string;
   onSelectItem: (item: string) => void;
+  avatarUrl?: string;
   avatarFallback: string;
 }
 
@@ -31,6 +32,7 @@ const sidebarItems: SidebarItem[] = [
 export default function ProfileSidebar({
   activeItem,
   onSelectItem,
+  avatarUrl,
   avatarFallback,
 }: ProfileSidebarProps) {
   const handleClick = (id: string) => {
@@ -70,6 +72,7 @@ export default function ProfileSidebar({
               <div className="flex-shrink-0 flex items-center justify-center rounded-full h-12 w-12 bg-[#232323] overflow-hidden border border-white shadow">
                 {item.icon === "avatar" ? (
                   <Avatar className="h-12 w-12">
+                    <AvatarImage src={avatarUrl} />
                     <AvatarFallback className="text-2xl font-bold bg-black text-white">
                       {avatarFallback}
                     </AvatarFallback>
@@ -90,4 +93,3 @@ export default function ProfileSidebar({
     </aside>
   );
 }
-  

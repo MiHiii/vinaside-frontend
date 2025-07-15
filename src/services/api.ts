@@ -13,9 +13,9 @@ const skipRefresh = [
 
 export const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // headers: {
+  //   "Content-Type": "application/json",
+  // },
   withCredentials: true,
 });
 
@@ -50,8 +50,11 @@ const shouldRefreshToken = (originalRequest: AxiosRequestConfig) => {
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
+    
     if (token && config.headers) {
       config.headers["Authorization"] = `Bearer ${token}`;
+      console.log("[axios] Đính kèm token:", token, "URL:", config.url);
+      
     }
     return config;
   },

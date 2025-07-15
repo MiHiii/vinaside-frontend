@@ -12,14 +12,24 @@ import {
   ClockIcon,
   HeartIcon,
 } from "lucide-react";
+import { FiCamera } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
-import { ProfileFormDialog } from "./FormProflie"; // Điều chỉnh path nếu cần
+import { ProfileFormDialog } from "./FormProflie";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProfileTextareaDialog } from "./FormTextarea";
-import { Switch } from "@/components/ui/switch"; 
+import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
 import { ProfileHobbyDialog } from "./ProfileHobby";
 import { NavLink } from "react-router-dom";
+import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
+import { useRef } from "react";
+import { uploadUserAvatar } from "@/store/slices/userSlice";
+import { ChangeEvent } from "react";
+import toast from "react-hot-toast";
+import { fetchCurrentUser } from "@/store/slices/authSlice";
+// import { createAsyncThunk } from "@reduxjs/toolkit";
+// import { api } from "@/services/api";
+import { updateMyAvatar } from "@/store/slices/userSlice";
 const profileItems = [
   { text: "Nơi tôi từng theo học", icon: BookOpenIcon },
   { text: "Nơi tôi luôn muốn đến", icon: MapPinIcon },
@@ -33,31 +43,77 @@ const profileItems = [
   { text: "Thứ mà tôi luôn nghĩ đến", icon: HeartIcon },
 ];
 
-export default function ProfilePage() {
+
+export default function EditProfiles() {
+  const user = useAppSelector((state) => state.auth.user);
+  const { uploadAvatarLoading, uploadAvatarError } = useAppSelector((state) => state.users);
+  const dispatch = useAppDispatch();
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const [isIntroDialogOpen, setIsIntroDialogOpen] = useState(false); 
+  const [isIntroDialogOpen, setIsIntroDialogOpen] = useState(false);
   const [showEditButton, setShowEditButton] = useState(false);
   const [isHobbyDialogOpen, setIsHobbyDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user?.avatar_url);
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Gọi upload thunk
+    const result = await dispatch(uploadUserAvatar(file));
+    if (uploadUserAvatar.fulfilled.match(result)) {
+      const url = result.payload;
+      await dispatch(updateMyAvatar({ avatar_url: url }));
+      await dispatch(fetchCurrentUser()); // Đồng bộ lại user hiện tại
+      setAvatarPreview(url); // Set lại preview bằng url thực tế từ cloud
+      toast.success("Cập nhật ảnh đại diện thành công!");
+    } else {
+      toast.error((result.payload as string) || "Upload avatar thất bại!");
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <div className="min-h-screen flex justify-center items-start p-6 mt-10">
       <div className="flex flex-col sm:flex-row gap-12 w-full max-w-6xl">
-
         {/* Left: Avatar */}
         <div className="flex flex-col items-center sm:items-start ml-10">
           <div className="relative mb-4">
-            <div className="w-50 h-50 bg-black text-white rounded-full flex items-center justify-center text-8xl font-bold relative">
-              M
+            <div className="w-50 h-50  text-white rounded-full flex items-center justify-center text-8xl font-bold relative">
+              {user?.avatar_url ? (
+                <img
+                  src={avatarPreview}
+                  alt="Avatar"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                <span className="w-full h-full flex items-center justify-center rounded-full bg-black text-white text-8xl font-bold">
+                  {user?.email?.[0]?.toUpperCase() || "U"}
+                </span>
+              )}
+
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
               <Button
-                variant="secondary"
-                size="sm"
+                onClick={() => fileInputRef.current?.click()}
                 className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-white text-gray-800 px-6 py-1 text-[16px] rounded-full shadow-md hover:bg-gray-100 transition"
+                disabled={uploadAvatarLoading}
               >
-                Thêm
+                <FiCamera className="mr-2" />
+                {uploadAvatarLoading ? "Đang tải lên..." : "Chỉnh sửa"}
               </Button>
             </div>
+            {uploadAvatarError && (
+              <div className="text-sm text-red-500 mt-2">{uploadAvatarError}</div>
+            )}
           </div>
         </div>
 
@@ -66,8 +122,12 @@ export default function ProfilePage() {
           <div className="mb-4">
             <h1 className="text-3xl font-bold mb-2">Hồ sơ của tôi</h1>
             <p className="text-gray-600 text-sm">
-              Host và khách có thể xem hồ sơ của bạn và hồ sơ này có thể hiển thị trên Airbnb để giúp chúng tôi tạo dựng niềm tin trong cộng đồng của mình.{" "}
-              <a href="#" className="underline font-medium">Tìm hiểu thêm</a>
+              Host và khách có thể xem hồ sơ của bạn và hồ sơ này có thể hiển
+              thị trên Airbnb để giúp chúng tôi tạo dựng niềm tin trong cộng
+              đồng của mình.{" "}
+              <a href="#" className="underline font-medium">
+                Tìm hiểu thêm
+              </a>
             </p>
           </div>
 
@@ -84,7 +144,9 @@ export default function ProfilePage() {
                   onMouseLeave={() => setHoverIndex(null)}
                   onClick={() => setSelectedItem(text)}
                   className={`justify-start h-auto py-6 w-[300px] text-base font-medium border-0 transition break-words whitespace-normal bg-transparent rounded-md ${
-                    hideBorder ? "border-b-transparent" : "border-b border-gray-300"
+                    hideBorder
+                      ? "border-b-transparent"
+                      : "border-b border-gray-300"
                   } hover:bg-gray-100 flex items-center gap-3`}
                 >
                   <Icon className="w-5 h-5 text-gray-600" />
@@ -102,20 +164,21 @@ export default function ProfilePage() {
               title={selectedItem}
             />
           )}
-          
-        
+
           {/* Giới thiệu bản thân */}
 
           <div className="mt-8">
             <h1 className="text-3xl font-bold mb-2">Giới thiệu bản thân</h1>
             <Card className="border-dashed border border-gray-300 rounded-xl mt-8">
               <CardContent className="p-6 space-y-2">
-                <p className="text-gray-600">Viết nội dung thú vị và ấn tượng.</p>
+                <p className="text-gray-600">
+                  Viết nội dung thú vị và ấn tượng.
+                </p>
                 <a
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    setIsIntroDialogOpen(true); 
+                    setIsIntroDialogOpen(true);
                   }}
                   className="text-sm text-black font-medium underline"
                 >
@@ -131,49 +194,53 @@ export default function ProfilePage() {
               title="Giới thiệu bản thân"
             />
           </div>
-               <hr className="mt-8 border-gray-300" />   
+          <hr className="mt-8 border-gray-300" />
           {/* Nơi tôi từng đến */}
-             <div className="mt-8  ">
-      {/* Phần tiêu đề và switch */}
-      <div className="flex items-center justify-between">
-        <div>
-           <h1 className="text-3xl font-bold mb-2">Nơi tôi từng đến</h1>
-          <p className="text-sm text-gray-500">
-            Chọn tem mà bạn muốn hiển thị cho người khác xem trên hồ sơ của mình.
-          </p>
-        </div>
+          <div className="mt-8  ">
+            {/* Phần tiêu đề và switch */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Nơi tôi từng đến</h1>
+                <p className="text-sm text-gray-500">
+                  Chọn tem mà bạn muốn hiển thị cho người khác xem trên hồ sơ
+                  của mình.
+                </p>
+              </div>
 
-        {/* Switch component từ Shadcn/UI */}
-        <Switch
-        
-          id="show-travel-badge"
-          checked={showEditButton}
-          onCheckedChange={(checked) => setShowEditButton(checked)}
-        />
-      </div>
-           
-      {showEditButton && (
-        <div className="mt-10">
-          <Button variant="secondary" className=" w-[220px] h-[50px] bg-gray-100  hover:bg-gray-200  rounded-md text-lg"
-          >
-            Chỉnh sửa tem du lịch
-          </Button>
-        </div>
-      )}
-    </div>
+              {/* Switch component từ Shadcn/UI */}
+              <Switch
+                id="show-travel-badge"
+                checked={showEditButton}
+                onCheckedChange={(checked) => setShowEditButton(checked)}
+              />
+            </div>
 
-       <hr className="mt-8 border-gray-300" />   
-            
-         <div className="mt-8">
+            {showEditButton && (
+              <div className="mt-10">
+                <Button
+                  variant="secondary"
+                  className=" w-[220px] h-[50px] bg-gray-100  hover:bg-gray-200  rounded-md text-lg"
+                >
+                  Chỉnh sửa tem du lịch
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <hr className="mt-8 border-gray-300" />
+
+          <div className="mt-8">
             <h1 className="text-3xl font-bold mb-2">Giới thiệu bản thân</h1>
             <Card className="border-dashed border border-gray-300 rounded-xl mt-8">
               <CardContent className="p-6 space-y-2">
-                <p className="text-gray-600">Viết nội dung thú vị và ấn tượng.</p>
+                <p className="text-gray-600">
+                  Viết nội dung thú vị và ấn tượng.
+                </p>
                 <a
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    setIsIntroDialogOpen(true); 
+                    setIsIntroDialogOpen(true);
                   }}
                   className="text-sm text-black font-medium underline"
                 >
@@ -187,50 +254,53 @@ export default function ProfilePage() {
               title="Giới thiệu bản thân"
             />
           </div>
-        <hr className="mt-8 border-gray-300" />   
-     
-            <div className="mt-8  ">
+          <hr className="mt-8 border-gray-300" />
+
+          <div className="mt-8  ">
             {/* Sở thích */}
             <h1 className="text-3xl font-bold mb-2">Sở thích của tôi</h1>
-            <p className="text-gray-600">Thêm sở thích vào hồ sơ để tìm ra điểm chung với host và khách khác.</p>
+            <p className="text-gray-600">
+              Thêm sở thích vào hồ sơ để tìm ra điểm chung với host và khách
+              khác.
+            </p>
             <div className="flex gap-4 mb-6 mt-6">
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                onClick={() => setIsHobbyDialogOpen(true)} // mở dialog khi click
-                className="w-25 h-10 flex items-center justify-center border-1 border-dashed rounded-xl text-gray-400 cursor-pointer"
-              >
-                <Plus className="w-20 h-6" />
-              </div>
-            ))}
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  onClick={() => setIsHobbyDialogOpen(true)} // mở dialog khi click
+                  className="w-25 h-10 flex items-center justify-center border-1 border-dashed rounded-xl text-gray-400 cursor-pointer"
+                >
+                  <Plus className="w-20 h-6" />
+                </div>
+              ))}
+            </div>
+
+            <Button
+              variant="secondary"
+              className="w-[200px] h-[46px] bg-gray-100 hover:bg-gray-200 rounded-md text-lg"
+              onClick={() => setIsHobbyDialogOpen(true)} // cũng mở dialog khi click
+            >
+              Thêm sở thích
+            </Button>
+
+            <ProfileHobbyDialog
+              isOpen={isHobbyDialogOpen}
+              onClose={() => setIsHobbyDialogOpen(false)}
+              title="Chọn sở thích của bạn"
+            />
           </div>
 
-          <Button
-            variant="secondary"
-            className="w-[200px] h-[46px] bg-gray-100 hover:bg-gray-200 rounded-md text-lg"
-            onClick={() => setIsHobbyDialogOpen(true)} // cũng mở dialog khi click
-          >
-            Thêm sở thích
-          </Button>
-
-          <ProfileHobbyDialog
-            isOpen={isHobbyDialogOpen}
-            onClose={() => setIsHobbyDialogOpen(false)}
-            title="Chọn sở thích của bạn"
-          />
-
-      </div>
-
-
-       <hr className="mt-8 border-gray-300" />   
+          <hr className="mt-8 border-gray-300" />
 
           {/* Hoàn tất button */}
           <div className="mt-8 ml-160">
             <Button className="px-6 py-6 text-white bg-black rounded-xl text-lg">
-              <NavLink to="/profilepage" className="flex items-center justify-center">
-               Hoàn tất
+              <NavLink
+                to="/profilepage"
+                className="flex items-center justify-center"
+              >
+                Hoàn tất
               </NavLink>
-             
             </Button>
           </div>
         </div>

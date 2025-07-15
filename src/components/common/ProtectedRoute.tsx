@@ -1,20 +1,22 @@
-// src/components/ProtectedRoute.tsx
 import { useAppSelector } from "@/hooks/useRedux";
 import { RootState } from "@/store";
 import React, { useEffect } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { api } from "@/services/api";
 
 type Props = {
   children: React.ReactNode;
-  requiredRole?: "user" | "admin";
+  requiredRole?: string | string[];
 };
 
 const ProtectedRoute: React.FC<Props> = ({ children, requiredRole }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, token } = useAppSelector((state: RootState) => state.auth);
+  const location = useLocation();
+  const { user, token, isCheckingAuth } = useAppSelector(
+    (state: RootState) => state.auth
+  );
   const accessToken = localStorage.getItem("access_token");
 
   useEffect(() => {
@@ -41,9 +43,18 @@ const ProtectedRoute: React.FC<Props> = ({ children, requiredRole }) => {
     fetchUserInfo();
   }, [accessToken, user, dispatch, navigate]);
 
+  // If checking auth, show loading
+  if (isCheckingAuth) {
+    return (
+      <div className="flex items-center justify-center h-screen text-lg font-semibold">
+        Loading...
+      </div>
+    );
+  }
+
   // If no token, redirect to login
   if (!accessToken) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // If has token but no user info yet, show loading
@@ -52,8 +63,11 @@ const ProtectedRoute: React.FC<Props> = ({ children, requiredRole }) => {
   }
 
   // If has user info but role doesn't match
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/unauthorized" replace />;
+  if (requiredRole && user) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!roles.includes(user.role)) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   // Has both token and user info, and role matches

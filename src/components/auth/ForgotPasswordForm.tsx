@@ -20,7 +20,7 @@ export default function ForgotPasswordForm() {
     try {
       await dispatch(forgotPassword(data)).unwrap();
       toast.success("Liên kết khôi phục đã được gửi tới email của bạn");
-      methods.reset(); // Reset lại form
+      methods.reset(); 
     } catch (error) {
       toast.error((error as string) || "Gửi email khôi phục thất bại");
     }

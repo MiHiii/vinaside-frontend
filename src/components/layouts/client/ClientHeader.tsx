@@ -11,13 +11,15 @@ import {
 import { useMobile } from "@/hooks/useMobile";
 import ClientSearch from "../../common/ClientSearch";
 import { Globe, Menu } from "lucide-react";
-import ThemeToggle from "../common/ThemeToggle";
+import ThemeToggle from "../../common/ThemeToggle";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { logout } from "@/store/slices/authSlice";
+import { deleteAccount, logout } from "@/store/slices/authSlice";
+import toast from "react-hot-toast";
 
 export default function ClientHeader() {
   const isMobile = useMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -29,6 +31,17 @@ export default function ClientHeader() {
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
+  };
+  //xóa tài khoản
+  const handleDeleteAccount = async () => {
+    try {
+      await dispatch(deleteAccount()).unwrap();
+      dispatch(logout());
+      navigate("/login");
+      toast.success("Tài khoản đã được xóa thành công");
+    } catch (error) {
+      toast.error(error as string);
+    }
   };
 
   return (
@@ -62,16 +75,43 @@ export default function ClientHeader() {
           <ThemeToggle />
 
           {/* Nút "Trở thành host" desktop */}
-          {!isMobile && (
-            <Link to={"/overview"}>
-              <Button
-                variant="ghost"
-                className="hidden rounded-full text-sm font-medium md:flex transition hover:bg-gray-100 hover:text-rose-500"
-              >
-                Trở thành host
-              </Button>
-            </Link>
-          )}
+          {!isMobile &&
+            (user ? (
+              <div className="flex items-center gap-4">
+                <Link to={""}>
+                  <Button
+                    variant="ghost"
+                    className="rounded-full text-sm font-medium transition hover:bg-gray-100 hover:text-rose-500"
+                  >
+                    Đón tiếp khách
+                  </Button>
+                </Link>
+                <Link to={"/profilepage"}>
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-lg">
+                     {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt="Avatar"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                <span className="w-full h-full flex items-center justify-center rounded-full bg-black text-white text-8xl font-bold">
+                  {user?.email?.[0]?.toUpperCase() || "U"}
+                </span>
+              )}
+                  </div>
+                </Link>
+              </div>
+            ) : (
+              <Link to={"/overview"}>
+                <Button
+                  variant="ghost"
+                  className="rounded-full text-sm font-medium transition hover:bg-gray-100 hover:text-rose-500"
+                >
+                  Trở thành host
+                </Button>
+              </Link>
+            ))}
 
           {/* Nút globe chọn ngôn ngữ */}
           {!isMobile && (
@@ -132,6 +172,38 @@ export default function ClientHeader() {
                     <DropdownMenuItem onClick={handleLogout}>
                       Đăng xuất
                     </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => setShowDeleteModal(true)}>
+                      Xóa tài khoản
+                    </DropdownMenuItem>
+
+                    {showDeleteModal && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-6 rounded-lg max-w-md w-full">
+                          <h3 className="text-xl font-bold mb-4">
+                            Xác nhận xóa tài khoản
+                          </h3>
+                          <p className="mb-4">
+                            Bạn có chắc chắn muốn xóa tài khoản? Hành động này
+                            không thể hoàn tác.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setShowDeleteModal(false)}
+                              className="bg-gray-300 px-4 py-2 rounded-lg"
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              onClick={handleDeleteAccount}
+                              className="bg-red-500 text-white px-4 py-2 rounded-lg"
+                            >
+                              Xóa tài khoản
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
                 <DropdownMenuSeparator />

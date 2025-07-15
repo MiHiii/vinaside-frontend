@@ -11,6 +11,7 @@ const initialState: AuthState = {
   error: null,
   verifyStatus: null,
   verifyEmail: null,
+  isCheckingAuth: true,
 };
 
 // Action verifyEmailByToken
@@ -138,10 +139,7 @@ export const forgotPassword = createAsyncThunk(
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async (
-    {
-      token,
-      newPassword,
-    }: { token: string; newPassword: string },
+    { token, newPassword }: { token: string; newPassword: string },
     thunkAPI
   ) => {
     try {
@@ -154,6 +152,37 @@ export const resetPassword = createAsyncThunk(
       const axiosErr = err as AxiosError<{ message?: string }>;
       return thunkAPI.rejectWithValue(
         axiosErr.response?.data?.message || "Đặt lại mật khẩu thất bại"
+      );
+    }
+  }
+);
+
+export const fetchCurrentUser = createAsyncThunk(
+  "auth/fetchCurrentUser",
+  async (_, thunkAPI) => {
+    try {
+      const { data } = await api.get("/auth/me");
+
+      return data;
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      return thunkAPI.rejectWithValue(
+        axiosErr.response?.data?.message || "Không lấy được user"
+      );
+    }
+  }
+);
+
+export const deleteAccount = createAsyncThunk(
+  "auth/deleteAccount",
+  async (_, thunkAPI) => {
+    try {
+      await api.delete("/auth/delete-account");
+      return true;
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      return thunkAPI.rejectWithValue(
+        axiosErr.response?.data?.message || "Xóa tài khoản thất bại"
       );
     }
   }
@@ -191,8 +220,14 @@ const authSlice = createSlice({
             state.user = action.payload.data.user;
             state.token = action.payload.data.access_token;
             // Lưu vào localStorage
-            localStorage.setItem("access_token", action.payload.data.access_token);
-            localStorage.setItem("user", JSON.stringify(action.payload.data.user));
+            localStorage.setItem(
+              "access_token",
+              action.payload.data.access_token
+            );
+            localStorage.setItem(
+              "user",
+              JSON.stringify(action.payload.data.user)
+            );
           } else {
             state.error = action.payload.message || "Login failed";
           }
@@ -286,6 +321,38 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.loading = true;
+        state.isCheckingAuth = true; // đang check user từ token
+        state.error = null;
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isCheckingAuth = false;
+        state.user = action.payload.data.user || null;
+      })
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        state.loading = false;
+        state.isCheckingAuth = false;
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem("access_token");
+        state.error = action.payload as string;
+      })
+      // Xoá tài khoản
+      .addCase(deleteAccount.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteAccount.fulfilled, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem("access_token");
+      })
+      .addCase(deleteAccount.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 

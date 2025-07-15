@@ -1,3 +1,4 @@
+// src/router/index.tsx
 import { createBrowserRouter, RouteObject } from "react-router-dom";
 import HomePage from "@/pages/HomePage";
 import Register from "@/pages/auth/RegisterPage";
@@ -13,7 +14,7 @@ import EditProfile from "@/components/useProfile/EditProfile";
 import OtpPage from "@/pages/auth/OtpPage";
 import RoomDeatil from "@/pages/RoomDeatil";
 import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
-// import BecomeAHost
+// Become a host
 import Overview from "@/pages/become-a-host/Overview";
 import Location from "@/pages/become-a-host/Location";
 import AboutYourPlace from "@/pages/become-a-host/AboutYourPlace";
@@ -32,11 +33,31 @@ import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLay
 import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
 import Messages from "@/components/host/Messages";
 // Admin Pages
-import AdminLayout from "@/pages/admin/AdminLayout";
+import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
-// import ProtectedRoute from "@/components/common/ProtectedRoute";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
+import AdminUserPage from "@/pages/admin/user/AdminUserPage";
+import AdminUserDetail from "@/pages/admin/user/AdminUserDetail";
+import CreateUserPage from "@/pages/admin/user/CreateUserPage";
 
+
+import PaymentPage from "@/pages/payment/PaymentPage";
+//properties
+import PropertiesPage from "@/pages/admin/property/PropertiesPage";
+import CreatePropertyPage from "@/pages/admin/property/CreatePropertyPage";
+import EditPropertyPage from "@/pages/admin/property/EditPropertyPage";
+import PropertyDetailPage from "@/pages/admin/property/PropertyDetailPage";
+import PropertyDeletedPage from "@/pages/admin/property/PropertyDeletedPage";
+//listing
+import ListingsPage from "@/pages/admin/listing/ListingsPage";
+import EditListingPage from "@/pages/admin/listing/EditListingPage";
+import ListingDetailPage from "@/pages/admin/listing/ListingDetailPage";
+import CreateListingPage from "@/pages/admin/listing/CreateListingPage";
+import DeleteListingsPage from "@/pages/admin/listing/DeleteListingsPage";
+import AmenitiesPage from "@/pages/admin/amenities/AmenitiesPage";
+import CreateAmenities from "@/components/admin/amenities/CreateAmenities";
+import EditAmenities from "@/components/admin/amenities/EditAmenities";
 
 
 const routes: RouteObject[] = [
@@ -49,23 +70,59 @@ const routes: RouteObject[] = [
       { path: "login", element: <Login /> },
       {
         path: "verify-otp",
-        element: (
-          // <ProtectedRoute>
+        element:
+          
             <OtpPage />
-          // </ProtectedRoute>
-        ),
       },
       { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
-
-      { path: "profilepage", element: <UserProfilePage /> },
-      { path: "past-trip", element: <PastTrip /> },
-      { path: "connection", element: <Connection /> },
-      { path: "edit-profile", element: <EditProfile /> },
+      {
+        path: "profilepage",
+        element: (
+          <ProtectedRoute>
+            <UserProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "past-trip",
+        element: (
+          <ProtectedRoute>
+            <PastTrip />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "connection",
+        element: (
+          <ProtectedRoute>
+            <Connection />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "edit-profile",
+        element: (
+          <ProtectedRoute>
+            <EditProfile />
+          </ProtectedRoute>
+        ),
+      },
       { path: "room-detail", element: <RoomDeatil /> },
+     
     ],
   },
+  {
+    path: "/payment",
+    element: (
+      <ProtectedRoute>
+        <PaymentPage />
+      </ProtectedRoute>
+    ),
+  },
+
+  // Các route trở thành host, có thể cho phép tất cả user đăng nhập, hoặc chỉ một số role, nếu cần thì wrap bằng ProtectedRoute luôn
   { path: "/overview", element: <Overview /> },
   { path: "/location", element: <Location /> },
   { path: "/about-your-place", element: <AboutYourPlace /> },
@@ -78,10 +135,14 @@ const routes: RouteObject[] = [
   { path: "/finish-setup", element: <FinishSetup /> },
   { path: "/price", element: <Price /> },
 
-  //router Become a host
+  // router Become a host (nếu cần bảo vệ, wrap bằng ProtectedRoute)
   {
     path: "/become-a-host",
-    element: <BecomeAHostLayout />,
+    element: (
+      <ProtectedRoute>
+        <BecomeAHostLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <BecomeAHost /> },
       { path: "about-your-place", element: <AboutYourPlace /> },
@@ -96,12 +157,15 @@ const routes: RouteObject[] = [
       { path: "price", element: <Price /> },
     ],
   },
-  { path: "/overview", element: <Overview /> },
 
-  //hosting
+  // hosting (chỉ cho host hoặc admin)
   {
     path: "/hosting",
-    element: <HostLayout />,
+    element: (
+      <ProtectedRoute requiredRole={["host", "admin"]}>
+        <HostLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Hosting /> },
       { path: "listings", element: <Listing /> },
@@ -109,15 +173,39 @@ const routes: RouteObject[] = [
     ],
   },
 
-  // admin routes
+  // admin routes (chỉ cho admin)
   {
     path: "/admin",
-    element: <AdminLayout />,
+    element: (
+      <ProtectedRoute requiredRole="admin">
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <DashboardContent /> },
       { path: "tasks", element: <Tasks /> },
+      { path: "user", element: <AdminUserPage /> },
+      { path: "user/:id", element: <AdminUserDetail /> },
+      { path: "user/create", element: <CreateUserPage /> },
+      //listing
+      { path: "listings", element: <ListingsPage /> },
+      { path: "listings/create", element: <CreateListingPage /> },
+      { path: "listings/edit/:id", element: <EditListingPage /> },
+      { path: "listings/:id", element: <ListingDetailPage /> },
+      //properties
+      { path: "properties", element: <PropertiesPage /> },
+      { path: "listings/deleted", element: <DeleteListingsPage/> },
+      { path: "properties/create", element: <CreatePropertyPage /> },
+      { path: "properties/edit/:id", element: <EditPropertyPage /> },
+      { path: "properties/:id", element: <PropertyDetailPage /> },
+      { path: "properties/deleted", element: <PropertyDeletedPage /> },
+      //amenities
+      { path: "amenities", element: <AmenitiesPage /> },
+      { path: "amenities/create", element: <CreateAmenities /> },
+      { path: "amenities/edit/:id", element: <EditAmenities /> },
     ],
   },
+
   // Catch-all route for 404 errors
   {
     path: "*",
