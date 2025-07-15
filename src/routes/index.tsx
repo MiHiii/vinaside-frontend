@@ -65,6 +65,9 @@ import ServiceListPage from "@/pages/admin/service/ServiceListPage";
 import SafetyFeatureListPage from "@/pages/admin/safety-feature/SafetyFeatureListPage";
 import HouseRuleListPage from "@/pages/admin/house-rule/HouseRuleListPage";
 
+//booking
+import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
+import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
 const routes: RouteObject[] = [
   {
     path: "/",
@@ -177,6 +180,14 @@ const routes: RouteObject[] = [
 
   // admin routes (chỉ cho admin)
   {
+    path: "/admin/bookings/:propertyId/:bookingId",
+    element: (
+      <ProtectedRoute requiredRole="admin">
+        <BookingDetailPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/admin",
     element: (
       <ProtectedRoute requiredRole="admin">
@@ -195,6 +206,13 @@ const routes: RouteObject[] = [
       { path: "listings/create", element: <CreateListingPage /> },
       { path: "listings/edit/:id", element: <EditListingPage /> },
       { path: "listings/:id", element: <ListingDetailPage /> },
+
+      // booking
+      { path: "bookings", element: <BookingManagementPage /> },
+      {
+        path: "bookings/:propertyId/:bookingId",
+        element: <BookingDetailPage/>
+      },
       //properties
       { path: "properties", element: <PropertiesPage /> },
       { path: "listings/deleted", element: <DeleteListingsPage /> },
@@ -206,7 +224,7 @@ const routes: RouteObject[] = [
       { path: "amenities", element: <AmenitiesPage /> },
       { path: "amenities/create", element: <CreateAmenities /> },
       { path: "amenities/edit/:id", element: <EditAmenities /> },
-      
+
       { path: "permissions-manager", element: <RoleManagementPage /> },
       { path: "permissions/create", element: <RoleCreatePage /> },
       { path: "vouchers", element: <VoucherListPage /> },
