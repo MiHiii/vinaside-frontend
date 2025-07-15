@@ -7,6 +7,12 @@ import propertiesReducer from './slices/propertySlice';
 import amenityReducer from './slices/amenitySlice';
 import reviewReducer from './slices/reviewSlice';
 import bookingReducer from './slices/bookingSlice';
+import rbacReducer from "./slices/rbacSlice";
+import voucherReducer from "./slices/voucherSlice";
+import serviceReducer from './slices/serviceSlice';
+import safetyFeatureReducer from './slices/safetyFeatureSlice';
+import houseRuleReducer from './slices/houseRuleSlice';
+import uploadReducer from './slices/uploadSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +24,12 @@ export const store = configureStore({
     amenities: amenityReducer,
     reviews: reviewReducer,
     booking: bookingReducer,
+    rbac: rbacReducer,
+    voucher: voucherReducer,
+    service: serviceReducer,
+    safetyFeature: safetyFeatureReducer,
+    houseRule: houseRuleReducer,
+    upload: uploadReducer,
   },
 });
 
