@@ -11,6 +11,7 @@ export interface SafetyFeature {
   deletedAt?: string;
   created_at: string;
   updated_at: string;
+  icon_url?: string;
 }
 
 export interface CreateSafetyFeatureDto {
