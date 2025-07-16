@@ -63,30 +63,34 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setCheckIn(range.from);
     setCheckOut(range.to);
     setNights(calculateNights(range.from, range.to));
+    // Auto close popover when both dates are selected
+    if (range.from && range.to) {
+      setDateOpen(false);
+    }
   };
 
   return (
     <Popover open={dateOpen} onOpenChange={setDateOpen}>
       <PopoverTrigger asChild>
-        <div className="border rounded-md p-3 cursor-pointer text-sm flex items-center justify-between">
+        <div className="border rounded-2xl p-3 cursor-pointer text-sm flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition min-h-[44px] w-full">
           <div>
             <p className="text-xs text-gray-500">NHẬN PHÒNG</p>
-            <p>{checkIn ? format(checkIn, "dd/MM/yyyy") : "Thêm ngày"}</p>
+            <p className="text-base">{checkIn ? format(checkIn, "dd/MM/yyyy") : "Thêm ngày"}</p>
           </div>
-          <div className="border-l px-4">
+          <div className="border-l px-2">
             <p className="text-xs text-gray-500">TRẢ PHÒNG</p>
-            <p>{checkOut ? format(checkOut, "dd/MM/yyyy") : "Thêm ngày"}</p>
+            <p className="text-base">{checkOut ? format(checkOut, "dd/MM/yyyy") : "Thêm ngày"}</p>
           </div>
           <CalendarIcon className="ml-2 h-4 w-4" />
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-4" align="start">
+      <PopoverContent className="w-auto p-6 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 shadow-lg rounded-xl border-0 -translate-x-12" align="start">
         <Calendar
           mode="range"
           selected={{
             from: checkIn ?? undefined,
             to: checkOut ?? undefined,
-          }}
+          }}  
           onSelect={handleSelect}
           numberOfMonths={2}
           disabled={bookedDates}
@@ -96,8 +100,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
               "bg-gray-300 text-gray-500 line-through opacity-60 cursor-not-allowed",
           }}
         />
-
-        <div className="mt-2 text-right text-sm text-gray-600">
+        <div className="mt-4 text-right text-base text-gray-600">
           <button
             onClick={() => {
               setCheckIn(null);
