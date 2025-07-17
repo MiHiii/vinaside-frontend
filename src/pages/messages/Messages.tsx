@@ -749,12 +749,12 @@ export default function Messages() {
           <div className="p-4 border-t border-gray-200 bg-background shadow-sm flex-shrink-0 input-area-container">
             {/* Reply Preview */}
             {replyingTo && (
-              <div className="max-w-[790px] mx-auto mb-3 bg-primary/10 border border-primary rounded-lg p-3 shadow-sm">
+              <div className="max-w-[790px] mx-auto mb-3 bg-primary/10 border border-sky-500 rounded-lg p-3 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <Reply className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium text-primary">
+                      <span className="text-[14px] text-primary">
                         Đang trả lời{" "}
                         {replyingTo.senderId === myId
                           ? "chính mình"
@@ -762,7 +762,7 @@ export default function Messages() {
                               ?.name || "người dùng"}
                       </span>
                     </div>
-                    <div className="text-sm text-foreground bg-card rounded-lg px-3 py-2 border-l-3 border-primary shadow-sm">
+                    <div className="text-sm text-foreground bg-card rounded-lg px-3 py-2 border-l-3 border-sky-500 shadow-sm">
                       {replyingTo.content.length > 80
                         ? `${replyingTo.content.substring(0, 80)}...`
                         : replyingTo.content}
