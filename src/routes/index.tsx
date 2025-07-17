@@ -37,9 +37,6 @@ import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
-import AdminUserPage from "@/pages/admin/user/AdminUserPage";
-import AdminUserDetail from "@/pages/admin/user/AdminUserDetail";
-import CreateUserPage from "@/pages/admin/user/CreateUserPage";
 
 import PaymentPage from "@/pages/payment/PaymentPage";
 //properties
@@ -68,6 +65,7 @@ import HouseRuleListPage from "@/pages/admin/house-rule/HouseRuleListPage";
 //booking
 import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
 import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
+import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 const routes: RouteObject[] = [
   {
     path: "/",
@@ -197,9 +195,6 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <DashboardContent /> },
       { path: "tasks", element: <Tasks /> },
-      { path: "user", element: <AdminUserPage /> },
-      { path: "user/:id", element: <AdminUserDetail /> },
-      { path: "user/create", element: <CreateUserPage /> },
 
       //listing
       { path: "listings", element: <ListingsPage /> },
@@ -231,6 +226,7 @@ const routes: RouteObject[] = [
       { path: "services", element: <ServiceListPage /> },
       { path: "safety-features", element: <SafetyFeatureListPage /> },
       { path: "house-rules", element: <HouseRuleListPage /> },
+      { path: "users", element: <AdminUserPage /> },
     ],
   },
 

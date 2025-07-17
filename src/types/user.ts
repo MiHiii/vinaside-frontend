@@ -1,25 +1,31 @@
-export type UserRole = "guest" | "staff" | "admin";
 export type UserLanguage = "vi" | "en";
 
 export interface User {
-  id: string;
-  _id?: string;
+  _id: string;
   name: string;
   email: string;
   phone: string;
   avatar_url?: string;
-  role: UserRole;
-  language: UserLanguage;
-  is_verified: boolean;
-  isDeleted: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  role?: string;
+  is_verified?: boolean;
+}
+
+export interface Role {
+  _id: string;
+  name: string;
+  key: string;
+}
+
+export interface UserRole {
+  _id: string;
+  name: string;
+  key: string;
 }
 
 export interface CreateUserDto {
   name: string;
   email: string;
-  password_hash: string;
+  password: string;
   phone: string;
   avatar_url?: string;
   role?: UserRole;
