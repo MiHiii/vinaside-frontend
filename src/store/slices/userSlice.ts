@@ -160,7 +160,7 @@ export const uploadUserAvatar = createAsyncThunk<
       !data?.urls ||
       !Array.isArray(data.urls) ||
       data.urls.length === 0
-    )
+    ) 
       throw new Error("Không nhận được url ảnh!");
     return data.urls[0];
   } catch (error) {

@@ -4,6 +4,7 @@ import { Heart } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { fetchListingById } from '@/store/slices/listingSlice';
 import { IListing } from '@/types/listing';
+import { fetchAmenities, selectAmenities } from '@/store/slices/amenitySlice';
 
 // UI & Components
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import GallerySection from '@/components/roomdetail/GallerySection';
 import RoomInfo from '@/components/roomdetail/RoomInfo';
 import BookingForm from '@/components/roomdetail/BookingForm';
 import { useBookedDates } from '@/hooks/useBookedDates';
+import RoomReviews from '@/components/roomdetail/RoomReviews';
 
 export default function RoomDetailPage() {
   const { id } = useParams();
@@ -33,10 +35,14 @@ export default function RoomDetailPage() {
     infants: listing?.allow_infants ? 1 : 0,
     pets: listing?.allow_pets ? 0 : 0,
   });
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-  // Gọi API lấy thông tin phòng
+  const amenitiesList = useAppSelector(selectAmenities);
+
+  // Gọi API lấy thông tin phòng và tiện ích
   useEffect(() => {
     if (id) dispatch(fetchListingById(id));
+    dispatch(fetchAmenities({}));
   }, [id, dispatch]);
 
   if (loading) return <p className='text-center py-10'>Đang tải phòng...</p>;
@@ -68,18 +74,18 @@ export default function RoomDetailPage() {
         </div>
 
         {/* Lưới bố cục các phần */}
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12'>
+        <div className='grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-start'>
           {/* Gallery ảnh */}
           <div className='col-span-full'>
             <GallerySection images={listingData.images} title={listingData.title} />
           </div>
 
           {/* Thông tin phòng và mô tả */}
-          <div className='space-y-6 lg:space-y-8'>
-            <RoomInfo listing={listingData} />
+          <div className='lg:col-span-8 space-y-6 lg:space-y-8'>
+            <RoomInfo listing={listingData} amenitiesList={amenitiesList} selectedServices={selectedServices} setSelectedServices={setSelectedServices} />
           </div>
           {/* Booking Form ngoài cùng bên phải */}
-          <div className='hidden lg:block'>
+          <div className='hidden lg:flex flex-col items-end lg:col-span-4'>
             <BookingForm
               listing={listingData}
               checkIn={checkIn}
@@ -95,10 +101,14 @@ export default function RoomDetailPage() {
               setDateOpen={setDateOpen}
               guestOpen={guestOpen}
               setGuestOpen={setGuestOpen}
+              selectedServices={selectedServices}
             />
           </div>
         </div>
 
+        {/* Đánh giá của khách */}
+        <RoomReviews />
+        
         {/* Google Map */}
         {/* <div className="mt-12 border-t border-gray-200 pt-8">
           <h2 className="text-2xl font-semibold mb-4">Nơi bạn sẽ đến</h2>

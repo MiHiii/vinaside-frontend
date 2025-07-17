@@ -120,21 +120,7 @@ const GallerySection: React.FC<GallerySectionProps> = ({
                 />
               </div>
             ))}
-
-            {/* Overlay nếu còn ảnh khác */}
-            {totalImages > 5 && (
-              <div
-                className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer hover:bg-black/50 transition-all duration-300 z-10"
-                onClick={() => openLightbox(4)}
-              >
-                <div className="text-white text-center">
-                  <Grid3X3 className="h-6 w-6 mx-auto mb-2" />
-                  <span className="text-sm font-medium">
-                    +{totalImages - 5} ảnh khác
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* Đã xoá overlay '+x ảnh khác' nếu nhiều hơn 5 ảnh */}
           </div>
         </div>
 
