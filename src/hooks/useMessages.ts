@@ -760,56 +760,9 @@ export const useMessages = () => {
     reactionType: ReactionType
   ) => {
     try {
-      const response = await chatService.toggleReaction(
-        messageId,
-        reactionType
-      );
-
-      setMessages((prev) =>
-        prev.map((msg) => {
-          if (msg.id === messageId) {
-            let updatedReactions = msg.reactions || [];
-            const backendReactions = response.data?.message?.reactions;
-
-            if (backendReactions && Array.isArray(backendReactions)) {
-              updatedReactions = backendReactions.map((reaction: any) => ({
-                emoji: reaction.emoji || "👍",
-                userId: reaction.user_id,
-                userName: reaction.user_name || "",
-                createdAt: reaction.created_at,
-                type: reaction.type,
-                userInfo: reaction.userInfo,
-              }));
-            } else {
-              const existingReactionIndex = updatedReactions.findIndex(
-                (r) => r.userId === myId && r.type === reactionType
-              );
-
-              if (existingReactionIndex !== -1) {
-                updatedReactions.splice(existingReactionIndex, 1);
-              } else {
-                updatedReactions.push({
-                  userId: myId!,
-                  type: reactionType,
-                  emoji:
-                    quickReactions.find((qr) => qr.type === reactionType)
-                      ?.emoji || "👍",
-                  createdAt: new Date().toISOString(),
-                  userName: (user?.name ?? "You") as string,
-                });
-              }
-            }
-
-            return {
-              ...msg,
-              reactions: updatedReactions,
-            };
-          }
-          return msg;
-        })
-      );
-
+      await chatService.toggleReaction(messageId, reactionType);
       setShowReactionPicker(null);
+      // KHÔNG cập nhật state messages ở đây, chờ socket update
     } catch (error) {
       console.error("❌ Error toggling reaction:", error);
     }
