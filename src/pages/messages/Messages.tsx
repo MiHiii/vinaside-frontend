@@ -676,44 +676,49 @@ export default function Messages() {
                                   acc[key] = (acc[key] || []).concat(reaction);
                                   return acc;
                                 }, {} as Record<string, MessageReaction[]>)
-                              ).map(([reactionKey, reactions]) => {
-                                const userReacted = reactions.some(
-                                  (r) => r.userId === myId
-                                );
-                                const reactionType = reactions[0].type;
-
-                                // Better emoji resolution logic
-                                let emoji = reactions[0].emoji;
-                                if (!emoji) {
-                                  // Find emoji from quickReactions array
-                                  const quickReaction = quickReactions.find(
-                                    (qr) => qr.type === reactionType
+                              ).map(
+                                ([reactionKey, reactions]: [
+                                  string,
+                                  MessageReaction[]
+                                ]) => {
+                                  const userReacted = reactions.some(
+                                    (r) => r.userId === myId
                                   );
-                                  emoji = quickReaction?.emoji || "👍"; // fallback
-                                }
+                                  const reactionType = reactions[0].type;
 
-                                return (
-                                  <button
-                                    key={reactionKey}
-                                    onClick={() =>
-                                      handleToggleReaction(
-                                        message.id,
-                                        reactionType
-                                      )
-                                    }
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm transition-colors message-reaction ${
-                                      userReacted
-                                        ? "bg-primary/10 text-primary border border-primary"
-                                        : "bg-muted text-muted-foreground hover:bg-accent"
-                                    }`}
-                                  >
-                                    <span>{emoji}</span>
-                                    {reactions.length > 1 && (
-                                      <span>{reactions.length}</span>
-                                    )}
-                                  </button>
-                                );
-                              })}
+                                  // Better emoji resolution logic
+                                  let emoji = reactions[0].emoji;
+                                  if (!emoji) {
+                                    // Find emoji from quickReactions array
+                                    const quickReaction = quickReactions.find(
+                                      (qr) => qr.type === reactionType
+                                    );
+                                    emoji = quickReaction?.emoji || "👍"; // fallback
+                                  }
+
+                                  return (
+                                    <button
+                                      key={reactionKey}
+                                      onClick={() =>
+                                        handleToggleReaction(
+                                          message.id,
+                                          reactionType
+                                        )
+                                      }
+                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm transition-colors message-reaction ${
+                                        userReacted
+                                          ? "bg-primary/10 text-primary border border-primary"
+                                          : "bg-muted text-muted-foreground hover:bg-accent"
+                                      }`}
+                                    >
+                                      <span>{emoji}</span>
+                                      {reactions.length > 1 && (
+                                        <span>{reactions.length}</span>
+                                      )}
+                                    </button>
+                                  );
+                                }
+                              )}
                             </div>
                           )}
 
