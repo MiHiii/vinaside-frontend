@@ -14,6 +14,7 @@ import EditProfile from "@/components/useProfile/EditProfile";
 import OtpPage from "@/pages/auth/OtpPage";
 import RoomDeatil from "@/pages/RoomDeatil";
 import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
+
 // Become a host
 import Overview from "@/pages/become-a-host/Overview";
 import Location from "@/pages/become-a-host/Location";
@@ -31,7 +32,7 @@ import Hosting from "@/pages/hosting/Hosting";
 import Listing from "@/pages/hosting/Listing";
 import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLayout";
 import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
-import Messages from "@/components/host/Messages";
+import Messages from "@/pages/messages/Messages";
 // Admin Pages
 import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
@@ -40,7 +41,6 @@ import ProtectedRoute from "@/components/common/ProtectedRoute";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import AdminUserDetail from "@/pages/admin/user/AdminUserDetail";
 import CreateUserPage from "@/pages/admin/user/CreateUserPage";
-
 
 import PaymentPage from "@/pages/payment/PaymentPage";
 //properties
@@ -58,8 +58,17 @@ import DeleteListingsPage from "@/pages/admin/listing/DeleteListingsPage";
 import AmenitiesPage from "@/pages/admin/amenities/AmenitiesPage";
 import CreateAmenities from "@/components/admin/amenities/CreateAmenities";
 import EditAmenities from "@/components/admin/amenities/EditAmenities";
+// House Rules
+import RoleManagementPage from "@/pages/admin/roles/RoleManagementPage";
+import RoleCreatePage from "@/pages/admin/roles/RoleCreatePage";
+import VoucherListPage from "@/pages/admin/voucher/VoucherListPage";
+import ServiceListPage from "@/pages/admin/service/ServiceListPage";
+import SafetyFeatureListPage from "@/pages/admin/safety-feature/SafetyFeatureListPage";
+import HouseRuleListPage from "@/pages/admin/house-rule/HouseRuleListPage";
 
-
+//booking
+import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
+import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
 const routes: RouteObject[] = [
   {
     path: "/",
@@ -70,9 +79,7 @@ const routes: RouteObject[] = [
       { path: "login", element: <Login /> },
       {
         path: "verify-otp",
-        element:
-          
-            <OtpPage />
+        element: <OtpPage />,
       },
       { path: "verify-email", element: <VerifyEmailPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
@@ -109,8 +116,16 @@ const routes: RouteObject[] = [
           </ProtectedRoute>
         ),
       },
+      {
+        path: "messages",
+        element: (
+          <ProtectedRoute>
+            <Messages />
+          </ProtectedRoute>
+        ),
+      },
+      { path: "list/:id", element: <RoomDeatil /> },
       { path: "room-detail", element: <RoomDeatil /> },
-     
     ],
   },
   {
@@ -162,7 +177,7 @@ const routes: RouteObject[] = [
   {
     path: "/hosting",
     element: (
-      <ProtectedRoute requiredRole={["host", "admin"]}>
+      <ProtectedRoute requiredRole={["staff", "admin"]}>
         <HostLayout />
       </ProtectedRoute>
     ),
@@ -174,6 +189,14 @@ const routes: RouteObject[] = [
   },
 
   // admin routes (chỉ cho admin)
+  {
+    path: "/admin/bookings/:propertyId/:bookingId",
+    element: (
+      <ProtectedRoute requiredRole="admin">
+        <BookingDetailPage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: "/admin",
     element: (
@@ -187,14 +210,22 @@ const routes: RouteObject[] = [
       { path: "user", element: <AdminUserPage /> },
       { path: "user/:id", element: <AdminUserDetail /> },
       { path: "user/create", element: <CreateUserPage /> },
+
       //listing
       { path: "listings", element: <ListingsPage /> },
       { path: "listings/create", element: <CreateListingPage /> },
       { path: "listings/edit/:id", element: <EditListingPage /> },
       { path: "listings/:id", element: <ListingDetailPage /> },
+
+      // booking
+      { path: "bookings", element: <BookingManagementPage /> },
+      {
+        path: "bookings/:propertyId/:bookingId",
+        element: <BookingDetailPage />,
+      },
       //properties
       { path: "properties", element: <PropertiesPage /> },
-      { path: "listings/deleted", element: <DeleteListingsPage/> },
+      { path: "listings/deleted", element: <DeleteListingsPage /> },
       { path: "properties/create", element: <CreatePropertyPage /> },
       { path: "properties/edit/:id", element: <EditPropertyPage /> },
       { path: "properties/:id", element: <PropertyDetailPage /> },
@@ -203,6 +234,15 @@ const routes: RouteObject[] = [
       { path: "amenities", element: <AmenitiesPage /> },
       { path: "amenities/create", element: <CreateAmenities /> },
       { path: "amenities/edit/:id", element: <EditAmenities /> },
+
+      { path: "messages", element: <Messages /> },
+
+      { path: "permissions-manager", element: <RoleManagementPage /> },
+      { path: "permissions/create", element: <RoleCreatePage /> },
+      { path: "vouchers", element: <VoucherListPage /> },
+      { path: "services", element: <ServiceListPage /> },
+      { path: "safety-features", element: <SafetyFeatureListPage /> },
+      { path: "house-rules", element: <HouseRuleListPage /> },
     ],
   },
 

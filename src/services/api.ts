@@ -1,7 +1,6 @@
 import axios, { AxiosRequestConfig } from "axios";
 
-export const API_URL = "http://localhost:8080/api/v1";
-
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 const skipRefresh = [
   "/auth/login",
   "/auth/register",
@@ -46,7 +45,6 @@ const shouldRefreshToken = (originalRequest: AxiosRequestConfig) => {
   if (skipRefresh.some((endpoint) => url.endsWith(endpoint))) return false;
   return !!originalRequest.headers?.["Authorization"];
 };
-
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
@@ -142,3 +140,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+

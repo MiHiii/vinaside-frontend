@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
@@ -247,25 +246,27 @@ export default function Messages() {
         }
       `}</style>
 
-      <div className="flex w-[1250px] mx-auto h-[calc(100vh-100px)] bg-white">
-        <div className="w-[340px] border-r border-gray-200 p-2">
-          <div className="bg-white mt-3">
+      <div className="flex container p-3 mx-auto h-[calc(100vh-100px)] bg-background">
+        <div className="w-[400px] border-r border-gray-200 p-2 bg-background">
+          <div className="bg-background mt-3">
             <div className="flex items-center justify-between space-x-4">
-              <h1 className="text-xl font-semibold">Tin nhắn</h1>
+              <h1 className="text-xl font-semibold text-foreground">
+                Tin nhắn
+              </h1>
               <div className="flex space-x-2">
-                <button className="p-2 bg-gray-200 rounded-full">
-                  <Search className="w-4 h-4" />
+                <button className="p-2 bg-background rounded-full">
+                  <Search className="w-4 h-4 text-foreground" />
                 </button>
-                <button className="p-2 bg-gray-200 rounded-full">
-                  <Settings className="w-4 h-4" />
-                </button>
+                <Button className="p-2 bg-background rounded-full">
+                  <Settings className="w-4 h-4 text-foreground" />
+                </Button>
               </div>
             </div>
           </div>
           <div className="space-y-4 mt-4">
             {users.length === 0 && (
-              <div className="text-center text-gray-500 py-4">
-                Đang tải danh sách người dùng...
+              <div className="text-center text-muted-foreground py-4">
+                Chưa có cuộc hội thoại nào.
               </div>
             )}
             {users
@@ -299,11 +300,11 @@ export default function Messages() {
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex justify-between">
-                        <div className="font-medium">
+                        <div className="font-medium text-foreground">
                           {u.name || `User ${u._id}`}
                         </div>
                         {conversation?.lastMessage?.createdAt && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-muted-foreground">
                             {(() => {
                               const date = conversation?.lastMessage?.createdAt;
                               if (!date) return "";
@@ -315,7 +316,7 @@ export default function Messages() {
                           </div>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500 truncate max-w-[200px]">
+                      <div className="text-sm text-muted-foreground truncate max-w-[200px]">
                         {conversation?.lastMessage?.content
                           ? conversation.lastMessage.content.length > 30
                             ? `${conversation.lastMessage.content.substring(
@@ -328,7 +329,7 @@ export default function Messages() {
                       {conversation &&
                         typeof conversation.unreadCount === "number" &&
                         conversation.unreadCount > 0 && (
-                          <div className="inline-flex items-center justify-center bg-blue-500 text-white text-xs font-medium rounded-full min-w-[20px] h-5 px-1.5 mt-1">
+                          <div className="inline-flex items-center justify-center bg-primary text-primary-foreground text-xs font-medium rounded-full min-w-[20px] h-5 px-1.5 mt-1">
                             {conversation.unreadCount}
                           </div>
                         )}
@@ -340,7 +341,7 @@ export default function Messages() {
         </div>
 
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm flex-shrink-0">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-background shadow-sm flex-shrink-0">
             <div className="flex items-center gap-3 ml-5">
               <Avatar className="h-12 w-12">
                 <AvatarImage
@@ -352,14 +353,14 @@ export default function Messages() {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="font-semibold text-gray-900 text-[20px]">
-                  {selectedUser?.name || "Select a user"}
+                <h2 className="font-semibold text-foreground text-[20px]">
+                  {selectedUser?.name}
                 </h2>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-4 w-4 text-foreground" />
               </Button>
             </div>
           </div>
@@ -393,7 +394,7 @@ export default function Messages() {
               {/* Show indicator if there are more messages */}
               {messages.length > displayedMessages.length && (
                 <div className="text-center py-2">
-                  <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                  <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
                     Hiển thị {displayedMessages.length} tin nhắn gần nhất (
                     {messages.length - displayedMessages.length} tin cũ hơn)
                   </span>
@@ -487,12 +488,12 @@ export default function Messages() {
                         <div className="flex justify-between items-center mb-2">
                           <div className="flex-1">
                             {showAvatar && !isOwnMessage && (
-                              <span className="text-[12px] font-semibold text-gray-600 ml-1">
+                              <span className="text-[12px] font-semibold text-muted-foreground ml-1">
                                 {sender?.name || "Unknown"}
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-gray-400 ml-2">
+                          <span className="text-[10px] text-muted-foreground ml-2">
                             {(() => {
                               const date = message?.createdAt;
                               if (!date) return "";
@@ -517,14 +518,14 @@ export default function Messages() {
                             <div
                               className={`p-2 rounded-t-lg rounded-b-sm border-l-2 border-solid text-sm relative ${
                                 isOwnMessage
-                                  ? "bg-blue-50 border-blue-400"
-                                  : "bg-gray-50 border-gray-400"
+                                  ? "bg-primary/10 border-primary"
+                                  : "bg-muted border-gray-100"
                               }`}
                             >
                               <div className="text-[11px] mb-1 opacity-70">
                                 Đang trả lời {message.replyTo.senderName}
                               </div>
-                              <div className="text-[15px] text-dark opacity-80 line-clamp-2">
+                              <div className="text-[15px] text-foreground opacity-80 line-clamp-2">
                                 {message.replyTo.content.length > 60
                                   ? `${message.replyTo.content.substring(
                                       0,
@@ -543,16 +544,18 @@ export default function Messages() {
                               : "rounded-2xl"
                           } ${
                             message.isRecalled
-                              ? "bg-gray-50 border border-gray-200"
+                              ? "bg-muted border border-border"
                               : isOwnMessage
                               ? "bg-sky-600 text-white"
-                              : "bg-gray-100 text-gray-900 shadow-sm"
+                              : "bg-card text-foreground shadow-sm"
                           }`}
                           style={{ minHeight: "40px" }}
                         >
                           <p
                             className={`text-[16px] whitespace-pre-wrap break-words ${
-                              message.isRecalled ? "text-gray-500 italic" : ""
+                              message.isRecalled
+                                ? "text-muted-foreground italic"
+                                : ""
                             }`}
                           >
                             {message.content}
@@ -698,10 +701,10 @@ export default function Messages() {
                                         reactionType
                                       )
                                     }
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors message-reaction ${
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm transition-colors message-reaction ${
                                       userReacted
-                                        ? "bg-blue-100 text-blue-700 border border-blue-200"
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        ? "bg-primary/10 text-primary border border-primary"
+                                        : "bg-muted text-muted-foreground hover:bg-accent"
                                     }`}
                                   >
                                     <span>{emoji}</span>
@@ -733,7 +736,7 @@ export default function Messages() {
                   );
                 })
               ) : (
-                <div className="text-center text-gray-500 py-8">
+                <div className="text-center text-muted-foreground py-8">
                   {selectedUser
                     ? "Chưa có tin nhắn nào"
                     : "Chọn một người dùng để bắt đầu chat"}
@@ -743,15 +746,15 @@ export default function Messages() {
             </div>
           </ScrollArea>
 
-          <div className="p-4 border-t border-gray-200 bg-white shadow-sm flex-shrink-0 input-area-container">
+          <div className="p-4 border-t border-gray-200 bg-background shadow-sm flex-shrink-0 input-area-container">
             {/* Reply Preview */}
             {replyingTo && (
-              <div className="max-w-[790px] mx-auto mb-3 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3 shadow-sm">
+              <div className="max-w-[790px] mx-auto mb-3 bg-primary/10 border border-primary rounded-lg p-3 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <Reply className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm font-medium text-blue-500">
+                      <Reply className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium text-primary">
                         Đang trả lời{" "}
                         {replyingTo.senderId === myId
                           ? "chính mình"
@@ -759,7 +762,7 @@ export default function Messages() {
                               ?.name || "người dùng"}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-700 bg-white rounded-lg px-3 py-2 border-l-3 border-blue-400 shadow-sm">
+                    <div className="text-sm text-foreground bg-card rounded-lg px-3 py-2 border-l-3 border-primary shadow-sm">
                       {replyingTo.content.length > 80
                         ? `${replyingTo.content.substring(0, 80)}...`
                         : replyingTo.content}
@@ -767,10 +770,10 @@ export default function Messages() {
                   </div>
                   <button
                     onClick={handleCancelReply}
-                    className="ml-2 mb-10 p-1.5 hover:bg-blue-200 rounded-full transition-colors"
+                    className="ml-2 mb-10 p-1.5 hover:bg-primary/20 rounded-full transition-colors"
                     title="Hủy trả lời"
                   >
-                    <X className="h-4 w-4  text-blue-600" />
+                    <X className="h-4 w-4  text-primary" />
                   </button>
                 </div>
               </div>
@@ -783,7 +786,7 @@ export default function Messages() {
                   onChange={handleTextareaChange}
                   onKeyPress={handleKeyPress}
                   placeholder="Soạn tin nhắn..."
-                  className="w-full pr-20 rounded-xl border-gray-300 focus:ring-sky-500 resize-none py-2 px-4 min-h-[40px] max-h-[120px] auto-expand-textarea"
+                  className="w-full pr-20 rounded-xl border-gray-300 focus:ring-sky-500 resize-none py-2 px-4 min-h-[40px] max-h-[120px] auto-expand-textarea text-foreground bg-background"
                   disabled={!selectedUser}
                   rows={1}
                   style={{
