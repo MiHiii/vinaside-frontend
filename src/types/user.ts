@@ -49,9 +49,7 @@ export interface QueryUserDto {
   limit?: number;
   sort?: string;
   role?: string | UserRole;
-  is_verified?:  string;
-  isDeleted?: boolean  ;
+  is_verified?: string;
+  isDeleted?: boolean;
   select?: string;
 }
-
-

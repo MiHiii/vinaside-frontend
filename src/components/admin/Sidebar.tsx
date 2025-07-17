@@ -219,10 +219,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
             collapsed={collapsed}
           />
           <SidebarItem
-            to="/admin/chats"
+            to="/admin/messages"
             icon={<MessageCircle className="h-4 w-4" />}
             label="Chats"
-            active={pathname === "/admin/chats"}
+            active={pathname.startsWith("/admin/messages")}
             badge="3"
             collapsed={collapsed}
           />

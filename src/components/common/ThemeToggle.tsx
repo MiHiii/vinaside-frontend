@@ -8,12 +8,14 @@ const ThemeToggle = () => {
   const mode = useThememode();
 
   console.log(mode);
-  
 
   return (
-    <Button onClick={() => dispatch(toggleTheme())} >
+    <Button
+      onClick={() => dispatch(toggleTheme())}
+      className="rounded-full p-4 cursor-pointer dark:hover:bg-slate-800 hover:opacity-70 transition"
+    >
       {mode === "light" ? "🌞" : "🌙"}
-    </Button> 
+    </Button>
   );
 };
 

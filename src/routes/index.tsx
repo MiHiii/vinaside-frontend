@@ -32,6 +32,7 @@ import Hosting from "@/pages/hosting/Hosting";
 import Listing from "@/pages/hosting/Listing";
 import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLayout";
 import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
+import Messages from "@/pages/messages/Messages";
 // Admin Pages
 import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
@@ -113,6 +114,14 @@ const routes: RouteObject[] = [
           </ProtectedRoute>
         ),
       },
+      {
+        path: "messages",
+        element: (
+          <ProtectedRoute>
+            <Messages />
+          </ProtectedRoute>
+        ),
+      },
       { path: "list/:id", element: <RoomDeatil /> },
       { path: "room-detail", element: <RoomDeatil /> },
     ],
@@ -173,6 +182,7 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <Hosting /> },
       { path: "listings", element: <Listing /> },
+      { path: "messages", element: <Messages /> },
     ],
   },
 
@@ -206,7 +216,7 @@ const routes: RouteObject[] = [
       { path: "bookings", element: <BookingManagementPage /> },
       {
         path: "bookings/:propertyId/:bookingId",
-        element: <BookingDetailPage/>
+        element: <BookingDetailPage />,
       },
       //properties
       { path: "properties", element: <PropertiesPage /> },
@@ -219,6 +229,8 @@ const routes: RouteObject[] = [
       { path: "amenities", element: <AmenitiesPage /> },
       { path: "amenities/create", element: <CreateAmenities /> },
       { path: "amenities/edit/:id", element: <EditAmenities /> },
+
+      { path: "messages", element: <Messages /> },
 
       { path: "permissions-manager", element: <RoleManagementPage /> },
       { path: "permissions/create", element: <RoleCreatePage /> },
