@@ -27,7 +27,7 @@ const ProtectedRoute: React.FC<Props> = ({ children, requiredRole }) => {
   // Nếu cần kiểm tra vai trò
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    if (!roles.includes(user.role)) {
+    if (!roles.includes(user.role || "guest")) {
       return <Navigate to="/unauthorized" replace />;
     }
   }
