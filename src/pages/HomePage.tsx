@@ -10,22 +10,34 @@ import type { RootState } from '@/store';
 import { Listing } from '@/types/listing';
 import { useNavigate } from 'react-router-dom';
 
+// Helper function để chia mảng thành các mảng con size 7
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+}
+
 export default function HomePage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const { listings, loading, error } = useSelector((state: RootState) => state.listings);
 
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  // Ref cho hàng đầu tiên để scroll ngang khi click nút trên cùng
+  const rowRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
   React.useEffect(() => {
-    dispatch(fetchListings({ limit: 10 }));
+    dispatch(fetchListings({ limit: 14 }));
   }, [dispatch]);
 
-  const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
-    if (!ref.current) return;
+  const scrollRow = (index: number, direction: 'left' | 'right') => {
+    const rowRef = rowRefs.current[index];
+    if (!rowRef) return;
+
     const scrollAmount = 340;
-    ref.current.scrollBy({
+    rowRef.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
       behavior: 'smooth',
     });
@@ -40,6 +52,9 @@ export default function HomePage() {
     }
   };
 
+  // Chia listings thành các hàng, mỗi hàng tối đa 7 card
+  const chunkedListings = chunkArray(listings, 7);
+
   return (
     <div className='container mx-auto px-4 py-8'>
       {/* Section title & scroll */}
@@ -47,34 +62,46 @@ export default function HomePage() {
         <h2 className='text-2xl font-bold text-card-foreground'>
           Nơi lưu trú được ưa chuộng tại Hồ Chí Minh <span className='text-2xl'>›</span>
         </h2>
-        <div className='flex gap-2'>
-          <Button
-            size='icon'
-            className='rounded-full bg-muted hover:bg-muted/70'
-            onClick={() => scroll(scrollContainerRef, 'left')}>
-            <ChevronLeft className='h-5 w-5 text-foreground' />
-          </Button>
-          <Button
-            size='icon'
-            className='rounded-full bg-muted hover:bg-muted/70'
-            onClick={() => scroll(scrollContainerRef, 'right')}>
-            <ChevronRight className='h-5 w-5 text-foreground' />
-          </Button>
-        </div>
       </div>
 
-      {/* List cards horizontal */}
-      <div
-        ref={scrollContainerRef}
-        className='flex gap-6 overflow-x-auto pb-4 scrollbar-hide'
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      {/* Nhiều hàng, mỗi hàng tối đa 7 card, scroll ngang từng hàng với nút */}
+      <div className="flex flex-col gap-6">
         {loading && <p className='text-muted-foreground'>Đang tải dữ liệu...</p>}
         {error && <p className='text-red-500'>{error}</p>}
-        {!loading &&
-          !error &&
-          listings.map((property: Listing) => (
-            <PropertyCard key={property._id} property={property} onViewDetail={handleViewDetail} />
-          ))}
+        {!loading && !error && chunkedListings.map((row, idx) => (
+          <div key={idx} className="mb-2">
+            <div className="flex items-center justify-between mb-2">
+              <div />
+              <div className="flex gap-2">
+                <Button
+                  size='icon'
+                  className='rounded-full bg-muted hover:bg-muted/70'
+                  onClick={() => scrollRow(idx, 'left')}
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft className="h-5 w-5 text-foreground" />
+                </Button>
+                <Button
+                  size='icon'
+                  className='rounded-full bg-muted hover:bg-muted/70'
+                  onClick={() => scrollRow(idx, 'right')}
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight className="h-5 w-5 text-foreground" />
+                </Button>
+              </div>
+            </div>
+            <div
+              ref={el => { rowRefs.current[idx] = el; }}
+              className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {row.map((property: Listing) => (
+                <PropertyCard key={property._id} property={property} onViewDetail={handleViewDetail} />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
