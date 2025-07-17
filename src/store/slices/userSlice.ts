@@ -1,143 +1,86 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { api } from "@/services/api";
-import { User, UpdateUserDto, QueryUserDto, CreateUserDto } from "@/types/user";
-import { RootState } from "..";
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { api } from '../../services/api';
+import { User, Role, UserRole, CreateUserDto } from '../../types/user';
 import { getErrorMessage } from "@/helper/message";
+import { RootState } from "..";
+import toast from 'react-hot-toast';
 
-interface UserState {
-  users: User[];
-  user?: User;
-  total: number;
-  loading: boolean;
-  error: string | null;
-  uploadAvatarLoading?: boolean;
-  uploadAvatarError?: string | null;
-  uploadedAvatarUrl?: string;
-  staffList?: User[];
-  staffLoading?: boolean;
-  staffError?: string | null;
-}
-
-const initialState: UserState = {
-  users: [],
-  user: undefined,
-  total: 0,
-  loading: false,
-  error: null,
-  uploadAvatarLoading: false,
-  uploadAvatarError: null,
-  uploadedAvatarUrl: undefined,
-  staffList: [],
-  staffLoading: false,
-  staffError: null,
-};
-
-// 1. Lấy danh sách users
-export const fetchUsers = createAsyncThunk<
-  { users: User[]; total: number },
-  QueryUserDto,
-  { rejectValue: string }
->("users/fetchUsers", async (params, { rejectWithValue }) => {
-  try {
-    const response = await api.get("/users", { params });
-    const users = response.data.data?.users ?? [];
+// Lấy danh sách user
+export const fetchUsers = createAsyncThunk(
+  'users/fetch',
+  async ({ page = 1, limit = 10 }: { page?: number; limit?: number } = {}) => {
+    const res = await api.get(`/users?page=${page}&limit=${limit}`);
     return {
-      users,
-      total: response.data.data?.meta?.total || 0,
+      users: res.data.data.data as User[],
+      pagination: res.data.data.pagination,
     };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error));
   }
+);
+
+// Lấy danh sách role
+export const fetchRoles = createAsyncThunk('users/fetchRoles', async () => {
+  const res = await api.get('/rbac/roles');
+  return res.data.data as Role[];
 });
 
-// 2. Lấy chi tiết 1 user
-export const fetchUserById = createAsyncThunk<
-  User,
-  string,
-  { rejectValue: string }
->("users/fetchUserById", async (id, { rejectWithValue }) => {
-  try {
-    const response = await api.get(`/users/${id}`);
-    const user = response.data.data.data;
-    return { ...user, id: user._id };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error));
+// Lấy vai trò của user
+export const fetchUserRoles = createAsyncThunk(
+  'users/fetchUserRoles',
+  async (userId: string) => {
+    const res = await api.get(`/rbac/users/${userId}/roles`);
+    return { userId, roles: res.data.data as UserRole[] };
   }
-});
+);
 
-// 3. Update user (PUT)
-export const updateUser = createAsyncThunk<
-  User,
-  { id: string } & UpdateUserDto,
-  { rejectValue: string }
->("users/updateUser", async ({ id, ...data }, { rejectWithValue }) => {
-  try {
-    const response = await api.put(`/users/${id}`, data);
-    const user = response.data.data.data;
-    return { ...user, id: user._id };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error));
-  }
-});
-
-// 4. Patch user (PATCH)
-export const patchUser = createAsyncThunk<
-  User,
-  { id: string } & Partial<UpdateUserDto>,
-  { rejectValue: string }
->("users/patchUser", async ({ id, ...data }, { rejectWithValue }) => {
-  try {
-    const response = await api.patch(`/users/${id}`, data);
-    const user = response.data.data.data;
-    return { ...user, id: user._id };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error));
-  }
-});
-
-// 5. Toggle status
-export const toggleUserStatus = createAsyncThunk<
-  User,
-  string,
-  { rejectValue: string }
->("users/toggleUserStatus", async (id, { rejectWithValue }) => {
-  try {
-    const response = await api.patch(`/users/${id}/toggle-status`);
-    const user = response.data.data.data;
-    return { ...user, id: user._id };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error));
-  }
-});
-
-// 6. Create user (POST)
-export const createUser = createAsyncThunk<
-  User,
-  CreateUserDto,
-  { rejectValue: string }
->("users/createUser", async (data, { rejectWithValue }) => {
-  try {
-    const response = await api.post("/users", data);
-    const user = response.data.data.data;
-    return { ...user, id: user._id };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error));
-  }
-});
-
-// 7. Delete user
-export const deleteUser = createAsyncThunk(
-  "users/deleteUser",
-  async (id: string, { rejectWithValue }) => {
+// Tạo user và gán role
+export const createUser = createAsyncThunk(
+  'users/create',
+  async (
+    { userData, roleKey }: { userData: CreateUserDto; roleKey: string },
+    { dispatch, rejectWithValue }
+  ) => {
     try {
-      await api.delete(`/users/${id}`);
-
-      return id;
-    } catch (error) {
-      return rejectWithValue(getErrorMessage(error));
+      const res = await api.post('/users', userData);
+      console.log('User create response:', res.data);
+      console.log('res.data.data:', res.data.data);
+      const userDataRes = res.data.data.data; // Sửa ở đây
+      const userId = userDataRes._id || userDataRes.id || userDataRes.userId;
+      if (!userId) {
+        toast.error('Không lấy được userId sau khi tạo user!');
+        return;
+      }
+      // Gán vai trò cho user sau khi tạo
+      await api.post(`/rbac/users/${userId}/roles`, { roleKey });
+      dispatch(fetchUsers({}));
+      return res.data.data as User;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string; message?: string } } };
+      const message = error?.response?.data?.error || error?.response?.data?.message || 'Có lỗi xảy ra!';
+      return rejectWithValue(message);
     }
   }
 );
+
+// Sửa user và gán role
+export const updateUser = createAsyncThunk(
+  'users/update',
+  async (
+    { id, userData, roleKey }: { id: string; userData: Partial<User>; roleKey: string },
+    { dispatch }
+  ) => {
+    await api.patch(`/users/${id}`, userData);
+    await api.post(`/rbac/users/${id}/roles`, { roleKey });
+    dispatch(fetchUsers({}));
+    return { id, ...userData };
+  }
+);
+
+// Xóa user
+export const deleteUser = createAsyncThunk('users/delete', async (id: string, { dispatch }) => {
+  await api.delete(`/users/${id}`);
+  dispatch(fetchUsers({}));
+  return id;
+});
 
 // 8. Upload user avatar
 export const uploadUserAvatar = createAsyncThunk<
@@ -198,142 +141,40 @@ export const updateMyAvatar = createAsyncThunk<
   }
 });
 
-const usersSlice = createSlice({
-  name: "users",
-  initialState,
-  reducers: {
-    clearUser: (state) => {
-      state.user = undefined;
+const userSlice = createSlice({
+  name: 'users',
+  initialState: {
+    users: [] as User[],
+    roles: [] as Role[],
+    userRoles: {} as Record<string, UserRole[]>,
+    loading: false,
+    error: null as string | null,
+    uploadAvatarLoading: false,
+    uploadAvatarError: null as string | null,
+    uploadedAvatarUrl: undefined as string | undefined,
+    staffLoading: false,
+    staffError: null as string | null,
+    staffList: [] as User[],
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 0,
+      itemsPerPage: 10,
     },
   },
-  extraReducers: (builder) => {
+  reducers: {},
+  extraReducers: builder => {
     builder
       // fetchUsers
-      .addCase(fetchUsers.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      .addCase(fetchUsers.pending, state => { state.loading = true; })
+      .addCase(fetchUsers.fulfilled, (state, action) => {
+        state.users = action.payload.users;
+        state.pagination = action.payload.pagination || state.pagination;
+        state.loading = false;
       })
-      .addCase(
-        fetchUsers.fulfilled,
-        (state, action: PayloadAction<{ users: User[]; total: number }>) => {
-          state.loading = false;
-          state.users = action.payload.users;
-          state.total = action.payload.total;
-        }
-      )
       .addCase(fetchUsers.rejected, (state, action) => {
+        state.error = action.error.message || 'Lỗi lấy danh sách user';
         state.loading = false;
-        state.error =
-          (action.payload as string) ||
-          action.error.message ||
-          "Lỗi tải danh sách users!";
-      })
-
-      // fetchUserById
-      .addCase(fetchUserById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(
-        fetchUserById.fulfilled,
-        (state, action: PayloadAction<User>) => {
-          state.loading = false;
-          state.user = action.payload;
-        }
-      )
-      .addCase(fetchUserById.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          (action.payload as string) ||
-          action.error.message ||
-          "Không tìm thấy user!";
-      })
-
-      // updateUser
-      .addCase(updateUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(updateUser.fulfilled, (state, action: PayloadAction<User>) => {
-        state.loading = false;
-        state.user = action.payload;
-      })
-      .addCase(updateUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          (action.payload as string) ||
-          action.error.message ||
-          "Cập nhật thất bại!";
-      })
-
-      // patchUser
-      .addCase(patchUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(patchUser.fulfilled, (state, action: PayloadAction<User>) => {
-        state.loading = false;
-        state.user = action.payload;
-      })
-      .addCase(patchUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          (action.payload as string) ||
-          action.error.message ||
-          "Cập nhật thất bại!";
-      })
-
-      // toggleUserStatus
-      .addCase(toggleUserStatus.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(
-        toggleUserStatus.fulfilled,
-        (state, action: PayloadAction<User>) => {
-          state.loading = false;
-          state.user = action.payload;
-        }
-      )
-      .addCase(toggleUserStatus.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          (action.payload as string) ||
-          action.error.message ||
-          "Cập nhật trạng thái thất bại!";
-      })
-
-      // createUser
-      .addCase(createUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(createUser.fulfilled, (state, action: PayloadAction<User>) => {
-        state.loading = false;
-        state.users.unshift(action.payload);
-        state.user = action.payload;
-      })
-      .addCase(createUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          (action.payload as string) ||
-          action.error.message ||
-          "Tạo người dùng thất bại!";
-      })
-
-      .addCase(deleteUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deleteUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.users = state.users.filter(
-          (user: User) => user.id !== action.payload
-        );
-      })
-      .addCase(deleteUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
       })
 
       // uploadUserAvatar
@@ -356,7 +197,16 @@ const usersSlice = createSlice({
           action.error.message ||
           "Upload avatar thất bại!";
       })
-
+      // fetchRoles
+      .addCase(fetchRoles.pending, state => { state.loading = true; })
+      .addCase(fetchRoles.fulfilled, (state, action) => {
+        state.roles = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchRoles.rejected, (state, action) => {
+        state.error = action.error.message || 'Lỗi lấy danh sách role';
+        state.loading = false;
+      })
       // fetchStaffList
       .addCase(fetchStaffList.pending, (state) => {
         state.staffLoading = true;
@@ -369,21 +219,19 @@ const usersSlice = createSlice({
       .addCase(fetchStaffList.rejected, (state, action) => {
         state.staffLoading = false;
         state.staffError = action.payload as string;
+      })
+      // fetchUserRoles
+      .addCase(fetchUserRoles.fulfilled, (state, action) => {
+        state.userRoles[action.payload.userId] = action.payload.roles;
       });
-  },
+      // createUser, updateUser, deleteUser: chỉ refetch users, không cần update state trực tiếp
+      
+  }
 });
 
-export const { clearUser } = usersSlice.actions;
-export default usersSlice.reducer;
+export default userSlice.reducer; 
 
 // Selector cho staffList
 export const selectStaffList = (state: RootState) => Array.isArray(state.users.staffList) ? state.users.staffList : [];
 export const selectStaffLoading = (state: RootState) => state.users.staffLoading;
 export const selectStaffError = (state: RootState) => state.users.staffError;
-
-// Selectors
-export const selectUsers = (state: RootState) => state.users.users ?? [];
-export const selectUsersLoading = (state: RootState) => state.users.loading;
-export const selectUsersError = (state: RootState) => state.users.error;
-export const selectUsersTotal = (state: RootState) => state.users.total;
-export const selectUserDetail = (state: RootState) => state.users.user;
