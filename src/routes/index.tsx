@@ -40,6 +40,7 @@ import Tasks from "@/components/admin/Tasks";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 
 import PaymentPage from "@/pages/payment/PaymentPage";
+import PaymentSuccessPage from "@/pages/payment/PaymentSuccessPage";
 //properties
 import PropertiesPage from "@/pages/admin/property/PropertiesPage";
 import CreatePropertyPage from "@/pages/admin/property/CreatePropertyPage";
@@ -133,6 +134,10 @@ const routes: RouteObject[] = [
         <PaymentPage />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/payment/success",
+    element: <PaymentSuccessPage />,
   },
 
   // Các route trở thành host, có thể cho phép tất cả user đăng nhập, hoặc chỉ một số role, nếu cần thì wrap bằng ProtectedRoute luôn

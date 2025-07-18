@@ -4,33 +4,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { format, subDays } from "date-fns";
-import { useState } from "react";
 
 interface CancelPolicyDetailProps {
   policy?: string;
   checkInDate: string;
+  open: boolean;
+  onClose: () => void;
 }
 
 export default function CancelPolicyDetail({
+  open,
+  onClose,
   policy,
   checkInDate,
 }: CancelPolicyDetailProps) {
-  const [open, setOpen] = useState(false);
-
-  const renderShort = () => {
-    switch (policy) {
-      case "flexible":
-        return "Huỷ miễn phí trước ngày nhận phòng";
-      case "moderate":
-        return "Huỷ miễn phí trước 5 ngày nhận phòng";
-      case "strict":
-        return "Không hoàn tiền sau khi đặt";
-      default:
-        return "Chưa rõ chính sách huỷ";
-    }
-  };
+ 
 
   const renderDetail = () => {
     const checkIn = new Date(checkInDate);
@@ -88,33 +77,24 @@ export default function CancelPolicyDetail({
   };
 
   return (
-    <>
-      <div className="flex items-center gap-2 text-sm">
-        <p>{renderShort()}</p>
-        {policy && (
-          <Button variant="link" size="sm" onClick={() => setOpen(true)}>
-            Tìm hiểu thêm
-          </Button>
-        )}
-      </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Chi tiết chính sách huỷ</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 text-sm">{renderDetail()}</div>
-          <div className="pt-4">
-            <a
-              href="#"
-              className="text-blue-600 underline text-sm"
-              onClick={(e) => e.preventDefault()}
-            >
-              Xem thêm về chính sách huỷ của Airbnb
-            </a>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8">
+        <DialogHeader>
+          <DialogTitle>Chi tiết chính sách huỷ</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2 text-base text-gray-800">
+          {renderDetail()}
+        </div>
+        <div className="pt-4">
+          <a
+            href="#"
+            className="text-blue-600 underline text-base"
+            onClick={(e) => e.preventDefault()}
+          >
+            Xem thêm về chính sách huỷ của VinaSide
+          </a>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
