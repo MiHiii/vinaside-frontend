@@ -179,9 +179,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             </div>
             <div className="flex justify-between">
               <span>Thuế (8%)</span>
-              <span>
-                {(pricePerNight * nights * taxRate).toLocaleString()}₫
-              </span>
+              <span>{calculatePrice().tax.toLocaleString()}₫</span>
             </div>
             {selectedServiceTotal > 0 && (
               <div className="flex justify-between">
