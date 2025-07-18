@@ -136,6 +136,52 @@ const BookingForm: React.FC<BookingFormProps> = ({
               {format(checkIn, "dd 'thg' MM yyyy")} -{" "}
               {format(checkOut, "dd 'thg' MM yyyy")}
             </div>
+
+   
+        </div>
+      )}
+
+      <BookingCalendar
+        checkIn={checkIn}
+        checkOut={checkOut}
+        setCheckIn={setCheckIn}
+        setCheckOut={setCheckOut}
+        setNights={setNights}
+        bookedDates={bookedDates}
+        dateOpen={dateOpen}
+        setDateOpen={setDateOpen}
+      />
+
+      <GuestSelector
+        guests={guests}
+        setGuests={setGuests}
+        listing={listing}
+        guestOpen={guestOpen}
+        setGuestOpen={setGuestOpen}
+      />
+
+      <Button
+        className="w-full h-12 bg-gradient-to-r from-[#ff4668] to-[#b91c5c] text-white font-bold text-lg rounded-xl border-0 hover:opacity-90 transition-all duration-200"
+        onClick={handlePayment}
+      >
+        Đặt phòng
+      </Button>
+
+      {nights > 0 && (
+        <div className="border-t pt-4 text-sm space-y-1 text-gray-700">
+          <div className="flex justify-between">
+            <span>
+              {pricePerNight} x {nights} đêm
+            </span>
+            <span>{(pricePerNight * nights).toLocaleString()}₫</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Phí dịch vụ</span>
+            <span>{serviceFee.toLocaleString()}₫</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Thuế (8%)</span>
+            <span>{(pricePerNight * nights * taxRate).toLocaleString()}₫</span>
           </div>
         )}
 

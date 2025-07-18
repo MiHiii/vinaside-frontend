@@ -73,35 +73,35 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-2">
               <div />
               <div className="flex gap-2">
-                <Button
-                  size='icon'
-                  className='rounded-full bg-muted hover:bg-muted/70'
+          <Button
+            size='icon'
+            className='rounded-full bg-muted hover:bg-muted/70'
                   onClick={() => scrollRow(idx, 'left')}
                   aria-label="Scroll left"
                 >
                   <ChevronLeft className="h-5 w-5 text-foreground" />
-                </Button>
-                <Button
-                  size='icon'
-                  className='rounded-full bg-muted hover:bg-muted/70'
+          </Button>
+          <Button
+            size='icon'
+            className='rounded-full bg-muted hover:bg-muted/70'
                   onClick={() => scrollRow(idx, 'right')}
                   aria-label="Scroll right"
                 >
                   <ChevronRight className="h-5 w-5 text-foreground" />
-                </Button>
-              </div>
-            </div>
-            <div
+          </Button>
+        </div>
+      </div>
+      <div
               ref={el => { rowRefs.current[idx] = el; }}
               className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {row.map((property: Listing) => (
-                <PropertyCard key={property._id} property={property} onViewDetail={handleViewDetail} />
+            <PropertyCard key={property._id} property={property} onViewDetail={handleViewDetail} />
               ))}
             </div>
           </div>
-        ))}
+          ))}
       </div>
     </div>
   );
@@ -140,11 +140,12 @@ function PropertyCard({ property, onViewDetail }: { property: Listing; onViewDet
           <h3 className='font-semibold text-base truncate text-card-foreground'>{property.title}</h3>
           <div className='flex items-center gap-1 text-base font-medium text-card-foreground'>
             <span>★</span>
-            <span>{property.price_per_night}</span>
+            <span>{property.average_rating?.toFixed(1) ?? '--'}</span>
           </div>
         </div>
         <div className='text-[15px] text-muted-foreground mb-0.5'>
-          {property.price_per_night.toLocaleString()}₫ cho {property.guests ?? 2} khách
+          {/* Bỏ giá tiền, chỉ giữ số khách nếu muốn */}
+          {property.guests ?? 2} khách
         </div>
       </CardContent>
     </Card>
