@@ -24,7 +24,7 @@ export default function PaymentLayout() {
     Number(searchParams.get("guests") || 0)
   );
 
-  const calcNights = (start, end) => {
+  const calcNights = (start: string, end: string) => {
     if (!start || !end) return 0;
     const d1 = new Date(start);
     const d2 = new Date(end);
@@ -61,9 +61,15 @@ export default function PaymentLayout() {
   }, [listingId, dispatch]);
 
   // Callback khi lưu ngày mới từ modal
-  const handleSaveBookingInfo = ({ dateRange, guests }) => {
+  const handleSaveBookingInfo = ({
+    dateRange,
+    guests,
+  }: {
+    dateRange: { from?: Date; to?: Date } | undefined;
+    guests: { adults: number; infants: number };
+  }) => {
     if (dateRange?.from && dateRange?.to) {
-      const formatDate = (date) => {
+      const formatDate = (date: Date) => {
         const year = date.getFullYear();
         const month = `${date.getMonth() + 1}`.padStart(2, "0");
         const day = `${date.getDate()}`.padStart(2, "0");
