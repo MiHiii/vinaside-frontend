@@ -116,7 +116,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <img src="https://vinaside.sgp1.digitaloceanspaces.com/avatar/1752670679494-617784269.png" alt="diamond" width={32} height={32} />
         <span className="text-base font-semibold text-gray-900">Hiếm khi còn phòng! Chỗ ở này thường kín phòng</span>
       </div>
-      <div className="w-full lg:w-[460px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white">
+      <div className="w-full lg:w-[370px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white">
       <h3 className="text-lg font-semibold">Thêm ngày để xem giá</h3>
 
       {checkIn && checkOut && (
