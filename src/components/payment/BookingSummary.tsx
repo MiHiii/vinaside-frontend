@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IListing } from "@/types/listing";
 import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
-import { createBooking, updateBooking } from "@/store/slices/bookingSlice";
+import { createBooking } from "@/store/slices/bookingSlice";
 import { DateRange } from "react-day-picker";
-import CancelPolicyDetail from "./CancelPolicyDetail";
+// import CancelPolicyDetail from "./CancelPolicyDetail";
 import BookingInfoModal from "./BookingInfoModal";
 import PriceDetailModal from "./PriceDetailModal";
+import CancelPolicyDetail from "./CancelPolicyDetail";
 
 interface BookingSummaryProps {
   listing: IListing;
@@ -22,6 +23,11 @@ interface BookingSummaryProps {
   bookingId: string;
   propertyId: string;
   bookedDates: Date[];
+  onSaveBookingInfo: (data: {
+    dateRange: DateRange | undefined;
+    guests: { adults: number; infants: number };
+  }) => void;
+  selectedServiceTotal: number;
 }
 
 const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -30,23 +36,20 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   tripEnd,
   guestCount,
   nights,
-  totalPrice,
-  bookingId,
-  propertyId,
   bookedDates,
+  onSaveBookingInfo,
+  selectedServiceTotal,
 }) => {
   const [open, setOpen] = useState(false);
   const [showPriceDetail, setShowPriceDetail] = useState(false);
-  const [currentTripStart, setCurrentTripStart] = useState(tripStart);
-  const [currentTripEnd, setCurrentTripEnd] = useState(tripEnd);
-  const [currentGuestCount, setCurrentGuestCount] = useState(guestCount);
+  const [showPolicy, setShowPolicy] = useState(false);
 
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const handlePayment = async () => {
-    if (!currentTripStart || !currentTripEnd || !currentGuestCount) {
+    if (!tripStart || !tripEnd || !guestCount) {
       return alert("Vui lòng chọn ngày nhận phòng, trả phòng và số khách.");
     }
 
@@ -64,10 +67,10 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         propertyId: listing.propertyId._id,
         price_per_night: listing.price_per_night,
         total_price: listing.price_per_night * nights,
-        final_amount: listing.price_per_night * nights * 1.08 + 16.5,
-        checkInDate: currentTripStart,
-        checkOutDate: currentTripEnd,
-        guests: currentGuestCount,
+        final_amount: total,
+        checkInDate: tripStart,
+        checkOutDate: tripEnd,
+        guests: guestCount,
         infants: 0,
         guest_name: user?.name || "Khách chưa đặt tên",
         guest_email: user?.email || "unknown@example.com",
@@ -77,22 +80,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
 
       if (!result?._id) return alert("Lỗi sau khi thanh toán.");
 
-      const params = new URLSearchParams({
-        listingId: listing._id,
-        propertyId: listing.propertyId._id,
-        bookingId: result._id,
-        price_per_night: String(listing.price_per_night),
-        total_price: String(listing.price_per_night * nights),
-        final_amount: String(listing.price_per_night * nights * 1.08 + 16.5),
-        checkInDate: currentTripStart,
-        checkOutDate: currentTripEnd,
-        guests: String(currentGuestCount),
-        infants: "0",
-        guest_name: user?.name || "Khách chưa đặt tên",
-        guest_email: user?.email || "unknown@example.com",
-      });
-
-      navigate(`/payment?${params.toString()}`);
+      navigate("/payment/success");
     } catch (err) {
       console.error("Thanh toán thất bại:", err);
       alert("Đã có lỗi xảy ra khi thanh toán.");
@@ -106,94 +94,84 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     dateRange: DateRange | undefined;
     guests: { adults: number; infants: number };
   }) => {
-    if (dateRange?.from && dateRange?.to) {
-      const formatDate = (date: Date) => {
-        const year = date.getFullYear();
-        const month = `${date.getMonth() + 1}`.padStart(2, "0");
-        const day = `${date.getDate()}`.padStart(2, "0");
-        return `${year}-${month}-${day}`;
-      };
-
-      setCurrentTripStart(formatDate(dateRange.from));
-      setCurrentTripEnd(formatDate(dateRange.to));
-    }
-    setCurrentGuestCount(guests.adults);
-
-    try {
-      await dispatch(
-        updateBooking({
-          propertyId,
-          bookingId,
-          updateData: {
-            check_in_date: dateRange?.from,
-            check_out_date: dateRange?.to,
-            guests: guests.adults,
-            infants: guests.infants,
-          },
-        })
-      ).unwrap();
-    } catch (err) {
-      console.error("Lỗi khi cập nhật booking:", err);
-    }
+    onSaveBookingInfo({ dateRange, guests });
   };
 
+  const base = listing.price_per_night * nights;
+  const serviceFee = Math.round(base * 0.1);
+  const tax = Math.round(base * 0.08);
+  const total = base + serviceFee + tax + selectedServiceTotal;
+
   return (
-    <Card className="sticky top-6 max-w-sm border rounded-2xl border-gray-200">
-      <CardContent className="p-6 space-y-6">
-        <div className="flex gap-4">
-          <img src={listing.images?.[0]} alt="Ảnh đặt chỗ" />
+    <Card className="sticky top-6 max-w-md rounded-2xl border border-gray-200 shadow-sm">
+      <CardContent className="p-8 space-y-7">
+        {/* Ảnh + Tiêu đề + Đánh giá */}
+        <div className="flex gap-5 items-center">
+          <img
+            src={listing.images?.[0]}
+            alt="Ảnh đặt chỗ"
+            className="w-24 h-24 object-cover rounded-xl border"
+          />
           <div className="flex-1">
-            <h3 className="font-medium text-sm mb-1">{listing.title}</h3>
-            <div className="flex items-center gap-2 text-sm">
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3 fill-current text-yellow-400" />
-                <span>
-                  {listing.average_rating?.toFixed(1) || 0} (
-                  {listing.reviews_count || 0})
-                </span>
-              </div>
-              {listing.is_verified && (
-                <Badge variant="secondary" className="text-xs">
-                  Được khách yêu thích
-                </Badge>
-              )}
+            <div className="font-semibold text-lg leading-tight">
+              {listing.title}
+            </div>
+            <div className="flex items-center gap-1 text-base text-gray-600 mt-2">
+              <Star className="h-4 w-4 fill-current text-yellow-400" />
+              <span className="font-medium">
+                {listing.average_rating?.toFixed(1) || 0}
+              </span>
+              <span>({listing.reviews_count || 0})</span>
             </div>
           </div>
         </div>
 
-        <div className="space-y-2">
+        {/* Chính sách hủy */}
+        <div>
+          <div className="font-semibold text-base">Hủy miễn phí</div>
+          <div className="text-sm text-gray-600">
+            Hủy trước 21 thg 8 để được hoàn tiền đầy đủ
+            <button
+              className="underline font-medium text-black ml-1"
+              onClick={() => setShowPolicy(true)}
+              type="button"
+            >
+              Toàn bộ chính sách
+            </button>
+          </div>
           <CancelPolicyDetail
+            open={showPolicy}
+            onClose={() => setShowPolicy(false)}
             policy={listing.cancel_policy}
             checkInDate={tripStart}
           />
         </div>
 
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <h4 className="font-medium text-sm">Thông tin chuyến đi</h4>
+        {/* Thông tin chuyến đi */}
+        <div className="border-t pt-5">
+          <div className="flex justify-between items-center mb-2">
+            <div className="font-medium text-base">Thông tin chuyến đi</div>
             <Button
               onClick={() => setOpen(true)}
-              variant="link"
+              variant="outline"
               size="sm"
-              className="text-sm"
+              className="text-sm px-4 py-2"
             >
               Thay đổi
             </Button>
           </div>
-          <div className="space-y-1 text-sm">
-            <p>
-              {currentTripStart} – {currentTripEnd}
-            </p>
-            <p>{currentGuestCount} người lớn</p>
+          <div className="text-base">
+            {tripStart} – {tripEnd}
           </div>
+          <div className="text-base">{guestCount} người lớn</div>
           <BookingInfoModal
             open={open}
             onClose={() => setOpen(false)}
             initialDateRange={{
-              from: new Date(currentTripStart),
-              to: new Date(currentTripEnd),
+              from: tripStart ? new Date(tripStart) : undefined,
+              to: tripEnd ? new Date(tripEnd) : undefined,
             }}
-            initialGuests={{ adults: currentGuestCount, infants: 0 }}
+            initialGuests={{ adults: guestCount, infants: 0 }}
             maxGuests={listing.max_guests}
             allowInfants={listing.allow_infants}
             maxInfants={listing.max_infants || 0}
@@ -202,24 +180,38 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           />
         </div>
 
-        <div className="space-y-3 border-t pt-4">
-          <h4 className="font-medium text-sm">Chi tiết giá</h4>
-          <div className="flex justify-between">
+        {/* Chi tiết giá */}
+        <div className="border-t pt-5">
+          <div className="font-medium text-base mb-2">Chi tiết giá</div>
+          <div className="flex justify-between text-base">
             <span>
               ₫{listing.price_per_night.toLocaleString()} x {nights} đêm
             </span>
-            <span>₫{(listing.price_per_night * nights).toLocaleString()}</span>
+            <span>₫{base.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-base">
+            <span>Phí dịch vụ</span>
+            <span>₫{serviceFee.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-base">
+            <span>Thuế (8%)</span>
+            <span>₫{tax.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-base">
+            <span>Dịch vụ kèm theo</span>
+            <span>₫{selectedServiceTotal.toLocaleString()}</span>
           </div>
         </div>
 
-        <div className="border-t pt-4">
-          <div className="flex justify-between font-medium">
+        {/* Tổng tiền */}
+        <div className="border-t pt-5">
+          <div className="flex justify-between font-bold text-xl">
             <span>Tổng VND</span>
-            <span>₫{totalPrice.toLocaleString()}</span>
+            <span>₫{total.toLocaleString()}</span>
           </div>
           <a
             href="#"
-            className="text-sm text-black mt-1 underline cursor-pointer"
+            className="text-base text-black mt-2 underline cursor-pointer"
             onClick={(e) => {
               e.preventDefault();
               setShowPriceDetail(true);
@@ -233,9 +225,10 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             pricePerNight={listing.price_per_night}
             nights={nights}
             discount={0}
+            selectedServiceTotal={selectedServiceTotal}
           />
           <Button
-            className="w-full bg-pink-600 hover:bg-pink-700"
+            className="w-full bg-pink-600 hover:bg-pink-700 mt-5 text-lg py-3"
             onClick={handlePayment}
           >
             Thanh toán

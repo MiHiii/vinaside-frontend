@@ -101,63 +101,101 @@ const BookingInfoModal: React.FC<BookingInfoModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="p-0 bg-white rounded-2xl shadow-lg">
-        <div className="flex flex-col px-10 pt-8 pb-4">
+      <DialogContent className="bg-white rounded-2xl shadow-xl max-w-[700px] w-full p-0">
+        <div className="flex flex-col pt-8 pb-4 px-8">
           <div className="flex justify-between items-center">
             <DialogTitle asChild>
-              <h2 className="text-3xl font-bold">Thay đổi thông tin</h2>
+              <h2 className="text-3xl font-bold">
+                Thay đổi thông tin đặt phòng
+              </h2>
             </DialogTitle>
             <Button variant="ghost" size="icon" onClick={onClose}>
               ✕
             </Button>
           </div>
-          <DialogDescription>
+          <DialogDescription className="mb-4">
             Bạn có thể thay đổi ngày và số lượng khách.
           </DialogDescription>
         </div>
 
-        <div className="flex bg-gray-100 mx-10 mb-6 h-14 rounded-full">
-          <button
-            className={`flex-1 py-3 text-center rounded-full text-lg font-semibold ${
-              tab === "date" ? "bg-white shadow" : "text-gray-500"
-            }`}
-            onClick={() => setTab("date")}
-          >
-            Ngày
-          </button>
-          <button
-            className={`flex-1 py-3 text-center rounded-full text-lg font-semibold ${
-              tab === "guest" ? "bg-white shadow" : "text-gray-500"
-            }`}
-            onClick={() => setTab("guest")}
-          >
-            Khách
-          </button>
+        <div className="flex bg-gray-100 mx-0 mb-6 h-16 rounded-full">
+          {tab === "date" ? (
+            <button className="flex-1 py-4 text-center rounded-full text-lg font-semibold bg-white shadow transition">
+              Ngày
+            </button>
+          ) : (
+            <button
+              className="flex-1 py-4 text-center rounded-full text-lg font-semibold text-gray-500 transition"
+              onClick={() => setTab("date")}
+            >
+              Ngày
+            </button>
+          )}
+          {tab === "guest" ? (
+            <button className="flex-1 py-4 text-center rounded-full text-lg font-semibold bg-white shadow transition">
+              Khách
+            </button>
+          ) : (
+            <button
+              className="flex-1 py-4 text-center rounded-full text-lg font-semibold text-gray-500 transition"
+              onClick={() => setTab("guest")}
+            >
+              Khách
+            </button>
+          )}
         </div>
 
-        <div className="px-10 pb-8 min-h-[300px]">
+        <div className="w-full px-8 pb-8 min-h-[300px]">
           {tab === "date" && (
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={handleSelect}
-              numberOfMonths={2}
-              disabled={bookedDates || []}
-              modifiers={{
-                booked: bookedDates || [],
-                "selected-hover": dateRange
-                  ? getDatesInRange(dateRange.from, dateRange.to)
-                  : [],
-              }}
-              modifiersClassNames={{
-                booked:
-                  "bg-gray-300 text-gray-500 line-through opacity-60 cursor-not-allowed",
-                "selected-hover":
-                  "hover:bg-blue-100 hover:text-blue-700 cursor-pointer",
-              }}
-            />
+            <div className="flex flex-col items-center w-full">
+              <div className="mb-4 text-lg font-semibold text-gray-700">
+                Chọn ngày nhận phòng - trả phòng
+              </div>
+              <div className="w-full">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={handleSelect}
+                  numberOfMonths={2}
+                  showOutsideDays={false}
+                  disabled={bookedDates || []}
+                  modifiers={{
+                    booked: bookedDates || [],
+                    range_middle:
+                      dateRange && dateRange.from && dateRange.to
+                        ? getDatesInRange(dateRange.from, dateRange.to).filter(
+                            (d) =>
+                              d.toDateString() !==
+                                dateRange.from?.toDateString() &&
+                              d.toDateString() !== dateRange.to?.toDateString()
+                          )
+                        : [],
+                  }}
+                  modifiersClassNames={{
+                    booked:
+                      "text-gray-500 line-through opacity-90 cursor-not-allowed",
+                    selected: "bg-black text-white rounded-full font-bold",
+                    range_middle: "bg-gray-100 text-black rounded-none",
+                    today: "border border-black",
+                    "selected-hover":
+                      "hover:bg-gray-200 hover:text-black cursor-pointer",
+                  }}
+                  className="w-full max-w-none"
+                  classNames={{
+                    caption: "text-lg font-bold mb-4",
+                    nav: "flex items-center justify-between mb-4",
+                    nav_button:
+                      "w-10 h-10 rounded-full border border-gray-300 text-xl text-black hover:bg-gray-200",
+                    table: "w-full border-collapse",
+                    head_row: "",
+                    head_cell: "text-base font-semibold text-gray-500 p-2",
+                    row: "",
+                    cell: "w-12 h-12 p-0 text-center align-middle text-lg",
+                  }}
+                />
+              </div>
+            </div>
           )}
-
           {tab === "guest" && (
             <div>
               {/* Người lớn */}
@@ -213,11 +251,18 @@ const BookingInfoModal: React.FC<BookingInfoModalProps> = ({
           )}
         </div>
 
-        <div className="flex justify-between border-t px-10 py-6">
-          <Button variant="ghost" onClick={onClose}>
-            Hủy
+        <div className="flex justify-between items-center px-8 py-6">
+          <Button
+            variant="outline"
+            className="border-black text-black bg-white rounded-xl text-lg py-3"
+            onClick={() => setDateRange(undefined)}
+          >
+            Xóa ngày
           </Button>
-          <Button className="bg-black text-white" onClick={handleSave}>
+          <Button
+            className="bg-black text-white rounded-xl text-lg py-3"
+            onClick={handleSave}
+          >
             Lưu
           </Button>
         </div>
