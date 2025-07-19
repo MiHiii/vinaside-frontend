@@ -52,11 +52,12 @@ const PastTrip = () => {
     (b) =>
       STATUS_UPCOMING.includes(b.status || "") &&
       new Date(b.checkInDate) <= now &&
-      new Date(b.checkOutDate) >= now
+      new Date(b.check_out_date) >= now
   );
   const historyBookings = bookings.filter(
     (b) =>
-      STATUS_HISTORY.includes(b.status || "") || new Date(b.checkOutDate) < now
+      STATUS_HISTORY.includes(b.status || "") ||
+      new Date(b.check_out_date) < now
   );
 
   // Xử lý xem chi tiết
@@ -84,7 +85,7 @@ const PastTrip = () => {
             <div className="font-semibold">{title || "Phòng"}</div>
             <div>Mã booking: {booking._id}</div>
             <div>Ngày nhận phòng: {booking.checkInDate?.slice(0, 10)}</div>
-            <div>Ngày trả phòng: {booking.checkOutDate?.slice(0, 10)}</div>
+            <div>Ngày trả phòng: {booking.check_out_date?.slice(0, 10)}</div>
             <div>Khách: {booking.guests}</div>
             <div>Tổng tiền: {booking.total_price?.toLocaleString()} VND</div>
             <div>Trạng thái: {booking.status}</div>
@@ -203,7 +204,7 @@ const PastTrip = () => {
               Ngày nhận phòng: {selectedBooking.checkInDate?.slice(0, 10)}
             </div>
             <div>
-              Ngày trả phòng: {selectedBooking.checkOutDate?.slice(0, 10)}
+              Ngày trả phòng: {selectedBooking.check_out_date?.slice(0, 10)}
             </div>
             <div>Khách: {selectedBooking.guests}</div>
             <div>

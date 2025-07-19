@@ -123,7 +123,7 @@ export const getMyBookingHistory = createAsyncThunk<
         : []
     ).map((b: RawBooking) => ({
       ...b,
-      checkOutDate: b.checkOutDate || b.check_out_date,
+      check_out_date: b.check_out_date,
     }));
     return bookings;
   } catch (error) {
