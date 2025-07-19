@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { PermissionGuard } from "@/components/common/PermissionGuard";
+import { UserPermissionsInfo } from "./UserPermissionsInfo";
 
 export function DashboardContent() {
   const [tab, setTab] = useState<
@@ -37,26 +39,34 @@ export function DashboardContent() {
 
       {/* Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-white dark:bg-slate-800 rounded-md shadow">
-          <div className="text-xs text-gray-500">Total Revenue</div>
-          <div className="text-xl font-bold">$45,231.89</div>
-          <div className="text-sm text-green-500">+20.1% from last month</div>
-        </div>
-        <div className="p-4 bg-white dark:bg-slate-800 rounded-md shadow">
-          <div className="text-xs text-gray-500">Subscriptions</div>
-          <div className="text-xl font-bold">+2,350</div>
-          <div className="text-sm text-green-500">+180.1% from last month</div>
-        </div>
-        <div className="p-4 bg-white dark:bg-slate-800 rounded-md shadow">
-          <div className="text-xs text-gray-500">Sales</div>
-          <div className="text-xl font-bold">+12,234</div>
-          <div className="text-sm text-green-500">+19% from last month</div>
-        </div>
-        <div className="p-4 bg-white dark:bg-slate-800 rounded-md shadow">
-          <div className="text-xs text-gray-500">Active Now</div>
-          <div className="text-xl font-bold">+573</div>
-          <div className="text-sm text-green-500">+201 since last hour</div>
-        </div>
+        <PermissionGuard permission="analytics.view">
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-md shadow">
+            <div className="text-xs text-gray-500">Total Revenue</div>
+            <div className="text-xl font-bold">$45,231.89</div>
+            <div className="text-sm text-green-500">+20.1% from last month</div>
+          </div>
+        </PermissionGuard>
+        <PermissionGuard permission="analytics.view">
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-md shadow">
+            <div className="text-xs text-gray-500">Subscriptions</div>
+            <div className="text-xl font-bold">+2,350</div>
+            <div className="text-sm text-green-500">+180.1% from last month</div>
+          </div>
+        </PermissionGuard>
+        <PermissionGuard permission="analytics.view">
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-md shadow">
+            <div className="text-xs text-gray-500">Sales</div>
+            <div className="text-xl font-bold">+12,234</div>
+            <div className="text-sm text-green-500">+19% from last month</div>
+          </div>
+        </PermissionGuard>
+        <PermissionGuard permission="analytics.view">
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-md shadow">
+            <div className="text-xs text-gray-500">Active Now</div>
+            <div className="text-xl font-bold">+573</div>
+            <div className="text-sm text-green-500">+201 since last hour</div>
+          </div>
+        </PermissionGuard>
       </div>
 
       {/* Graph placeholder */}
@@ -86,6 +96,9 @@ export function DashboardContent() {
           ))}
         </div>
       </div>
+
+      {/* User Permissions Info */}
+      <UserPermissionsInfo />
     </div>
   );
 }

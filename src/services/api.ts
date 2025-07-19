@@ -22,7 +22,6 @@ type FailedRequest = {
   resolve: (value?: string | PromiseLike<string | null> | null) => void;
   reject: (reason?: unknown) => void;
 };
-
 let isRefreshing = false;
 let failedQueue: FailedRequest[] = [];
 

@@ -4,7 +4,9 @@ import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import PaymentHeader from "@/components/payment/PaymentHeader";
 import PaymentForm from "@/components/payment/PaymentForm";
 import BookingSummary from "@/components/payment/BookingSummary";
+import VoucherListForUser from "@/components/payment/VoucherListForUser";
 import { IListing } from "@/types/listing";
+import { Voucher } from "@/types/voucher";
 
 export default function PaymentLayout() {
   const [searchParams] = useSearchParams();
@@ -51,6 +53,8 @@ export default function PaymentLayout() {
     searchParams.get("selectedServiceTotal") || 0
   );
 
+  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
+
   useEffect(() => {
     if (listingId) {
       // Import và dispatch action từ listingSlice
@@ -94,7 +98,14 @@ export default function PaymentLayout() {
       <PaymentHeader />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <PaymentForm />
+          <div>
+            {/* Voucher phía trên form thanh toán */}
+            <VoucherListForUser
+              onVoucherSelect={setSelectedVoucher}
+              totalAmount={totalPrice + selectedServiceTotal}
+            />
+            <PaymentForm />
+          </div>
           <div className="lg:pl-8">
             {listing && propertyId ? (
               <BookingSummary
@@ -109,6 +120,7 @@ export default function PaymentLayout() {
                 bookedDates={bookedDates}
                 onSaveBookingInfo={handleSaveBookingInfo}
                 selectedServiceTotal={selectedServiceTotal}
+                selectedVoucher={selectedVoucher}
               />
             ) : (
               <p>Đang tải thông tin đặt chỗ...</p>

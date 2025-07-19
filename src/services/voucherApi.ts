@@ -3,7 +3,7 @@ import { CreateVoucherDto, UpdateVoucherDto } from "@/types/voucher";
 
 export const voucherApi = {
   getAll: (params?: Record<string, unknown>) => api.get("/vouchers", { params }),
-  getValid: () => api.get("/vouchers/valid"),
+  getValid: (params?: Record<string, unknown>) => api.get("/vouchers/valid", { params }),
   getById: (id: string) => api.get(`/vouchers/${id}`),
   getByCode: (code: string) => api.get(`/vouchers/code/${code}`),
   create: (data: CreateVoucherDto) => api.post("/vouchers", data),
