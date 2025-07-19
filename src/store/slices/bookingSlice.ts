@@ -164,67 +164,77 @@ export const restoreBooking = createAsyncThunk<
 // Thống kê tổng quan booking
 export const fetchBookingStatisticsOverview = createAsyncThunk<
   BookingStatistics,
-  void,
+  { startDate?: string; endDate?: string } | void,
   { rejectValue: string }
->("booking/fetchBookingStatisticsOverview", async (_, { rejectWithValue }) => {
-  try {
-    const res = await api.get("/bookings/statistics/overview");
-    console.log(res);
-
-    return res.data.data;
-  } catch (err: unknown) {
-    if (typeof err === "object" && err !== null && "response" in err) {
-      // axios error: truy cập err.response từ unknown, do axios error không có type chuẩn
-      const axiosErr = err as { response?: { data?: unknown } };
-      return rejectWithValue(
-        (axiosErr.response?.data as string) || "Unknown error"
-      );
+>(
+  "booking/fetchBookingStatisticsOverview",
+  async (params, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/bookings/statistics/overview", {
+        params,
+      });
+      return res.data.data;
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: unknown } };
+        return rejectWithValue(
+          (axiosErr.response?.data as string) || "Unknown error"
+        );
+      }
+      return rejectWithValue("Unknown error");
     }
-    return rejectWithValue("Unknown error");
   }
-});
+);
 
 // Thống kê tài chính booking
 export const fetchBookingStatisticsFinancial = createAsyncThunk<
   BookingStatistics,
-  void,
+  { startDate?: string; endDate?: string } | void,
   { rejectValue: string }
->("booking/fetchBookingStatisticsFinancial", async (_, { rejectWithValue }) => {
-  try {
-    const res = await api.get("/bookings/statistics/financial");
-    return res.data.data;
-  } catch (err: unknown) {
-    if (typeof err === "object" && err !== null && "response" in err) {
-      
-      const axiosErr = err as { response?: { data?: unknown } };
-      return rejectWithValue(
-        (axiosErr.response?.data as string) || "Unknown error"
-      );
+>(
+  "booking/fetchBookingStatisticsFinancial",
+  async (params, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/bookings/statistics/financial", {
+        params,
+      });
+      return res.data.data;
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: unknown } };
+        return rejectWithValue(
+          (axiosErr.response?.data as string) || "Unknown error"
+        );
+      }
+      return rejectWithValue("Unknown error");
     }
-    return rejectWithValue("Unknown error");
   }
-});
+);
 
 // Thống kê khách hàng booking
 export const fetchBookingStatisticsCustomers = createAsyncThunk<
   BookingStatistics,
-  void,
+  { startDate?: string; endDate?: string } | void,
   { rejectValue: string }
->("booking/fetchBookingStatisticsCustomers", async (_, { rejectWithValue }) => {
-  try {
-    const res = await api.get("/bookings/statistics/customers");
-    return res.data.data;
-  } catch (err: unknown) {
-    if (typeof err === "object" && err !== null && "response" in err) {
-      // axios error: truy cập err.response từ unknown, do axios error không có type chuẩn
-      const axiosErr = err as { response?: { data?: unknown } };
-      return rejectWithValue(
-        (axiosErr.response?.data as string) || "Unknown error"
-      );
+>(
+  "booking/fetchBookingStatisticsCustomers",
+  async (params, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/bookings/statistics/customers", {
+        params,
+      });
+      return res.data.data;
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: unknown } };
+        return rejectWithValue(
+          (axiosErr.response?.data as string) || "Unknown error"
+        );
+      }
+      return rejectWithValue("Unknown error");
     }
-    return rejectWithValue("Unknown error");
   }
-});
+);
 
 // ADMIN BOOKING THUNKS
 export const fetchAdminBookings = createAsyncThunk<
@@ -255,8 +265,8 @@ export const fetchAdminBookings = createAsyncThunk<
       queryParams.paymentStatus = undefined;
     }
     const res = await api.get("/bookings", { params: queryParams });
-    console.log("sdsdsdsds : "  , res.data.data);
-    
+    console.log("sdsdsdsds : ", res.data.data);
+
     return res.data.data;
   } catch (err: unknown) {
     if (typeof err === "object" && err !== null && "response" in err) {

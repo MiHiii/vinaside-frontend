@@ -248,6 +248,13 @@ export function Sidebar({ collapsed }: SidebarProps) {
             collapsed={collapsed}
           />
           <SidebarItem
+            to="/admin/bookings"
+            icon={<Ticket className="h-4 w-4" />}
+            label="Booking"
+            active={pathname.startsWith("/admin/bookings")}
+            collapsed={collapsed}
+          />
+          <SidebarItem
             to="/admin/amenities"
             icon={<ListChecks className="h-4 w-4" />}
             label="Tiện ích"

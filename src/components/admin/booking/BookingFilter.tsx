@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectTrigger,
@@ -10,6 +9,21 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import {
+  fetchProperties,
+  selectProperties,
+} from "@/store/slices/propertySlice";
+import { fetchListings, selectListings } from "@/store/slices/listingSlice";
+import { fetchUsers, selectUsers } from "@/store/slices/userSlice";
 
 interface BookingFilterProps {
   onFilterChange: (filters: {
@@ -30,13 +44,27 @@ interface BookingFilterProps {
 
 const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
   const [filters, setFilters] = useState<Record<string, string>>({});
-  // Đã loại bỏ các biến selectedProperty, selectedListing, selectedGuest vì không dùng đến
+  const [openFrom, setOpenFrom] = useState(false);
+  const [openTo, setOpenTo] = useState(false);
+  const dispatch = useAppDispatch();
+  const properties = useAppSelector(selectProperties);
+  const listings = useAppSelector(selectListings) as {
+    id?: string;
+    _id?: string;
+    name?: string;
+    title?: string;
+  }[];
+  const guests = useAppSelector(selectUsers) as {
+    id?: string;
+    _id?: string;
+    name?: string;
+  }[];
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  useEffect(() => {
+    dispatch(fetchProperties({}));
+    dispatch(fetchListings({}));
+    dispatch(fetchUsers({})); // Nếu fetchUsers cần tham số, truyền object rỗng
+  }, [dispatch]);
 
   const handleSelectChange = (name: string, value: string) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -66,130 +94,183 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
   };
 
   return (
-    <Card className="mb-4">
+    <Card className="mb-4 mt-10">
       <CardHeader>
         <CardTitle>Bộ lọc booking</CardTitle>
       </CardHeader>
       <CardContent>
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
-        >
-          <div>
-            <Label htmlFor="propertyId">Property ID</Label>
-            <Input
-              name="propertyId"
-              placeholder="Property ID"
-              onChange={handleChange}
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Hàng 1: 5 input nhỏ */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-x-6 gap-y-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="propertyId">Tài sản</Label>
+              <Select
+                onValueChange={(id) => handleSelectChange("propertyId", id)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn tài sản" />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="listingId">Listing</Label>
+              <Select
+                onValueChange={(id) => handleSelectChange("listingId", id)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn listing" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(listings) &&
+                    listings.map((listing) => (
+                      <SelectItem
+                        key={String(listing.id || listing._id)}
+                        value={String(listing.id || listing._id)}
+                      >
+                        {listing.name || listing.title}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="guestId">Khách</Label>
+              <Select onValueChange={(id) => handleSelectChange("guestId", id)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn khách" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(guests) &&
+                    guests.map((guest) => (
+                      <SelectItem
+                        key={String(guest.id || guest._id)}
+                        value={String(guest.id || guest._id)}
+                      >
+                        {guest.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="status">Trạng thái</Label>
+              <Select onValueChange={(v) => handleSelectChange("status", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="pending">Chờ xác nhận</SelectItem>
+                  <SelectItem value="confirmed">Đã xác nhận</SelectItem>
+                  <SelectItem value="cancelled">Đã hủy</SelectItem>
+                  <SelectItem value="completed">Hoàn thành</SelectItem>
+                  <SelectItem value="rejected">Từ chối</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="paymentStatus">Trạng thái thanh toán</Label>
+              <Select
+                onValueChange={(v) => handleSelectChange("paymentStatus", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="pending">Chờ thanh toán</SelectItem>
+                  <SelectItem value="paid">Đã thanh toán</SelectItem>
+                  <SelectItem value="refunded">Đã hoàn tiền</SelectItem>
+                  <SelectItem value="failed">Thanh toán thất bại</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="listingId">Listing ID</Label>
-            <Input
-              name="listingId"
-              placeholder="Listing ID"
-              onChange={handleChange}
-            />
+          {/* Hàng 2: 2 input ngày */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="checkInFrom">Check-in từ</Label>
+              <Popover open={openFrom} onOpenChange={setOpenFrom}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    type="button"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.checkInFrom ? (
+                      format(new Date(filters.checkInFrom), "dd/MM/yyyy")
+                    ) : (
+                      <span className="text-gray-400">Chọn ngày</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      filters.checkInFrom
+                        ? new Date(filters.checkInFrom)
+                        : undefined
+                    }
+                    onSelect={(date) => {
+                      setOpenFrom(false);
+                      setFilters((prev) => ({
+                        ...prev,
+                        checkInFrom: date ? format(date, "yyyy-MM-dd") : "",
+                      }));
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="checkInTo">Check-in đến</Label>
+              <Popover open={openTo} onOpenChange={setOpenTo}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    type="button"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.checkInTo ? (
+                      format(new Date(filters.checkInTo), "dd/MM/yyyy")
+                    ) : (
+                      <span className="text-gray-400">Chọn ngày</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      filters.checkInTo
+                        ? new Date(filters.checkInTo)
+                        : undefined
+                    }
+                    onSelect={(date) => {
+                      setOpenTo(false);
+                      setFilters((prev) => ({
+                        ...prev,
+                        checkInTo: date ? format(date, "yyyy-MM-dd") : "",
+                      }));
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="guestId">Guest ID</Label>
-            <Input
-              name="guestId"
-              placeholder="Guest ID"
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="status">Trạng thái</Label>
-            <Select onValueChange={(v) => handleSelectChange("status", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Tất cả" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="pending">Chờ xác nhận</SelectItem>
-                <SelectItem value="confirmed">Đã xác nhận</SelectItem>
-                <SelectItem value="cancelled">Đã hủy</SelectItem>
-                <SelectItem value="completed">Hoàn thành</SelectItem>
-                <SelectItem value="rejected">Từ chối</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="paymentStatus">Trạng thái thanh toán</Label>
-            <Select
-              onValueChange={(v) => handleSelectChange("paymentStatus", v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Tất cả" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="pending">Chờ thanh toán</SelectItem>
-                <SelectItem value="paid">Đã thanh toán</SelectItem>
-                <SelectItem value="refunded">Đã hoàn tiền</SelectItem>
-                <SelectItem value="failed">Thanh toán thất bại</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="checkInFrom">Check-in từ</Label>
-            <Input name="checkInFrom" type="date" onChange={handleChange} />
-          </div>
-          <div>
-            <Label htmlFor="checkInTo">Check-in đến</Label>
-            <Input name="checkInTo" type="date" onChange={handleChange} />
-          </div>
-          <div>
-            <Label htmlFor="includeDeleted">Đã xóa</Label>
-            <Select
-              onValueChange={(v) => handleSelectChange("includeDeleted", v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Tất cả" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="false">Chưa xóa</SelectItem>
-                <SelectItem value="true">Đã xóa</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="page">Trang</Label>
-            <Input name="page" type="number" min="1" onChange={handleChange} />
-          </div>
-          <div>
-            <Label htmlFor="limit">Số lượng/trang</Label>
-            <Input name="limit" type="number" min="1" onChange={handleChange} />
-          </div>
-          <div>
-            <Label htmlFor="sortBy">Sắp xếp theo</Label>
-            <Select onValueChange={(v) => handleSelectChange("sortBy", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Mặc định" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Mặc định</SelectItem>
-                <SelectItem value="createdAt">Ngày tạo</SelectItem>
-                <SelectItem value="checkInDate">Ngày check-in</SelectItem>
-                <SelectItem value="check_out_date">Ngày check-out</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="sortOrder">Thứ tự</Label>
-            <Select onValueChange={(v) => handleSelectChange("sortOrder", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Giảm dần" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Giảm dần</SelectItem>
-                <SelectItem value="asc">Tăng dần</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="md:col-span-4 flex justify-end">
+          <div className="flex justify-end">
             <Button type="submit" className="w-full md:w-auto">
               Lọc
             </Button>

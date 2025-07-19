@@ -15,7 +15,7 @@ const BookingDetailPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
-      <h2>Chi tiết Booking</h2>
+      
       <BookingDetail
         propertyId={propertyId}
         bookingId={bookingId}

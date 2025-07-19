@@ -25,19 +25,6 @@ const BookingDashboard: React.FC = () => {
 
   return (
     <div>
-      <h2>Dashboard Booking</h2>
-      <div style={{ display: "flex", gap: 24 }}>
-        <div>
-          <b>Tổng số booking:</b> {statisticsOverview.totalBookings}
-        </div>
-        <div>
-          <b>Doanh thu:</b> {statisticsOverview.totalRevenue}
-        </div>
-        <div>
-          <b>Tổng khách:</b> {statisticsOverview.totalGuests}
-        </div>
-        {/* Bổ sung các số liệu khác nếu backend trả về */}
-      </div>
     </div>
   );
 };
