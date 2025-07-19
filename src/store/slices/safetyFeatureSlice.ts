@@ -18,9 +18,15 @@ const initialState: SafetyFeatureState = {
 
 export const fetchSafetyFeatures = createAsyncThunk(
   "safetyFeature/fetchSafetyFeatures",
-  async (params: Record<string, unknown> = {}, { rejectWithValue }) => {
+  async (params: Record<string, unknown> = {}, { getState, rejectWithValue }) => {
     try {
-      const { data } = await safetyFeatureApi.getAll(params);
+      const role = (getState() as import('..').RootState).auth.user?.role;
+      let data;
+      if (role === "admin") {
+        ({ data } = await safetyFeatureApi.getAll(params));
+      } else {
+        ({ data } = await safetyFeatureApi.getPublic(params));
+      }
       return data.data.safetyFeatures;
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

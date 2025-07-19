@@ -24,10 +24,17 @@ const initialState: AmenityState = {
 export const fetchAmenities = createAsyncThunk<
   { amenities: Amenity[]; total: number },
   QueryAmenityDto,
-  { rejectValue: string }
->("amenities/fetchAmenities", async (params, { rejectWithValue }) => {
+  { state: RootState; rejectValue: string }
+>("amenities/fetchAmenities", async (params, { getState, rejectWithValue }) => {
   try {
-    const response = await api.get("/amenities", { params });
+    // Lấy role từ redux state
+    const role = getState().auth.user?.role;
+    let response;
+    if (role === "admin") {
+      response = await api.get("/amenities", { params });
+    } else {
+      response = await api.get("/amenities/public", { params });
+    }
     const amenities = response.data.data?.amenities ?? [];
     return {
       amenities,

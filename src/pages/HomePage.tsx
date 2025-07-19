@@ -143,8 +143,11 @@ function PropertyCard({ property, onViewDetail }: { property: Listing; onViewDet
             <span>{property.average_rating?.toFixed(1) ?? '--'}</span>
           </div>
         </div>
+        {/* Hiển thị giá tiền */}
+        <div className='text-[15px] text-black font-semibold mb-0.5'>
+          {property.price_per_night?.toLocaleString()}₫ / đêm
+        </div>
         <div className='text-[15px] text-muted-foreground mb-0.5'>
-          {/* Bỏ giá tiền, chỉ giữ số khách nếu muốn */}
           {property.guests ?? 2} khách
         </div>
       </CardContent>
