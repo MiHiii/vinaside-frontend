@@ -4,8 +4,6 @@ import { useAppDispatch } from "@/hooks/useRedux";
 import {
   fetchAdminBookings,
   updateAdminBookingStatus,
-  deleteAdminBooking,
-  restoreBooking,
 } from "@/store/slices/bookingSlice";
 import { RootState } from "@/store";
 import BookingFilter from "./BookingFilter";
@@ -21,6 +19,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { getPaymentStatusVN, getStatusVN } from "@/helper/status";
 
 type BookingWithDeleted = Booking & {
   isDeleted?: boolean;
@@ -48,16 +48,6 @@ const BookingList: React.FC = () => {
   useEffect(() => {
     dispatch(fetchAdminBookings({ ...filters, page }));
   }, [dispatch, filters, page]);
-
-  const handleDelete = async (id: string, propertyId: string) => {
-    await dispatch(deleteAdminBooking({ id, propertyId }));
-    dispatch(fetchAdminBookings({ ...filters, page }));
-  };
-
-  const handleRestore = async (id: string) => {
-    await dispatch(restoreBooking(id));
-    dispatch(fetchAdminBookings({ ...filters, page }));
-  };
 
   const handleFilterChange = (newFilters: Record<string, unknown>) => {
     setFilters(newFilters);
@@ -97,10 +87,6 @@ const BookingList: React.FC = () => {
                   typeof propertyIdObj === "object" && propertyIdObj !== null
                     ? propertyIdObj._id
                     : propertyIdObj;
-                const propertyName =
-                  typeof propertyIdObj === "object" && propertyIdObj !== null
-                    ? propertyIdObj.name
-                    : propertyIdObj;
                 return (
                   <TableRow
                     key={b._id}
@@ -110,16 +96,37 @@ const BookingList: React.FC = () => {
                     <TableCell>
                       {typeof b.guest_name === "string" ? b.guest_name : ""}
                     </TableCell>
-                    <TableCell>{propertyName}</TableCell>
+                    <TableCell>
+                      {typeof propertyIdObj === "object" &&
+                      propertyIdObj !== null
+                        ? propertyIdObj.name || propertyIdObj._id
+                        : propertyIdObj}
+                    </TableCell>
                     <TableCell>
                       {b.checkInDate ? b.checkInDate.slice(0, 10) : ""}
                     </TableCell>
                     <TableCell>
-                      {b.checkOutDate ? b.checkOutDate.slice(0, 10) : ""}
+                      {b.check_out_date ? b.check_out_date.slice(0, 10) : ""}
                     </TableCell>
-                    <TableCell>{b.status}</TableCell>
                     <TableCell>
-                      {b.payment_status || b.paymentStatus || ""}
+                      <Badge className={getStatusVN(b.status).color}>
+                        {getStatusVN(b.status).label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          getPaymentStatusVN(
+                            b.payment_status || b.paymentStatus || ""
+                          ).color
+                        }
+                      >
+                        {
+                          getPaymentStatusVN(
+                            b.payment_status || b.paymentStatus || ""
+                          ).label
+                        }
+                      </Badge>
                     </TableCell>
                     <TableCell className="space-x-2">
                       <Button asChild size="sm" variant="outline">
@@ -142,48 +149,6 @@ const BookingList: React.FC = () => {
                       >
                         Xác nhận
                       </Button>
-                      {filters.includeDeleted === "true" ? (
-                        b.isDeleted && (
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => handleRestore(b._id)}
-                          >
-                            Khôi phục
-                          </Button>
-                        )
-                      ) : filters.includeDeleted === "false" ? (
-                        !b.isDeleted && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(b._id, propertyId)}
-                          >
-                            Xóa
-                          </Button>
-                        )
-                      ) : (
-                        <>
-                          {!b.isDeleted && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(b._id, propertyId)}
-                            >
-                              Xóa
-                            </Button>
-                          )}
-                          {b.isDeleted && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleRestore(b._id)}
-                            >
-                              Khôi phục
-                            </Button>
-                          )}
-                        </>
-                      )}
                     </TableCell>
                   </TableRow>
                 );

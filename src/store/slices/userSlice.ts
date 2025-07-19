@@ -252,3 +252,6 @@ export const selectStaffList = (state: RootState) =>
 export const selectStaffLoading = (state: RootState) =>
   state.users.staffLoading;
 export const selectStaffError = (state: RootState) => state.users.staffError;
+
+export const selectUsers = (state: RootState) =>
+  Array.isArray(state.users.users) ? state.users.users : [];

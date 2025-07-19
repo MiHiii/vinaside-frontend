@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
@@ -20,7 +21,25 @@ import {
   LineChart,
   Line,
   Legend,
+  LabelList,
 } from "recharts";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 
 // Định nghĩa type tạm thời sát backend
 interface StatusBreakdown {
@@ -74,6 +93,61 @@ const COLORS = [
   "#FFBB28",
 ];
 
+function DatePicker({
+  value,
+  onChange,
+  label,
+}: {
+  value?: string;
+  onChange: (date: string) => void;
+  label: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const dateValue = value ? new Date(value) : undefined;
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left font-normal"
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateValue ? (
+              format(dateValue, "dd/MM/yyyy")
+            ) : (
+              <span className="text-gray-400">Chọn ngày</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={dateValue}
+            onSelect={(date) => {
+              setOpen(false);
+              if (date) onChange(format(date, "yyyy-MM-dd"));
+            }}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function formatCurrency(value?: number) {
+  if (typeof value !== "number") return "-";
+  return value.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
+}
+function formatPercent(value?: number) {
+  if (typeof value !== "number") return "-";
+  // Nếu giá trị > 1, chia cho 100 (ví dụ: 1771 => 17.71%)
+  const percent = value > 1 ? value / 100 : value;
+  return `${(percent * 100).toFixed(2)}%`;
+}
+
 const BookingStatisticsAdmin: React.FC = () => {
   const dispatch = useAppDispatch();
   const statisticsOverview = useAppSelector(
@@ -94,15 +168,14 @@ const BookingStatisticsAdmin: React.FC = () => {
   const [endDate, setEndDate] = useState<string>("");
 
   useEffect(() => {
-    if (!startDate && !endDate) {
-      dispatch(fetchBookingStatisticsOverview());
-      dispatch(fetchBookingStatisticsFinancial());
-      dispatch(fetchBookingStatisticsCustomers());
-    } else {
-      dispatch(fetchBookingStatisticsOverview());
-      dispatch(fetchBookingStatisticsFinancial());
-      dispatch(fetchBookingStatisticsCustomers());
+    const params: { startDate?: string; endDate?: string } = {};
+    if (startDate && endDate) {
+      params.startDate = startDate;
+      params.endDate = endDate;
     }
+    dispatch(fetchBookingStatisticsOverview(params));
+    dispatch(fetchBookingStatisticsFinancial(params));
+    dispatch(fetchBookingStatisticsCustomers(params));
   }, [dispatch, startDate, endDate]);
 
   // PieChart trạng thái booking
@@ -138,24 +211,8 @@ const BookingStatisticsAdmin: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-end gap-4 mb-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Từ ngày</label>
-          <input
-            type="date"
-            className="border rounded px-2 py-1"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Đến ngày</label>
-          <input
-            type="date"
-            className="border rounded px-2 py-1"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
+        <DatePicker value={startDate} onChange={setStartDate} label="Từ ngày" />
+        <DatePicker value={endDate} onChange={setEndDate} label="Đến ngày" />
       </div>
       {loading && <p>Đang tải dữ liệu...</p>}
       {error && (
@@ -163,73 +220,205 @@ const BookingStatisticsAdmin: React.FC = () => {
           {typeof error === "string" ? error : JSON.stringify(error)}
         </p>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Tổng quan */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tổng quan</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div>
-                <b>Tổng booking:</b> {statisticsOverview?.totalBookings ?? "-"}
-              </div>
-              <div>
-                <b>Doanh thu:</b> {statisticsOverview?.totalRevenue ?? "-"}
-              </div>
-              <div>
-                <b>Tổng đêm:</b> {statisticsOverview?.totalNights ?? "-"}
-              </div>
-              <div>
-                <b>Tổng khách:</b> {statisticsOverview?.totalGuests ?? "-"}
-              </div>
-              <div>
-                <b>Tỉ lệ lấp đầy:</b>{" "}
-                {statisticsOverview?.averageOccupancyRate ?? "-"}%
-              </div>
-              <div>
-                <b>Giá trị booking TB:</b>{" "}
-                {statisticsOverview?.averageBookingValue ?? "-"}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        {/* PieChart trạng thái booking */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Trạng thái Booking</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statusData && statusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    label
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-center text-muted-foreground">
-                Không có dữ liệu
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Tổng quan booking */}
+        <div>
+          <h3 className="font-semibold text-lg mb-1">Tổng quan booking</h3>
+
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Chỉ số</TableHead>
+                  <TableHead>Giá trị</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Tổng booking</TableCell>
+                  <TableCell className="font-bold">
+                    {statisticsOverview?.totalBookings ?? "-"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Doanh thu</TableCell>
+                  <TableCell className="font-bold text-green-600">
+                    {formatCurrency(statisticsOverview?.totalRevenue)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Tổng đêm</TableCell>
+                  <TableCell>
+                    {statisticsOverview?.totalNights ?? "-"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Tổng khách</TableCell>
+                  <TableCell>
+                    {statisticsOverview?.totalGuests ?? "-"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Tỉ lệ lấp đầy</TableCell>
+                  <TableCell>
+                    {formatPercent(statisticsOverview?.averageOccupancyRate)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Giá trị booking TB</TableCell>
+                  <TableCell>
+                    {formatCurrency(statisticsOverview?.averageBookingValue)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        {/* Thống kê tài chính */}
+        <div>
+          <h3 className="font-semibold text-lg mb-1">Thống kê tài chính</h3>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Chỉ số</TableHead>
+                  <TableHead>Giá trị</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Doanh thu</TableCell>
+                  <TableCell className="font-bold text-green-600">
+                    {formatCurrency(statisticsFinancial?.totalRevenue)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Phí dịch vụ</TableCell>
+                  <TableCell>
+                    {formatCurrency(statisticsFinancial?.totalServiceFees)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Thuế</TableCell>
+                  <TableCell>
+                    {formatCurrency(statisticsFinancial?.totalTaxAmount)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Hoàn tiền</TableCell>
+                  <TableCell>
+                    {formatCurrency(statisticsFinancial?.totalRefunds)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Doanh thu thực</TableCell>
+                  <TableCell className="font-bold">
+                    {formatCurrency(statisticsFinancial?.netRevenue)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Giá trị booking TB</TableCell>
+                  <TableCell>
+                    {formatCurrency(statisticsFinancial?.averageBookingValue)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Thống kê khách hàng */}
+        <div>
+          <h3 className="font-semibold text-lg mb-1">Thống kê khách hàng</h3>
+
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Chỉ số</TableHead>
+                  <TableHead>Giá trị</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Tổng khách</TableCell>
+                  <TableCell>
+                    {statisticsCustomers?.totalCustomers ?? "-"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Khách mới</TableCell>
+                  <TableCell>
+                    {statisticsCustomers?.newCustomers ?? "-"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Khách quay lại</TableCell>
+                  <TableCell>
+                    {statisticsCustomers?.returningCustomers ?? "-"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Đêm TB/booking</TableCell>
+                  <TableCell>
+                    {statisticsCustomers?.averageNightsPerBooking ?? "-"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Khách TB/booking</TableCell>
+                  <TableCell>
+                    {statisticsCustomers?.averageGuestsPerBooking ?? "-"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        {/* Top khách hàng */}
+        <div>
+          <h3 className="font-semibold text-lg mb-1">Top khách hàng</h3>
+
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tên khách</TableHead>
+                  <TableHead>Số booking</TableHead>
+                  <TableHead>Tổng chi tiêu</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {topCustomers.length > 0 ? (
+                  topCustomers.map((item) => (
+                    <TableRow key={item.customerId}>
+                      <TableCell>{item.customerName}</TableCell>
+                      <TableCell>{item.totalBookings}</TableCell>
+                      <TableCell>
+                        {item.totalSpent?.toLocaleString("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }) ?? 0}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-muted-foreground"
+                    >
+                      Không có dữ liệu top khách hàng
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* BarChart doanh thu theo tháng */}
         <Card>
           <CardHeader>
@@ -240,10 +429,40 @@ const BookingStatisticsAdmin: React.FC = () => {
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={revenueData}>
                   <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
+                  <YAxis
+                    tickFormatter={(value) =>
+                      value.toLocaleString("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                        maximumFractionDigits: 0,
+                      })
+                    }
+                  />
+                  <Tooltip
+                    formatter={(value) =>
+                      value.toLocaleString("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                        maximumFractionDigits: 0,
+                      })
+                    }
+                  />
                   <Legend />
-                  <Bar dataKey="revenue" fill="#8884d8" name="Doanh thu" />
+                  <Bar dataKey="revenue" fill="#8884d8" name="Doanh thu">
+                    <LabelList
+                      dataKey="revenue"
+                      position="top"
+                      formatter={(value) =>
+                        value != null
+                          ? Number(value).toLocaleString("vi-VN", {
+                              style: "currency",
+                              currency: "VND",
+                              maximumFractionDigits: 0,
+                            })
+                          : ""
+                      }
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -253,8 +472,6 @@ const BookingStatisticsAdmin: React.FC = () => {
             )}
           </CardContent>
         </Card>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* LineChart số booking theo tháng */}
         <Card>
           <CardHeader>
@@ -283,96 +500,41 @@ const BookingStatisticsAdmin: React.FC = () => {
             )}
           </CardContent>
         </Card>
-        {/* Top khách hàng */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Top khách hàng</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {topCustomers.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th className="text-left font-semibold">Tên khách</th>
-                      <th className="text-left font-semibold">Số booking</th>
-                      <th className="text-left font-semibold">Tổng chi tiêu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topCustomers.map((item) => (
-                      <tr key={item.customerId}>
-                        <td>{item.customerName}</td>
-                        <td>{item.totalBookings}</td>
-                        <td>
-                          {item.totalSpent?.toLocaleString("vi-VN") ?? 0}đ
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p>Không có dữ liệu top khách hàng</p>
-            )}
-          </CardContent>
-        </Card>
       </div>
-      {/* Thông tin tài chính tổng */}
+
       <Card>
         <CardHeader>
-          <CardTitle>Tài chính tổng</CardTitle>
+          <CardTitle>Trạng thái Booking</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div>
-              <b>Doanh thu:</b> {statisticsFinancial?.totalRevenue ?? "-"}
+          {statusData && statusData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
+                  label
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="text-center text-muted-foreground">
+              Không có dữ liệu
             </div>
-            <div>
-              <b>Phí dịch vụ:</b> {statisticsFinancial?.totalServiceFees ?? "-"}
-            </div>
-            <div>
-              <b>Thuế:</b> {statisticsFinancial?.totalTaxAmount ?? "-"}
-            </div>
-            <div>
-              <b>Hoàn tiền:</b> {statisticsFinancial?.totalRefunds ?? "-"}
-            </div>
-            <div>
-              <b>Doanh thu thực:</b> {statisticsFinancial?.netRevenue ?? "-"}
-            </div>
-            <div>
-              <b>Giá trị booking TB:</b>{" "}
-              {statisticsFinancial?.averageBookingValue ?? "-"}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      {/* Thông tin khách hàng tổng */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Khách hàng tổng</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div>
-              <b>Tổng khách:</b> {statisticsCustomers?.totalCustomers ?? "-"}
-            </div>
-            <div>
-              <b>Khách mới:</b> {statisticsCustomers?.newCustomers ?? "-"}
-            </div>
-            <div>
-              <b>Khách quay lại:</b>{" "}
-              {statisticsCustomers?.returningCustomers ?? "-"}
-            </div>
-            <div>
-              <b>Đêm TB/booking:</b>{" "}
-              {statisticsCustomers?.averageNightsPerBooking ?? "-"}
-            </div>
-            <div>
-              <b>Khách TB/booking:</b>{" "}
-              {statisticsCustomers?.averageGuestsPerBooking ?? "-"}
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

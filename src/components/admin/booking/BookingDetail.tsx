@@ -3,13 +3,22 @@ import { useAppDispatch } from "@/hooks/useRedux";
 import {
   fetchAdminBookingDetail,
   updateAdminBookingStatus,
-  deleteAdminBooking,
-  restoreBooking,
 } from "@/store/slices/bookingSlice";
 import { RootState } from "@/store";
 import type { BookingDetail } from "@/types/booking.interface";
 import { useSelector } from "react-redux";
 import { BookingStatus } from "@/types/enum";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Table, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { getStatusVN, getPaymentStatusVN } from "@/helper/status";
 
 const BookingDetail: React.FC<{
   propertyId: string;
@@ -67,186 +76,158 @@ const BookingDetail: React.FC<{
   const updated_at = booking.updated_at;
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
-      <button onClick={onBack} style={{ marginBottom: 16 }}>
-        Quay lại
-      </button>
-      <h3>Chi tiết Booking</h3>
-      <table
-        style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}
-      >
-        <tbody>
-          <tr>
-            <td>
-              <b>Mã booking</b>
-            </td>
-            <td>{_id}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Trạng thái</b>
-            </td>
-            <td>{status}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Trạng thái thanh toán</b>
-            </td>
-            <td>{payment_status}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Property</b>
-            </td>
-            <td>
-              {typeof property === "object" && property !== null
-                ? property.name || property._id
-                : property}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <b>Listing</b>
-            </td>
-            <td>
-              {typeof listing === "object" && listing !== null
-                ? listing.title || listing._id
-                : listing}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <b>Khách</b>
-            </td>
-            <td>
+    <Card className="max-w-2xl mx-auto my-8">
+      <CardHeader>
+        <CardTitle>Chi tiết Booking</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" onClick={onBack} className="mb-4">
+          Quay lại
+        </Button>
+        {/* Thông tin chung */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <div className="text-xs text-muted-foreground">Mã booking</div>
+            <div className="font-semibold">{_id}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Trạng thái</div>
+            <Badge className={getStatusVN(status).color}>
+              {getStatusVN(status).label}
+            </Badge>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">
+              Trạng thái thanh toán
+            </div>
+            <Badge className={getPaymentStatusVN(payment_status).color}>
+              {getPaymentStatusVN(payment_status).label}
+            </Badge>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Khách</div>
+            <div>
               {typeof guest === "object" && guest !== null
                 ? guest.name
                 : guest_name}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <b>Email</b>
-            </td>
-            <td>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Email</div>
+            <div>
               {typeof guest === "object" && guest !== null
                 ? guest.email
                 : guest_email}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <b>Sđt</b>
-            </td>
-            <td>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Sđt</div>
+            <div>
               {typeof guest === "object" && guest !== null
                 ? guest.phone
                 : guest_phone}
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <b>Số khách</b>
-            </td>
-            <td>{guests}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Số trẻ em</b>
-            </td>
-            <td>{infants}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Số đêm</b>
-            </td>
-            <td>{nights}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Ngày check-in</b>
-            </td>
-            <td>
-              {checkInDate ? new Date(checkInDate).toLocaleDateString() : ""}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <b>Ngày check-out</b>
-            </td>
-            <td>
-              {check_out_date
-                ? new Date(check_out_date).toLocaleDateString()
-                : ""}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <b>Giá/đêm</b>
-            </td>
-            <td>{price_per_night?.toLocaleString()}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Tổng giá</b>
-            </td>
-            <td>{total_price?.toLocaleString()}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Phí dịch vụ</b>
-            </td>
-            <td>{service_fee?.toLocaleString()}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Thuế</b>
-            </td>
-            <td>{tax_amount?.toLocaleString()}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Thành tiền</b>
-            </td>
-            <td>{final_amount?.toLocaleString()}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Hoa hồng</b>
-            </td>
-            <td>
-              {commissionRate ? `${(commissionRate * 100).toFixed(2)}%` : ""}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <b>Tiền trả host</b>
-            </td>
-            <td>{finalPayoutAmount?.toLocaleString()}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Yêu cầu đặc biệt</b>
-            </td>
-            <td>{special_requests}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Ngày tạo</b>
-            </td>
-            <td>{created_at ? new Date(created_at).toLocaleString() : ""}</td>
-          </tr>
-          <tr>
-            <td>
-              <b>Ngày cập nhật</b>
-            </td>
-            <td>{updated_at ? new Date(updated_at).toLocaleString() : ""}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div style={{ display: "flex", gap: 16 }}>
-        <button
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Ngày tạo</div>
+            <div>{created_at ? new Date(created_at).toLocaleString() : ""}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Ngày cập nhật</div>
+            <div>{updated_at ? new Date(updated_at).toLocaleString() : ""}</div>
+          </div>
+          <div className="md:col-span-3">
+            <div className="text-xs text-muted-foreground">
+              Yêu cầu đặc biệt
+            </div>
+            <div
+              className={special_requests ? "" : "text-muted-foreground italic"}
+            >
+              {special_requests ? special_requests : "Không có"}
+            </div>
+          </div>
+        </div>
+        {/* Thông tin phòng */}
+        <Table>
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-semibold">Property</TableCell>
+              <TableCell>
+                {typeof property === "object" && property !== null
+                  ? property.name || property._id
+                  : property}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Listing</TableCell>
+              <TableCell>
+                {typeof listing === "object" && listing !== null
+                  ? listing.title || listing._id
+                  : listing}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Ngày check-in</TableCell>
+              <TableCell>
+                {checkInDate ? new Date(checkInDate).toLocaleDateString() : ""}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Ngày check-out</TableCell>
+              <TableCell>
+                {check_out_date
+                  ? new Date(check_out_date).toLocaleDateString()
+                  : ""}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Số khách</TableCell>
+              <TableCell>{guests}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Số trẻ em</TableCell>
+              <TableCell>{infants}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Số đêm</TableCell>
+              <TableCell>{nights}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Giá/đêm</TableCell>
+              <TableCell>{price_per_night?.toLocaleString()}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Tổng giá</TableCell>
+              <TableCell>{total_price?.toLocaleString()}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Phí dịch vụ</TableCell>
+              <TableCell>{service_fee?.toLocaleString()}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Thuế</TableCell>
+              <TableCell>{tax_amount?.toLocaleString()}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Thành tiền</TableCell>
+              <TableCell>{final_amount?.toLocaleString()}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Hoa hồng</TableCell>
+              <TableCell>
+                {commissionRate ? `${(commissionRate * 100).toFixed(2)}%` : ""}
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold">Tiền trả host</TableCell>
+              <TableCell>{finalPayoutAmount?.toLocaleString()}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </CardContent>
+      <CardFooter className="flex gap-4">
+        <Button
+          variant="secondary"
           onClick={() =>
             dispatch(
               updateAdminBookingStatus({
@@ -258,22 +239,9 @@ const BookingDetail: React.FC<{
           }
         >
           Xác nhận
-        </button>
-        {!booking?.deleted ? (
-          <button
-            onClick={() =>
-              dispatch(deleteAdminBooking({ propertyId, id: _id }))
-            }
-          >
-            Xóa
-          </button>
-        ) : (
-          <button onClick={() => dispatch(restoreBooking(_id))}>
-            Khôi phục
-          </button>
-        )}
-      </div>
-    </div>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

@@ -237,6 +237,13 @@ export function Sidebar({ collapsed }: SidebarProps) {
             badge="3"
             collapsed={collapsed}
           />
+          <SidebarItem
+            to="/admin/bookings"
+            icon={<Ticket className="h-4 w-4" />}
+            label="Booking"
+            active={pathname.startsWith("/admin/bookings")}
+            collapsed={collapsed}
+          />
           </PermissionGuard>
           <PermissionGuard permission="user.view">
             <SidebarItem
@@ -319,6 +326,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
               collapsed={collapsed}
             />
           </PermissionGuard>
+
           <SidebarCollapse
             icon={<ShieldCheck className="h-4 w-4" />}
             label="Secured by Clerk"

@@ -194,8 +194,6 @@ const routes: RouteObject[] = [
       { path: "messages", element: <Messages /> },
     ],
   },
-
-  // admin login route
   {
     path: "/admin/login",
     element: <AdminLoginPage />,
