@@ -3,6 +3,7 @@ import { AxiosError } from "axios";
 import { AuthState, LoginResponse, RegisterResponse } from "@/types/auth";
 import { User } from "@/types/user";
 import { api } from "@/services/api";
+import { rbacApi } from "@/services/rbacApi";
 
 const initialState: AuthState = {
   user: JSON.parse(localStorage.getItem("user") || "null"),
@@ -109,6 +110,24 @@ export const login = createAsyncThunk(
   ) => {
     try {
       const { data } = await api.post("/auth/login", { email, password });
+      // Lưu token NGAY LẬP TỨC
+      if (data.data.access_token) {
+        localStorage.setItem("access_token", data.data.access_token);
+      }
+      // Sau đó mới fetch permissions (cho user hiện tại)
+      try {
+        const permissionsResponse = await rbacApi.getUserPermissions("me");
+        if (permissionsResponse.success) {
+          const permissions = permissionsResponse.data.data;
+          const userWithPermissions = {
+            ...data.data.user,
+            permissions,
+          };
+          data.data.user = userWithPermissions;
+        }
+      } catch (permissionError) {
+        console.warn("Không thể fetch permissions:", permissionError);
+      }
       return data;
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<{ message?: string }>;
@@ -162,7 +181,20 @@ export const fetchCurrentUser = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const { data } = await api.get("/auth/me");
-
+      // Luôn fetch permissions động cho user hiện tại
+      try {
+        const permissionsResponse = await rbacApi.getUserPermissions("me");
+        if (permissionsResponse.success) {
+          const permissions = permissionsResponse.data.data;
+          const userWithPermissions = {
+            ...data.data.user,
+            permissions,
+          };
+          data.data.user = userWithPermissions;
+        }
+      } catch (permissionError) {
+        console.warn("Không thể fetch permissions:", permissionError);
+      }
       return data;
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<{ message?: string }>;
@@ -220,6 +252,12 @@ const authSlice = createSlice({
           if (action.payload.success) {
             state.user = action.payload.data.user;
             state.token = action.payload.data.access_token;
+            // Đảm bảo cập nhật permissions vào state.user
+            state.user.permissions = action.payload.data.user.permissions;
+            // Nếu có customRoles cũng cập nhật
+            if (action.payload.data.user.customRoles) {
+              state.user.customRoles = action.payload.data.user.customRoles;
+            }
             // Lưu vào localStorage
             localStorage.setItem(
               "access_token",
@@ -331,6 +369,13 @@ const authSlice = createSlice({
         state.loading = false;
         state.isCheckingAuth = false;
         state.user = action.payload.data.user || null;
+        // Đảm bảo cập nhật permissions vào state.user
+        if (state.user) {
+          state.user.permissions = action.payload.data.user.permissions;
+          if (action.payload.data.user.customRoles) {
+            state.user.customRoles = action.payload.data.user.customRoles;
+          }
+        }
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {
         state.loading = false;
