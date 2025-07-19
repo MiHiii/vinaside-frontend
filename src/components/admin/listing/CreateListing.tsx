@@ -3,6 +3,10 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { createListing, selectCreateListingLoading, selectCreateListingError, clearCreateError, uploadListingImages, selectUploadListingImagesLoading } from "@/store/slices/listingSlice";
 import { fetchProperties, selectProperties } from "@/store/slices/propertySlice";
 import { fetchAmenities, selectAmenities } from "@/store/slices/amenitySlice";
+import { fetchServices } from '@/store/slices/serviceSlice';
+import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
+import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
+import { fetchVouchers } from '@/store/slices/voucherSlice';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +37,10 @@ interface CreateListingFormData {
   status: string;
   images: string[];
   amenities: string[];
+  service_ids: string[];         // dịch vụ
+  safety_features: string[];     // tính năng an toàn
+  house_rules_selected: string[];// nội quy
+  voucher_ids: string[];         // voucher áp dụng
 }
 
 const statusOptions = [
@@ -104,18 +112,32 @@ export default function CreateListing() {
     check_out_time: "11:00",
     cancel_policy: "flexible",
     allow_pets: false,
-    property_id: "", // Thay đổi từ host_id
+    property_id: "",
     status: "draft",
     images: [],
     amenities: [],
+    service_ids: [],
+    safety_features: [],
+    house_rules_selected: [],
+    voucher_ids: [],
   });
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load danh sách properties khi component mount
+  // 1. Thêm các trường vào formData
+  const services = useAppSelector((state) => state.service.services);
+  const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
+  const houseRules = useAppSelector((state) => state.houseRule.houseRules);
+  const vouchers = useAppSelector((state) => state.voucher.vouchers);
+
+  // 2. Fetch danh sách dịch vụ, tính năng an toàn, nội quy, voucher
   useEffect(() => {
     dispatch(fetchProperties({ limit: 100 }));
     dispatch(fetchAmenities({ limit: 100 }));
+    dispatch(fetchServices({}));
+    dispatch(fetchSafetyFeatures({}));
+    dispatch(fetchHouseRules({}));
+    dispatch(fetchVouchers({}));
   }, [dispatch]);
 
   const handleInputChange = (field: keyof CreateListingFormData, value: string | number | boolean) => {
@@ -140,13 +162,6 @@ export default function CreateListing() {
     } else {
       toast.error(result.payload || "Upload ảnh thất bại!");
     }
-  };
-
-  const handleAmenitiesChange = (ids: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      amenities: ids
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -177,9 +192,10 @@ export default function CreateListing() {
           coordinates: [0, 0], // Sẽ thêm sau khi có map
         },
         amenities: formData.amenities,
-        house_rules_selected: [], // Sẽ thêm sau
-        safety_features: [], // Sẽ thêm sau
+        house_rules_selected: formData.house_rules_selected, // Sẽ thêm sau
+        safety_features: formData.safety_features, // Sẽ thêm sau
         other_rules: [], // Sẽ thêm sau
+        voucher_ids: formData.voucher_ids, // Thêm voucher_ids vào payload
       };
 
       const result = await dispatch(createListing(listingData));
@@ -207,6 +223,10 @@ export default function CreateListing() {
           status: "draft",
           images: [],
           amenities: [],
+          service_ids: [],
+          safety_features: [],
+          house_rules_selected: [],
+          voucher_ids: [],
         });
         setFiles([]);
       } else {
@@ -407,7 +427,23 @@ export default function CreateListing() {
 
             {/* Chọn Amenities */}
             <div className="space-y-2">
-              <Label>Chọn tiện ích</Label>
+              <div className="flex items-center justify-between">
+                <Label>Chọn tiện ích</Label>
+                <label className="flex items-center gap-2 cursor-pointer font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.length === amenities.length && amenities.length > 0}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({ ...prev, amenities: amenities.map(a => a._id) }));
+                      } else {
+                        setFormData(prev => ({ ...prev, amenities: [] }));
+                      }
+                    }}
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {amenities.map((a) => (
                   <label key={a._id} className="flex items-center gap-2 cursor-pointer">
@@ -417,13 +453,173 @@ export default function CreateListing() {
                       checked={formData.amenities.includes(a._id)}
                       onChange={e => {
                         if (e.target.checked) {
-                          handleAmenitiesChange([...formData.amenities, a._id]);
+                          setFormData(prev => ({ ...prev, amenities: [...prev.amenities, a._id] }));
                         } else {
-                          handleAmenitiesChange(formData.amenities.filter(id => id !== a._id));
+                          setFormData(prev => ({ ...prev, amenities: prev.amenities.filter(id => id !== a._id) }));
                         }
                       }}
                     />
                     <span>{a.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Chọn Dịch vụ */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Chọn dịch vụ</Label>
+                <label className="flex items-center gap-2 cursor-pointer font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={formData.service_ids.length === services.length && services.length > 0}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({ ...prev, service_ids: services.map(s => s._id) }));
+                      } else {
+                        setFormData(prev => ({ ...prev, service_ids: [] }));
+                      }
+                    }}
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {services.map((s) => (
+                  <label key={s._id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={s._id}
+                      checked={formData.service_ids.includes(s._id)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setFormData(prev => ({ ...prev, service_ids: [...prev.service_ids, s._id] }));
+                        } else {
+                          setFormData(prev => ({ ...prev, service_ids: prev.service_ids.filter(id => id !== s._id) }));
+                        }
+                      }}
+                    />
+                    <span>{s.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Chọn Tính năng an toàn */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Chọn tính năng an toàn</Label>
+                <label className="flex items-center gap-2 cursor-pointer font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={formData.safety_features.length === safetyFeatures.length && safetyFeatures.length > 0}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({ ...prev, safety_features: safetyFeatures.map(sf => sf._id) }));
+                      } else {
+                        setFormData(prev => ({ ...prev, safety_features: [] }));
+                      }
+                    }}
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {safetyFeatures.map((sf) => (
+                  <label key={sf._id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={sf._id}
+                      checked={formData.safety_features.includes(sf._id)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setFormData(prev => ({ ...prev, safety_features: [...prev.safety_features, sf._id] }));
+                        } else {
+                          setFormData(prev => ({ ...prev, safety_features: prev.safety_features.filter(id => id !== sf._id) }));
+                        }
+                      }}
+                    />
+                    <span>{sf.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Chọn Nội quy */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Chọn nội quy</Label>
+                <label className="flex items-center gap-2 cursor-pointer font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={formData.house_rules_selected.length === houseRules.length && houseRules.length > 0}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({ ...prev, house_rules_selected: houseRules.map(hr => hr._id) }));
+                      } else {
+                        setFormData(prev => ({ ...prev, house_rules_selected: [] }));
+                      }
+                    }}
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {houseRules.map((hr) => (
+                  <label key={hr._id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={hr._id}
+                      checked={formData.house_rules_selected.includes(hr._id)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setFormData(prev => ({ ...prev, house_rules_selected: [...prev.house_rules_selected, hr._id] }));
+                        } else {
+                          setFormData(prev => ({ ...prev, house_rules_selected: prev.house_rules_selected.filter(id => id !== hr._id) }));
+                        }
+                      }}
+                    />
+                    <span>{hr.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Chọn Voucher */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Chọn voucher áp dụng</Label>
+                <label className="flex items-center gap-2 cursor-pointer font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={formData.voucher_ids.length === vouchers.length && vouchers.length > 0}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({ ...prev, voucher_ids: vouchers.map(v => v._id) }));
+                      } else {
+                        setFormData(prev => ({ ...prev, voucher_ids: [] }));
+                      }
+                    }}
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {vouchers.map((v) => (
+                  <label key={v._id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={v._id}
+                      checked={formData.voucher_ids.includes(v._id)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setFormData(prev => ({ ...prev, voucher_ids: [...prev.voucher_ids, v._id] }));
+                        } else {
+                          setFormData(prev => ({ ...prev, voucher_ids: prev.voucher_ids.filter(id => id !== v._id) }));
+                        }
+                      }}
+                    />
+                    <span>{v.code} - {v.discount_percent}%</span>
                   </label>
                 ))}
               </div>
