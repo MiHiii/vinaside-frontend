@@ -18,10 +18,17 @@ const initialState: ServiceState = {
 
 export const fetchServices = createAsyncThunk(
   "service/fetchServices",
-  async (params: Record<string, unknown> = {}, { rejectWithValue }) => {
+  async (params: Record<string, unknown> = {}, { getState, rejectWithValue }) => {
     try {
-      const { data } = await serviceApi.getAll(params);
-      return data.data.services;
+      const role = (getState() as import('..').RootState).auth.user?.role;
+      let data;
+      if (role === "admin") {
+        ({ data } = await serviceApi.getAll(params));
+        return data.data.services;
+      } else {
+        ({ data } = await serviceApi.getActive());
+        return data.data;
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       return rejectWithValue(error.response?.data?.message || "Lỗi lấy danh sách dịch vụ");

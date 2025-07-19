@@ -70,7 +70,8 @@ export default function Listings() {
   const total = useAppSelector(selectListingsTotal);
   const properties = useAppSelector(selectProperties);
   const amenities = useAppSelector(selectAmenities);
-  const services = useAppSelector((state) => state.service.services);
+  const services = useAppSelector((state) => state.service.services) ?? [];
+  console.log('services in Listings:', services, Array.isArray(services));
   const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
   const houseRules = useAppSelector((state) => state.houseRule.houseRules);
   const vouchers = useAppSelector((state) => state.voucher.vouchers);

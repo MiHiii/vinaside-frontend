@@ -18,8 +18,18 @@ interface RoomDescriptionProps {
 }
 
 const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
-  const { listing, amenitiesList, services, selectedServiceIds, setSelectedServiceIds, safetyFeatures } = props;
+  const {
+    listing,
+    amenitiesList = [],
+    services = [],
+    selectedServiceIds = [],
+    setSelectedServiceIds,
+    safetyFeatures = [],
+  } = props;
   const [open, setOpen] = useState(false);
+  console.log('RoomDescription services:', services);
+  console.log('RoomDescription listing.service_ids:', listing.service_ids);
+  console.log('RoomDescription services _id list:', services.map(s => s._id));
   // Group amenities by category
   const grouped = amenitiesList
     .filter(a => (listing.amenities ?? []).includes(a._id))
@@ -29,7 +39,7 @@ const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
       acc[cat].push(amenity); 
       return acc;
     }, {} as Record<string, typeof amenitiesList>);
-  const houseRules = useAppSelector(state => state.houseRule.houseRules);
+  const houseRules = useAppSelector(state => state.houseRule.houseRules) ?? [];
   return (
     <>
       <div className="space-y-4 pt-6 border-t border-gray-200">

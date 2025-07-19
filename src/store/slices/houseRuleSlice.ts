@@ -18,9 +18,15 @@ const initialState: HouseRuleState = {
 
 export const fetchHouseRules = createAsyncThunk(
   "houseRule/fetchHouseRules",
-  async (params: Record<string, unknown> = {}, { rejectWithValue }) => {
+  async (params: Record<string, unknown> = {}, { getState, rejectWithValue }) => {
     try {
-      const { data } = await houseRuleApi.getAll(params);
+      const role = (getState() as import('..').RootState).auth.user?.role;
+      let data;
+      if (role === "admin") {
+        ({ data } = await houseRuleApi.getAll(params));
+      } else {
+        ({ data } = await houseRuleApi.getPublic(params));
+      }
       return data.data.houseRules;
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

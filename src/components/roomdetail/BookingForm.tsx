@@ -60,8 +60,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const pricePerNight = listing.price_per_night || 0;
   const taxRate = 0.08;
   
-  const selectedServiceTotal = services
-    .filter(s => selectedServiceIds.includes(s._id))
+  const selectedServiceTotal = (services ?? [])
+    .filter(s => (selectedServiceIds ?? []).includes(s._id))
     .reduce((sum, s) => sum + (s.default_price || 0), 0);
 
 
@@ -118,7 +118,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
           Hiếm khi còn phòng! Chỗ ở này thường kín phòng
         </span>
       </div>
-      <div className="w-full lg:w-[460px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white">
+      <div className="w-full lg:w-[360px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white">
         <h3 className="text-lg font-semibold">Thêm ngày để xem giá</h3>
 
         {checkIn && checkOut && (
