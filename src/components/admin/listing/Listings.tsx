@@ -41,6 +41,10 @@ import { toast } from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { fetchProperties, selectProperties } from "@/store/slices/propertySlice";
 import { fetchAmenities, selectAmenities } from "@/store/slices/amenitySlice";
+import { fetchServices } from '@/store/slices/serviceSlice';
+import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
+import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
+import { fetchVouchers } from '@/store/slices/voucherSlice';
 
 interface ListingFilters {
   search: string;
@@ -66,6 +70,10 @@ export default function Listings() {
   const total = useAppSelector(selectListingsTotal);
   const properties = useAppSelector(selectProperties);
   const amenities = useAppSelector(selectAmenities);
+  const services = useAppSelector((state) => state.service.services);
+  const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
+  const houseRules = useAppSelector((state) => state.houseRule.houseRules);
+  const vouchers = useAppSelector((state) => state.voucher.vouchers);
 
   const [filters, setFilters] = useState<ListingFilters>({
     search: "",
@@ -82,6 +90,10 @@ export default function Listings() {
       dispatch(fetchProperties({ limit: 100 }));
     }
     dispatch(fetchAmenities({ limit: 100 }));
+    dispatch(fetchServices({}));
+    dispatch(fetchSafetyFeatures({}));
+    dispatch(fetchHouseRules({}));
+    dispatch(fetchVouchers({}));
   }, [dispatch, properties]);
 
   useEffect(() => {
@@ -216,23 +228,27 @@ export default function Listings() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Ảnh</TableHead>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Giá/đêm</TableHead>
-                    <TableHead>Khách tối đa</TableHead>
-                    <TableHead>Property</TableHead>
-                    <TableHead>Tiện ích</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="text-xs font-bold uppercase text-gray-600">Ảnh</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-gray-600">Tiêu đề</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-gray-600 text-right">Giá/đêm</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-gray-600 text-center">Khách tối đa</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-gray-600">Property</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-gray-600">Thông tin chỗ ở</TableHead>
+                    <TableHead className="text-xs font-bold uppercase text-gray-600 text-right">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {listings.map(listing => (
-                    <TableRow key={listing._id}>
+                    <TableRow key={listing._id} className="hover:bg-gray-50 transition">
                       <TableCell>
                         {listing.images && listing.images.length > 0 ? (
                           <Link to={`/admin/listings/${listing._id}`} title="Xem chi tiết">
-                            <img src={listing.images[0]} alt={listing.title} style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 4 }} className="cursor-pointer hover:opacity-80" />
+                            <img
+                              src={listing.images[0]}
+                              alt={listing.title}
+                              className="w-24 h-10 object-cover rounded-lg"
+                            />
                           </Link>
                         ) : (
                           <span className="text-gray-400">Không có ảnh</span>
@@ -240,31 +256,86 @@ export default function Listings() {
                       </TableCell>
                       <TableCell>
                         <Link to={`/admin/listings/${listing._id}`} title="Xem chi tiết">
-                          <span className="cursor-pointer hover:underline text-blue-700">{listing.title}</span>
+                          <span className="font-semibold text-blue-700 hover:underline">{listing.title}</span>
                         </Link>
+                        {/* Bỏ tên property ở đây */}
                       </TableCell>
-                      <TableCell>{formatPrice(listing.price_per_night)}</TableCell>
-                      <TableCell>{listing.max_guests}</TableCell>
-                      <TableCell> {
-                        typeof listing.propertyId === 'object' && listing.propertyId !== null
-                          ? listing.propertyId.name
-                          : listing.propertyId || ''
-                      } </TableCell>
+                      <TableCell className="text-right font-semibold text-pink-600">
+                        {formatPrice(listing.price_per_night)}
+                      </TableCell>
+                      <TableCell className="text-center">{listing.max_guests}</TableCell>
                       <TableCell>
-                        {listing.amenities && listing.amenities.length > 0
-                          ? listing.amenities.map(id => amenities.find(a => a._id === id)?.name).filter(Boolean).join(', ')
-                          : <span className="text-gray-400">Không có</span>}
+                        {typeof listing.propertyId === 'object' && listing.propertyId !== null
+                          ? <span className="text-green-700 font-medium">{listing.propertyId.name}</span>
+                          : listing.propertyId || ''}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {/* Tiện ích */}
+                          <div className="flex items-start gap-1 text-xs text-gray-700">
+                            <span className="font-medium min-w-[60px]">🛏 Tiện ích:</span>
+                            <span>
+                              {listing.amenities && listing.amenities.length > 0
+                                ? listing.amenities.map(id => amenities.find(a => a._id === id)?.name).filter(Boolean).join(', ')
+                                : <span className="text-gray-400">Không có</span>
+                              }
+                            </span>
+                          </div>
+                          {/* Dịch vụ */}
+                          <div className="flex items-start gap-1 text-xs text-gray-700">
+                            <span className="font-medium min-w-[60px]">🛎 Dịch vụ:</span>
+                            <span>
+                              {listing.service_ids && listing.service_ids.length > 0
+                                ? listing.service_ids.map(id => services.find(s => s._id === id)?.name || id).join(', ')
+                                : <span className="text-gray-400">Không có</span>
+                              }
+                            </span>
+                          </div>
+                          {/* An toàn */}
+                          <div className="flex items-start gap-1 text-xs text-gray-700">
+                            <span className="font-medium min-w-[60px]">🛡 An toàn:</span>
+                            <span>
+                              {listing.safety_features && listing.safety_features.length > 0
+                                ? listing.safety_features.map(id => safetyFeatures.find(sf => sf._id === id)?.name || id).join(', ')
+                                : <span className="text-gray-400">Không có</span>
+                              }
+                            </span>
+                          </div>
+                          {/* Nội quy */}
+                          <div className="flex items-start gap-1 text-xs text-gray-700">
+                            <span className="font-medium min-w-[60px]">📋 Nội quy:</span>
+                            <span>
+                              {listing.house_rules_selected && listing.house_rules_selected.length > 0
+                                ? listing.house_rules_selected.map(id => houseRules.find(hr => hr._id === id)?.name || id).join(', ')
+                                : <span className="text-gray-400">Không có</span>
+                              }
+                            </span>
+                          </div>
+                          {/* Voucher */}
+                          <div className="flex items-start gap-1 text-xs text-gray-700">
+                            <span className="font-medium min-w-[60px]">🎟 Voucher:</span>
+                            <span>
+                              {listing.voucher_ids && listing.voucher_ids.length > 0
+                                ? listing.voucher_ids.map(id => {
+                                    const v = vouchers.find(v => v._id === id);
+                                    return v ? `${v.code} (${v.discount_percent}%)` : id;
+                                  }).join(', ')
+                                : <span className="text-gray-400">Không có</span>
+                              }
+                            </span>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link to={`/admin/listings/${listing._id}`} title="Xem chi tiết">
-                            <Button variant="ghost" size="icon">
-                              <Eye className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="hover:bg-blue-100">
+                              <Eye className="h-4 w-4 text-blue-600" />
                             </Button>
                           </Link>
                           <Link to={`/admin/listings/edit/${listing._id}`} title="Chỉnh sửa">
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="hover:bg-yellow-100">
+                              <Edit className="h-4 w-4 text-yellow-600" />
                             </Button>
                           </Link>
                         </div>

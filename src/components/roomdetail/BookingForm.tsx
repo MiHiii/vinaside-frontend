@@ -6,7 +6,7 @@ import BookingCalendar from "./BookingCalendar";
 import GuestSelector from "./GuestSelector";
 import { IListing } from "@/types/listing";
 import toast from "react-hot-toast";
-
+import { Service } from '@/types/services';
 interface BookingFormProps {
   listing: IListing;
   checkIn: Date | null;
@@ -32,20 +32,10 @@ interface BookingFormProps {
   setDateOpen: (open: boolean) => void;
   guestOpen: boolean;
   setGuestOpen: (open: boolean) => void;
-  selectedServices: string[];
+  selectedServiceIds: string[];
+  services: Service[];
 }
 
-// Dịch vụ cố định kèm giá (đồng bộ với RoomDescription)
-const fixedServices = [
-  {
-    name: "Dọn phòng hàng ngày",
-    price: 50000,
-  },
-  {
-    name: "Đưa đón sân bay",
-    price: 200000,
-  },
-];
 
 const BookingForm: React.FC<BookingFormProps> = ({
   listing,
@@ -62,16 +52,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
   setDateOpen,
   guestOpen,
   setGuestOpen,
-  selectedServices,
+  selectedServiceIds,
+  services,
 }) => {
   const navigate = useNavigate();
 
   const pricePerNight = listing.price_per_night || 0;
   const taxRate = 0.08;
+  
+  const selectedServiceTotal = services
+    .filter(s => selectedServiceIds.includes(s._id))
+    .reduce((sum, s) => sum + (s.default_price || 0), 0);
 
-  const selectedServiceTotal = fixedServices
-    .filter((s) => selectedServices.includes(s.name))
-    .reduce((sum, s) => sum + s.price, 0);
 
   const calculatePrice = () => {
     const base = nights * pricePerNight;
@@ -199,3 +191,4 @@ const BookingForm: React.FC<BookingFormProps> = ({
 };
 
 export default BookingForm;
+  
