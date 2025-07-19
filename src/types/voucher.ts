@@ -8,6 +8,7 @@ export interface Voucher {
   is_active: boolean;
   description?: string;
   min_order_value?: number;
+  max_uses_per_user?: number;
   applies_to?: {
     room_ids?: string[];
   };

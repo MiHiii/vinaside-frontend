@@ -10,6 +10,10 @@ import { Listing } from "@/types/listing";
 import { DropzoneUpload } from "@/components/become-a-host/DropzoneUpload";
 import { fetchProperties, selectProperties } from "@/store/slices/propertySlice";
 import { fetchAmenities, selectAmenities } from "@/store/slices/amenitySlice";
+import { fetchServices } from '@/store/slices/serviceSlice';
+import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
+import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
+import { fetchVouchers } from '@/store/slices/voucherSlice';
 import { Property } from "@/types/property";
 import { z } from "zod";
 
@@ -40,6 +44,10 @@ export default function EditListing() {
   const [newImages, setNewImages] = useState<File[]>([]);
   const properties = useAppSelector(selectProperties);
   const amenities = useAppSelector(selectAmenities);
+  const services = useAppSelector((state) => state.service.services);
+  const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
+  const houseRules = useAppSelector((state) => state.houseRule.houseRules);
+  const vouchers = useAppSelector((state) => state.voucher.vouchers);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -55,6 +63,10 @@ export default function EditListing() {
       dispatch(fetchProperties({}));
     }
     dispatch(fetchAmenities({ limit: 100 }));
+    dispatch(fetchServices({}));
+    dispatch(fetchSafetyFeatures({}));
+    dispatch(fetchHouseRules({}));
+    dispatch(fetchVouchers({}));
   }, [dispatch, properties]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -81,6 +93,19 @@ export default function EditListing() {
     setForm((prev) => prev ? { ...prev, amenities: ids } : prev);
   };
 
+  const handleServicesChange = (ids: string[]) => {
+    setForm((prev) => prev ? { ...prev, service_ids: ids } : prev);
+  };
+  const handleSafetyFeaturesChange = (ids: string[]) => {
+    setForm((prev) => prev ? { ...prev, safety_features: ids } : prev);
+  };
+  const handleHouseRulesChange = (ids: string[]) => {
+    setForm((prev) => prev ? { ...prev, house_rules_selected: ids } : prev);
+  };
+  const handleVouchersChange = (ids: string[]) => {
+    setForm((prev) => prev ? { ...prev, voucher_ids: ids } : prev);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form) return;
@@ -89,6 +114,7 @@ export default function EditListing() {
       propertyId: typeof form.propertyId === "object" && form.propertyId !== null ? form.propertyId._id : form.propertyId,
       price_per_night: Number(form.price_per_night),
       max_guests: Number(form.max_guests),
+      voucher_ids: form.voucher_ids, // Thêm voucher_ids vào payload
     };
     const resultZod = listingSchema.safeParse(data);
     if (!resultZod.success) {
@@ -103,7 +129,7 @@ export default function EditListing() {
       setErrors({});
     }
     const propertyId = data.propertyId;
-    const result = await dispatch(updateListing({ id: form._id, ...form, propertyId }));
+    const result = await dispatch(updateListing({ id: form._id, ...form, propertyId, voucher_ids: form.voucher_ids }));
     if (updateListing.fulfilled.match(result)) {
       toast.success("Cập nhật listing thành công!");
       navigate("/admin/listings");
@@ -194,13 +220,208 @@ export default function EditListing() {
         <input type="checkbox" name="allow_pets" checked={form.allow_pets || false} onChange={handleChange} />
         Cho phép thú cưng
       </label>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block font-medium">Chọn tiện ích</label>
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input
+              type="checkbox"
+              checked={(form.amenities || []).length === amenities.length && amenities.length > 0}
+              onChange={e => {
+                if (e.target.checked) {
+                  handleAmenitiesChange(amenities.map(a => a._id));
+                } else {
+                  handleAmenitiesChange([]);
+                }
+              }}
+            />
+            <span>Chọn tất cả</span>
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {amenities.map((a) => (
+            <label key={a._id} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                value={a._id}
+                checked={form.amenities?.includes(a._id) || false}
+                onChange={e => {
+                  if (e.target.checked) {
+                    handleAmenitiesChange([...(form.amenities || []), a._id]);
+                  } else {
+                    handleAmenitiesChange((form.amenities || []).filter(id => id !== a._id));
+                  }
+                }}
+              />
+              <span>{a.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block font-medium">Chọn dịch vụ</label>
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input
+              type="checkbox"
+              checked={(form.service_ids || []).length === services.length && services.length > 0}
+              onChange={e => {
+                if (e.target.checked) {
+                  handleServicesChange(services.map(s => s._id));
+                } else {
+                  handleServicesChange([]);
+                }
+              }}
+            />
+            <span>Chọn tất cả</span>
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {services.map((s) => (
+            <label key={s._id} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                value={s._id}
+                checked={form.service_ids?.includes(s._id) || false}
+                onChange={e => {
+                  if (e.target.checked) {
+                    handleServicesChange([...(form.service_ids || []), s._id]);
+                  } else {
+                    handleServicesChange((form.service_ids || []).filter(id => id !== s._id));
+                  }
+                }}
+              />
+              <span>{s.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block font-medium">Chọn tính năng an toàn</label>
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input
+              type="checkbox"
+              checked={(form.safety_features || []).length === safetyFeatures.length && safetyFeatures.length > 0}
+              onChange={e => {
+                if (e.target.checked) {
+                  handleSafetyFeaturesChange(safetyFeatures.map(sf => sf._id));
+                } else {
+                  handleSafetyFeaturesChange([]);
+                }
+              }}
+            />
+            <span>Chọn tất cả</span>
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {safetyFeatures.map((sf) => (
+            <label key={sf._id} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                value={sf._id}
+                checked={form.safety_features?.includes(sf._id) || false}
+                onChange={e => {
+                  if (e.target.checked) {
+                    handleSafetyFeaturesChange([...(form.safety_features || []), sf._id]);
+                  } else {
+                    handleSafetyFeaturesChange((form.safety_features || []).filter(id => id !== sf._id));
+                  }
+                }}
+              />
+              <span>{sf.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block font-medium">Chọn nội quy</label>
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input
+              type="checkbox"
+              checked={(form.house_rules_selected || []).length === houseRules.length && houseRules.length > 0}
+              onChange={e => {
+                if (e.target.checked) {
+                  handleHouseRulesChange(houseRules.map(hr => hr._id));
+                } else {
+                  handleHouseRulesChange([]);
+                }
+              }}
+            />
+            <span>Chọn tất cả</span>
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {houseRules.map((hr) => (
+            <label key={hr._id} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                value={hr._id}
+                checked={form.house_rules_selected?.includes(hr._id) || false}
+                onChange={e => {
+                  if (e.target.checked) {
+                    handleHouseRulesChange([...(form.house_rules_selected || []), hr._id]);
+                  } else {
+                    handleHouseRulesChange((form.house_rules_selected || []).filter(id => id !== hr._id));
+                  }
+                }}
+              />
+              <span>{hr.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block font-medium">Chọn voucher áp dụng</label>
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input
+              type="checkbox"
+              checked={(form.voucher_ids || []).length === vouchers.length && vouchers.length > 0}
+              onChange={e => {
+                if (e.target.checked) {
+                  handleVouchersChange(vouchers.map(v => v._id));
+                } else {
+                  handleVouchersChange([]);
+                }
+              }}
+            />
+            <span>Chọn tất cả</span>
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {vouchers.map((v) => (
+            <label key={v._id} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                value={v._id}
+                checked={form.voucher_ids?.includes(v._id) || false}
+                onChange={e => {
+                  if (e.target.checked) {
+                    handleVouchersChange([...(form.voucher_ids || []), v._id]);
+                  } else {
+                    handleVouchersChange((form.voucher_ids || []).filter(id => id !== v._id));
+                  }
+                }}
+              />
+              <span>{v.code} - {v.discount_percent}%</span>
+            </label>
+          ))}
+        </div>
+      </div>
       <label className="block font-medium">Ảnh đại diện
         {form.images && form.images.length > 0 ? (
-          <img
-            src={form.images[0]}
-            alt={form.title}
-            style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, marginTop: 8 }}
-          />
+          <div className="flex gap-2 mt-2 flex-wrap">
+            {form.images.map((url, idx) => (
+              <img
+                key={idx}
+                src={url}
+                alt={`uploaded-${idx}`}
+                style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8 }}
+              />
+            ))}
+          </div>
         ) : (
           <span className="text-gray-400 block mt-2">Không có ảnh</span>
         )}
@@ -226,28 +447,6 @@ export default function EditListing() {
           </button>
         </div>
       </label>
-      <div className="space-y-2">
-        <label className="block font-medium">Chọn tiện ích</label>
-        <div className="grid grid-cols-2 gap-2">
-          {amenities.map((a) => (
-            <label key={a._id} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                value={a._id}
-                checked={form.amenities?.includes(a._id) || false}
-                onChange={e => {
-                  if (e.target.checked) {
-                    handleAmenitiesChange([...(form.amenities || []), a._id]);
-                  } else {
-                    handleAmenitiesChange((form.amenities || []).filter(id => id !== a._id));
-                  }
-                }}
-              />
-              <span>{a.name}</span>
-            </label>
-          ))}
-        </div>
-      </div>
       <Button type="submit" disabled={updateLoading}>Cập nhật Listing</Button>
     </form>
   );

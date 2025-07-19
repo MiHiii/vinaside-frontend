@@ -5,6 +5,9 @@ import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import { fetchListingById } from '@/store/slices/listingSlice';
 import { IListing } from '@/types/listing';
 import { fetchAmenities, selectAmenities } from '@/store/slices/amenitySlice';
+import { fetchServices } from '@/store/slices/serviceSlice';
+import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
+import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
 
 // UI & Components
 import { Button } from '@/components/ui/button';
@@ -35,14 +38,20 @@ export default function RoomDetailPage() {
     infants: listing?.allow_infants ? 1 : 0,
     pets: listing?.allow_pets ? 0 : 0,
   });
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  // State for selected services
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   const amenitiesList = useAppSelector(selectAmenities);
+  const services = useAppSelector((state) => state.service.services);
+  const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
 
   // Gọi API lấy thông tin phòng và tiện ích
   useEffect(() => {
     if (id) dispatch(fetchListingById(id));
     dispatch(fetchAmenities({}));
+    dispatch(fetchServices({}));
+    dispatch(fetchSafetyFeatures({}));
+    dispatch(fetchHouseRules({}));
   }, [id, dispatch]);
 
   if (loading) return <p className='text-center py-10'>Đang tải phòng...</p>;
@@ -82,7 +91,14 @@ export default function RoomDetailPage() {
 
           {/* Thông tin phòng và mô tả */}
           <div className='lg:col-span-8 space-y-6 lg:space-y-8'>
-            <RoomInfo listing={listingData} amenitiesList={amenitiesList} selectedServices={selectedServices} setSelectedServices={setSelectedServices} />
+            <RoomInfo
+              listing={listingData}
+              amenitiesList={amenitiesList}
+              services={services}
+              selectedServiceIds={selectedServiceIds}
+              setSelectedServiceIds={setSelectedServiceIds}
+              safetyFeatures={safetyFeatures}
+            />
           </div>
           {/* Booking Form ngoài cùng bên phải */}
           <div className='hidden lg:flex flex-col items-end lg:col-span-4'>
@@ -101,7 +117,8 @@ export default function RoomDetailPage() {
               setDateOpen={setDateOpen}
               guestOpen={guestOpen}
               setGuestOpen={setGuestOpen}
-              selectedServices={selectedServices}
+              selectedServiceIds={selectedServiceIds}
+              services={services}
             />
           </div>
         </div>

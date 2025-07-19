@@ -1,129 +1,129 @@
-import { api } from './api';
-import {
-  CustomRole,
-  Permission,
-  CreateRoleDto,
-  CreatePermissionDto,
-  AssignRoleToUserDto,
-  AssignPermissionToRoleDto,
-  PermissionCheckResult,
-  ApiResponse,
-} from '../types/rbac';
+import { api } from "./api";
+import { CreateRoleDto, CreatePermissionDto, AssignPermissionToRoleDto, AssignRoleToUserDto } from "@/types/rbac";
 
-// RBAC API Service
+export interface UserPermissionsResponse {
+  success: boolean;
+  data: {
+    data: string[];
+  };
+}
+
+export interface AssignRoleRequest {
+  roleKey: string;
+}
+
 export const rbacApi = {
-  // ========== ROLES ==========
-  
-  // Get all custom roles
-  getAllRoles: async (): Promise<ApiResponse<CustomRole[]>> => {
-    const response = await api.get('/rbac/roles');
-    return response.data;
-  },
-
-  // Create new custom role
-  createRole: async (roleData: CreateRoleDto): Promise<CustomRole> => {
-    const response = await api.post('/rbac/roles', roleData);
-    return response.data;
-  },
-
-  // Get role permissions
-  getRolePermissions: async (roleId: string): Promise<ApiResponse<string[]>> => {
-    const response = await api.get(`/rbac/roles/${roleId}/permissions`);
-    return response.data;
-  },
-
-  // Get users with specific role
-  getUsersWithRole: async (roleKey: string): Promise<ApiResponse<string[]>> => {
-    const response = await api.get(`/rbac/roles/${roleKey}/users`);
-    return response.data;
-  },
-
-  // ========== PERMISSIONS ==========
-  
-  // Get all permissions
-  getAllPermissions: async (): Promise<ApiResponse<Permission[]>> => {
-    const response = await api.get('/rbac/permissions');
-    return response.data;
-  },
-
-  // Create new permission
-  createPermission: async (permissionData: CreatePermissionDto): Promise<Permission> => {
-    const response = await api.post('/rbac/permissions', permissionData);
-    return response.data;
-  },
-
-  // ========== ROLE-PERMISSION ASSIGNMENTS ==========
-  
-  // Assign permission to role
-  assignPermissionToRole: async (
-    roleKey: string,
-    assignPermissionDto: AssignPermissionToRoleDto
-  ): Promise<void> => {
-    await api.post(`/rbac/roles/${roleKey}/permissions`, assignPermissionDto);
-  },
-
-  // Remove permission from role
-  removePermissionFromRole: async (
-    roleKey: string,
-    permissionKey: string
-  ): Promise<void> => {
-    await api.delete(`/rbac/roles/${roleKey}/permissions/${permissionKey}`);
-  },
-
-  // ========== USER-ROLE ASSIGNMENTS ==========
-  
-  // Get user roles
-  getUserRoles: async (userId: string): Promise<ApiResponse<CustomRole[]>> => {
-    const response = await api.get(`/rbac/users/${userId}/roles`);
-    return response.data;
-  },
-
-  // Get user permissions
-  getUserPermissions: async (userId: string): Promise<ApiResponse<string[]>> => {
+  // Lấy permissions của user hiện tại hoặc user khác
+  getUserPermissions: async (userId?: string): Promise<UserPermissionsResponse> => {
+    if (!userId || userId === "me") {
+      // Gọi endpoint dành cho user hiện tại, không cần quyền đặc biệt
+      const response = await api.get("/auth/me/permissions");
+      return response.data;
+    }
+    // Nếu truyền userId khác, gọi endpoint cũ (chỉ admin hoặc user có quyền đặc biệt mới dùng)
     const response = await api.get(`/rbac/users/${userId}/permissions`);
     return response.data;
   },
 
-  // Assign role to user
-  assignRoleToUser: async (
-    userId: string,
-    assignRoleDto: AssignRoleToUserDto
-  ): Promise<void> => {
-    await api.post(`/rbac/users/${userId}/roles`, assignRoleDto);
-  },
-
-  // Remove role from user
-  removeRoleFromUser: async (
-    userId: string,
-    roleKey: string
-  ): Promise<void> => {
-    await api.delete(`/rbac/users/${userId}/roles/${roleKey}`);
-  },
-
-  // ========== PERMISSION CHECKS ==========
-  
-  // Check if user has specific permission
-  checkUserPermission: async (
-    userId: string,
-    permissionKey: string
-  ): Promise<PermissionCheckResult> => {
-    const response = await api.get(`/rbac/check-permission/${userId}/${permissionKey}`);
+  // Lấy custom roles của user
+  getUserRoles: async (userId: string) => {
+    const response = await api.get(`/rbac/users/${userId}/roles`);
     return response.data;
   },
 
-  // Delete custom role
-  deleteRole: async (roleKey: string): Promise<void> => {
-    await api.delete(`/rbac/roles/${roleKey}`);
-  },
-
-  // Update custom role
-  updateRole: async (roleData: CreateRoleDto): Promise<CustomRole> => {
-    const response = await api.patch(`/rbac/roles/${roleData.key}`, roleData);
+  // Lấy permissions của một role
+  getRolePermissions: async (roleKey: string) => {
+    const response = await api.get(`/rbac/roles/${roleKey}/permissions`);
     return response.data;
   },
 
-  // Soft delete custom role
-  softDeleteRole: async (roleKey: string): Promise<void> => {
-    await api.delete(`/rbac/roles/${roleKey}`);
+  // Gán role cho user
+  assignRoleToUser: async (userId: string, assignRoleDto: AssignRoleToUserDto) => {
+    const response = await api.post(`/rbac/users/${userId}/roles`, assignRoleDto);
+    return response.data;
+  },
+
+  // Xóa role khỏi user
+  removeRoleFromUser: async (userId: string, roleKey: string) => {
+    const response = await api.delete(`/rbac/users/${userId}/roles/${roleKey}`);
+    return response.data;
+  },
+
+  // Lấy danh sách tất cả roles
+  getAllRoles: async () => {
+    const response = await api.get("/rbac/roles");
+    return response.data;
+  },
+
+  // Lấy danh sách tất cả permissions
+  getAllPermissions: async () => {
+    const response = await api.get("/rbac/permissions");
+    return response.data;
+  },
+
+  // Kiểm tra permission cụ thể
+  checkPermission: async (userId: string, permissionKey: string) => {
+    const response = await api.get(`/rbac/users/${userId}/permissions/${permissionKey}/check`);
+    return response.data;
+  },
+
+  // Lấy users có role cụ thể
+  getUsersByRole: async (roleKey: string) => {
+    const response = await api.get(`/rbac/roles/${roleKey}/users`);
+    return response.data;
+  },
+
+  // Tạo role mới
+  createRole: async (roleData: CreateRoleDto) => {
+    const response = await api.post("/rbac/roles", roleData);
+    return response.data;
+  },
+
+  // Tạo permission mới
+  createPermission: async (permissionData: CreatePermissionDto) => {
+    const response = await api.post("/rbac/permissions", permissionData);
+    return response.data;
+  },
+
+  // Gán permission cho role
+  assignPermissionToRole: async (roleKey: string, assignPermissionDto: AssignPermissionToRoleDto) => {
+    const response = await api.post(`/rbac/roles/${roleKey}/permissions`, assignPermissionDto);
+    return response.data;
+  },
+
+  // Xóa permission khỏi role
+  removePermissionFromRole: async (roleKey: string, permissionKey: string) => {
+    const response = await api.delete(`/rbac/roles/${roleKey}/permissions/${permissionKey}`);
+    return response.data;
+  },
+
+  // Lấy users có role cụ thể (theo key)
+  getUsersWithRole: async (roleKey: string) => {
+    const response = await api.get(`/rbac/roles/${roleKey}/users`);
+    return response.data;
+  },
+
+  // Xóa role
+  deleteRole: async (roleKey: string) => {
+    const response = await api.delete(`/rbac/roles/${roleKey}`);
+    return response.data;
+  },
+
+  // Xóa mềm role
+  softDeleteRole: async (roleKey: string) => {
+    const response = await api.put(`/rbac/roles/${roleKey}/soft-delete`);
+    return response.data;
+  },
+
+  // Cập nhật role
+  updateRole: async (roleData: CreateRoleDto) => {
+    const response = await api.put(`/rbac/roles/${roleData.key}`, roleData);
+    return response.data;
+  },
+
+  // Kiểm tra permission cụ thể của user
+  checkUserPermission: async (userId: string, permissionKey: string) => {
+    const response = await api.get(`/rbac/users/${userId}/permissions/${permissionKey}/check`);
+    return response.data;
   },
 };

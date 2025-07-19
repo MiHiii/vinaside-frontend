@@ -38,6 +38,10 @@ import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
+import ProtectedAdminRoute from "@/components/common/ProtectedAdminRoute";
+import AdminLoginPage from "@/pages/auth/AdminLoginPage";
+import AdminForgotPasswordPage from "@/pages/auth/AdminForgotPasswordPage";
+import UnauthorizedPage from "@/pages/UnauthorizedPage";
 
 import PaymentPage from "@/pages/payment/PaymentPage";
 import PaymentSuccessPage from "@/pages/payment/PaymentSuccessPage";
@@ -190,15 +194,30 @@ const routes: RouteObject[] = [
       { path: "messages", element: <Messages /> },
     ],
   },
-
-  // admin routes (chỉ cho admin)
- 
+  {
+    path: "/admin/login",
+    element: <AdminLoginPage />,
+  },
+  {
+    path: "/admin/forgot-password",
+    element: <AdminForgotPasswordPage />,
+  },
+  
+  // admin routes (chỉ cho admin và staff, không cho guest)
+  {
+    path: "/admin/bookings/:propertyId/:bookingId",
+    element: (
+      <ProtectedAdminRoute requiredRole="admin">
+        <BookingDetailPage />
+      </ProtectedAdminRoute>
+    ),
+  },
   {
     path: "/admin",
     element: (
-      <ProtectedRoute requiredRole="admin">
+      <ProtectedAdminRoute>
         <AdminLayout />
-      </ProtectedRoute>
+      </ProtectedAdminRoute>
     ),
     children: [
       { index: true, element: <DashboardContent /> },
@@ -240,6 +259,12 @@ const routes: RouteObject[] = [
     ],
   },
 
+  // Unauthorized page
+  {
+    path: "/unauthorized",
+    element: <UnauthorizedPage />,
+  },
+  
   // Catch-all route for 404 errors
   {
     path: "*",
