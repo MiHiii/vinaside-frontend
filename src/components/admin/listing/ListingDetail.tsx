@@ -4,6 +4,10 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { fetchListingById, selectListing, selectListingsLoading, selectListingsError } from "@/store/slices/listingSlice";
 import { fetchListingStatistics, selectListingStatistics } from "@/store/slices/listingSlice";
 import { fetchReviewsByRoomId, selectReviews, selectReviewsLoading, selectReviewsError } from '@/store/slices/reviewSlice';
+import { fetchServices } from '@/store/slices/serviceSlice';
+import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
+import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
+import { fetchVouchers } from '@/store/slices/voucherSlice';
 import { Badge } from "@/components/ui/badge";
 import { Home, Users, MapPin, Tag, ShieldCheck, Info, ArrowLeft, BarChart3, DollarSign, Star, CalendarCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -47,11 +51,20 @@ export default function ListingDetail() {
     }
   }, [dateRange]);
 
+  const services = useAppSelector((state) => state.service.services);
+  const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
+  const houseRules = useAppSelector((state) => state.houseRule.houseRules);
+  const vouchers = useAppSelector((state) => state.voucher.vouchers);
+
   useEffect(() => {
     if (id) {
       dispatch(fetchListingById(id));
       dispatch(fetchListingStatistics({ id }));
     }
+    dispatch(fetchServices({}));
+    dispatch(fetchSafetyFeatures({}));
+    dispatch(fetchHouseRules({}));
+    dispatch(fetchVouchers({}));
   }, [id, dispatch]);
 
   useEffect(() => {
@@ -207,6 +220,50 @@ export default function ListingDetail() {
                   <span className="bg-gray-100 rounded px-2 py-1 text-gray-700 ml-1 flex-1 whitespace-pre-line">{listing.description}</span>
                 </div>
               </div>
+              {listing.service_ids && listing.service_ids.length > 0 && (
+                <div className="mt-2">
+                  <span className="font-medium text-gray-700">Dịch vụ:</span>
+                  <span className="ml-2 text-gray-800">
+                    {listing.service_ids.map(id => {
+                      const s = services.find(s => s._id === id);
+                      return s ? s.name : id;
+                    }).join(', ')}
+                  </span>
+                </div>
+              )}
+              {listing.safety_features && listing.safety_features.length > 0 && (
+                <div className="mt-2">
+                  <span className="font-medium text-gray-700">Tính năng an toàn:</span>
+                  <span className="ml-2 text-gray-800">
+                    {listing.safety_features.map(id => {
+                      const sf = safetyFeatures.find(sf => sf._id === id);
+                      return sf ? sf.name : id;
+                    }).join(', ')}
+                  </span>
+                </div>
+              )}
+              {listing.house_rules_selected && listing.house_rules_selected.length > 0 && (
+                <div className="mt-2">
+                  <span className="font-medium text-gray-700">Nội quy:</span>
+                  <span className="ml-2 text-gray-800">
+                    {listing.house_rules_selected.map(id => {
+                      const hr = houseRules.find(hr => hr._id === id);
+                      return hr ? hr.name : id;
+                    }).join(', ')}
+                  </span>
+                </div>
+              )}
+              {listing.voucher_ids && listing.voucher_ids.length > 0 && (
+                <div className="mt-2">
+                  <span className="font-medium text-gray-700">Voucher áp dụng:</span>
+                  <span className="ml-2 text-gray-800">
+                    {listing.voucher_ids.map(id => {
+                      const v = vouchers.find(v => v._id === id);
+                      return v ? `${v.code} (${v.discount_percent}%)` : id;
+                    }).join(', ')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
