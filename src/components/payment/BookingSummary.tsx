@@ -12,6 +12,7 @@ import { DateRange } from "react-day-picker";
 import BookingInfoModal from "./BookingInfoModal";
 import PriceDetailModal from "./PriceDetailModal";
 import CancelPolicyDetail from "./CancelPolicyDetail";
+import { Voucher } from "@/types/voucher";
 
 interface BookingSummaryProps {
   listing: IListing;
@@ -28,6 +29,7 @@ interface BookingSummaryProps {
     guests: { adults: number; infants: number };
   }) => void;
   selectedServiceTotal: number;
+  selectedVoucher?: Voucher | null;
 }
 
 const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -39,6 +41,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   bookedDates,
   onSaveBookingInfo,
   selectedServiceTotal,
+  selectedVoucher,
 }) => {
   const [open, setOpen] = useState(false);
   const [showPriceDetail, setShowPriceDetail] = useState(false);
@@ -74,6 +77,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         infants: 0,
         guest_name: user?.name || "Khách chưa đặt tên",
         guest_email: user?.email || "unknown@example.com",
+        ...(selectedVoucher?._id ? { voucher_id: selectedVoucher._id } : {}),
       };
 
       const result = await dispatch(createBooking(bookingData)).unwrap();
@@ -101,6 +105,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   const serviceFee = Math.round(base * 0.1);
   const tax = Math.round(base * 0.08);
   const total = base + serviceFee + tax + selectedServiceTotal;
+  const discount = selectedVoucher ? Math.round(total * selectedVoucher.discount_percent / 100) : 0;
+  const finalTotal = total - discount;
 
   return (
     <Card className="sticky top-6 max-w-md rounded-2xl border border-gray-200 shadow-sm">
@@ -207,8 +213,20 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         <div className="border-t pt-5">
           <div className="flex justify-between font-bold text-xl">
             <span>Tổng VND</span>
-            <span>₫{total.toLocaleString()}</span>
+            <span className={discount ? "line-through text-gray-400 text-lg" : ""}>₫{total.toLocaleString()}</span>
           </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-base text-green-600 font-semibold mt-1">
+              <span>Đã giảm ({selectedVoucher?.code})</span>
+              <span>-₫{discount.toLocaleString()}</span>
+            </div>
+          )}
+          {discount > 0 && (
+            <div className="flex justify-between font-bold text-xl mt-1">
+              <span>Tổng sau giảm</span>
+              <span className="text-pink-600">₫{finalTotal.toLocaleString()}</span>
+            </div>
+          )}
           <a
             href="#"
             className="text-base text-black mt-2 underline cursor-pointer"

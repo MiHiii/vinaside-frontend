@@ -1,13 +1,32 @@
 export type UserLanguage = "vi" | "en";
 
+export interface Permission {
+  _id: string;
+  key: string;
+  module: string;
+  action: string;
+  description?: string;
+}
+
+export interface CustomRole {
+  _id: string;
+  key: string;
+  name: string;
+  description?: string;
+  permissions?: Permission[];
+}
+
 export interface User {
   _id: string;
   name: string;
   email: string;
   phone: string;
   avatar_url?: string;
-  role?: string;
+  role?: string; // System role: guest, staff, admin
   is_verified?: boolean;
+  // Custom roles và permissions
+  customRoles?: CustomRole[];
+  permissions?: Permission[];
 }
 
 export interface Role {

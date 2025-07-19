@@ -7,6 +7,7 @@ import {
   AssignRoleToUserDto,
   AssignPermissionToRoleDto,
 } from '../../types/rbac';
+import { UserPermissionsResponse } from "@/services/rbacApi";
 
 // Helper function to extract error message
 const getErrorMessage = (error: unknown, defaultMessage: string): string => {
@@ -431,7 +432,13 @@ const rbacSlice = createSlice({
       .addCase(fetchUserPermissions.fulfilled, (state, action) => {
         state.userPermissionsLoading = false;
         const userId = action.meta.arg;
-        state.userPermissions[userId] = action.payload;
+        const payload = action.payload as UserPermissionsResponse;
+        state.userPermissions[userId] = {
+          success: payload.success,
+          statusCode: 200, // hoặc payload.statusCode nếu có
+          message: payload.success ? "Success" : "Error",
+          data: payload.data.data, // hoặc payload.data nếu đúng
+        };
       })
       .addCase(fetchUserPermissions.rejected, (state, action) => {
         state.userPermissionsLoading = false;

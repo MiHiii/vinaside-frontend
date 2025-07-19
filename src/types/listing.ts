@@ -17,8 +17,9 @@ export interface Listing {
   beds: number;
   bathrooms: number;
   amenities: string[];
-  house_rules_selected: string[];
-  safety_features: string[];
+  service_ids?: string[];
+  safety_features?: string[];
+  house_rules_selected?: string[];
   other_rules: string[];
   cancel_policy: string;
   allow_pets: boolean;
@@ -27,6 +28,7 @@ export interface Listing {
   isDeleted: boolean;
   average_rating: number;
   reviews_count: number;
+  voucher_ids?: string[];
   createdBy?: string;
   updatedBy?: string;
   deletedBy?: string;
@@ -89,6 +91,8 @@ export interface IListing {
   safety_features?: string[];
   house_rules_selected?: string[];
   other_rules?: string[];
+  service_ids?: string[];
+  house_rules?: string[];
 
   // Chính sách
   cancel_policy?: CancelPolicy;
@@ -102,6 +106,7 @@ export interface IListing {
   // Đánh giá
   average_rating?: number;
   reviews_count?: number;
+  voucher_ids?: string[];
 
   // Thời gian
   createdAt: string;
@@ -151,6 +156,7 @@ export interface IUpdateListing {
   cancel_policy?: CancelPolicy;
   status?: ListingStatus;
   is_verified?: boolean;
+  voucher_ids?: string[];
 }
 
 export interface ICreateListing {
@@ -168,6 +174,7 @@ export interface ICreateListing {
   amenities?: string[];
   safety_features?: string[];
   cancel_policy?: CancelPolicy;
+  voucher_ids?: string[];
 }
 
 export interface PaginationMeta {
