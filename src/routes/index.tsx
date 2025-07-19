@@ -38,8 +38,13 @@ import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import { DashboardContent } from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
+import ProtectedAdminRoute from "@/components/common/ProtectedAdminRoute";
+import AdminLoginPage from "@/pages/auth/AdminLoginPage";
+import AdminForgotPasswordPage from "@/pages/auth/AdminForgotPasswordPage";
+import UnauthorizedPage from "@/pages/UnauthorizedPage";
 
 import PaymentPage from "@/pages/payment/PaymentPage";
+import PaymentSuccessPage from "@/pages/payment/PaymentSuccessPage";
 //properties
 import PropertiesPage from "@/pages/admin/property/PropertiesPage";
 import CreatePropertyPage from "@/pages/admin/property/CreatePropertyPage";
@@ -134,6 +139,10 @@ const routes: RouteObject[] = [
       </ProtectedRoute>
     ),
   },
+  {
+    path: "/payment/success",
+    element: <PaymentSuccessPage />,
+  },
 
   // Các route trở thành host, có thể cho phép tất cả user đăng nhập, hoặc chỉ một số role, nếu cần thì wrap bằng ProtectedRoute luôn
   { path: "/overview", element: <Overview /> },
@@ -186,21 +195,31 @@ const routes: RouteObject[] = [
     ],
   },
 
-  // admin routes (chỉ cho admin)
+  // admin login route
+  {
+    path: "/admin/login",
+    element: <AdminLoginPage />,
+  },
+  {
+    path: "/admin/forgot-password",
+    element: <AdminForgotPasswordPage />,
+  },
+  
+  // admin routes (chỉ cho admin và staff, không cho guest)
   {
     path: "/admin/bookings/:propertyId/:bookingId",
     element: (
-      <ProtectedRoute requiredRole="admin">
+      <ProtectedAdminRoute requiredRole="admin">
         <BookingDetailPage />
-      </ProtectedRoute>
+      </ProtectedAdminRoute>
     ),
   },
   {
     path: "/admin",
     element: (
-      <ProtectedRoute requiredRole="admin">
+      <ProtectedAdminRoute>
         <AdminLayout />
-      </ProtectedRoute>
+      </ProtectedAdminRoute>
     ),
     children: [
       { index: true, element: <DashboardContent /> },
@@ -242,6 +261,12 @@ const routes: RouteObject[] = [
     ],
   },
 
+  // Unauthorized page
+  {
+    path: "/unauthorized",
+    element: <UnauthorizedPage />,
+  },
+  
   // Catch-all route for 404 errors
   {
     path: "*",
