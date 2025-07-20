@@ -98,7 +98,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
       };
       console.log("[FE] Payload gửi lên createPayment:", paymentPayload);
       const paymentRes = await dispatch(createPayment(paymentPayload)).unwrap();
-      const paymentUrl = paymentRes?.data?.paymentUrl || paymentRes?.paymentUrl;
+      const paymentUrl = paymentRes?.paymentUrl;
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {

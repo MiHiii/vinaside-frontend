@@ -361,10 +361,7 @@ export const createPayment = createAsyncThunk<
   { rejectValue: string }
 >(
   "booking/createPayment",
-  async (
-    { bookingId, paymentMethod, notifyUrl },
-    { rejectWithValue }
-  ) => {
+  async ({ bookingId, paymentMethod, notifyUrl }, { rejectWithValue }) => {
     try {
       const res = await api.post(`/bookings/${bookingId}/payment`, {
         paymentMethod,
@@ -408,7 +405,7 @@ export const fetchPaymentStatus = createAsyncThunk<
     paymentMethod?: string;
     gatewayTransactionId?: string;
     paidAt?: string;
-    gatewayDetails?: any;
+    gatewayDetails?: Record<string, unknown>;
   },
   { bookingId: string },
   { rejectValue: string }
