@@ -14,7 +14,7 @@ const ProtectedRoute: React.FC<Props> = ({ children, requiredRole }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, token, isCheckingAuth } = useAppSelector(
+  const { user, isCheckingAuth } = useAppSelector(
     (state: RootState) => state.auth
   );
   const accessToken = localStorage.getItem("access_token");
