@@ -8,8 +8,6 @@ import { RootState } from "./store";
 
 function App() {
   const dispatch = useAppDispatch();
-
-  const token = useAppSelector((state: RootState) => state.auth.token);
   const isCheckingAuth = useAppSelector(
     (state: RootState) => state.auth.isCheckingAuth
   );
@@ -24,7 +22,16 @@ function App() {
   }, [dispatch]);
 
   if (isCheckingAuth) {
-    return <div>Đang xác thực tài khoản...</div>;
+    return (
+      <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary" />
+          <div className="text-lg font-semibold text-[hsl(var(--muted-foreground))]">
+            Đang xác thực tài khoản...
+          </div>
+        </div>
+      </div>
+    );
   }
   return (
     <>
