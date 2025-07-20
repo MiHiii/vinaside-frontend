@@ -93,12 +93,12 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
       const paymentPayload = {
         bookingId: result._id,
         paymentMethod: "vnpay", // hoặc "momo" nếu muốn
-
         notifyUrl: undefined,
       };
       console.log("[FE] Payload gửi lên createPayment:", paymentPayload);
       const paymentRes = await dispatch(createPayment(paymentPayload)).unwrap();
       const paymentUrl = paymentRes?.paymentUrl;
+    
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {

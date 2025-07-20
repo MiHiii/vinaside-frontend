@@ -367,7 +367,7 @@ export const createPayment = createAsyncThunk<
         paymentMethod,
         notifyUrl,
       });
-      return res.data;
+      return res.data.data;
     } catch (err: unknown) {
       if (err instanceof Error) {
         return rejectWithValue(err.message || "Lỗi khi tạo thanh toán");
