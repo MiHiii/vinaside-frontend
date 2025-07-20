@@ -161,7 +161,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
               onClick={() => setOpen(true)}
               variant="outline"
               size="sm"
-              className="text-sm px-4 py-2"
+              className="text-sm px-4 py-2 border-none hover:bg-gray-100"
             >
               Thay đổi
             </Button>
@@ -246,7 +246,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             selectedServiceTotal={selectedServiceTotal}
           />
           <Button
-            className="w-full bg-pink-600 hover:bg-pink-700 mt-5 text-lg py-3"
+            className="w-full h-12 bg-gradient-to-r from-[#ff4668] to-[#b91c5c] text-white font-bold text-lg rounded-xl border-0 hover:opacity-90 transition-all duration-200 mt-5"
             onClick={handlePayment}
           >
             Thanh toán
