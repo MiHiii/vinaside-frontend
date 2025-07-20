@@ -17,7 +17,6 @@ import RoomInfo from "@/components/roomdetail/RoomInfo";
 import BookingForm from "@/components/roomdetail/BookingForm";
 import { useBookedDates } from "@/hooks/useBookedDates";
 import RoomReviews from "@/components/roomdetail/RoomReviews";
-import RoomDescription from "@/components/roomdetail/RoomDescription";
 
 
 export default function RoomDetailPage() {

@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 // import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IListing } from "@/types/listing";
 import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
-import { createBooking } from "@/store/slices/bookingSlice";
+import { createBooking, createPayment } from "@/store/slices/bookingSlice";
 import { DateRange } from "react-day-picker";
 // import CancelPolicyDetail from "./CancelPolicyDetail";
 import BookingInfoModal from "./BookingInfoModal";
@@ -46,25 +45,29 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   const [open, setOpen] = useState(false);
   const [showPriceDetail, setShowPriceDetail] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
 
   const handlePayment = async () => {
-    if (!tripStart || !tripEnd || !guestCount) {
-      return alert("Vui lòng chọn ngày nhận phòng, trả phòng và số khách.");
-    }
-
-    if (
-      !listing.propertyId ||
-      typeof listing.propertyId !== "object" ||
-      !listing.propertyId._id
-    ) {
-      return alert("Không tìm thấy propertyId hợp lệ.");
-    }
-
+    if (loading) return;
+    setLoading(true);
     try {
+      if (!tripStart || !tripEnd || !guestCount) {
+        alert("Vui lòng chọn ngày nhận phòng, trả phòng và số khách.");
+        return;
+      }
+
+      if (
+        !listing.propertyId ||
+        typeof listing.propertyId !== "object" ||
+        !listing.propertyId._id
+      ) {
+        alert("Không tìm thấy propertyId hợp lệ.");
+        return;
+      }
+
       const bookingData = {
         listingId: listing._id,
         propertyId: listing.propertyId._id,
@@ -82,12 +85,30 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
 
       const result = await dispatch(createBooking(bookingData)).unwrap();
 
-      if (!result?._id) return alert("Lỗi sau khi thanh toán.");
+      if (!result?._id) {
+        alert("Lỗi sau khi đặt phòng.");
+        return;
+      }
+      // Gọi API tạo payment
+      const paymentPayload = {
+        bookingId: result._id,
+        paymentMethod: "vnpay", // hoặc "momo" nếu muốn
 
-      navigate("/payment/success");
+        notifyUrl: undefined,
+      };
+      console.log("[FE] Payload gửi lên createPayment:", paymentPayload);
+      const paymentRes = await dispatch(createPayment(paymentPayload)).unwrap();
+      const paymentUrl = paymentRes?.data?.paymentUrl || paymentRes?.paymentUrl;
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        alert("Không lấy được link thanh toán.");
+      }
     } catch (err) {
       console.error("Thanh toán thất bại:", err);
       alert("Đã có lỗi xảy ra khi thanh toán.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,7 +126,9 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   const serviceFee = Math.round(base * 0.1);
   const tax = Math.round(base * 0.08);
   const total = base + serviceFee + tax + selectedServiceTotal;
-  const discount = selectedVoucher ? Math.round(total * selectedVoucher.discount_percent / 100) : 0;
+  const discount = selectedVoucher
+    ? Math.round((total * selectedVoucher.discount_percent) / 100)
+    : 0;
   const finalTotal = total - discount;
 
   return (
@@ -213,7 +236,11 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         <div className="border-t pt-5">
           <div className="flex justify-between font-bold text-xl">
             <span>Tổng VND</span>
-            <span className={discount ? "line-through text-gray-400 text-lg" : ""}>₫{total.toLocaleString()}</span>
+            <span
+              className={discount ? "line-through text-gray-400 text-lg" : ""}
+            >
+              ₫{total.toLocaleString()}
+            </span>
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-base text-green-600 font-semibold mt-1">
@@ -224,7 +251,9 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           {discount > 0 && (
             <div className="flex justify-between font-bold text-xl mt-1">
               <span>Tổng sau giảm</span>
-              <span className="text-pink-600">₫{finalTotal.toLocaleString()}</span>
+              <span className="text-pink-600">
+                ₫{finalTotal.toLocaleString()}
+              </span>
             </div>
           )}
           <a
@@ -248,8 +277,9 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           <Button
             className="w-full bg-pink-600 hover:bg-pink-700 mt-5 text-lg py-3"
             onClick={handlePayment}
+            disabled={loading}
           >
-            Thanh toán
+            {loading ? "Đang xử lý..." : "Thanh toán"}
           </Button>
         </div>
       </CardContent>

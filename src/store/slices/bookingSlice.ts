@@ -350,6 +350,82 @@ export const deleteAdminBooking = createAsyncThunk<
   }
 );
 
+// Tạo payment cho booking
+export const createPayment = createAsyncThunk<
+  { paymentUrl: string; orderId: string; amount: number; message: string },
+  {
+    bookingId: string;
+    paymentMethod: string;
+    notifyUrl?: string;
+  },
+  { rejectValue: string }
+>(
+  "booking/createPayment",
+  async (
+    { bookingId, paymentMethod, notifyUrl },
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await api.post(`/bookings/${bookingId}/payment`, {
+        paymentMethod,
+        notifyUrl,
+      });
+      return res.data;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        return rejectWithValue(err.message || "Lỗi khi tạo thanh toán");
+      }
+      return rejectWithValue("Lỗi khi tạo thanh toán");
+    }
+  }
+);
+
+// Lấy danh sách phương thức thanh toán được hỗ trợ
+export const fetchSupportedPaymentMethods = createAsyncThunk<
+  { supportedMethods: string[]; default: string },
+  void,
+  { rejectValue: string }
+>("booking/fetchSupportedPaymentMethods", async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get("/bookings/payment/supported-methods");
+    return res.data;
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return rejectWithValue(
+        err.message || "Lỗi khi lấy phương thức thanh toán"
+      );
+    }
+    return rejectWithValue("Lỗi khi lấy phương thức thanh toán");
+  }
+});
+
+// Kiểm tra trạng thái thanh toán của booking
+export const fetchPaymentStatus = createAsyncThunk<
+  {
+    bookingId: string;
+    paymentStatus: string;
+    amount: number;
+    paymentMethod?: string;
+    gatewayTransactionId?: string;
+    paidAt?: string;
+    gatewayDetails?: any;
+  },
+  { bookingId: string },
+  { rejectValue: string }
+>("booking/fetchPaymentStatus", async ({ bookingId }, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/bookings/${bookingId}/payment/status`);
+    return res.data;
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return rejectWithValue(
+        err.message || "Lỗi khi kiểm tra trạng thái thanh toán"
+      );
+    }
+    return rejectWithValue("Lỗi khi kiểm tra trạng thái thanh toán");
+  }
+});
+
 const bookingSlice = createSlice({
   name: "booking",
   initialState,
