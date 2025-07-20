@@ -60,19 +60,6 @@ const BookingInfoModal: React.FC<BookingInfoModalProps> = ({
     });
   };
 
-  const getDatesInRange = (start?: Date, end?: Date): Date[] => {
-    if (!start || !end) return [];
-    const dates: Date[] = [];
-    const curr = new Date(start);
-
-    while (curr <= end) {
-      dates.push(new Date(curr));
-      curr.setDate(curr.getDate() + 1);
-    }
-
-    return dates;
-  };
-
   const handleSelect = (range: DateRange | undefined) => {
     if (!range?.from || !range?.to) {
       setDateRange(range);
@@ -101,166 +88,145 @@ const BookingInfoModal: React.FC<BookingInfoModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-white rounded-2xl shadow-xl max-w-[700px] w-full p-0">
-        <div className="flex flex-col pt-8 pb-4 px-8">
-          <div className="flex justify-between items-center">
+      <DialogContent className="bg-white rounded-3xl shadow-2xl w-[1200px] min-h-[500px] p-0 border-0 !max-w-[600px]">
+        <div className="flex flex-col pt-8 pb-4">
+          <div className="flex flex-col items-center justify-center mb-2 px-8">
             <DialogTitle asChild>
-              <h2 className="text-3xl font-bold">
-                Thay đổi thông tin đặt phòng
-              </h2>
+              <h2 className="text-2xl font-bold text-center mb-1">Thay đổi thông tin đặt phòng</h2>
             </DialogTitle>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              ✕
-            </Button>
+            <DialogDescription className="mb-2 text-center text-base text-gray-500">
+              Bạn có thể thay đổi ngày và số lượng khách.
+            </DialogDescription>
           </div>
-          <DialogDescription className="mb-4">
-            Bạn có thể thay đổi ngày và số lượng khách.
-          </DialogDescription>
-        </div>
-
-        <div className="flex bg-gray-100 mx-0 mb-6 h-16 rounded-full">
-          {tab === "date" ? (
-            <button className="flex-1 py-4 text-center rounded-full text-lg font-semibold bg-white shadow transition">
-              Ngày
-            </button>
-          ) : (
+          {/* Nút chuyển tab */}
+          <div className="flex bg-gray-100 mx-0 mb-6 h-14 rounded-full overflow-hidden border border-gray-200">
             <button
-              className="flex-1 py-4 text-center rounded-full text-lg font-semibold text-gray-500 transition"
+              className={`flex-1 py-3 text-center text-lg font-semibold transition-all duration-150 ${tab === "date" ? "bg-white shadow text-black" : "text-gray-500 hover:bg-gray-200"}`}
+              style={{ borderRadius: '999px 0 0 999px' }}
               onClick={() => setTab("date")}
             >
               Ngày
             </button>
-          )}
-          {tab === "guest" ? (
-            <button className="flex-1 py-4 text-center rounded-full text-lg font-semibold bg-white shadow transition">
-              Khách
-            </button>
-          ) : (
             <button
-              className="flex-1 py-4 text-center rounded-full text-lg font-semibold text-gray-500 transition"
+              className={`flex-1 py-3 text-center text-lg font-semibold transition-all duration-150 ${tab === "guest" ? "bg-white shadow text-black" : "text-gray-500 hover:bg-gray-200"}`}
+              style={{ borderRadius: '0 999px 999px 0' }}
               onClick={() => setTab("guest")}
             >
               Khách
             </button>
-          )}
-        </div>
-
-        <div className="w-full px-8 pb-8 min-h-[300px]">
-          {tab === "date" && (
-            <div className="flex flex-col items-center w-full">
-              <div className="mb-4 text-lg font-semibold text-gray-700">
-                Chọn ngày nhận phòng - trả phòng
-              </div>
-              <div className="w-full">
-                <Calendar
-                  mode="range"
-                  selected={dateRange}
-                  onSelect={handleSelect}
-                  numberOfMonths={2}
-                  showOutsideDays={false}
-                  disabled={bookedDates || []}
-                  modifiers={{
-                    booked: bookedDates || [],
-                    range_middle:
-                      dateRange && dateRange.from && dateRange.to
-                        ? getDatesInRange(dateRange.from, dateRange.to).filter(
-                            (d) =>
-                              d.toDateString() !==
-                                dateRange.from?.toDateString() &&
-                              d.toDateString() !== dateRange.to?.toDateString()
-                          )
-                        : [],
-                  }}
-                  modifiersClassNames={{
-                    booked:
-                      "text-gray-500 line-through opacity-90 cursor-not-allowed",
-                    selected: "bg-black text-white rounded-full font-bold",
-                    range_middle: "bg-gray-100 text-black rounded-none",
-                    today: "border border-black",
-                    "selected-hover":
-                      "hover:bg-gray-200 hover:text-black cursor-pointer",
-                  }}
-                  className="w-full max-w-none"
-                  classNames={{
-                    caption: "text-lg font-bold mb-4",
-                    nav: "flex items-center justify-between mb-4",
-                    nav_button:
-                      "w-10 h-10 rounded-full border border-gray-300 text-xl text-black hover:bg-gray-200",
-                    table: "w-full border-collapse",
-                    head_row: "",
-                    head_cell: "text-base font-semibold text-gray-500 p-2",
-                    row: "",
-                    cell: "w-12 h-12 p-0 text-center align-middle text-lg",
-                  }}
-                />
-              </div>
-            </div>
-          )}
-          {tab === "guest" && (
-            <div>
-              {/* Người lớn */}
-              <div className="flex justify-between py-2">
-                <div>Người lớn</div>
-                <div className="flex gap-2">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => handleChange("adults", -1)}
-                    disabled={guests.adults <= 1}
-                  >
-                    -
-                  </Button>
-                  <span>{guests.adults}</span>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => handleChange("adults", 1)}
-                    disabled={guests.adults >= maxGuests}
-                  >
-                    +
-                  </Button>
+          </div>
+          <div>
+            {tab === "date" && (
+              <div>
+                <div className="mb-4 text-lg font-semibold text-gray-700 text-center">
+                  Chọn ngày nhận phòng - trả phòng
+                </div>
+                <div className="flex justify-center">
+                  <Calendar
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={handleSelect}
+                    numberOfMonths={2}
+                    showOutsideDays={false}
+                    disabled={bookedDates || []}
+                    className="w-auto"
+                    classNames={{
+                      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                      month: "space-y-4 ",
+                      caption: "flex justify-center pt-1 relative items-center",
+                      caption_label: "text-sm font-medium",
+                      nav: "space-x-1 flex items-center",
+                      nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                      nav_button_previous: "absolute left-1",
+                      nav_button_next: "absolute right-1",
+                      table: "w-full border-collapse space-y-1",
+                      head_row: "flex",
+                      head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-center",
+                      row: "flex w-full mt-2",
+                      cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                      day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                      day_selected: "",
+                      day_range_start: "bg-black text-white rounded-full font-bold text-lg shadow-md h-10 w-10 flex items-center justify-center hover:bg-black hover:text-white focus:bg-black focus:text-white",
+                      day_range_end: "bg-black text-white rounded-full font-bold text-lg shadow-md h-10 w-10 flex items-center justify-center hover:bg-black hover:text-white focus:bg-black focus:text-white",
+                      day_today: "bg-accent text-accent-foreground",
+                      day_outside: "text-muted-foreground opacity-50",
+                      day_disabled: "text-muted-foreground opacity-50",
+                      day_hidden: "invisible",
+                    }}
+                  />
                 </div>
               </div>
-
-              {/* Em bé */}
-              {allowInfants && (
-                <div className="flex justify-between py-2">
-                  <div>Em bé</div>
-                  <div className="flex gap-2">
+            )}
+            {tab === "guest" && (
+              <div className="w-full h-full flex flex-col justify-center px-8">
+                {/* Người lớn */}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="font-medium text-base ">Người lớn</div>
+                  <div className="flex gap-2 items-center">
                     <Button
                       size="icon"
                       variant="outline"
-                      onClick={() => handleChange("infants", -1)}
-                      disabled={guests.infants <= 0}
+                      onClick={() => handleChange("adults", -1)}
+                      disabled={guests.adults <= 1}
+                      className="rounded-full border-gray-300"
                     >
                       -
                     </Button>
-                    <span>{guests.infants}</span>
+                    <span className="text-lg font-semibold w-8 text-center">{guests.adults}</span>
                     <Button
                       size="icon"
                       variant="outline"
-                      onClick={() => handleChange("infants", 1)}
-                      disabled={guests.infants >= maxInfants}
+                      onClick={() => handleChange("adults", 1)}
+                      disabled={guests.adults >= maxGuests}
+                      className="rounded-full border-gray-300"
                     >
                       +
                     </Button>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* Em bé */}
+                {allowInfants && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="font-medium text-base">Em bé</div>
+                    <div className="flex gap-2 items-center">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => handleChange("infants", -1)}
+                        disabled={guests.infants <= 0}
+                        className="rounded-full border-gray-300"
+                      >
+                        -
+                      </Button>
+                      <span className="text-lg font-semibold w-8 text-center">{guests.infants}</span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => handleChange("infants", 1)}
+                        disabled={guests.infants >= maxInfants}
+                        className="rounded-full border-gray-300"
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex justify-between items-center px-8 py-6">
+        <div className="flex justify-between items-center px-8 py-6 border-t border-gray-100">
           <Button
             variant="outline"
-            className="border-black text-black bg-white rounded-xl text-lg py-3"
+            className="border-gray-300 text-gray-700 bg-white rounded-xl text-lg py-3 hover:bg-gray-100"
             onClick={() => setDateRange(undefined)}
           >
             Xóa ngày
           </Button>
           <Button
-            className="bg-black text-white rounded-xl text-lg py-3"
+            className="bg-black text-white rounded-xl text-lg py-3 px-8 shadow hover:bg-gray-900"
             onClick={handleSave}
           >
             Lưu
