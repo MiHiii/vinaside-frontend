@@ -10,6 +10,7 @@ import { fetchSafetyFeatures } from "@/store/slices/safetyFeatureSlice";
 import { fetchHouseRules } from "@/store/slices/houseRuleSlice";
 
 // UI & Components
+
 import { Button } from "@/components/ui/button";
 import GallerySection from "@/components/roomdetail/GallerySection";
 import RoomInfo from "@/components/roomdetail/RoomInfo";
@@ -17,6 +18,7 @@ import BookingForm from "@/components/roomdetail/BookingForm";
 import { useBookedDates } from "@/hooks/useBookedDates";
 import RoomReviews from "@/components/roomdetail/RoomReviews";
 import RoomDescription from "@/components/roomdetail/RoomDescription";
+
 
 export default function RoomDetailPage() {
   const { id } = useParams();
@@ -106,14 +108,6 @@ export default function RoomDetailPage() {
           {/* Thông tin phòng và mô tả */}
           <div className="lg:col-span-8 space-y-6 lg:space-y-8">
             <RoomInfo
-              listing={listingData}
-              amenitiesList={amenitiesList}
-              services={services}
-              selectedServiceIds={selectedServiceIds}
-              setSelectedServiceIds={setSelectedServiceIds}
-              safetyFeatures={safetyFeatures}
-            />
-            <RoomDescription
               listing={listingData}
               amenitiesList={amenitiesList}
               services={services}
