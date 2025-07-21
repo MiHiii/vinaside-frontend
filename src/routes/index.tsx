@@ -45,6 +45,7 @@ import UnauthorizedPage from "@/pages/UnauthorizedPage";
 
 import PaymentPage from "@/pages/payment/PaymentPage";
 import PaymentSuccessPage from "@/pages/payment/PaymentSuccessPage";
+import PaymentFailedPage from "@/pages/payment/PaymentFailedPage";
 //properties
 import PropertiesPage from "@/pages/admin/property/PropertiesPage";
 import CreatePropertyPage from "@/pages/admin/property/CreatePropertyPage";
@@ -140,8 +141,12 @@ const routes: RouteObject[] = [
     ),
   },
   {
-    path: "/payment/success",
+    path: "/payment/return",
     element: <PaymentSuccessPage />,
+  },
+  {
+    path: "/payment/failed",
+    element: <PaymentFailedPage />,
   },
 
   // Các route trở thành host, có thể cho phép tất cả user đăng nhập, hoặc chỉ một số role, nếu cần thì wrap bằng ProtectedRoute luôn
@@ -202,7 +207,7 @@ const routes: RouteObject[] = [
     path: "/admin/forgot-password",
     element: <AdminForgotPasswordPage />,
   },
-  
+
   // admin routes (chỉ cho admin và staff, không cho guest)
   {
     path: "/admin/bookings/:propertyId/:bookingId",
@@ -264,7 +269,7 @@ const routes: RouteObject[] = [
     path: "/unauthorized",
     element: <UnauthorizedPage />,
   },
-  
+
   // Catch-all route for 404 errors
   {
     path: "*",
