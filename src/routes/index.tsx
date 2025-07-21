@@ -67,6 +67,7 @@ import VoucherListPage from "@/pages/admin/voucher/VoucherListPage";
 import ServiceListPage from "@/pages/admin/service/ServiceListPage";
 import SafetyFeatureListPage from "@/pages/admin/safety-feature/SafetyFeatureListPage";
 import HouseRuleListPage from "@/pages/admin/house-rule/HouseRuleListPage";
+import ReviewManagementPage from "@/pages/admin/reviews/ReviewManagementPage";
 
 //booking
 import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
@@ -255,6 +256,7 @@ const routes: RouteObject[] = [
       { path: "services", element: <ServiceListPage /> },
       { path: "safety-features", element: <SafetyFeatureListPage /> },
       { path: "house-rules", element: <HouseRuleListPage /> },
+      { path: "reviews", element: <ReviewManagementPage /> },
       { path: "users", element: <AdminUserPage /> },
     ],
   },

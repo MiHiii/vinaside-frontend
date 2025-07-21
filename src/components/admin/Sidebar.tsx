@@ -16,6 +16,7 @@ import {
   BookOpen,
   Ticket,
   Briefcase,
+  MessageSquare,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -314,6 +315,15 @@ export function Sidebar({ collapsed }: SidebarProps) {
               icon={<Briefcase className="h-4 w-4" />}
               label="Dịch vụ"
               active={pathname === "/admin/services"}
+              collapsed={collapsed}
+            />
+          </PermissionGuard>
+          <PermissionGuard permission="review.view">
+            <SidebarItem
+              to="/admin/reviews"
+              icon={<MessageSquare className="h-4 w-4" />}
+              label="Đánh giá"
+              active={pathname.startsWith("/admin/reviews")}
               collapsed={collapsed}
             />
           </PermissionGuard>
