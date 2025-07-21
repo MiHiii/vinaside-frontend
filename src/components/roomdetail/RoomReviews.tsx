@@ -27,10 +27,10 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
   const [selectedFilter, setSelectedFilter] = useState(FILTERS[0]);
   const [searchTerm, setSearchTerm] = useState("");
   const filteredReviews = useAppSelector(selectReviews).filter((r) => {
-    if (!r || !r.user_id) return false;
+    if (!r || !r.user) return false;
     const normalizedSearch = removeAccents(searchTerm.toLowerCase());
     // Lọc theo tên và nội dung đánh giá
-    const name = getUserName(r.user_id);
+    const name = getUserName(r.user);
     return (
       removeAccents(name.toLowerCase()).includes(normalizedSearch) ||
       removeAccents(r.comment.toLowerCase()).includes(normalizedSearch)
@@ -53,7 +53,7 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
     Array.isArray(reduxReviews) &&
     user &&
     reduxReviews.some(
-      (r) => r && r.user_id && r.user_id._id && r.user_id._id === user._id
+      (r) => r && r.user && r.user._id && r.user._id === user._id
     );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,11 +99,11 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
     return "Avatar";
   }
   // Tính toán số lượng đánh giá và điểm trung bình từ reduxReviews
-  const totalReviews = reduxReviews.filter((r) => r && r.user_id).length;
+  const totalReviews = reduxReviews.filter((r) => r && r.user).length;
   const averageRating =
     totalReviews > 0
       ? reduxReviews
-          .filter((r) => r && r.user_id)
+          .filter((r) => r && r.user)
           .reduce((sum, r) => sum + r.rating, 0) / totalReviews
       : 0;
   return (
@@ -158,18 +158,18 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
         {/* Ngoài modal: luôn hiển thị 6 review đầu, không lọc searchTerm */}
         {(showAll
           ? []
-          : reduxReviews.filter((r) => r && r.user_id).slice(0, 6)
+          : reduxReviews.filter((r) => r && r.user).slice(0, 6)
         ).map((r, idx) => (
           <div key={idx} className="flex flex-col gap-2 p-6">
             <div className="flex items-center gap-4 mb-2">
               <img
-                src={getUserAvatar(r.user_id)}
-                alt={getUserName(r.user_id)}
+                src={getUserAvatar(r.user)}
+                alt={getUserName(r.user)}
                 className="h-12 w-12 rounded-full object-cover border border-gray-200"
               />
               <div>
                 <div className="font-semibold text-lg text-gray-900">
-                  {r.user_id?.name || "Khách hàng"}
+                  {r.user?.name || "Khách hàng"}
                 </div>
               </div>
             </div>
@@ -178,8 +178,8 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
                 <span key={i}>★</span>
               ))}
               <span className="ml-2">
-                {r.created_at
-                  ? new Date(r.created_at).toLocaleDateString()
+                {r.createdAt
+                  ? new Date(r.createdAt).toLocaleDateString()
                   : ""}
               </span>
             </div>
@@ -371,24 +371,24 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
                     </div>
                   ) : (
                     filteredReviews
-                      .filter((r) => r && r.user_id)
+                      .filter((r) => r && r.user)
                       .map((r, idx) => (
                         <div
                           key={idx}
                           className="flex gap-4 border-b pb-6 last:border-b-0"
                         >
                           <img
-                            src={getUserAvatar(r.user_id)}
-                            alt={getUserName(r.user_id)}
+                            src={getUserAvatar(r.user)}
+                            alt={getUserName(r.user)}
                             className="h-12 w-12 rounded-full object-cover border border-gray-200 mt-1"
                           />
                           <div>
                             <div className="font-semibold text-lg text-gray-900">
-                              {r.user_id?.name || "Khách hàng"}
+                              {r.user?.name || "Khách hàng"}
                             </div>
                             <div className="text-gray-500 text-sm mb-1">
-                              {r.created_at
-                                ? new Date(r.created_at).toLocaleDateString()
+                              {r.createdAt
+                                ? new Date(r.createdAt).toLocaleDateString()
                                 : ""}
                             </div>
                             <div className="flex items-center gap-2 text-sm text-gray-700 mb-1">
@@ -396,8 +396,8 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
                                 <span key={i}>★</span>
                               ))}
                               <span className="ml-2">
-                                {r.created_at
-                                  ? new Date(r.created_at).toLocaleDateString()
+                                {r.createdAt
+                                  ? new Date(r.createdAt).toLocaleDateString()
                                   : ""}
                               </span>
                             </div>
