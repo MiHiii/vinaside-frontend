@@ -114,7 +114,7 @@ export default function PaymentLayout() {
                 tripEnd={tripEnd}
                 guestCount={guestCount}
                 nights={nights}
-                totalPrice={totalPrice} 
+                totalPrice={totalPrice}
                 bookingId={bookingId || ""}
                 propertyId={propertyId}
                 bookedDates={bookedDates}
