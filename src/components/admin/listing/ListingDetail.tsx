@@ -379,9 +379,9 @@ export default function ListingDetail() {
                     <tr key={r._id} className="border-b last:border-0">
                       <td className="py-2 px-2 font-semibold flex items-center gap-2">
                         <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-base font-bold uppercase">
-                          {r.user_id?.name?.charAt(0) || "?"}
+                          {r.user?.name?.charAt(0) || "?"}
                         </span>
-                        {r.user_id?.name || "Ẩn danh"}
+                        {r.user?.name || "Ẩn danh"}
                       </td>
                       <td className="py-2 px-2 flex items-center gap-1">
                         {renderStars(r.rating)}
@@ -389,7 +389,7 @@ export default function ListingDetail() {
                       </td>
                       <td className="py-2 px-2 text-gray-700">{r.comment}</td>
                       <td className="py-2 px-2 text-gray-500">
-                        {r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : "-"}
+                        {r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "-"}
                       </td>
                     </tr>
                   ))}
