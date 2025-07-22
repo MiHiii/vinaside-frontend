@@ -2,7 +2,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, User, Key } from "lucide-react";
-import { CustomRole } from "@/types/user";
 
 export const UserPermissionsInfo = () => {
   const { user, getUserPermissions, hasRole } = usePermissions();
@@ -50,12 +49,19 @@ export const UserPermissionsInfo = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {user.customRoles.map((role: CustomRole) => (
-                <Badge key={role._id} variant="outline" className="flex items-center gap-1">
-                  <Key className="h-3 w-3" />
-                  {role.name}
-                </Badge>
-              ))}
+              {user.customRoles.map((role) =>
+                typeof role === "object" && role !== null && "name" in role ? (
+                  <Badge key={role._id} variant="outline" className="flex items-center gap-1">
+                    <Key className="h-3 w-3" />
+                    {role.name}
+                  </Badge>
+                ) : (
+                  <Badge key={role as string} variant="outline" className="flex items-center gap-1">
+                    <Key className="h-3 w-3" />
+                    {role}
+                  </Badge>
+                )
+              )}
             </div>
           </CardContent>
         </Card>
