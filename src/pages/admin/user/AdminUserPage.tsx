@@ -25,21 +25,29 @@ const AdminUserPage = () => {
   }, [page]);
 
   // Tạo danh sách tất cả role có thể lọc (từ roles và từ users)
+  const defaultRoles = ['admin', 'staff', 'guest'];
   const allRoleOptions = React.useMemo(() => {
-    const roleKeysFromRoles = roles.map(r => r.key);
-    // Lấy các role có trong user nhưng không có trong roles
-    const extraRoles = users
-      .map(u => u.role)
-      .filter(
-        (role): role is string => !!role && !roleKeysFromRoles.includes(role)
-      );
-    // Trả về mảng [{key, name}] cho roles, và {key, name: key} cho extraRoles
-    const roleOptions = [
-      ...roles.map(r => ({ key: r.key, name: r.name })),
-      ...Array.from(new Set(extraRoles)).map(key => ({ key, name: key })),
-    ];
-    return roleOptions;
-  }, [roles, users]);
+    const roleSet = new Set(
+      users
+        .map(u => u.role)
+        .filter((role): role is string => !!role && defaultRoles.includes(role))
+    );
+    return Array.from(roleSet).map(key => ({
+      key,
+      name: key.charAt(0).toUpperCase() + key.slice(1)
+    }));
+  }, [users]);
+
+  // Filter users theo các trường tìm kiếm và vai trò
+  const filteredUsers = React.useMemo(() => {
+    return users.filter(u => {
+      const matchName = name ? u.name?.toLowerCase().includes(name.toLowerCase()) : true;
+      const matchEmail = email ? u.email?.toLowerCase().includes(email.toLowerCase()) : true;
+      const matchPhone = phone ? u.phone?.includes(phone) : true;
+      const matchRole = roleFilter ? u.role === roleFilter : true;
+      return matchName && matchEmail && matchPhone && matchRole;
+    });
+  }, [users, name, email, phone, roleFilter]);
 
   // Nếu filter ở FE, chỉ filter users đã fetch
   // Ở đây giữ nguyên filter FE như cũ
@@ -103,7 +111,9 @@ const AdminUserPage = () => {
           >
             <option value="">Tất cả vai trò</option>
             {allRoleOptions.map(r => (
-              <option key={r.key} value={r.key} className="capitalize">{r.name.charAt(0).toUpperCase() + r.name.slice(1)}</option>
+              <option key={r.key} value={r.key} className="capitalize">
+                {r.name}
+              </option>
             ))}
           </select>
           <button
@@ -117,7 +127,7 @@ const AdminUserPage = () => {
       </div>
       {/* Thông báo tổng số tài khoản */}
       <div className="mb-4 text-base font-medium text-gray-700">Tổng số tài khoản: {pagination.totalItems}</div>
-      <UserTable onEdit={handleEdit} users={users} roles={roles} />
+      <UserTable onEdit={handleEdit} users={filteredUsers} roles={roles} />
       <AdminPagination
         currentPage={pagination.currentPage}
         totalItems={pagination.totalItems}

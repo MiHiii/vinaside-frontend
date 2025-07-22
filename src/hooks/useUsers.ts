@@ -26,8 +26,8 @@ export const useUsers = () => {
     fetchUsers: (params?: { page?: number; limit?: number }) => dispatch(fetchUsers(params || {})),
     fetchRoles: () => dispatch(fetchRoles()),
     fetchUserRoles: (userId: string) => dispatch(fetchUserRoles(userId)),
-    createUser: (data: { userData: CreateUserDto; roleKey: string }) => dispatch(createUser(data)),
-    updateUser: (data: { id: string; userData: Partial<User>; roleKey: string }) => dispatch(updateUser(data)),
+    createUser: (data: { userData: CreateUserDto }) => dispatch(createUser(data)),
+    updateUser: (data: { id: string; userData: Partial<User> }) => dispatch(updateUser(data)),
     deleteUser: (id: string) => dispatch(deleteUser(id)),
   };
 }; 

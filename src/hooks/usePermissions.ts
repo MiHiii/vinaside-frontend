@@ -30,7 +30,9 @@ export const usePermissions = () => {
     // Kiểm tra trong custom roles (nếu có)
     if (user.customRoles) {
       return user.customRoles.some(role => 
-        role.permissions?.some((permission: Permission) => permission.key === permissionKey)
+        typeof role === "object" && role !== null && "permissions" in role && Array.isArray(role.permissions)
+          ? role.permissions.some((permission: Permission) => permission.key === permissionKey)
+          : false
       );
     }
     return false;
@@ -51,7 +53,9 @@ export const usePermissions = () => {
     if (!user) return false;
     if (user.role === "admin") return true;
     if (user.customRoles) {
-      return user.customRoles.some(role => role.key === roleKey);
+      return user.customRoles.some(role => 
+        typeof role === "object" && role !== null && "key" in role && role.key === roleKey
+      );
     }
     return false;
   };
@@ -63,7 +67,7 @@ export const usePermissions = () => {
     // Thêm permissions từ custom roles
     if (user.customRoles) {
       user.customRoles.forEach(role => {
-        if (role.permissions) {
+        if (typeof role === "object" && role !== null && "permissions" in role && Array.isArray(role.permissions)) {
           permissions.push(...role.permissions);
         }
       });
