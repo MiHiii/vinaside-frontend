@@ -9,6 +9,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useRef } from 'react';
+import { rbacApi } from '@/services/rbacApi';
 
 interface Props {
   open: boolean;
@@ -23,8 +26,8 @@ const userSchema = z.object({
   phone: z.string()
     .min(10, 'Số điện thoại phải đủ 10 số')
     .max(10, 'Số điện thoại phải đủ 10 số')
-    .regex(/^\d{10}$/, 'Số điện thoại chỉ gồm 10 số'),
-  roleKey: z.string().min(1, 'Vai trò là bắt buộc'),
+    .regex(/^[0-9]{10}$/, 'Số điện thoại chỉ gồm 10 số'),
+  customRoles: z.array(z.string()).min(1, 'Chọn ít nhất 1 vai trò'),
   avatar_url: z.string().optional(),
   password: z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự').optional(),
   confirmPassword: z.string().optional(),
@@ -40,6 +43,17 @@ const UserFormModal: React.FC<Props> = ({ open, onClose, editUser, roles }) => {
   const { uploadAvatarLoading } = useAppSelector(state => state.users);
   const [loading, setLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(editUser?.avatar_url);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const { register, handleSubmit, setValue, reset, setError, formState: { errors }, watch } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
@@ -47,7 +61,7 @@ const UserFormModal: React.FC<Props> = ({ open, onClose, editUser, roles }) => {
       name: editUser?.name || '',
       email: editUser?.email || '',
       phone: editUser?.phone || '',
-      roleKey: editUser?.role || '',
+      customRoles: editUser?.customRoles ? editUser.customRoles.map(r => typeof r === 'string' ? r : r.key) : [],
       avatar_url: editUser?.avatar_url || '',
       password: '',
       confirmPassword: '',
@@ -60,12 +74,12 @@ const UserFormModal: React.FC<Props> = ({ open, onClose, editUser, roles }) => {
         name: editUser.name,
         email: editUser.email,
         phone: editUser.phone,
-        roleKey: editUser.role || '',
+        customRoles: editUser.customRoles ? editUser.customRoles.map(r => typeof r === 'string' ? r : r.key) : [],
         avatar_url: editUser.avatar_url || '',
       });
       setAvatarPreview(editUser.avatar_url);
     } else {
-      reset({ name: '', email: '', phone: '', roleKey: '', avatar_url: '' });
+      reset({ name: '', email: '', phone: '', customRoles: [], avatar_url: '' });
       setAvatarPreview(undefined);
     }
   }, [editUser, open, reset]);
@@ -94,21 +108,31 @@ const UserFormModal: React.FC<Props> = ({ open, onClose, editUser, roles }) => {
             email: data.email,
             phone: data.phone,
             avatar_url: data.avatar_url,
+            customRoles: data.customRoles,
+            role: data.role,
           },
-          roleKey: data.roleKey,
         });
+        // Gán customRole cho user (tạo bản ghi usercustomroles)
+        for (const roleKey of data.customRoles) {
+          await rbacApi.assignRoleToUser(editUser._id, { roleKey });
+        }
         toast.success('Cập nhật tài khoản thành công!');
       } else {
-        await createUser({
+        const res = await createUser({
           userData: {
             name: data.name,
             email: data.email,
             phone: data.phone,
             avatar_url: data.avatar_url,
             password: data.password!,
+            customRoles: data.customRoles,
           },
-          roleKey: data.roleKey,
         }).unwrap();
+        const userId = res._id;
+        // Gán customRole cho user mới (tạo bản ghi usercustomroles)
+        for (const roleKey of data.customRoles) {
+          await rbacApi.assignRoleToUser(userId, { roleKey });
+        }
         toast.success('Tạo tài khoản thành công!');
       }
       onClose();
@@ -172,14 +196,39 @@ const UserFormModal: React.FC<Props> = ({ open, onClose, editUser, roles }) => {
             {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò <span className="text-red-500">*</span></label>
-            <select {...register('roleKey')} className={`border rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary/50 border-gray-300 capitalize ${errors.roleKey ? 'border-red-500' : ''}`}>
-              <option value="">Chọn vai trò</option>
-              {roles.map(role => (
-                <option key={role.key} value={role.key} className="capitalize">{role.name.charAt(0).toUpperCase() + role.name.slice(1)}</option>
-              ))}
-            </select>
-            {errors.roleKey && <p className="text-xs text-red-500 mt-1">{errors.roleKey.message}</p>}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò (có thể chọn nhiều) <span className="text-red-500">*</span></label>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                className={`border rounded px-2 py-2 text-sm w-full text-left bg-white ${errors.customRoles ? 'border-red-500' : 'border-gray-300'}`}
+                onClick={() => setDropdownOpen(o => !o)}
+              >
+                {watch('customRoles') && watch('customRoles').length > 0
+                  ? roles.filter(opt => watch('customRoles').includes(opt.key)).map(opt => opt.name).join(', ')
+                  : 'Chọn vai trò...'}
+              </button>
+              {dropdownOpen && (
+                <div className="absolute z-10 bg-white border rounded shadow w-full mt-1 max-h-60 overflow-y-auto">
+                  {roles.map(opt => (
+                    <label key={opt.key} className="flex items-center px-2 py-1 cursor-pointer hover:bg-gray-100">
+                      <Checkbox
+                        checked={watch('customRoles').includes(opt.key)}
+                        onCheckedChange={checked => {
+                          const prev = watch('customRoles') || [];
+                          if (checked) {
+                            setValue('customRoles', [...prev, opt.key], { shouldValidate: true });
+                          } else {
+                            setValue('customRoles', prev.filter(k => k !== opt.key), { shouldValidate: true });
+                          }
+                        }}
+                      />
+                      <span className="ml-2">{opt.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            {errors.customRoles && <p className="text-xs text-red-500 mt-1">{errors.customRoles.message}</p>}
           </div>
           {/* Thêm password khi tạo mới */}
           {!editUser && (

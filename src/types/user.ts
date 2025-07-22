@@ -25,7 +25,7 @@ export interface User {
   role?: string; // System role: guest, staff, admin
   is_verified?: boolean;
   // Custom roles và permissions
-  customRoles?: CustomRole[];
+  customRoles?: string[] | CustomRole[];
   permissions?: Permission[];
 }
 
@@ -50,6 +50,7 @@ export interface CreateUserDto {
   role?: UserRole;
   language?: UserLanguage;
   is_verified?: boolean;
+  customRoles?: string[];
 }
 
 export interface UpdateUserDto {

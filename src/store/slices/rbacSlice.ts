@@ -180,8 +180,9 @@ export const fetchUserPermissions = createAsyncThunk(
   'rbac/fetchUserPermissions',
   async (userId: string, { rejectWithValue }) => {
     try {
+      // Sử dụng API mới trong rbacApi
       return await rbacApi.getUserPermissions(userId);
-    } catch (error: unknown) {
+    } catch (error) {
       return rejectWithValue(getErrorMessage(error, 'Failed to fetch user permissions'));
     }
   }

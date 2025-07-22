@@ -3,7 +3,6 @@ import { api } from "../../services/api";
 import { User, Role, UserRole, CreateUserDto } from "../../types/user";
 import { getErrorMessage } from "@/helper/message";
 import { RootState } from "..";
-import toast from "react-hot-toast";
 
 // Lấy danh sách user
 export const fetchUsers = createAsyncThunk(
@@ -32,25 +31,15 @@ export const fetchUserRoles = createAsyncThunk(
   }
 );
 
-// Tạo user và gán role
+// Tạo user với custom role (không cần gọi API gán role riêng nữa)
 export const createUser = createAsyncThunk(
   "users/create",
   async (
-    { userData, roleKey }: { userData: CreateUserDto; roleKey: string },
+    { userData }: { userData: CreateUserDto },
     { dispatch, rejectWithValue }
   ) => {
     try {
       const res = await api.post("/users", userData);
-      console.log("User create response:", res.data);
-      console.log("res.data.data:", res.data.data);
-      const userDataRes = res.data.data.data; // Sửa ở đây
-      const userId = userDataRes._id || userDataRes.id || userDataRes.userId;
-      if (!userId) {
-        toast.error("Không lấy được userId sau khi tạo user!");
-        return;
-      }
-      // Gán vai trò cho user sau khi tạo
-      await api.post(`/rbac/users/${userId}/roles`, { roleKey });
       dispatch(fetchUsers({}));
       return res.data.data as User;
     } catch (err: unknown) {
@@ -70,15 +59,10 @@ export const createUser = createAsyncThunk(
 export const updateUser = createAsyncThunk(
   "users/update",
   async (
-    {
-      id,
-      userData,
-      roleKey,
-    }: { id: string; userData: Partial<User>; roleKey: string },
+    { id, userData }: { id: string; userData: Partial<User> },
     { dispatch }
   ) => {
     await api.patch(`/users/${id}`, userData);
-    await api.post(`/rbac/users/${id}/roles`, { roleKey });
     dispatch(fetchUsers({}));
     return { id, ...userData };
   }
