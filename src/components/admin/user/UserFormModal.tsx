@@ -109,7 +109,6 @@ const UserFormModal: React.FC<Props> = ({ open, onClose, editUser, roles }) => {
             phone: data.phone,
             avatar_url: data.avatar_url,
             customRoles: data.customRoles,
-            role: data.role,
           },
         });
         // Gán customRole cho user (tạo bản ghi usercustomroles)
