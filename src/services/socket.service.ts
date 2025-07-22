@@ -46,6 +46,16 @@ interface SocketError extends Error {
   type?: string;
 }
 
+interface NotificationData {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  time: string;
+  isRead: boolean;
+  avatar?: string;
+}
+
 class SocketService {
   private socket: Socket | null = null;
   private messageHandlers: ((message: NormalizedMessage) => void)[] = [];
@@ -58,9 +68,15 @@ class SocketService {
     is_recalled: boolean;
     recalled_at: string;
   }) => void)[] = [];
+  private notificationHandlers: ((notification: NotificationData) => void)[] =
+    [];
   private userId: string | null = null;
   private connectionAttempts: number = 0;
   private maxConnectionAttempts: number = 5;
+  public notificationSocket: Socket | null = null;
+  private notificationUserId: string | null = null;
+  private notificationHandlersV2: ((notification: NotificationData) => void)[] =
+    [];
 
   connect(token: string, userId: string) {
     if (this.socket?.connected && this.userId === userId) {
@@ -90,7 +106,7 @@ class SocketService {
       this.joinRoom(userId);
     });
 
-    this.socket.on("disconnect", (reason) => {
+    this.socket.on("disconnect", () => {
       // Disconnected
     });
 
@@ -190,11 +206,11 @@ class SocketService {
       }
     );
 
-    this.socket.on("reconnect", (attempt) => {
+    this.socket.on("reconnect", () => {
       // Reconnected successfully
     });
 
-    this.socket.on("reconnect_attempt", (attempt) => {
+    this.socket.on("reconnect_attempt", () => {
       // Attempting to reconnect
     });
 
@@ -202,17 +218,64 @@ class SocketService {
       console.error("Reconnection failed after all attempts");
     });
 
-    this.socket.onAny((eventName, ...args) => {
+    this.socket.onAny(() => {
       // Event received
     });
 
-    this.socket.on("user_joined_room", (data) => {
+    this.socket.on("user_joined_room", () => {
       // User joined room
     });
 
     this.socket.on("connect_timeout", () => {
       console.error("Socket connection timeout");
     });
+
+    this.socket.on("notification", (notification: NotificationData) => {
+      this.notificationHandlers.forEach((handler) => handler(notification));
+    });
+  }
+
+  connectNotification(token: string, userId: string) {
+    if (
+      this.notificationSocket?.connected &&
+      this.notificationUserId === userId
+    ) {
+      return;
+    }
+    if (this.notificationSocket && this.notificationUserId !== userId) {
+      this.disconnectNotification();
+    }
+    this.notificationUserId = userId;
+    this.notificationSocket = io(`${WS_URL}/ws/notifications`, {
+      auth: { token },
+      transports: ["websocket"],
+      path: "/socket.io",
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000,
+      forceNew: true,
+    });
+    this.notificationSocket.on("connect", () => {
+      this.notificationSocket?.emit("join_notifications", { userId });
+    });
+    this.notificationSocket.on(
+      "new_notification",
+      (notification: NotificationData) => {
+        this.notificationHandlersV2.forEach((handler) => handler(notification));
+      }
+    );
+    // (Tùy chọn) Lắng nghe các event khác như unread_count_updated
+    this.notificationSocket.on("unread_count_updated", () => {
+      // Có thể gọi hàm cập nhật badge ở đây nếu muốn
+    });
+  }
+  disconnectNotification() {
+    if (this.notificationSocket) {
+      this.notificationSocket.disconnect();
+      this.notificationSocket = null;
+      this.notificationUserId = null;
+    }
   }
 
   disconnect() {
@@ -286,14 +349,12 @@ class SocketService {
 
   public joinRoom(userId: string) {
     if (this.socket && userId) {
-      this.socket.once("room_joined", (data) => {
+      this.socket.once("room_joined", () => {
         // Successfully joined room
       });
-
       this.socket.once("room_join_error", (error) => {
         console.error("Room join error:", error);
       });
-
       this.socket.emit("join_room", { userId });
     }
   }
@@ -336,6 +397,24 @@ class SocketService {
     };
   }
 
+  onNewNotification(handler: (notification: NotificationData) => void) {
+    this.notificationHandlers.push(handler);
+    return () => {
+      this.notificationHandlers = this.notificationHandlers.filter(
+        (h) => h !== handler
+      );
+    };
+  }
+
+  onNewNotificationV2(handler: (notification: NotificationData) => void) {
+    this.notificationHandlersV2.push(handler);
+    return () => {
+      this.notificationHandlersV2 = this.notificationHandlersV2.filter(
+        (h) => h !== handler
+      );
+    };
+  }
+
   public getSocketStatus() {
     return {
       connected: this.socket?.connected || false,
@@ -359,6 +438,7 @@ const socketService = new SocketService();
 
 // Expose debug methods globally for testing
 if (typeof window !== "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).socketDebug = {
     getStatus: () => socketService.getSocketStatus(),
     forceReconnect: (token: string, userId: string) =>

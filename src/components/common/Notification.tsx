@@ -1,8 +1,6 @@
 "use client";
 
-import type React from "react";
-
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Bell,
   Check,
@@ -25,38 +23,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-interface Notification {
-  id: string;
-  type: "message" | "booking" | "review" | "system";
-  title: string;
-  message: string;
-  time: string;
-  isRead: boolean;
-  avatar?: string;
-}
-
-const sampleNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "message",
-    title: "Tin nhắn mới từ Nguyễn Văn A",
-    message:
-      "Chào bạn! Tôi muốn hỏi về dịch vụ của bạn. Bạn có thể tư vấn cho tôi được không?",
-    time: "2 phút trước",
-    isRead: false,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "2",
-    type: "booking",
-    title: "Đặt phòng mới tại Villa Đà Lạt",
-    message:
-      "Khách hàng Trần Thị B vừa đặt phòng Deluxe Suite từ 15/12 đến 18/12. Tổng giá trị: 3.500.000 VNĐ",
-    time: "1 giờ trước",
-    isRead: false,
-  },
-];
+import { useNotifications } from "@/hooks/useNotifications";
+import socketService from "@/services/socket.service";
+import type { Notification } from "@/services/notification.service";
+import { parseISO } from "date-fns";
+import { useAppSelector } from "@/hooks/useRedux";
+import { useNavigate } from "react-router-dom";
 
 const getNotificationIcon = (type: string) => {
   const iconClass = "h-5 w-5 text-slate-600 dark:text-slate-400";
@@ -74,41 +46,161 @@ const getNotificationIcon = (type: string) => {
   }
 };
 
+// Thêm hàm format giờ Việt Nam
+function formatVietnamTime(isoString: string) {
+  if (!isoString) return "";
+  try {
+    const date = parseISO(isoString);
+    // Format giờ phút ngày tháng năm theo giờ Việt Nam
+    return new Intl.DateTimeFormat("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "Asia/Ho_Chi_Minh",
+    }).format(date);
+  } catch {
+    return isoString;
+  }
+}
+
 export default function Notification() {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(sampleNotifications);
   const [isOpen, setIsOpen] = useState(false);
+  const {
+    notifications,
+    unreadCount,
+    getNotifications,
+    getUnreadCount,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    removeNotification,
+    addNotificationRealtime,
+  } = useNotifications();
+  // Lấy userId và token từ redux hoặc localStorage
+  const userId = useAppSelector((state) => state.auth.user?._id);
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("access_token")
+      : undefined;
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const highPriorityUnread = notifications.filter((n) => !n.isRead).length;
+  const navigate = useNavigate();
 
-  const handleMarkAsRead = (id: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
-  };
+  // Kết nối socket notification khi có userId và token
+  useEffect(() => {
+    if (token && userId) {
+      socketService.connectNotification(token, userId);
+      console.log("[Notification] connectNotification called", {
+        token,
+        userId,
+      });
+    }
+    return () => {
+      socketService.disconnectNotification();
+    };
+  }, [token, userId]);
 
-  const handleDeleteNotification = (id: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setNotifications((prev) =>
-      prev.filter((notification) => notification.id !== id)
-    );
-  };
+  // Lấy danh sách và số lượng chưa đọc khi mount
+  useEffect(() => {
+    getNotifications();
+    getUnreadCount();
+    // eslint-disable-next-line
+  }, []);
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notification) => ({ ...notification, isRead: true }))
-    );
-  };
+  // Lắng nghe notification realtime qua socket
+  useEffect(() => {
+    // Lắng nghe notification mới (KHÔNG gọi lại getUnreadCount hay getNotifications)
+    const unsubNew = socketService.onNewNotification((notification) => {
+      console.log("[Notification] new_notification event", notification);
+      addNotificationRealtime(notification); // chỉ thêm vào state
+    });
+    // Lắng nghe notification V2 nếu backend có
+    const unsubV2 = socketService.onNewNotificationV2?.((notification) => {
+      addNotificationRealtime(notification); // chỉ thêm vào state
+    });
+    // Lắng nghe sự kiện cập nhật số lượng chưa đọc (nếu backend emit)
+    if (socketService.notificationSocket) {
+      socketService.notificationSocket.on("unread_count_updated", () => {
+        getUnreadCount();
+      });
+      socketService.notificationSocket.on("notification_read", () => {
+        getUnreadCount();
+      });
+      socketService.notificationSocket.on("notification_deleted", () => {
+        getUnreadCount();
+      });
+    }
+    return () => {
+      if (unsubNew) unsubNew();
+      if (unsubV2) unsubV2();
+      if (socketService.notificationSocket) {
+        socketService.notificationSocket.off("unread_count_updated");
+        socketService.notificationSocket.off("notification_read");
+        socketService.notificationSocket.off("notification_deleted");
+      }
+    };
+  }, [addNotificationRealtime, getUnreadCount]);
 
-  const handleClearAll = () => {
-    setNotifications([]);
-  };
+  const highPriorityUnread = unreadCount;
+
+  const handleMarkAsRead = useCallback(
+    (id: string, event: React.MouseEvent) => {
+      event.stopPropagation();
+      markNotificationAsRead(id);
+      getUnreadCount(); // Cập nhật badge ngay khi đánh dấu đã đọc
+    },
+    [markNotificationAsRead, getUnreadCount]
+  );
+
+  const handleDeleteNotification = useCallback(
+    (id: string, event: React.MouseEvent) => {
+      event.stopPropagation();
+      // Kiểm tra nếu notification chưa đọc thì trừ unreadCount ngay
+      const noti = notifications.find((n) => n.id === id);
+      if (noti && !noti.isRead) {
+        // Nếu có thể, cập nhật unreadCount ngay (nếu dùng Redux, dispatch action custom hoặc setState tạm thời)
+        // Nếu dùng Redux slice, có thể dispatch action custom ở đây
+        // Hoặc gọi getUnreadCount() sau khi xóa
+        setTimeout(() => getUnreadCount(), 200); // Gọi lại sau khi xóa để đồng bộ với backend
+      }
+      removeNotification(id);
+    },
+    [removeNotification, notifications, getUnreadCount]
+  );
+
+  const handleMarkAllAsRead = useCallback(() => {
+    markAllNotificationsAsRead();
+    getUnreadCount(); // Cập nhật badge ngay khi đánh dấu tất cả đã đọc
+  }, [markAllNotificationsAsRead, getUnreadCount]);
+
+  const handleClearAll = useCallback(() => {
+    // Xóa từng notification (có thể tối ưu bằng API xóa all nếu backend hỗ trợ)
+    notifications.forEach((n) => removeNotification(n.id));
+  }, [notifications, removeNotification]);
+
+  // Xử lý click vào notification
+  const handleNotificationClick = useCallback(
+    (notification: Notification) => {
+      // Đánh dấu đã đọc
+      markNotificationAsRead(notification.id);
+      // Ẩn popup
+      setIsOpen(false);
+      // Điều hướng theo type
+      if (notification.type === "message") {
+        navigate("/messages");
+      } else if (notification.type === "booking") {
+        navigate("/profilepage");
+      } else if (notification.type === "review") {
+        navigate("/profilepage");
+      } else if (notification.type === "system") {
+        navigate("/");
+      } else {
+        // Dự phòng: các type khác có thể mở modal chi tiết hoặc log
+      }
+    },
+    [navigate, markNotificationAsRead]
+  );
 
   return (
     <>
@@ -177,6 +269,14 @@ export default function Notification() {
           box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
         }
         
+        .notification-scroll {
+          max-height: 388px; /* 3 items x 96px/item */
+          min-height: 388px;
+          overflow-y: auto;
+        }
+        .notification-item {
+          min-height: 98px;
+        }
         .notification-scroll::-webkit-scrollbar { width: 6px; }
         .notification-scroll::-webkit-scrollbar-track { 
           background: rgba(0, 0, 0, 0.05); 
@@ -213,15 +313,15 @@ export default function Notification() {
 
         <DropdownMenuContent
           align="end"
-          className="w-[480px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl p-0 mt-2 animate-slide-down"
+          className="w-[480px] bg-slate-900 rounded-2xl border border-slate-200 shadow-2xl p-0 mt-2 animate-slide-down"
           sideOffset={8}
         >
           {/* Header */}
           <div
-            className={`px-6 py-5 rounded-t-2xl border-b border-slate-200 dark:border-slate-600 relative overflow-hidden ${
+            className={`px-6 py-5 rounded-t-2xl relative overflow-hidden ${
               highPriorityUnread > 0
                 ? "bg-gradient-to-r from-red-50 via-red-100 to-red-50 dark:from-red-900/20 dark:via-red-800/30 dark:to-red-900/20"
-                : "bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800"
+                : "bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700"
             }`}
           >
             <div className="flex items-center justify-between relative z-10">
@@ -263,7 +363,7 @@ export default function Notification() {
                     className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-all duration-300 btn-hover ${
                       highPriorityUnread > 0
                         ? "text-red-700 hover:text-red-800 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
-                        : "text-slate-900 hover:text-slate-700 hover:bg-slate-200 dark:text-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-700"
+                        : "text-slate-900 hover:text-slate-900 hover:bg-slate-700 dark:text-slate-600 dark:hover:text-slate-300 dark:hover:bg-slate-700"
                     }`}
                   >
                     Đọc tất cả
@@ -274,7 +374,7 @@ export default function Notification() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg btn-hover icon-spin"
+                      className="h-8 w-8 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg btn-hover icon-spin"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
@@ -297,7 +397,7 @@ export default function Notification() {
           </div>
 
           {/* Notifications List */}
-          <ScrollArea className="max-h-[500px] notification-scroll">
+          <ScrollArea className="notification-scroll">
             {notifications.length === 0 ? (
               <div className="p-12 text-center animate-fade-in">
                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -315,8 +415,9 @@ export default function Notification() {
                 {notifications.map((notification, index) => (
                   <div
                     key={notification.id}
-                    className="animate-fade-in"
+                    className="notification-item animate-fade-in"
                     style={{ animationDelay: `${index * 0.05}s` }}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <div
                       className={`notification-item px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer relative group border-l-4 ${
@@ -370,7 +471,7 @@ export default function Notification() {
                             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                               <Clock className="h-3 w-3" />
                               <span className="font-medium">
-                                {notification.time}
+                                {formatVietnamTime(notification.time)}
                               </span>
                             </div>
 
