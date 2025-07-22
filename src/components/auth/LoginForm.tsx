@@ -9,7 +9,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { login } from "@/store/slices/authSlice";
 import { unwrapResult } from "@reduxjs/toolkit";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useEffect } from "react";
 import { getDefaultRouteByRole, getRoleDisplayName } from "@/utils/navigation";
 export default function LoginForm() {
@@ -37,32 +37,46 @@ export default function LoginForm() {
     try {
       const actionResult = await dispatch(login(data));
       const result = unwrapResult(actionResult);
-      
+
       // Lấy thông tin user từ response
       const userData = result.data.user;
-      
+
       // Hiển thị thông báo thành công với role
       const roleDisplayName = getRoleDisplayName(userData.role);
-      toast.success(`Đăng nhập thành công! Chào mừng ${roleDisplayName} ${userData.name}`, {
-        duration: 3000,
-      });
-      
+      toast(
+        `Đăng nhập thành công! Chào mừng ${roleDisplayName} ${userData.name}`,
+        {
+          description: undefined,
+          style: {
+            background: "#ccccc",
+            color: "#00000",
+          },
+          className: "text-base py-5 px-7 min-w-[320px]",
+          descriptionClassName: "text-black text-sm",
+        }
+      );
+
       // Xác định route để chuyển hướng
       const targetRoute = getDefaultRouteByRole(userData.role);
-      
+
       // Kiểm tra nếu có redirect URL từ state (ví dụ: từ ProtectedRoute)
       const from = location.state?.from?.pathname;
       const finalRoute = from && from !== "/login" ? from : targetRoute;
-      
+
       navigate(finalRoute, { replace: true });
     } catch (error) {
-      toast.error(
-        "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập."
-      );
+      toast("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.", {
+        description: undefined,
+        style: {
+          background: "#ccccc",
+          color: "#00000",
+        },
+        className: "text-base py-5 px-7 min-w-[320px]",
+        descriptionClassName: "text-black text-sm",
+      });
       console.error("Login error:", error);
     }
   };
-
 
   return (
     <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">

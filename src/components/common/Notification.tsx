@@ -29,6 +29,7 @@ import type { Notification } from "@/services/notification.service";
 import { parseISO } from "date-fns";
 import { useAppSelector } from "@/hooks/useRedux";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const getNotificationIcon = (type: string) => {
   const iconClass = "h-5 w-5 text-slate-600 dark:text-slate-400";
@@ -111,14 +112,35 @@ export default function Notification() {
   // Lắng nghe notification realtime qua socket
   useEffect(() => {
     // Lắng nghe notification mới (KHÔNG gọi lại getUnreadCount hay getNotifications)
-    const unsubNew = socketService.onNewNotification((notification) => {
-      console.log("[Notification] new_notification event", notification);
+    const unsubNew = socketService.onNewNotificationV2((notification) => {
       addNotificationRealtime(notification); // chỉ thêm vào state
+      toast(notification.title || "Bạn có thông báo mới", {
+        description: notification.message,
+        style: {
+          background: "#ccccc", // Đỏ nhạt
+          color: "#00000",
+        },
+        action: {
+          label: "Xem ngay",
+          onClick: () => {
+            // Điều hướng theo type
+            if (notification.type === "message") {
+              navigate("/messages");
+            } else if (notification.type === "booking") {
+              navigate("/profilepage");
+            } else if (notification.type === "review") {
+              navigate("/profilepage");
+            } else if (notification.type === "system") {
+              navigate("/");
+            }
+          },
+        },
+      });
     });
     // Lắng nghe notification V2 nếu backend có
-    const unsubV2 = socketService.onNewNotificationV2?.((notification) => {
-      addNotificationRealtime(notification); // chỉ thêm vào state
-    });
+    // const unsubV2 = socketService.onNewNotificationV2?.((notification) => {
+    //   addNotificationRealtime(notification); // chỉ thêm vào state
+    // });
     // Lắng nghe sự kiện cập nhật số lượng chưa đọc (nếu backend emit)
     if (socketService.notificationSocket) {
       socketService.notificationSocket.on("unread_count_updated", () => {
@@ -133,14 +155,14 @@ export default function Notification() {
     }
     return () => {
       if (unsubNew) unsubNew();
-      if (unsubV2) unsubV2();
+      // if (unsubV2) unsubV2();
       if (socketService.notificationSocket) {
         socketService.notificationSocket.off("unread_count_updated");
         socketService.notificationSocket.off("notification_read");
         socketService.notificationSocket.off("notification_deleted");
       }
     };
-  }, [addNotificationRealtime, getUnreadCount]);
+  }, [addNotificationRealtime, getUnreadCount, navigate]);
 
   const highPriorityUnread = unreadCount;
 

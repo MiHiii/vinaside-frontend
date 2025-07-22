@@ -5,7 +5,7 @@ import { FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import EmailField from "./fields/EmailField";
 import { forgotPassword } from "@/store/slices/authSlice";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useAppDispatch } from "@/hooks/useRedux";
 
 export default function ForgotPasswordForm() {
@@ -19,10 +19,22 @@ export default function ForgotPasswordForm() {
   const onSubmit = async (data: ForgotPasswordSchema) => {
     try {
       await dispatch(forgotPassword(data)).unwrap();
-      toast.success("Liên kết khôi phục đã được gửi tới email của bạn");
-      methods.reset(); 
-    } catch (error) {
-      toast.error((error as string) || "Gửi email khôi phục thất bại");
+      toast("Liên kết khôi phục đã được gửi tới email của bạn", {
+        description: undefined,
+        style: {
+          background: "#ccccc",
+          color: "#00000",
+        },
+      });
+      methods.reset();
+    } catch {
+      toast("Gửi email khôi phục thất bại", {
+        description: undefined,
+        style: {
+          background: "#ccccc",
+          color: "#00000",
+        },
+      });
     }
   };
 
