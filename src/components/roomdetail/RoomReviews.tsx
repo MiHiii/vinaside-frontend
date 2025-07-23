@@ -4,11 +4,10 @@ import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 import { XIcon } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
-  postReview,
   selectReviews,
   fetchReviewsByRoomId,
 } from "@/store/slices/reviewSlice";
-import { toast } from "react-hot-toast";
+
 
 // Hàm loại bỏ dấu tiếng Việt
 function removeAccents(str: string) {
@@ -38,10 +37,6 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
   });
   const dispatch = useAppDispatch();
   const reduxReviews = useAppSelector(selectReviews);
-  const user = useAppSelector((state) => state.auth.user);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (roomId) {
@@ -49,32 +44,7 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
     }
   }, [roomId, dispatch]);
 
-  const hasReviewed =
-    Array.isArray(reduxReviews) &&
-    user &&
-    reduxReviews.some(
-      (r) => r && r.user && r.user._id && r.user._id === user._id
-    );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await dispatch(postReview({ roomId, rating, comment })).unwrap();
-      toast.success("Gửi đánh giá thành công!");
-      setComment("");
-      setRating(5);
-      // Fetch lại reviews thật sau khi gửi
-      await dispatch(fetchReviewsByRoomId(roomId));
-    } catch (err: unknown) {
-      let message = "Không thể gửi đánh giá";
-      if (typeof err === "string") message = err;
-      else if (err instanceof Error) message = err.message;
-      toast.error(message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   function getUserAvatar(user: unknown): string {
     if (
@@ -108,52 +78,6 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
       : 0;
   return (
     <div className="mt-12">
-      <h3 className="text-2xl font-bold mb-6">Đánh giá của khách</h3>
-      {/* Form đánh giá */}
-      {user && !hasReviewed && (
-        <form
-          onSubmit={handleSubmit}
-          className="my-8 p-6 bg-gray-50 rounded-xl shadow flex flex-col gap-4"
-        >
-          <div>
-            <label className="block font-semibold mb-1">Chọn số sao:</label>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  type="button"
-                  key={star}
-                  className={
-                    star <= rating
-                      ? "text-yellow-400 text-2xl"
-                      : "text-gray-300 text-2xl"
-                  }
-                  onClick={() => setRating(star)}
-                  aria-label={`Chọn ${star} sao`}
-                >
-                  ★
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="block font-semibold mb-1">
-              Nội dung đánh giá:
-            </label>
-            <textarea
-              className="w-full border rounded p-2"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              required
-              minLength={10}
-              maxLength={500}
-              placeholder="Chia sẻ trải nghiệm của bạn..."
-            />
-          </div>
-          <Button type="submit" disabled={submitting || !comment.trim()}>
-            {submitting ? "Đang gửi..." : "Gửi đánh giá"}
-          </Button>
-        </form>
-      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Ngoài modal: luôn hiển thị 6 review đầu, không lọc searchTerm */}
         {(showAll

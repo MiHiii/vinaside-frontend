@@ -1,7 +1,7 @@
-import { BookingData } from './booking';
-import { User } from './user';
-import { IProperty, IListing } from './listing';
-import { BookingStatus } from './enum';
+import { BookingData } from "./booking";
+import { User } from "./user";
+import { IProperty, IListing } from "./listing";
+import { BookingStatus } from "./enum";
 
 export interface Booking extends BookingData {
   status: BookingStatus;
