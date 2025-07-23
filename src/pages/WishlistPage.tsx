@@ -7,6 +7,7 @@ import {
   removeWishlist,
   WishlistItem,
 } from "@/store/slices/wishlistSlice";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { fetchListingById } from "@/store/slices/listingSlice";
@@ -17,10 +18,18 @@ const WishlistPage: React.FC = () => {
   const wishlist =
     (useAppSelector((state) => state.wishlist.data) as WishlistItem[]) || [];
   const loading = useAppSelector((state) => state.wishlist.loading);
+  const error = useAppSelector((state) => state.wishlist.error);
 
   useEffect(() => {
     dispatch(fetchWishlist());
   }, [dispatch]);
+
+  // Hiện toast khi có error
+  useEffect(() => {
+    if (error) {
+      toast.error(error || "Đã xảy ra lỗi mạng. Vui lòng thử lại sau.");
+    }
+  }, [error]);
 
   const handleRemoveWishlist = async (wishlistId: string) => {
     try {
@@ -52,8 +61,27 @@ const WishlistPage: React.FC = () => {
       <h2 className="text-xl font-bold mb-6">
         Danh sách phòng yêu thích của tôi
       </h2>
-      {loading ? (
-        <p>Đang tải...</p>
+      {loading || error ? (
+        // Skeleton loading giống HomePage
+        <div className="flex flex-col gap-6">
+          {[0, 1].map((rowIdx) => (
+            <div
+              key={rowIdx}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-6"
+            >
+              {Array.from({ length: 10 }).map((_, idx) => (
+                <div key={idx} className="min-w-[280px] max-w-[280px] mt-5">
+                  <Skeleton className="h-[220px] w-full rounded-2xl mb-2" />
+                  <div className="p-3 pb-2">
+                    <Skeleton className="h-5 w-2/3 mb-2" />
+                    <Skeleton className="h-4 w-1/3 mb-1" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       ) : wishlist.length === 0 ? (
         <p>Bạn chưa có phòng nào trong danh sách yêu thích.</p>
       ) : (
