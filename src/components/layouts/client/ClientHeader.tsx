@@ -70,7 +70,7 @@ export default function ClientHeader() {
             <ClientSearch />
           </div>
           <button
-            className="block md:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="block md:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-100"
             onClick={() => setShowMobileSearch(true)}
             aria-label="Tìm kiếm"
           >
@@ -115,19 +115,19 @@ export default function ClientHeader() {
             >
               {!token ? (
                 <>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
                       to="/register"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaUserPlus className="inline-block" />
                       Đăng ký
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
                       to="/login"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaSignInAlt className="inline-block" />
                       Đăng nhập
@@ -136,57 +136,51 @@ export default function ClientHeader() {
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium text-dark dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
-                      to="/"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      to="/wishlists"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaRegHeart className="inline-block" />
                       Danh sách yêu thích
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
                       to="/profilepage"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaUser className="inline-block" />
                       Thông tin cá nhân
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
                       to="/messages"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaRegCommentDots className="inline-block" />
                       Tin nhắn
                     </Link>
                   </DropdownMenuItem>
-                  <div className="border-b border-gray-300 dark:border-gray-800"></div>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
-                    <Link
-                      to=""
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
-                    >
+                  <div className="border-b border-gray-300 dark:border-gray-300"></div>
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+                    <Link to="" className="w-full flex items-center gap-2">
                       <FaRegAddressCard className="inline-block" />
                       Giới thiệu chủ nhà
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
-                    <Link
-                      to=""
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
-                    >
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+                    <Link to="" className="w-full flex items-center gap-2">
                       <FaRegLifeRing className="inline-block" />
                       Hỗ trợ & đánh giá
                     </Link>
                   </DropdownMenuItem>
-                  <div className="border-b border-gray-300 dark:border-gray-800"></div>
+                  <div className="border-b border-gray-300 dark:border-gray-300"></div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                    className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer flex items-center gap-2"
                   >
                     <FaSignOutAlt className="inline-block" />
                     Đăng xuất
@@ -318,7 +312,7 @@ export default function ClientHeader() {
               <span className="font-semibold text-lg">Tìm kiếm</span>
               <button
                 onClick={() => setShowMobileSearch(false)}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-100"
               >
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <path

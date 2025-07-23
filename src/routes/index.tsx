@@ -74,6 +74,7 @@ import ReviewManagementPage from "@/pages/admin/reviews/ReviewManagementPage";
 import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
 import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
+import WishlistPage from "@/pages/WishlistPage";
 const routes: RouteObject[] = [
   {
     path: "/",
@@ -126,6 +127,14 @@ const routes: RouteObject[] = [
         element: (
           <ProtectedRoute>
             <Messages />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "wishlists",
+        element: (
+          <ProtectedRoute>
+            <WishlistPage />
           </ProtectedRoute>
         ),
       },
