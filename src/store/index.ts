@@ -14,6 +14,7 @@ import houseRuleReducer from "./slices/houseRuleSlice";
 import uploadReducer from "./slices/uploadSlice";
 import userReducer from "./slices/userSlice";
 import notificationReducer from "./slices/notificationSlice";
+import wishlistReducer from "./slices/wishlistSlice";
 
 export const store = configureStore({
   reducer: {
@@ -32,6 +33,7 @@ export const store = configureStore({
     upload: uploadReducer,
     users: userReducer,
     notification: notificationReducer,
+    wishlist: wishlistReducer,
   },
 });
 
