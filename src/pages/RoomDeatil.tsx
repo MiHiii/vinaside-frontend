@@ -18,7 +18,6 @@ import BookingForm from "@/components/roomdetail/BookingForm";
 import { useBookedDates } from "@/hooks/useBookedDates";
 import RoomReviews from "@/components/roomdetail/RoomReviews";
 
-
 export default function RoomDetailPage() {
   const { id } = useParams();
   const dispatch = useAppDispatch();
@@ -40,14 +39,44 @@ export default function RoomDetailPage() {
     infants: listing?.allow_infants ? 1 : 0,
     pets: listing?.allow_pets ? 0 : 0,
   });
-  // State for selected services
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  // Thay selectedServiceIds bằng selectedServices
+  const [selectedServices, setSelectedServices] = useState<
+    {
+      service_id: string;
+      service_name: string;
+      service_price: number;
+      quantity: number;
+      total_price: number;
+    }[]
+  >([]);
 
   const amenitiesList = useAppSelector(selectAmenities);
   const services = useAppSelector((state) => state.service.services);
   const safetyFeatures = useAppSelector(
     (state) => state.safetyFeature.safetyFeatures
   );
+
+  // Hàm xử lý chọn dịch vụ (có thể truyền xuống RoomInfo)
+  const handleSelectService = (service: any, quantity: number) => {
+    setSelectedServices((prev) => {
+      const exists = prev.find((s) => s.service_id === service.service_id);
+      if (exists) {
+        return prev.map((s) =>
+          s.service_id === service.service_id
+            ? { ...s, quantity, total_price: service.service_price * quantity }
+            : s
+        );
+      }
+      return [
+        ...prev,
+        {
+          ...service,
+          quantity,
+          total_price: service.service_price * quantity,
+        },
+      ];
+    });
+  };
 
   // Gọi API lấy thông tin phòng và tiện ích
   useEffect(() => {
@@ -113,8 +142,8 @@ export default function RoomDetailPage() {
               listing={listingData}
               amenitiesList={amenitiesList}
               services={services}
-              selectedServiceIds={selectedServiceIds}
-              setSelectedServiceIds={setSelectedServiceIds}
+              selectedServices={selectedServices}
+              setSelectedServices={setSelectedServices}
               safetyFeatures={safetyFeatures}
             />
           </div>
@@ -135,7 +164,7 @@ export default function RoomDetailPage() {
               setDateOpen={setDateOpen}
               guestOpen={guestOpen}
               setGuestOpen={setGuestOpen}
-              selectedServiceIds={selectedServiceIds}
+              selectedServices={selectedServices}
               services={services}
             />
           </div>

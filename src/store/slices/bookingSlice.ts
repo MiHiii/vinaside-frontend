@@ -44,6 +44,7 @@ interface BookingState {
   adminBookings: Booking[];
   adminTotal: number;
   adminBookingDetail: Booking | null;
+  selectedServices: any[];
   bookingsByListing?: Booking[];
 }
 
@@ -63,6 +64,7 @@ const initialState: BookingState = {
   adminBookings: [],
   adminTotal: 0,
   adminBookingDetail: null,
+  selectedServices: [],
   bookingsByListing: [],
 };
 
@@ -81,6 +83,16 @@ export const createBooking = createAsyncThunk(
     infants: number;
     guest_name: string;
     guest_email: string;
+    specialRequests?: string;
+    voucherCode?: string;
+    selected_services?: Array<{
+      service_id: string;
+      service_name: string;
+      service_price: number;
+      quantity: number;
+      total_price: number;
+    }>;
+    services_total_amount?: number;
   }) => {
     const response = await api.post("/bookings", bookingData);
     return response.data?.data;
@@ -361,9 +373,13 @@ export const fetchBookingsByListing = createAsyncThunk<
   "booking/fetchBookingsByListing",
   async ({ propertyId, listingId }, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/bookings/property/${propertyId}/listing/${listingId}`);
-      return Array.isArray(res.data.data?.bookings) ? res.data.data.bookings : [];
-    } catch  {
+      const res = await api.get(
+        `/bookings/property/${propertyId}/listing/${listingId}`
+      );
+      return Array.isArray(res.data.data?.bookings)
+        ? res.data.data.bookings
+        : [];
+    } catch {
       return rejectWithValue("Lỗi khi lấy danh sách booking của listing");
     }
   }
@@ -454,12 +470,16 @@ const bookingSlice = createSlice({
     clearBookingState: (state) => {
       state.bookingData = null;
       state.error = null;
+      state.selectedServices = [];
     },
     setError: (state, action) => {
       state.error = action.payload;
     },
     clearError: (state) => {
       state.error = null;
+    },
+    setSelectedServices: (state, action) => {
+      state.selectedServices = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -646,5 +666,6 @@ const bookingSlice = createSlice({
   },
 });
 
-export const { clearBookingState, setError, clearError } = bookingSlice.actions;
+export const { clearBookingState, setError, clearError, setSelectedServices } =
+  bookingSlice.actions;
 export default bookingSlice.reducer;

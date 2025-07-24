@@ -6,7 +6,9 @@ import BookingCalendar from "./BookingCalendar";
 import GuestSelector from "./GuestSelector";
 import { IListing } from "@/types/listing";
 import toast from "react-hot-toast";
-import { Service } from '@/types/services';
+import { Service } from "@/types/services";
+import { useAppDispatch } from "@/hooks/useRedux";
+import { setSelectedServices } from "@/store/slices/bookingSlice";
 interface BookingFormProps {
   listing: IListing;
   checkIn: Date | null;
@@ -32,10 +34,10 @@ interface BookingFormProps {
   setDateOpen: (open: boolean) => void;
   guestOpen: boolean;
   setGuestOpen: (open: boolean) => void;
-  selectedServiceIds: string[];
+  selectedServiceIds?: string[];
   services: Service[];
+  selectedServices: any[]; // Thêm dòng này
 }
-
 
 const BookingForm: React.FC<BookingFormProps> = ({
   listing,
@@ -54,16 +56,17 @@ const BookingForm: React.FC<BookingFormProps> = ({
   setGuestOpen,
   selectedServiceIds,
   services,
+  selectedServices,
 }) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   const pricePerNight = listing.price_per_night || 0;
   const taxRate = 0.08;
-  
-  const selectedServiceTotal = (services ?? [])
-    .filter(s => (selectedServiceIds ?? []).includes(s._id))
-    .reduce((sum, s) => sum + (s.default_price || 0), 0);
 
+  const selectedServiceTotal = (services ?? [])
+    .filter((s) => (selectedServiceIds ?? []).includes(s._id))
+    .reduce((sum, s) => sum + (s.default_price || 0), 0);
 
   const calculatePrice = () => {
     const base = nights * pricePerNight;
@@ -80,6 +83,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
       );
       return;
     }
+    // Lưu selectedServices vào Redux trước khi chuyển trang
+    dispatch(setSelectedServices(selectedServices));
 
     const formattedCheckIn = format(checkIn, "yyyy-MM-dd");
     const formattedCheckOut = format(checkOut, "yyyy-MM-dd");
@@ -191,4 +196,3 @@ const BookingForm: React.FC<BookingFormProps> = ({
 };
 
 export default BookingForm;
-  
