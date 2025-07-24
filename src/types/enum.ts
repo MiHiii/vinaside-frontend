@@ -29,18 +29,18 @@ export enum CancelPolicy {
   STRICT = "STRICT",
 }
 
-   export enum PaymentStatus {
-     PENDING = "pending",
-     PAID = "paid",
-     REFUNDED = "refunded",
-     FAILED = "failed",
-   }
+export enum PaymentStatus {
+  PENDING = "pending",
+  PAID = "paid",
+  REFUNDED = "refunded",
+  FAILED = "failed",
+  PARTIALLY_PAID = "partially_paid",
+}
 
-   export enum BookingStatus {
-     PENDING = "pending",
-     CONFIRMED = "confirmed",
-     CANCELLED = "cancelled",
-     COMPLETED = "completed",
-     REJECTED = "rejected",
-   }
-
+export enum BookingStatus {
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  CANCELLED = "cancelled",
+  COMPLETED = "completed",
+  REJECTED = "rejected",
+}

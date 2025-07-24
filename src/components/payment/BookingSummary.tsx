@@ -29,6 +29,14 @@ interface BookingSummaryProps {
   }) => void;
   selectedServiceTotal: number;
   selectedVoucher?: Voucher | null;
+  selectedServices?: Array<{
+    service_id: string;
+    service_name: string;
+    service_price: number;
+    quantity: number;
+    total_price: number;
+    icon_url?: string;
+  }>;
 }
 
 const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -41,11 +49,13 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   onSaveBookingInfo,
   selectedServiceTotal,
   selectedVoucher,
+  selectedServices = [],
 }) => {
   const [open, setOpen] = useState(false);
   const [showPriceDetail, setShowPriceDetail] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [paymentType, setPaymentType] = useState<"full" | "deposit">("full");
 
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
@@ -73,7 +83,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         propertyId: listing.propertyId._id,
         price_per_night: listing.price_per_night,
         total_price: listing.price_per_night * nights,
-        final_amount: total,
+        final_amount: finalTotal,
         checkInDate: tripStart,
         checkOutDate: tripEnd,
         guests: guestCount,
@@ -81,7 +91,10 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         guest_name: user?.name || "Khách chưa đặt tên",
         guest_email: user?.email || "unknown@example.com",
         ...(selectedVoucher?._id ? { voucher_id: selectedVoucher._id } : {}),
+        // Đổi tên trường:
+        selected_services: selectedServices,
       };
+      console.log("[FE] bookingData gửi lên backend:", bookingData);
 
       const result = await dispatch(createBooking(bookingData)).unwrap();
 
@@ -93,6 +106,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
       const paymentPayload = {
         bookingId: result._id,
         paymentMethod: "vnpay", // hoặc "momo" nếu muốn
+        paymentType, // truyền paymentType lên BE
         notifyUrl: undefined,
       };
       console.log("[FE] Payload gửi lên createPayment:", paymentPayload);
@@ -121,18 +135,58 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     onSaveBookingInfo({ dateRange, guests });
   };
 
-  const base = listing.price_per_night * nights;
-  const serviceFee = Math.round(base * 0.1);
-  const tax = Math.round(base * 0.08);
-  const total = base + serviceFee + tax + selectedServiceTotal;
-  const discount = selectedVoucher
+  // Disable dịch vụ/voucher khi chọn đặt cọc
+  const isDeposit = paymentType === "deposit";
+
+  // Tính toán giá dựa trên loại thanh toán
+  let base = listing.price_per_night * nights;
+  let serviceFee = Math.round(base * 0.1);
+  let tax = Math.round(base * 0.08);
+  let total = base + serviceFee + tax + selectedServiceTotal;
+  let discount = selectedVoucher
     ? Math.round((total * selectedVoucher.discount_percent) / 100)
     : 0;
-  const finalTotal = total - discount;
+  let finalTotal = total - discount;
+
+  if (paymentType === "deposit") {
+    // Chỉ tính 50% giá phòng, không cộng dịch vụ/voucher
+    base = Math.round(listing.price_per_night * nights * 0.5);
+    serviceFee = Math.round(base * 0.1);
+    tax = Math.round(base * 0.08);
+    total = base + serviceFee + tax;
+    discount = 0;
+    finalTotal = total;
+  }
 
   return (
     <Card className="sticky top-6 max-w-md rounded-2xl border border-gray-200 shadow-sm">
       <CardContent className="p-8 space-y-7">
+        {/* Lựa chọn loại thanh toán */}
+        <div className="mb-4">
+          <label>
+            <input
+              type="radio"
+              value="full"
+              checked={paymentType === "full"}
+              onChange={() => setPaymentType("full")}
+            />
+            Thanh toán toàn bộ
+          </label>
+          <label className="ml-4">
+            <input
+              type="radio"
+              value="deposit"
+              checked={paymentType === "deposit"}
+              onChange={() => setPaymentType("deposit")}
+            />
+            Đặt cọc 50%
+          </label>
+          {isDeposit && (
+            <div className="text-red-500 text-sm mt-1">
+              Dịch vụ & voucher chỉ áp dụng khi thanh toán toàn bộ!
+            </div>
+          )}
+        </div>
         {/* Ảnh + Tiêu đề + Đánh giá */}
         <div className="flex gap-5 items-center">
           <img
@@ -208,79 +262,85 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           />
         </div>
 
+        {/* Chọn dịch vụ/voucher */}
+        {/*
+        <ServiceSelector disabled={isDeposit} ... />
+        <VoucherListForUser disabled={isDeposit} ... />
+        */}
+
         {/* Chi tiết giá */}
-        <div className="border-t pt-5">
-          <div className="font-medium text-base mb-2">Chi tiết giá</div>
-          <div className="flex justify-between text-base">
-            <span>
-              ₫{listing.price_per_night.toLocaleString()} x {nights} đêm
-            </span>
-            <span>₫{base.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-base">
-            <span>Phí dịch vụ</span>
-            <span>₫{serviceFee.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-base">
-            <span>Thuế (8%)</span>
-            <span>₫{tax.toLocaleString()}</span>
-          </div>
+        <div className="font-medium text-base mb-2">Chi tiết giá</div>
+        <div className="flex justify-between text-base">
+          <span>
+            ₫{listing.price_per_night.toLocaleString()} x {nights} đêm
+          </span>
+          <span>₫{base.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between text-base">
+          <span>Phí dịch vụ</span>
+          <span>₫{serviceFee.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between text-base">
+          <span>Thuế (8%)</span>
+          <span>₫{tax.toLocaleString()}</span>
+        </div>
+        {/* Dịch vụ/voucher chỉ hiển thị khi thanh toán toàn bộ */}
+        {paymentType === "full" && (
           <div className="flex justify-between text-base">
             <span>Dịch vụ kèm theo</span>
             <span>₫{selectedServiceTotal.toLocaleString()}</span>
           </div>
-        </div>
-
+        )}
         {/* Tổng tiền */}
-        <div className="border-t pt-5">
-          <div className="flex justify-between font-bold text-xl">
-            <span>Tổng VND</span>
-            <span
-              className={discount ? "line-through text-gray-400 text-lg" : ""}
-            >
-              ₫{total.toLocaleString()}
+        <div className="flex justify-between font-bold text-xl">
+          <span>Tổng VND</span>
+          <span
+            className={discount ? "line-through text-gray-400 text-lg" : ""}
+          >
+            ₫{total.toLocaleString()}
+          </span>
+        </div>
+        {/* Discount chỉ hiển thị khi thanh toán toàn bộ */}
+        {paymentType === "full" && discount > 0 && (
+          <div className="flex justify-between text-base text-green-600 font-semibold mt-1">
+            <span>Đã giảm ({selectedVoucher?.code})</span>
+            <span>-₫{discount.toLocaleString()}</span>
+          </div>
+        )}
+        {((paymentType === "full" && discount > 0) ||
+          paymentType === "deposit") && (
+          <div className="flex justify-between font-bold text-xl mt-1">
+            <span>Tổng sau giảm</span>
+            <span className="text-pink-600">
+              ₫{finalTotal.toLocaleString()}
             </span>
           </div>
-          {discount > 0 && (
-            <div className="flex justify-between text-base text-green-600 font-semibold mt-1">
-              <span>Đã giảm ({selectedVoucher?.code})</span>
-              <span>-₫{discount.toLocaleString()}</span>
-            </div>
-          )}
-          {discount > 0 && (
-            <div className="flex justify-between font-bold text-xl mt-1">
-              <span>Tổng sau giảm</span>
-              <span className="text-pink-600">
-                ₫{finalTotal.toLocaleString()}
-              </span>
-            </div>
-          )}
-          <a
-            href="#"
-            className="text-base text-black mt-2 underline cursor-pointer"
-            onClick={(e) => {
-              e.preventDefault();
-              setShowPriceDetail(true);
-            }}
-          >
-            Chi tiết giá
-          </a>
-          <PriceDetailModal
-            open={showPriceDetail}
-            onClose={() => setShowPriceDetail(false)}
-            pricePerNight={listing.price_per_night}
-            nights={nights}
-            discount={0}
-            selectedServiceTotal={selectedServiceTotal}
-          />
-          <Button
-            className="w-full h-12 bg-gradient-to-r from-[#ff4668] to-[#b91c5c] text-white font-bold text-lg rounded-xl border-0 hover:opacity-90 transition-all duration-200 mt-5"
-            onClick={handlePayment}
-            disabled={loading}
-          >
-            {loading ? "Đang xử lý..." : "Thanh toán"}
-          </Button>
-        </div>
+        )}
+        <a
+          href="#"
+          className="text-base text-black mt-2 underline cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            setShowPriceDetail(true);
+          }}
+        >
+          Chi tiết giá
+        </a>
+        <PriceDetailModal
+          open={showPriceDetail}
+          onClose={() => setShowPriceDetail(false)}
+          pricePerNight={listing.price_per_night}
+          nights={nights}
+          discount={0}
+          selectedServiceTotal={selectedServiceTotal}
+        />
+        <Button
+          className="w-full h-12 bg-gradient-to-r from-[#ff4668] to-[#b91c5c] text-white font-bold text-lg rounded-xl border-0 hover:opacity-90 transition-all duration-200 mt-5"
+          onClick={handlePayment}
+          disabled={loading}
+        >
+          {loading ? "Đang xử lý..." : "Thanh toán"}
+        </Button>
       </CardContent>
     </Card>
   );

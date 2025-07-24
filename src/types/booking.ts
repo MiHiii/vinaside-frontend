@@ -22,6 +22,15 @@ export interface BookingData {
   status?: BookingStatus;
   payment_status?: PaymentStatus;
   cancel_policy?: keyof typeof CancelPolicy;
+  // Bổ sung các trường dịch vụ kèm theo
+  selected_services?: Array<{
+    service_id?: string;
+    service_name?: string;
+    service_price?: number;
+    quantity?: number;
+    total_price?: number;
+  }>;
+  services_total_amount?: number;
 }
 
 export interface BookingDetail extends BookingData {

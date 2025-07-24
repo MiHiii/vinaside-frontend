@@ -149,9 +149,9 @@ const PastTrip = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
-
-
- 
+  const [payRemainderLoadingId, setPayRemainderLoadingId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     dispatch(getMyBookingHistory(undefined))
@@ -235,6 +235,11 @@ const PastTrip = () => {
     );
   });
 
+  // Thêm PaymentStatus.PARTIALLY_PAID vào import
+  const partiallyPaidBookings = bookings.filter(
+    (b) => b.payment_status === PaymentStatus.PARTIALLY_PAID
+  );
+
   const handleShowDetail = (booking: BookingWithStatus) => {
     setSelectedBooking(booking);
     setShowDetail(true);
@@ -243,6 +248,25 @@ const PastTrip = () => {
   const handleCancelBooking = (booking: BookingWithStatus) => {
     setSelectedBookingForCancel(booking);
     setShowCancelModal(true);
+  };
+
+  const handlePayRemainder = async (bookingId: string) => {
+    setPayRemainderLoadingId(bookingId);
+    try {
+      const res = await api.post(`/bookings/${bookingId}/payment/remaining`, {
+        paymentMethod: "vnpay",
+      });
+      const paymentUrl = res.data?.data?.paymentUrl;
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        toast.error("Không lấy được link thanh toán phần còn lại.");
+      }
+    } catch {
+      toast.error("Có lỗi khi tạo thanh toán phần còn lại.");
+    } finally {
+      setPayRemainderLoadingId(null);
+    }
   };
 
   const renderBooking = (booking: BookingWithStatus) => {
@@ -262,6 +286,7 @@ const PastTrip = () => {
     let statusDisplay = "";
     let statusColor = "";
     let showPaymentButton = false;
+    let showPayRemainderButton = false;
 
     if (booking.payment_status === PaymentStatus.FAILED) {
       statusDisplay = "Thanh toán thất bại";
@@ -271,6 +296,10 @@ const PastTrip = () => {
       statusDisplay = "Chờ thanh toán";
       statusColor = "text-yellow-600";
       showPaymentButton = true;
+    } else if (booking.payment_status === PaymentStatus.PARTIALLY_PAID) {
+      statusDisplay = "Đã trả trước 50%";
+      statusColor = "text-blue-600";
+      showPayRemainderButton = true;
     } else if (booking.payment_status === PaymentStatus.REFUNDED) {
       statusDisplay = "Đã hoàn tiền";
       statusColor = "text-orange-600";
@@ -348,7 +377,7 @@ const PastTrip = () => {
 
               <div className="flex items-center gap-2">
                 <DollarSign size={18} />
-                <span>{booking.total_price?.toLocaleString()}₫</span>
+                <span>{booking.final_amount?.toLocaleString()}₫</span>
               </div>
             </div>
 
@@ -401,6 +430,20 @@ const PastTrip = () => {
                 >
                   <DollarSign size={16} />
                   Thanh toán ngay
+                </Button>
+              )}
+              {showPayRemainderButton && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-2 bg-pink-600 text-white"
+                  onClick={() => handlePayRemainder(booking._id)}
+                  disabled={payRemainderLoadingId === booking._id}
+                >
+                  <DollarSign size={16} />
+                  {payRemainderLoadingId === booking._id
+                    ? "Đang xử lý..."
+                    : "Trả nốt"}
                 </Button>
               )}
               {showPaymentButton && isBooked && (
@@ -602,6 +645,16 @@ const PastTrip = () => {
         </div>
       )}
 
+      {/* Danh sách phòng đã trả trước 50% */}
+      {partiallyPaidBookings.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-lg font-bold mb-2 text-blue-600">
+            Phòng đã trả trước 50%
+          </h3>
+          {partiallyPaidBookings.map((b) => renderBooking(b))}
+        </div>
+      )}
+
       {/* Modal chi tiết */}
       {showDetail && selectedBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -663,8 +716,16 @@ const PastTrip = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign size={16} className="text-gray-400" />
-                    <span className="font-medium">Tổng tiền:</span>{" "}
+                    <span className="font-medium">Tổng tiền phòng:</span>{" "}
                     {selectedBooking.total_price?.toLocaleString()}₫
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <DollarSign size={16} className="text-gray-400" />
+                    <span className="font-medium">
+                      Tổng tiền (bao gồm dịch vụ):
+                    </span>{" "}
+                    {(selectedBooking.final_amount || 0).toLocaleString()}₫
                   </div>
                   <div className="flex items-center gap-2">
                     <Info size={16} className="text-gray-400" />

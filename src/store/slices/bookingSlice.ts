@@ -356,15 +356,20 @@ export const createPayment = createAsyncThunk<
   {
     bookingId: string;
     paymentMethod: string;
+    paymentType?: "full" | "deposit";
     notifyUrl?: string;
   },
   { rejectValue: string }
 >(
   "booking/createPayment",
-  async ({ bookingId, paymentMethod, notifyUrl }, { rejectWithValue }) => {
+  async (
+    { bookingId, paymentMethod, paymentType, notifyUrl },
+    { rejectWithValue }
+  ) => {
     try {
       const res = await api.post(`/bookings/${bookingId}/payment`, {
         paymentMethod,
+        paymentType,
         notifyUrl,
       });
       return res.data.data;
