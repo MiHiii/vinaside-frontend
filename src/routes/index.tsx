@@ -220,14 +220,6 @@ const routes: RouteObject[] = [
 
   // admin routes (chỉ cho admin và staff, không cho guest)
   {
-    path: "/admin/bookings/:propertyId/:bookingId",
-    element: (
-      <ProtectedAdminRoute requiredRole="admin">
-        <BookingDetailPage />
-      </ProtectedAdminRoute>
-    ),
-  },
-  {
     path: "/admin",
     element: (
       <ProtectedAdminRoute>
