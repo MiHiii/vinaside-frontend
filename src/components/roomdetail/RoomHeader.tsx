@@ -9,12 +9,26 @@ interface RoomHeaderProps {
 // Laurel SVG chuẩn Airbnb
 
 
-const RoomHeader: React.FC<RoomHeaderProps> = ({ listing }) => {
+const RoomHeader: React.FC<RoomHeaderProps> = ({ listing}) => {
+  const address =
+    listing.propertyId &&
+    typeof listing.propertyId !== "string" &&
+    listing.propertyId.location
+      ? [listing.propertyId.location.ward, listing.propertyId.location.district, listing.propertyId.location.city]
+          .filter(Boolean)
+          .join(", ")
+      : "";
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 leading-tight">
         {listing.title}
       </h1>
+      {address && (
+        <h1 className="text-sm lg:text-base font-medium text-gray-900 mb-2 leading-tight">
+          {address}
+        </h1>
+      )}
       <div className="flex flex-wrap items-center gap-4 text-base text-gray-700 mb-2">
         <span>{listing.max_guests} khách</span>
         <span>· {listing.beds} giường</span>
