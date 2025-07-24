@@ -77,3 +77,7 @@
 .rdp-day_selected:not(.rdp-day_booked):hover {
   background-color: #2563eb !important;
 }
+
+.recharts-active-bar-background {
+  fill: transparent !important;
+}

@@ -52,7 +52,7 @@ export default function PropertyDetailView() {
     if (id) {
       // Nếu đã chọn khoảng ngày, truyền dateRange cho fetchPropertyStatistics
       if (dateRange?.from && dateRange?.to) {
-        dispatch(fetchPropertyStatistics({ id, dateRange }));
+      dispatch(fetchPropertyStatistics({ id, dateRange }));
       } else {
         dispatch(fetchPropertyStatistics({ id }));
       }
@@ -84,32 +84,32 @@ export default function PropertyDetailView() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* UI chọn ngày giống bên listing detail */}
       <div className="flex items-center gap-4 mb-8">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={"w-[280px] justify-start text-left font-normal"}
-            >
-              <CalendarCheck className="mr-2 h-4 w-4" />
-              {dateRange?.from && dateRange?.to
-                ? `${format(dateRange.from, "PPP")} - ${format(dateRange.to, "PPP")}`
-                : "Chọn khoảng ngày"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-white rounded-xl shadow-lg border border-gray-200" align="start">
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={setDateRange}
-              numberOfMonths={2}
-              initialFocus
-              className="!bg-white rounded-xl p-2"
-              modifiersClassNames={{
-                range_start: "!bg-black !text-white",
-                range_end: "!bg-black !text-white",
-                today: "border border-blue-400"
-              }}
-            />
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={"w-[280px] justify-start text-left font-normal"}
+              >
+                <CalendarCheck className="mr-2 h-4 w-4" />
+                {dateRange?.from && dateRange?.to
+                  ? `${format(dateRange.from, "PPP")} - ${format(dateRange.to, "PPP")}`
+                  : "Chọn khoảng ngày"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-white rounded-xl shadow-lg border border-gray-200" align="start">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+                initialFocus
+                className="!bg-white rounded-xl p-2"
+                modifiersClassNames={{
+                  range_start: "!bg-black !text-white",
+                  range_end: "!bg-black !text-white",
+                  today: "border border-blue-400"
+                }}
+              />
             {dateRange?.from || dateRange?.to ? (
               <div className="flex justify-end px-4 pb-2 pt-1">
                 <Button variant="ghost" size="sm" onClick={() => setDateRange(undefined)}>
@@ -117,25 +117,25 @@ export default function PropertyDetailView() {
                 </Button>
               </div>
             ) : null}
-          </PopoverContent>
-        </Popover>
-      </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-8 items-center mb-8">
         <img src={propertyDetail?.thumbnail || "/placeholder.svg"} alt={propertyDetail?.name || ""} className="object-cover rounded-lg w-full max-w-xs md:w-60 h-40" />
         <div>
-          <h1 className="text-3xl font-bold">{propertyDetail?.name || "(Không có tên)"}</h1>
-          <p className="text-gray-600">{propertyDetail?.description || ""}</p>
+            <h1 className="text-3xl font-bold">{propertyDetail?.name || "(Không có tên)"}</h1>
+            <p className="text-gray-600">{propertyDetail?.description || ""}</p>
           <div className="flex gap-4 text-gray-500 mt-2">
             <MapPin className="w-5 h-5" /> {propertyDetail?.location?.address}{propertyDetail?.location?.district ? `, ${propertyDetail.location.district}` : ""}{propertyDetail?.location?.city ? `, ${propertyDetail.location.city}` : ""}
             <CalendarIcon className="w-5 h-5 ml-4" /> Tạo ngày: {propertyDetail?.createdAt ? formatDate(propertyDetail.createdAt) : "-"}
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              {renderStars(Math.round(data?.reviewAnalysis?.averageRating || 0))}
+              <span className="font-semibold text-lg">{(data?.reviewAnalysis?.averageRating ?? 0).toFixed(1)}</span>
+              <span className="text-sm text-gray-500">({data?.reviewAnalysis?.totalReviews ?? 0} đánh giá)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            {renderStars(Math.round(data?.reviewAnalysis?.averageRating || 0))}
-            <span className="font-semibold text-lg">{(data?.reviewAnalysis?.averageRating ?? 0).toFixed(1)}</span>
-            <span className="text-sm text-gray-500">({data?.reviewAnalysis?.totalReviews ?? 0} đánh giá)</span>
-          </div>
-        </div>
       </div>
 
       {/* Key Metrics */}
@@ -145,17 +145,17 @@ export default function PropertyDetailView() {
           <div className="text-3xl font-bold">{overview?.utilizationRate?.toFixed(1) ?? "0.0"}%</div>
           <div className="text-xs text-gray-500">Tỷ lệ sử dụng phòng</div>
         </Card>
-        <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
+          <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
           <TrendingUp className="w-8 h-8 text-primary mb-2" />
-          <div className="text-3xl font-bold">{data?.bookingPerformance?.totalBookings ?? 0}</div>
+            <div className="text-3xl font-bold">{data?.bookingPerformance?.totalBookings ?? 0}</div>
           <div className="text-xs text-gray-500">Tổng booking</div>
-        </Card>
-        <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
+          </Card>
+          <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
           <DollarSign className="w-8 h-8 text-primary mb-2" />
           <div className="text-3xl font-bold">{data?.revenueAndPricing?.totalRevenue?.toLocaleString("vi-VN") ?? 0}₫</div>
           <div className="text-xs text-gray-500">Tổng doanh thu</div>
-        </Card>
-        <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
+          </Card>
+          <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
           <UserCheck className="w-8 h-8 text-primary mb-2" />
           <div className="text-3xl font-bold">
             {customerInsights?.returningGuests ?? 0}
@@ -164,8 +164,8 @@ export default function PropertyDetailView() {
             </span>
           </div>
           <div className="text-xs text-gray-500">Khách quay lại</div>
-        </Card>
-      </div>
+          </Card>
+        </div>
 
       {/* Bảng danh sách phòng chi tiết */}
       <Card className="p-4 border-0 !border-none w-full overflow-x-auto mb-8">
@@ -284,52 +284,52 @@ export default function PropertyDetailView() {
       {/* Charts Section: Đưa biểu đồ phân bố đánh giá lên trước doanh thu theo phòng */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Biểu đồ phân bố đánh giá */}
-        <Card className="p-4 border-0 !border-none">
+          <Card className="p-4 border-0 !border-none">
           <CardHeader><CardTitle>Biểu đồ phân bố đánh giá</CardTitle></CardHeader>
-          <CardContent>
+            <CardContent>
             <BarChart width={350} height={200} data={
               data?.reviewAnalysis?.ratingDistribution
                 ? Object.entries(data.reviewAnalysis.ratingDistribution).map(([rating, count]) => ({ rating: `${rating} sao`, count: Number(count) }))
                 : []
             }>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="rating" />
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="rating" />
               <YAxis allowDecimals={false} />
               <Bar dataKey="count" fill="#fbbf24" radius={4} />
-            </BarChart>
-          </CardContent>
-        </Card>
+                </BarChart>
+            </CardContent>
+          </Card>
         {/* Biểu đồ doanh thu theo ngày */}
-        <Card className="p-4 border-0 !border-none">
+          <Card className="p-4 border-0 !border-none">
           <CardHeader><CardTitle>Biểu đồ doanh thu theo ngày</CardTitle></CardHeader>
-          <CardContent>
+            <CardContent>
             <BarChart width={350} height={200} data={Array.isArray(data?.chartData) ? data.chartData : []}>
-              <CartesianGrid vertical={false} />
+                  <CartesianGrid vertical={false} />
               <XAxis dataKey="label" />
-              <YAxis />
+                  <YAxis />
               <Bar dataKey="revenue" fill="#22c55e" radius={4} />
-            </BarChart>
-          </CardContent>
-        </Card>
-      </div>
+                </BarChart>
+            </CardContent>
+          </Card>
+        </div>
       {/* Biểu đồ doanh thu theo phòng */}
       <div className="mb-8">
         <Card className="p-4 border-0 !border-none">
           <CardHeader><CardTitle>Biểu đồ doanh thu theo phòng</CardTitle></CardHeader>
-          <CardContent>
+            <CardContent>
             <BarChart width={Math.max(900, (listings.length || 8) * 120)} height={350} data={
               data && Array.isArray((data.revenueAndPricing && (data.revenueAndPricing as unknown as { revenueByRoom?: RevenueByRoom[] }).revenueByRoom))
                 ? (data.revenueAndPricing as unknown as { revenueByRoom: RevenueByRoom[] }).revenueByRoom
                 : []
             }>
-              <CartesianGrid vertical={false} />
+                      <CartesianGrid vertical={false} />
               <XAxis dataKey="listingTitle" angle={0} interval={0} tick={{fontSize:16}} tickMargin={16} />
-              <YAxis />
+                      <YAxis />
               <Bar dataKey="revenue" fill="#38bdf8" radius={4} barSize={36} />
-            </BarChart>
-          </CardContent>
-        </Card>
-      </div>
+                  </BarChart>
+            </CardContent>
+          </Card>
+        </div>
 
       {/* Biểu đồ số booking theo ngày */}
       <div className="mb-8">
