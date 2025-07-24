@@ -44,7 +44,8 @@ interface BookingState {
   adminBookings: Booking[];
   adminTotal: number;
   adminBookingDetail: Booking | null;
-  selectedServices: any[]; // Thêm dòng này
+  selectedServices: any[];
+  bookingsByListing?: Booking[];
 }
 
 const initialState: BookingState = {
@@ -63,7 +64,8 @@ const initialState: BookingState = {
   adminBookings: [],
   adminTotal: 0,
   adminBookingDetail: null,
-  selectedServices: [], // Thêm dòng này
+  selectedServices: [],
+  bookingsByListing: [],
 };
 
 // Async thunk để tạo booking
@@ -362,6 +364,27 @@ export const deleteAdminBooking = createAsyncThunk<
   }
 );
 
+// Lấy danh sách booking của một listing cụ thể (admin)
+export const fetchBookingsByListing = createAsyncThunk<
+  Booking[],
+  { propertyId: string; listingId: string },
+  { rejectValue: string }
+>(
+  "booking/fetchBookingsByListing",
+  async ({ propertyId, listingId }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(
+        `/bookings/property/${propertyId}/listing/${listingId}`
+      );
+      return Array.isArray(res.data.data?.bookings)
+        ? res.data.data.bookings
+        : [];
+    } catch {
+      return rejectWithValue("Lỗi khi lấy danh sách booking của listing");
+    }
+  }
+);
+
 // Tạo payment cho booking
 export const createPayment = createAsyncThunk<
   { paymentUrl: string; orderId: string; amount: number; message: string },
@@ -635,6 +658,10 @@ const bookingSlice = createSlice({
         state.adminBookings = state.adminBookings.map((b) =>
           b._id === action.payload._id ? { ...b, deleted: false } : b
         );
+      })
+      // Lấy danh sách booking của một listing cụ thể
+      .addCase(fetchBookingsByListing.fulfilled, (state, action) => {
+        state.bookingsByListing = action.payload;
       });
   },
 });

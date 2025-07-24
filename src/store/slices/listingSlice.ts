@@ -212,6 +212,23 @@ export const fetchListingStatistics = createAsyncThunk<
   }
 );
 
+// Thunk tăng viewCount
+export const incrementViewCount = createAsyncThunk<
+  Listing,
+  string,
+  { rejectValue: string }
+>(
+  "listings/incrementViewCount",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/listings/${id}/view`);
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err));
+    }
+  }
+);
+
 // Slice
 const listingSlice = createSlice({
   name: "listings",
@@ -408,6 +425,12 @@ const listingSlice = createSlice({
         state.listingStatisticsLoading = false;
         state.listingStatisticsError =
           action.payload || "Lỗi tải thống kê listing";
+      })
+      // incrementViewCount
+      .addCase(incrementViewCount.fulfilled, (state, action) => {
+        if (action.payload && state.listing && state.listing._id === action.payload._id) {
+          state.listing = action.payload;
+        }
       });
   },
 });

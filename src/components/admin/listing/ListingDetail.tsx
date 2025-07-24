@@ -8,6 +8,7 @@ import { fetchServices } from '@/store/slices/serviceSlice';
 import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
 import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
 import { fetchVouchers } from '@/store/slices/voucherSlice';
+import { fetchBookingsByListing } from '@/store/slices/bookingSlice';
 import { Badge } from "@/components/ui/badge";
 import { Home, Users, MapPin, Tag, ShieldCheck, Info, ArrowLeft, BarChart3, DollarSign, Star, CalendarCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -43,6 +44,13 @@ export default function ListingDetail() {
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [open, setOpen] = React.useState(false);
 
+  // Đóng popover khi chọn đủ ngày
+  React.useEffect(() => {
+    if (dateRange?.from && dateRange?.to) {
+      setOpen(false);
+    }
+  }, [dateRange]);
+
   // Khi chọn ngày, log ra để BE tích hợp API sau
   React.useEffect(() => {
     if (dateRange?.from && dateRange?.to) {
@@ -55,6 +63,7 @@ export default function ListingDetail() {
   const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
   const houseRules = useAppSelector((state) => state.houseRule.houseRules);
   const vouchers = useAppSelector((state) => state.voucher.vouchers);
+  const bookings = useAppSelector(state => state.booking.bookingsByListing) ?? [];
 
   useEffect(() => {
     if (id) {
@@ -83,6 +92,19 @@ export default function ListingDetail() {
     }
   }, [id, dispatch]);
 
+  useEffect(() => {
+    if (listing && listing.propertyId && listing._id) {
+      const propertyId = typeof listing.propertyId === 'object' ? listing.propertyId._id : listing.propertyId;
+      dispatch(fetchBookingsByListing({ propertyId, listingId: listing._id }));
+    }
+  }, [listing, dispatch]);
+
+  useEffect(() => {
+    if (id) {
+      fetch(`/api/v1/listings/${id}/view`, { method: "GET" });
+    }
+  }, [id]);
+
   if (loading) return <div className="p-8 text-center">Đang tải...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!listing) return <div className="p-8 text-center">Không tìm thấy listing</div>;
@@ -102,6 +124,32 @@ export default function ListingDetail() {
   const isDateRangeSelected = dateRange?.from && dateRange?.to;
   const now = new Date();
   const currentMonthYear = `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+  // Hàm chuyển trạng thái booking sang tiếng Việt
+  const getBookingStatusVN = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Chờ xác nhận';
+      case 'confirmed': return 'Đã xác nhận';
+      case 'cancelled': return 'Đã huỷ';
+      case 'completed': return 'Hoàn thành';
+      case 'paid': return 'Đã thanh toán';
+      case 'rejected': return 'Từ chối';
+      default: return status;
+    }
+  };
+
+  // Hàm lấy class màu theo trạng thái booking
+  const getBookingStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+      case 'confirmed': return 'bg-green-100 text-green-800 border border-green-300';
+      case 'cancelled': return 'bg-red-100 text-red-800 border border-red-300';
+      case 'completed': return 'bg-blue-100 text-blue-800 border border-blue-300';
+      case 'paid': return 'bg-teal-100 text-teal-800 border border-teal-300';
+      case 'rejected': return 'bg-gray-200 text-gray-700 border border-gray-300';
+      default: return 'bg-gray-100 text-gray-700 border border-gray-200';
+    }
+  };
 
   return (
     <div className="min-h-screen  p-4 md:p-6 lg:p-8">
@@ -143,6 +191,13 @@ export default function ListingDetail() {
                 }}
                 // Nếu Calendar hỗ trợ prop này, sẽ override style ngày được chọn
               />
+              {dateRange?.from || dateRange?.to ? (
+                <div className="flex justify-end px-4 pb-2 pt-1">
+                  <Button variant="ghost" size="sm" onClick={() => setDateRange(undefined)}>
+                    Xóa ngày
+                  </Button>
+                </div>
+              ) : null}
             </PopoverContent>
           </Popover>
         </div>
@@ -276,11 +331,6 @@ export default function ListingDetail() {
               <span className="text-2xl font-bold">{statistics.businessPerformance.totalBookings}</span>
             </div>
             <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
-              <span className="text-sm text-gray-500 flex items-center gap-2"><Users className="w-4 h-4 text-green-400" /> Tỉ lệ lấp đầy</span>
-              <span className="text-2xl font-bold">{statistics.businessPerformance.occupancyRate}%</span>
-              <Progress value={statistics.businessPerformance.occupancyRate} className="mt-2" />
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
               <span className="text-sm text-gray-500 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-yellow-400" />
                 {isDateRangeSelected
@@ -295,23 +345,12 @@ export default function ListingDetail() {
               <Progress value={statistics.businessPerformance.cancellationRate} className="mt-2 bg-red-100" />
             </div>
             <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
-              <span className="text-sm text-gray-500 flex items-center gap-2"><Users className="w-4 h-4 text-blue-400" /> Khách quay lại</span>
-              <span className="text-2xl font-bold">{statistics.businessPerformance.returningGuests}</span>
-              {statistics.businessPerformance.returningGuests <= 100 && statistics.businessPerformance.returningGuests >= 0 && (
-                <Progress value={statistics.businessPerformance.returningGuests} className="mt-2 bg-blue-100" />
-              )}
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
               <span className="text-sm text-gray-500 flex items-center gap-2"><Star className="w-4 h-4 text-yellow-400" /> Điểm trung bình</span>
               <span className="text-2xl font-bold">{statistics.reviews.averageRating}</span>
             </div>
             <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
               <span className="text-sm text-gray-500 flex items-center gap-2"><CalendarCheck className="w-4 h-4 text-purple-400" /> Tổng đánh giá</span>
               <span className="text-2xl font-bold">{statistics.reviews.totalReviews}</span>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2 col-span-2 lg:col-span-1">
-              <span className="text-sm text-gray-500 flex items-center gap-2"><Info className="w-4 h-4 text-gray-400" /> Bình luận gần nhất</span>
-              <span className="text-base text-gray-700 italic">{statistics.reviews.recentComment}</span>
             </div>
             <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
               <span className="text-sm text-gray-500 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-blue-400" /> Lượt xem</span>
@@ -325,34 +364,6 @@ export default function ListingDetail() {
               <span className="text-sm text-gray-500 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-400" /> Tổng tiền giảm giá</span>
               <span className="text-2xl font-bold">{statistics.voucherImpact.totalDiscountAmount?.toLocaleString()}₫</span>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
-              <span className="text-sm text-gray-500 flex items-center gap-2"><Tag className="w-4 h-4 text-blue-400" /> Voucher phổ biến nhất</span>
-              <span className="text-base text-gray-700">{statistics.voucherImpact.mostPopularVoucher}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Biểu đồ doanh thu */}
-        {statistics?.chartData && statistics.chartData.length > 0 && (
-          <div className="bg-white rounded-xl shadow p-6 mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xl font-semibold">Biểu đồ doanh thu</span>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={statistics.chartData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" />
-                <YAxis tickFormatter={(value) => value.toLocaleString()} />
-                <Tooltip formatter={(value) => `${Number(value).toLocaleString()}₫`} />
-                <Area type="monotone" dataKey="revenue" stroke="#38bdf8" fill="url(#colorRevenue)" />
-              </AreaChart>
-            </ResponsiveContainer>
           </div>
         )}
 
@@ -369,9 +380,9 @@ export default function ListingDetail() {
                 <thead>
                   <tr className="border-b">
                     <th className="py-2 px-2">Khách hàng</th>
-                    <th className="py-2 px-2">Đánh giá</th>
                     <th className="py-2 px-2">Bình luận</th>
                     <th className="py-2 px-2">Ngày</th>
+                   
                   </tr>
                 </thead>
                 <tbody>
@@ -396,6 +407,69 @@ export default function ListingDetail() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Bảng bookings của phòng */}
+        {Array.isArray(bookings) && bookings.length > 0 && (
+          <div className="bg-white rounded-xl shadow p-6 mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl font-semibold">Danh sách booking của phòng này</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 px-2">Khách hàng</th>
+                    <th className="py-2 px-2">Check-in</th>
+                    <th className="py-2 px-2">Check-out</th>
+                    <th className="py-2 px-2">Số khách</th>
+                    <th className="py-2 px-2">Tổng tiền</th>
+                    <th className="py-2 px-2">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map((b) => (
+                    <tr key={b._id} className="border-b last:border-0">
+                      <td className="py-2 px-2 font-semibold">{typeof b.guest_name === 'string' && b.guest_name ? b.guest_name : 'Ẩn danh'}</td>
+                      <td className="py-2 px-2">{b.checkInDate ? new Date(b.checkInDate).toLocaleDateString('vi-VN') : '-'}</td>
+                      <td className="py-2 px-2">{b.check_out_date ? new Date(b.check_out_date).toLocaleDateString('vi-VN') : '-'}</td>
+                      <td className="py-2 px-2">{b.guests}</td>
+                      <td className="py-2 px-2">{b.final_amount?.toLocaleString()}₫</td>
+                      <td className="py-2 px-2">
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getBookingStatusColor(b.status)}`}>
+                          {getBookingStatusVN(b.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Biểu đồ doanh thu (đặt ở cuối) */}
+        {statistics?.chartData && statistics.chartData.length > 0 && (
+          <div className="bg-white rounded-xl shadow p-6 mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl font-semibold">Biểu đồ doanh thu</span>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={statistics.chartData}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" />
+                <YAxis tickFormatter={(value) => value.toLocaleString()} />
+                <Tooltip formatter={(value) => `${Number(value).toLocaleString()}₫`} />
+                <Area type="monotone" dataKey="revenue" stroke="#38bdf8" fill="url(#colorRevenue)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         )}
       </div>
