@@ -40,6 +40,7 @@ export default function PaymentSuccessPage() {
     // Nếu có lỗi, gọi API để cập nhật trạng thái thất bại
     if (errorMessage) {
       // Gọi API để cập nhật trạng thái
+      console.log("[FE] Gọi return API với lỗi:", errorMessage, params);
       api
         .get("/bookings/vnpay/return", { params })
         .catch(() => {
@@ -58,9 +59,11 @@ export default function PaymentSuccessPage() {
 
     // Nếu response code là "00", gọi API xác nhận thanh toán
     setLoading(true);
+    console.log("[FE] Gọi return API xác nhận thanh toán:", params);
     api
       .get("/bookings/vnpay/return", { params })
       .then((response) => {
+        console.log("[FE] Kết quả trả về từ BE:", response.data);
         if (!response.data.success) {
           throw new Error(
             response.data.message || "Xác nhận thanh toán thất bại"
