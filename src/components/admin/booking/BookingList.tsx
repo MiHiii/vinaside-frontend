@@ -3,13 +3,13 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/hooks/useRedux";
 import {
   fetchAdminBookings,
-  updateAdminBookingStatus,
+  deleteAdminBooking,
+  completeAdminBooking,
 } from "@/store/slices/bookingSlice";
 import { RootState } from "@/store";
 import BookingFilter from "./BookingFilter";
 import type { Booking } from "@/types/booking.interface";
 import { Link } from "react-router-dom";
-import { BookingStatus } from "@/types/enum";
 import {
   Table,
   TableHeader,
@@ -30,6 +30,8 @@ type BookingWithDeleted = Booking & {
   nights?: number;
   paymentMethod?: string;
   payment_method?: string;
+  cancelled_at?: string;
+  refund_amount?: number;
 };
 
 const BookingList: React.FC = () => {
@@ -53,6 +55,16 @@ const BookingList: React.FC = () => {
   const handleFilterChange = (newFilters: Record<string, unknown>) => {
     setFilters(newFilters);
     setPage(1);
+  };
+
+  const handleDeleteBooking = async (propertyId: string, id: string) => {
+    await dispatch(deleteAdminBooking({ propertyId, id }));
+    dispatch(fetchAdminBookings({ ...filters, page }));
+  };
+
+  const handleCompleteBooking = async (propertyId: string, id: string) => {
+    await dispatch(completeAdminBooking({ propertyId, id }));
+    dispatch(fetchAdminBookings({ ...filters, page }));
   };
 
   if (loading) return <p>Đang tải...</p>;
@@ -87,15 +99,25 @@ const BookingList: React.FC = () => {
     </svg>
   );
 
-  // Add type guard for _id
-  function hasId(obj: unknown): obj is { _id: string } {
-    return (
-      !!obj &&
-      typeof obj === "object" &&
-      "_id" in obj &&
-      typeof (obj as { _id: unknown })._id === "string"
-    );
-  }
+  // Tách booking đã hủy chờ hoàn tiền ra khỏi danh sách chính
+  const cancelledPendingRefundBookings = Array.isArray(adminBookings)
+    ? adminBookings.filter(
+        (b) =>
+          b.status === "cancelled" &&
+          b.payment_status !== "refunded" &&
+          b.paymentStatus !== "refunded"
+      )
+    : [];
+  const mainBookings = Array.isArray(adminBookings)
+    ? adminBookings.filter(
+        (b) =>
+          !(
+            b.status === "cancelled" &&
+            b.payment_status !== "refunded" &&
+            b.paymentStatus !== "refunded"
+          )
+      )
+    : [];
 
   return (
     <div>
@@ -117,17 +139,16 @@ const BookingList: React.FC = () => {
               <TableHead className="text-center">Payment Status</TableHead>
               <TableHead className="text-center">Payment Method</TableHead>
               <TableHead className="text-center">Total Amount</TableHead>
-              <TableHead className="text-center">Created At</TableHead>
-              <TableHead className="text-center">Updated At</TableHead>
+
               <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Array.isArray(adminBookings) && adminBookings.length > 0 ? (
-              adminBookings.map((b: BookingWithDeleted, idx) => {
+            {mainBookings.length > 0 ? (
+              mainBookings.map((b: BookingWithDeleted, idx) => {
                 // Lấy thông tin khách
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const guestId = (b as any).guestId;
+                const guestId = (b as { guestId?: { name?: string } }).guestId;
                 let guestName = "";
                 let guestEmail = "";
                 if (typeof guestId === "object" && guestId !== null) {
@@ -138,12 +159,8 @@ const BookingList: React.FC = () => {
                 }
                 // Lấy thông tin phòng
                 let roomName = "";
-                let roomId = "";
                 if (typeof b.listingId === "object" && b.listingId !== null) {
                   roomName = b.listingId.title || "";
-                  roomId = hasId(b.listingId) ? b.listingId._id : "";
-                } else if (typeof b.listingId === "string") {
-                  roomId = b.listingId;
                 }
                 // Lấy tên property
                 let propertyName = "";
@@ -180,7 +197,6 @@ const BookingList: React.FC = () => {
                     <TableCell className="text-center">
                       {roomName}
                       <br />
-                      <span className="text-xs text-gray-400">{roomId}</span>
                     </TableCell>
                     <TableCell className="text-center">
                       {propertyName}
@@ -238,16 +254,7 @@ const BookingList: React.FC = () => {
                         b.total_price?.toLocaleString() ||
                         ""}
                     </TableCell>
-                    <TableCell className="text-center">
-                      {b.createdAt
-                        ? new Date(b.createdAt).toLocaleDateString()
-                        : ""}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {b.updatedAt
-                        ? new Date(b.updatedAt).toLocaleDateString()
-                        : ""}
-                    </TableCell>
+
                     <TableCell className="text-center space-x-1">
                       <Button
                         asChild
@@ -262,26 +269,16 @@ const BookingList: React.FC = () => {
                       </Button>
                       <Button
                         size="sm"
-                        variant="secondary"
-                        className="px-2 py-1 text-xs"
-                        title="Xác nhận"
-                        onClick={() =>
-                          dispatch(
-                            updateAdminBookingStatus({
-                              propertyId: b.propertyId,
-                              id: b._id,
-                              data: { status: BookingStatus.CONFIRMED },
-                            })
-                          )
-                        }
-                      >
-                        ✅
-                      </Button>
-                      <Button
-                        size="sm"
                         variant="destructive"
                         className="px-2 py-1 text-xs"
                         title="Hủy đặt chỗ"
+                        onClick={() => handleDeleteBooking(b.propertyId, b._id)}
+                        style={{
+                          display:
+                            b.status !== "cancelled" && b.status !== "completed"
+                              ? undefined
+                              : "none",
+                        }}
                       >
                         ❌
                       </Button>
@@ -289,7 +286,39 @@ const BookingList: React.FC = () => {
                         size="sm"
                         variant="outline"
                         className="px-2 py-1 text-xs"
+                        title="Xác nhận hoàn thành"
+                        onClick={() =>
+                          handleCompleteBooking(b.propertyId, b._id)
+                        }
+                        style={{
+                          display:
+                            b.status !== "completed" && b.status !== "cancelled"
+                              ? undefined
+                              : "none",
+                        }}
+                      >
+                        🏁
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="px-2 py-1 text-xs"
                         title="Hoàn tiền"
+                        disabled={
+                          !(
+                            b.status === "cancelled" &&
+                            b.payment_status !== "refunded" &&
+                            b.paymentStatus !== "refunded"
+                          )
+                        }
+                        style={{
+                          display:
+                            b.status === "cancelled" &&
+                            b.payment_status !== "refunded" &&
+                            b.paymentStatus !== "refunded"
+                              ? undefined
+                              : "none",
+                        }}
                       >
                         💵
                       </Button>
@@ -326,6 +355,91 @@ const BookingList: React.FC = () => {
           Trang sau
         </Button>
       </div>
+
+      {/* Bảng: Những booking đã hủy chờ hoàn tiền */}
+      <CancelledPendingRefundTable bookings={cancelledPendingRefundBookings} />
+    </div>
+  );
+};
+
+// Component bảng các booking đã hủy chờ hoàn tiền
+const CancelledPendingRefundTable: React.FC<{
+  bookings: BookingWithDeleted[];
+}> = ({ bookings }) => {
+  return (
+    <div className="rounded-xl border border-red-200 bg-white text-gray-900 shadow-lg overflow-x-auto mt-10">
+      <h2 className="text-lg font-bold text-red-600 text-center py-3">
+        Danh sách booking đã hủy chờ hoàn tiền
+      </h2>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-red-100 sticky top-0 z-10 text-base">
+            <TableHead className="text-center">STT</TableHead>
+            <TableHead className="text-center">Booking ID</TableHead>
+            <TableHead className="text-center">User</TableHead>
+            <TableHead className="text-center">Room</TableHead>
+            <TableHead className="text-center">Property</TableHead>
+            <TableHead className="text-center">Hoàn tiền</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {bookings.length > 0 ? (
+            bookings.map((b, idx) => {
+              // Lấy thông tin khách
+              const guestId = (b as { guestId?: { name?: string } }).guestId;
+              let guestName = "";
+              if (typeof guestId === "object" && guestId !== null) {
+                guestName = guestId.name || "";
+              } else if (typeof b.guest_name === "string") {
+                guestName = b.guest_name;
+              }
+              // Lấy thông tin phòng
+              let roomName = "";
+              if (typeof b.listingId === "object" && b.listingId !== null) {
+                roomName = b.listingId.title || "";
+              }
+              // Lấy tên property
+              let propertyName = "";
+              if (
+                typeof b.propertyId === "object" &&
+                b.propertyId !== null &&
+                "name" in b.propertyId
+              ) {
+                propertyName = (b.propertyId as { name?: string }).name || "";
+              } else if (typeof b.propertyId === "string") {
+                propertyName = b.propertyId;
+              }
+              return (
+                <TableRow key={b._id}>
+                  <TableCell className="text-center">{idx + 1}</TableCell>
+                  <TableCell className="text-center font-mono text-xs">
+                    {b._id}
+                  </TableCell>
+                  <TableCell className="text-center">{guestName}</TableCell>
+                  <TableCell className="text-center">{roomName}</TableCell>
+                  <TableCell className="text-center">{propertyName}</TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="px-2 py-1 text-xs"
+                      title="Hoàn tiền"
+                    >
+                      💵
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          ) : (
+            <TableRow>
+              <TableCell colSpan={8} className="text-center text-gray-400">
+                Không có booking nào chờ hoàn tiền
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 };
