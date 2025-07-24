@@ -29,7 +29,7 @@ interface BookingSummaryProps {
   }) => void;
   selectedServiceTotal: number;
   selectedVoucher?: Voucher | null;
-  selectedServices: Array<{
+  selectedServices?: Array<{
     service_id: string;
     service_name: string;
     service_price: number;
@@ -49,7 +49,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   onSaveBookingInfo,
   selectedServiceTotal,
   selectedVoucher,
-  selectedServices,
+  selectedServices = [],
 }) => {
   const [open, setOpen] = useState(false);
   const [showPriceDetail, setShowPriceDetail] = useState(false);
@@ -94,7 +94,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         // Đổi tên trường:
         selected_services: selectedServices,
       };
-      console.log('[FE] bookingData gửi lên backend:', bookingData);
+      console.log("[FE] bookingData gửi lên backend:", bookingData);
 
       const result = await dispatch(createBooking(bookingData)).unwrap();
 
