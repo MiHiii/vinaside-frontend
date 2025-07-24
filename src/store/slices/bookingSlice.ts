@@ -209,8 +209,8 @@ export const fetchBookingStatisticsFinancial = createAsyncThunk<
   "booking/fetchBookingStatisticsFinancial",
   async (params, { rejectWithValue }) => {
     try {
-      const res = await api.get("/bookings/statistics/financial", {
-        params,
+      const res = await api.get("/bookings/statistics/detailed", {
+        params: { ...(params || {}), type: "financial" },
       });
       return res.data.data;
     } catch (err: unknown) {
@@ -234,8 +234,8 @@ export const fetchBookingStatisticsCustomers = createAsyncThunk<
   "booking/fetchBookingStatisticsCustomers",
   async (params, { rejectWithValue }) => {
     try {
-      const res = await api.get("/bookings/statistics/customers", {
-        params,
+      const res = await api.get("/bookings/statistics/detailed", {
+        params: { ...(params || {}), type: "customers" },
       });
       return res.data.data;
     } catch (err: unknown) {

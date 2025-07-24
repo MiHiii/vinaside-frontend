@@ -1,4 +1,106 @@
 
+import React, { useEffect, useMemo } from "react";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import {
+  fetchBookingStatisticsOverview,
+  fetchBookingStatisticsFinancial,
+  fetchBookingStatisticsCustomers,
+} from "@/store/slices/bookingSlice";
+import BookingCharts from "./BookingCharts";
+
+
+
+
+// Helper to safely extract revenueByMonth
+function getRevenueByMonth(statisticsFinancial: unknown): { month: string; revenue: number }[] {
+  if (
+    statisticsFinancial &&
+    typeof statisticsFinancial === 'object' &&
+    'financial' in statisticsFinancial &&
+    statisticsFinancial.financial &&
+    typeof statisticsFinancial.financial === 'object' &&
+    Array.isArray((statisticsFinancial.financial as unknown as { revenueByMonth?: unknown }).revenueByMonth)
+  ) {
+    return (statisticsFinancial.financial as { revenueByMonth: { month: string; revenue: number }[] }).revenueByMonth;
+  }
+  return [];
+}
+
+export default function BookingStatisticsAdmin() {
+  const dispatch = useAppDispatch();
+  const statisticsOverview = useAppSelector(state => state.booking.statisticsOverview) || {};
+  const statisticsFinancial = useAppSelector(state => state.booking.statisticsFinancial) || {};
+
+
+
+
+  useEffect(() => {
+    const params: { startDate?: string; endDate?: string } = {};
+    
+    dispatch(fetchBookingStatisticsOverview(params));
+    dispatch(fetchBookingStatisticsFinancial(params));
+    dispatch(fetchBookingStatisticsCustomers(params));
+  }, [dispatch]);
+
+  // PieChart trạng thái booking
+  const statusData = useMemo(() => {
+    const breakdown = (statisticsOverview.statusBreakdown ?? {}) as Record<string, number>;
+    return [
+      { name: "Chờ xác nhận", value: breakdown["pending"] ?? 0 },
+      { name: "Đã xác nhận", value: breakdown["confirmed"] ?? 0 },
+      { name: "Đã hoàn thành", value: breakdown["completed"] ?? 0 },
+      { name: "Đã huỷ", value: breakdown["cancelled"] ?? 0 },
+      { name: "Bị từ chối", value: breakdown["rejected"] ?? 0 },
+    ];
+  }, [statisticsOverview]);
+
+  const bookingByMonth = useMemo(() => {
+    if (
+      statisticsFinancial &&
+      typeof statisticsFinancial === 'object' &&
+      'financial' in statisticsFinancial &&
+      statisticsFinancial.financial &&
+      typeof statisticsFinancial.financial === 'object' &&
+      Array.isArray((statisticsFinancial.financial as unknown as { revenueByMonth?: unknown }).revenueByMonth)
+    ) {
+      return ((statisticsFinancial.financial as { revenueByMonth: { month: string; bookings: number }[] }).revenueByMonth).map((item) => ({
+        month: item.month,
+        bookings: item.bookings,
+      }));
+    }
+    return [];
+  }, [statisticsFinancial]);
+
+
+ 
+
+  return (
+    <div className="space-y-8">
+      {/* Bộ lọc ngày */}
+
+
+      {/* Tổng quan booking */}
+    
+
+      {/* Thống kê khách hàng */}
+   
+
+      {/* Cột phải */}
+      <div className="flex flex-col gap-6">
+        {/* Thống kê tài chính */}
+
+        {/* Các biểu đồ booking */}
+        <BookingCharts
+          statusData={statusData}
+          revenueData={getRevenueByMonth(statisticsFinancial)}
+          bookingByMonth={Array.isArray(bookingByMonth) ? bookingByMonth : []}
+        />
+      </div>
+    </div>
+  );
+}
+
+
 // import React, { useEffect, useState, useMemo } from "react";
 // import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 // import {
@@ -542,3 +644,4 @@
 // };
 
 // export default BookingStatisticsAdmin;
+
