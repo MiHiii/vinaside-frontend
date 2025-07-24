@@ -7,6 +7,9 @@ import BookingSummary from "@/components/payment/BookingSummary";
 import VoucherListForUser from "@/components/payment/VoucherListForUser";
 import { IListing } from "@/types/listing";
 import { Voucher } from "@/types/voucher";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function PaymentLayout() {
   const [searchParams] = useSearchParams();
@@ -14,6 +17,9 @@ export default function PaymentLayout() {
 
   // Sử dụng listing từ listingSlice thay vì bookingSlice
   const { listing, loading } = useAppSelector((state) => state.listings);
+  const selectedServices = useAppSelector(
+    (state) => state.booking.selectedServices
+  );
 
   // State động cho ngày, số đêm, tổng tiền
   const [tripStart, setTripStart] = useState(
@@ -49,11 +55,8 @@ export default function PaymentLayout() {
       })
     : [];
 
-  const selectedServiceTotal = Number(
-    searchParams.get("selectedServiceTotal") || 0
-  );
-
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
+  const [paymentType, setPaymentType] = useState<"full" | "deposit">("full");
 
   useEffect(() => {
     if (listingId) {
@@ -88,7 +91,18 @@ export default function PaymentLayout() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Đang tải thông tin...</div>
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+              <Skeleton className="h-16 w-full mb-6 rounded-xl" />
+              <Skeleton className="h-40 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full mt-6 rounded-xl" />
+            </div>
+            <div className="lg:pl-8">
+              <Skeleton className="h-[500px] w-full rounded-xl" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -100,13 +114,64 @@ export default function PaymentLayout() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div>
             {/* Voucher phía trên form thanh toán */}
-            <VoucherListForUser
-              onVoucherSelect={setSelectedVoucher}
-              totalAmount={totalPrice + selectedServiceTotal}
-            />
+            <div
+              className={
+                paymentType === "deposit"
+                  ? "opacity-50 pointer-events-none"
+                  : ""
+              }
+            >
+              <VoucherListForUser
+                onVoucherSelect={setSelectedVoucher}
+                totalAmount={
+                  totalPrice +
+                  selectedServices.reduce((sum, s) => sum + s.total_price, 0)
+                }
+              />
+              {/* Hiển thị danh sách dịch vụ đã chọn dưới voucher */}
+              <Card className="border-none shadow-none rounded-xl bg-white">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-base font-semibold text-gray-800">
+                    Dịch vụ kèm theo đã chọn
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 pt-4">
+                  {selectedServices.length === 0 ? (
+                    <div className="text-gray-500 text-sm">
+                      Bạn chưa chọn dịch vụ kèm theo nào.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-gray-100">
+                      {selectedServices.map((s) => (
+                        <li
+                          key={s.service_id}
+                          className="py-2 flex justify-between items-center"
+                        >
+                          <div>
+                            <span className="font-medium text-sm">
+                              {s.service_name}
+                            </span>
+                            <span className="ml-2 text-gray-500 text-xs">
+                              x{s.quantity}
+                            </span>
+                          </div>
+                          <div className="text-pink-600 font-semibold text-sm">
+                            ₫
+                            {(
+                              s.total_price || s.service_price * s.quantity
+                            ).toLocaleString()}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
             <PaymentForm />
           </div>
           <div className="lg:pl-8">
+            {/* BookingSummary */}
             {listing && propertyId ? (
               <BookingSummary
                 listing={listing as IListing}
@@ -119,8 +184,14 @@ export default function PaymentLayout() {
                 propertyId={propertyId}
                 bookedDates={bookedDates}
                 onSaveBookingInfo={handleSaveBookingInfo}
-                selectedServiceTotal={selectedServiceTotal}
+                selectedServices={selectedServices}
+                selectedServiceTotal={selectedServices.reduce(
+                  (sum, s) => sum + s.total_price,
+                  0
+                )}
                 selectedVoucher={selectedVoucher}
+                paymentType={paymentType}
+                setPaymentType={setPaymentType}
               />
             ) : (
               <p>Đang tải thông tin đặt chỗ...</p>

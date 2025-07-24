@@ -11,12 +11,25 @@ interface RoomInfoProps {
   listing: IListing;
   amenitiesList: Amenity[];
   services: Service[];
-  selectedServiceIds: string[];
-  setSelectedServiceIds: (ids: string[]) => void;
+  selectedServices: {
+    service_id: string;
+    service_name: string;
+    service_price: number;
+    quantity: number;
+    total_price: number;
+  }[];
+  setSelectedServices: (services: any[]) => void;
   safetyFeatures: SafetyFeature[];
 }
 
-const RoomInfo: React.FC<RoomInfoProps> = ({ listing, amenitiesList, services, selectedServiceIds, setSelectedServiceIds, safetyFeatures }) => {
+const RoomInfo: React.FC<RoomInfoProps> = ({
+  listing,
+  amenitiesList,
+  services,
+  selectedServices,
+  setSelectedServices,
+  safetyFeatures,
+}) => {
   return (
     <>
       <div className="flex flex-col lg:flex-row gap-8">
@@ -26,8 +39,8 @@ const RoomInfo: React.FC<RoomInfoProps> = ({ listing, amenitiesList, services, s
             listing={listing}
             amenitiesList={amenitiesList}
             services={services}
-            selectedServiceIds={selectedServiceIds}
-            setSelectedServiceIds={setSelectedServiceIds}
+            selectedServices={selectedServices}
+            setSelectedServices={setSelectedServices}
             safetyFeatures={safetyFeatures}
           />
         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { voucherApi } from "@/services/voucherApi";
 import { Voucher } from "@/types/voucher";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Props {
   onVoucherSelect?: (voucher: Voucher | null) => void;
@@ -66,7 +67,24 @@ const VoucherListForUser: React.FC<Props> = ({
       .catch(() => setApplyError("Không tìm thấy voucher với mã này"));
   };
 
-  if (loading) return <div>Đang tải voucher...</div>;
+  if (loading)
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="bg-white rounded-lg shadow p-4 flex items-center gap-4"
+          >
+            <Skeleton className="h-12 w-24 rounded" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-1/2 rounded" />
+              <Skeleton className="h-3 w-1/3 rounded" />
+            </div>
+            <Skeleton className="h-6 w-6 rounded-full" />
+          </div>
+        ))}
+      </div>
+    );
   if (error) return <div className="text-red-500">{error}</div>;
 
   if (disabled) {
@@ -124,14 +142,27 @@ const VoucherListForUser: React.FC<Props> = ({
           const isExpired = new Date(voucher.expiration_date) < new Date();
           const notEnough =
             voucher.min_order_value && totalAmount < voucher.min_order_value;
+          const isUsedUp =
+            typeof voucher.userUsageCount === "number" &&
+            typeof voucher.max_uses_per_user === "number" &&
+            voucher.userUsageCount >= voucher.max_uses_per_user;
+          const isInactive = !voucher.is_active;
+          const isDisabled = !!(
+            isExpired ||
+            isInactive ||
+            notEnough ||
+            isUsedUp
+          );
           return (
             <div
               key={voucher._id}
-              className={`flex border-2 rounded-lg p-3 items-center gap-4 relative shadow-sm ${
+              className={`flex border-2 rounded-lg p-3 items-center gap-4 relative shadow-sm transition ${
                 isSelected
                   ? "border-pink-500 bg-pink-50"
                   : "border-gray-200 bg-white"
-              } ${notEnough ? "opacity-50 pointer-events-none" : ""}`}
+              } ${
+                isDisabled ? "opacity-50 pointer-events-none text-gray-400" : ""
+              }`}
             >
               <div className="flex flex-col items-center justify-center min-w-[70px]">
                 <div className="bg-pink-400 text-white font-bold text-xs px-2 py-1 rounded mb-1">
@@ -170,6 +201,11 @@ const VoucherListForUser: React.FC<Props> = ({
                     Ngừng hoạt động
                   </div>
                 )}
+                {isUsedUp && (
+                  <div className="text-xs text-orange-500 font-semibold">
+                    Đã dùng hết lượt
+                  </div>
+                )}
               </div>
               <input
                 type="radio"
@@ -177,7 +213,7 @@ const VoucherListForUser: React.FC<Props> = ({
                 className="w-5 h-5 accent-pink-500"
                 checked={isSelected}
                 onChange={() => setSelectedVoucherId(voucher._id)}
-                disabled={isExpired || !voucher.is_active || !!notEnough}
+                disabled={isDisabled}
               />
               {notEnough && (
                 <div className="text-xs text-red-500 font-semibold">

@@ -27,9 +27,10 @@ type BookingWithDeleted = Booking & {
   deleted?: boolean;
   payment_status?: string;
   paymentStatus?: string;
+  nights?: number;
+  paymentMethod?: string;
+  payment_method?: string;
 };
-
-type PropertyRef = { _id: string; name?: string } | string;
 
 const BookingList: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -62,64 +63,154 @@ const BookingList: React.FC = () => {
       </p>
     );
 
+  // Thêm icon VNPAY SVG inline
+  const VNPayIcon = () => (
+    <svg
+      width="24"
+      height="12"
+      viewBox="0 0 48 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="inline align-middle mr-1"
+    >
+      <rect width="48" height="24" rx="4" fill="#0060AF" />
+      <text
+        x="24"
+        y="16"
+        textAnchor="middle"
+        fontSize="12"
+        fill="white"
+        fontWeight="bold"
+      >
+        VNPAY
+      </text>
+    </svg>
+  );
+
+  // Add type guard for _id
+  function hasId(obj: unknown): obj is { _id: string } {
+    return (
+      !!obj &&
+      typeof obj === "object" &&
+      "_id" in obj &&
+      typeof (obj as { _id: unknown })._id === "string"
+    );
+  }
+
   return (
     <div>
       <BookingFilter onFilterChange={handleFilterChange} />
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-x-auto">
+      <div className="rounded-xl border border-gray-200 bg-white text-gray-900 shadow-lg overflow-x-auto mt-6">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted sticky top-0 z-10">
-              <TableHead>Mã</TableHead>
-              <TableHead>Tên khách</TableHead>
-              <TableHead>Property</TableHead>
-              <TableHead>Check-in</TableHead>
-              <TableHead>Check-out</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Thanh toán</TableHead>
-              <TableHead>Thao tác</TableHead>
+            <TableRow className="bg-gray-100 sticky top-0 z-10 text-base">
+              <TableHead className="text-center">STT</TableHead>
+              <TableHead className="text-center">Booking ID</TableHead>
+              <TableHead className="text-center">User</TableHead>
+              <TableHead className="text-center">Room</TableHead>
+              <TableHead className="text-center">Property</TableHead>
+              <TableHead className="text-center">Check-in</TableHead>
+              <TableHead className="text-center">Check-out</TableHead>
+              <TableHead className="text-center">Nights</TableHead>
+              <TableHead className="text-center">Guests</TableHead>
+              <TableHead className="text-center">Booking Status</TableHead>
+              <TableHead className="text-center">Payment Status</TableHead>
+              <TableHead className="text-center">Payment Method</TableHead>
+              <TableHead className="text-center">Total Amount</TableHead>
+              <TableHead className="text-center">Created At</TableHead>
+              <TableHead className="text-center">Updated At</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.isArray(adminBookings) && adminBookings.length > 0 ? (
-              adminBookings.map((b: BookingWithDeleted) => {
-                const propertyIdObj = b.propertyId as PropertyRef;
-                const propertyId =
-                  typeof propertyIdObj === "object" && propertyIdObj !== null
-                    ? propertyIdObj._id
-                    : propertyIdObj;
+              adminBookings.map((b: BookingWithDeleted, idx) => {
+                // Lấy thông tin khách
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const guestId = (b as any).guestId;
+                let guestName = "";
+                let guestEmail = "";
+                if (typeof guestId === "object" && guestId !== null) {
+                  guestName = guestId.name || "";
+                  guestEmail = guestId.email || "";
+                } else if (typeof b.guest_name === "string") {
+                  guestName = b.guest_name;
+                }
+                // Lấy thông tin phòng
+                let roomName = "";
+                let roomId = "";
+                if (typeof b.listingId === "object" && b.listingId !== null) {
+                  roomName = b.listingId.title || "";
+                  roomId = hasId(b.listingId) ? b.listingId._id : "";
+                } else if (typeof b.listingId === "string") {
+                  roomId = b.listingId;
+                }
+                // Lấy tên property
+                let propertyName = "";
+                if (
+                  typeof b.propertyId === "object" &&
+                  b.propertyId !== null &&
+                  "name" in b.propertyId
+                ) {
+                  propertyName = (b.propertyId as { name?: string }).name || "";
+                } else if (typeof b.propertyId === "string") {
+                  propertyName = b.propertyId;
+                }
+                // Payment method
+                const payment_method =
+                  b.payment_method || b.paymentMethod || "";
                 return (
                   <TableRow
                     key={b._id}
-                    className={b.isDeleted ? "opacity-50" : ""}
+                    className={`transition hover:bg-blue-50 ${
+                      b.isDeleted ? "opacity-50" : ""
+                    }`}
                   >
-                    <TableCell>{b._id}</TableCell>
-                    <TableCell>
-                      {typeof b.guest_name === "string" ? b.guest_name : ""}
+                    <TableCell className="text-center">{idx + 1}</TableCell>
+                    <TableCell className="text-center font-mono text-xs">
+                      {b._id}
                     </TableCell>
-                    <TableCell>
-                      {typeof propertyIdObj === "object" &&
-                      propertyIdObj !== null
-                        ? propertyIdObj.name || propertyIdObj._id
-                        : propertyIdObj}
+                    <TableCell className="text-center">
+                      {guestName}
+                      <br />
+                      <span className="text-xs text-gray-400">
+                        {guestEmail}
+                      </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
+                      {roomName}
+                      <br />
+                      <span className="text-xs text-gray-400">{roomId}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {propertyName}
+                    </TableCell>
+                    <TableCell className="text-center">
                       {b.checkInDate ? b.checkInDate.slice(0, 10) : ""}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       {b.check_out_date ? b.check_out_date.slice(0, 10) : ""}
                     </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusVN(b.status).color}>
+                    <TableCell className="text-center">
+                      {typeof b.nights === "number" ? b.nights : ""}
+                    </TableCell>
+                    <TableCell className="text-center">{b.guests}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        className={`px-2 py-1 rounded-lg font-semibold ${
+                          getStatusVN(b.status).color
+                        }`}
+                      >
                         {getStatusVN(b.status).label}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Badge
-                        className={
+                        className={`px-2 py-1 rounded-lg font-semibold ${
                           getPaymentStatusVN(
                             b.payment_status || b.paymentStatus || ""
                           ).color
-                        }
+                        }`}
                       >
                         {
                           getPaymentStatusVN(
@@ -128,26 +219,79 @@ const BookingList: React.FC = () => {
                         }
                       </Badge>
                     </TableCell>
-                    <TableCell className="space-x-2">
-                      <Button asChild size="sm" variant="outline">
-                        <Link to={`/admin/bookings/${propertyId}/${b._id}`}>
-                          Chi tiết
+                    <TableCell className="text-center">
+                      {payment_method === "vnpay" ? (
+                        <span className="flex items-center justify-center">
+                          <VNPayIcon />
+                          vnpay
+                        </span>
+                      ) : payment_method ? (
+                        payment_method
+                      ) : (
+                        <span className="italic text-gray-400">
+                          Chưa thanh toán
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {b.final_amount?.toLocaleString() ||
+                        b.total_price?.toLocaleString() ||
+                        ""}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {b.createdAt
+                        ? new Date(b.createdAt).toLocaleDateString()
+                        : ""}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {b.updatedAt
+                        ? new Date(b.updatedAt).toLocaleDateString()
+                        : ""}
+                    </TableCell>
+                    <TableCell className="text-center space-x-1">
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="outline"
+                        className="px-2 py-1 text-xs"
+                        title="Chi tiết"
+                      >
+                        <Link to={`/admin/bookings/${b.propertyId}/${b._id}`}>
+                          📄
                         </Link>
                       </Button>
                       <Button
                         size="sm"
                         variant="secondary"
+                        className="px-2 py-1 text-xs"
+                        title="Xác nhận"
                         onClick={() =>
                           dispatch(
                             updateAdminBookingStatus({
-                              propertyId: propertyId,
+                              propertyId: b.propertyId,
                               id: b._id,
                               data: { status: BookingStatus.CONFIRMED },
                             })
                           )
                         }
                       >
-                        Xác nhận
+                        ✅
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="px-2 py-1 text-xs"
+                        title="Hủy đặt chỗ"
+                      >
+                        ❌
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="px-2 py-1 text-xs"
+                        title="Hoàn tiền"
+                      >
+                        💵
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -155,7 +299,7 @@ const BookingList: React.FC = () => {
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">
+                <TableCell colSpan={15} className="text-center">
                   Không có booking
                 </TableCell>
               </TableRow>
@@ -163,7 +307,7 @@ const BookingList: React.FC = () => {
           </TableBody>
         </Table>
       </div>
-      <div className="flex justify-center items-center gap-4 mt-4">
+      <div className="flex justify-center items-center gap-4 mt-6">
         <Button
           disabled={page <= 1}
           onClick={() => setPage(page - 1)}
