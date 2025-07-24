@@ -111,7 +111,7 @@ export const fetchListingById = createAsyncThunk<
   { rejectValue: string }
 >("listings/fetchListingById", async (id, { rejectWithValue }) => {
   try {
-    const res = await api.get(`/listings/${id}`);
+    const res = await api.get(`/listings/${id}/view`);
     return res.data.data;
   } catch (err) {
     return rejectWithValue(getErrorMessage(err));

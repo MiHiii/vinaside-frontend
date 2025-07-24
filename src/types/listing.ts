@@ -35,9 +35,23 @@ export interface Listing {
   deletedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  is_wishlisted?: boolean;
 }
 
-export type CreateListingDto = Omit<Listing, '_id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'createdBy' | 'updatedBy' | 'deletedBy' | 'isDeleted' | 'is_verified' | 'average_rating' | 'reviews_count'>;
+export type CreateListingDto = Omit<
+  Listing,
+  | "_id"
+  | "createdAt"
+  | "updatedAt"
+  | "deletedAt"
+  | "createdBy"
+  | "updatedBy"
+  | "deletedBy"
+  | "isDeleted"
+  | "is_verified"
+  | "average_rating"
+  | "reviews_count"
+>;
 export type UpdateListingDto = Partial<CreateListingDto>;
 export interface QueryListingDto {
   search?: string;
@@ -46,9 +60,7 @@ export interface QueryListingDto {
   status?: string;
   propertyId?: string;
   isDeleted?: boolean;
-} 
-
-
+}
 
 import { CancelPolicy, ListingStatus } from "./enum";
 export interface ListingByIdResponse {
@@ -117,8 +129,6 @@ export interface IListing {
   lat?: number;
   lng?: number;
 }
-
-
 
 export interface IQueryListing {
   page?: number;

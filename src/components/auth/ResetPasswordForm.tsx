@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { useAppDispatch } from "@/hooks/useRedux";
 import { resetPassword } from "@/store/slices/authSlice";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 
 export default function ResetPasswordForm() {
@@ -26,16 +26,38 @@ export default function ResetPasswordForm() {
   const onSubmit = async (data: ResetPasswordSchema) => {
     try {
       if (!token) {
-        toast.error("Token không tồn tại hoặc không hợp lệ");
+        toast("Token không tồn tại hoặc không hợp lệ", {
+          description: undefined,
+          style: {
+            background: "#ccccc",
+            color: "#00000",
+          },
+          className: "text-base py-5 px-7 min-w-[320px]",
+          descriptionClassName: "text-black text-sm",
+        });
         return;
       }
       await dispatch(
         resetPassword({ token, newPassword: data.password })
       ).unwrap();
-      toast.success("Mật khẩu đã được đặt lại thành công!");
+      toast("Mật khẩu đã được đặt lại thành công!", {
+        description: undefined,
+        style: {
+          background: "#ccccc",
+          color: "#00000",
+        },
+        className: "text-base py-5 px-7 min-w-[320px]",
+        descriptionClassName: "text-black text-sm",
+      });
       // Optional: điều hướng về trang đăng nhập nếu muốn
-    } catch (error) {
-      toast.error((error as string) || "Đặt lại mật khẩu thất bại");
+    } catch {
+      toast("Đặt lại mật khẩu thất bại", {
+        description: undefined,
+        style: {
+          background: "#ccccc",
+          color: "#00000",
+        },
+      });
     }
   };
 

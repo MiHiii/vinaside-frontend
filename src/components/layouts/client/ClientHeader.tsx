@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { Button } from "../../ui/button";
 import {
   DropdownMenu,
@@ -9,12 +8,10 @@ import {
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
 import ClientSearch from "../../common/ClientSearch";
-import { Menu } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import ThemeToggle from "../../common/ThemeToggle";
 import Notification from "../../common/Notification";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { deleteAccount, logout } from "@/store/slices/authSlice";
-import toast from "react-hot-toast";
 import {
   FaRegHeart,
   FaUser,
@@ -26,9 +23,10 @@ import {
   FaSignInAlt,
   FaUserPlus,
 } from "react-icons/fa";
+import { logout } from "@/store/slices/authSlice";
+import { useState } from "react";
 
 export default function ClientHeader() {
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -37,21 +35,12 @@ export default function ClientHeader() {
   const user = useAppSelector((state) => state.auth.user);
   const isAdmin = user?.role === "admin";
 
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
   };
-  // //xóa tài khoản
-  // const handleDeleteAccount = async () => {
-  //   try {
-  //     await dispatch(deleteAccount()).unwrap();
-  //     dispatch(logout());
-  //     navigate("/login");
-  //     toast.success("Tài khoản đã được xóa thành công");
-  //   } catch (error) {
-  //     toast.error(error as string);
-  //   }
-  // };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm">
@@ -75,19 +64,25 @@ export default function ClientHeader() {
           </span>
         </Link>
 
-        {/* Search - hiển thị trên tất cả thiết bị */}
-        <div className="flex-1">
-          <ClientSearch />
+        {/* Search - desktop: hiện, mobile: ẩn, hiện icon */}
+        <div className="flex-1 flex justify-center">
+          <div className="hidden md:block">
+            <ClientSearch />
+          </div>
+          <button
+            className="block md:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-100"
+            onClick={() => setShowMobileSearch(true)}
+            aria-label="Tìm kiếm"
+          >
+            <Search className="h-6 w-6" />
+          </button>
         </div>
 
-        {/* Chuông thông báo */}
-        <Notification />
-
-        {/* Menu & Buttons phải */}
-        <div className="flex items-center gap-2">
+        {/* Chuông thông báo, theme, menu - desktop: hiện, mobile: gom vào menu */}
+        <div className="hidden md:flex items-center gap-2">
+          <Notification />
           <ThemeToggle />
-
-          {/* Dropdown hiển thị trên tất cả thiết bị */}
+          {/* Dropdown menu như cũ */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               {user ? (
@@ -120,19 +115,19 @@ export default function ClientHeader() {
             >
               {!token ? (
                 <>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
                       to="/register"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaUserPlus className="inline-block" />
                       Đăng ký
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
                       to="/login"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaSignInAlt className="inline-block" />
                       Đăng nhập
@@ -141,57 +136,51 @@ export default function ClientHeader() {
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium text-dark dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
-                      to="/"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      to="/wishlists"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaRegHeart className="inline-block" />
                       Danh sách yêu thích
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
                       to="/profilepage"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaUser className="inline-block" />
                       Thông tin cá nhân
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Link
                       to="/messages"
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                      className="w-full flex items-center gap-2"
                     >
                       <FaRegCommentDots className="inline-block" />
                       Tin nhắn
                     </Link>
                   </DropdownMenuItem>
-                  <div className="border-b border-gray-300 dark:border-gray-800"></div>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
-                    <Link
-                      to=""
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
-                    >
+                  <div className="border-b border-gray-300 dark:border-gray-300"></div>
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+                    <Link to="" className="w-full flex items-center gap-2">
                       <FaRegAddressCard className="inline-block" />
                       Giới thiệu chủ nhà
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
-                    <Link
-                      to=""
-                      className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
-                    >
+                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+                    <Link to="" className="w-full flex items-center gap-2">
                       <FaRegLifeRing className="inline-block" />
                       Hỗ trợ & đánh giá
                     </Link>
                   </DropdownMenuItem>
-                  <div className="border-b border-gray-300 dark:border-gray-800"></div>
+                  <div className="border-b border-gray-300 dark:border-gray-300"></div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer text-gray-700 dark:text-gray-200 flex items-center gap-2"
+                    className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer flex items-center gap-2"
                   >
                     <FaSignOutAlt className="inline-block" />
                     Đăng xuất
@@ -207,48 +196,138 @@ export default function ClientHeader() {
                       </Link>
                     </DropdownMenuItem>
                   )}
-
-                  {/* <DropdownMenuItem
-                    onClick={() => setShowDeleteModal(true)}
-                    className="font-medium hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                  >
-                    Xóa tài khoản
-                  </DropdownMenuItem>
-
-                  {showDeleteModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white p-6 rounded-lg max-w-md w-full">
-                        <h3 className="text-xl font-bold mb-4">
-                          Xác nhận xóa tài khoản
-                        </h3>
-                        <p className="mb-4">
-                          Bạn có chắc chắn muốn xóa tài khoản? Hành động này
-                          không thể hoàn tác.
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setShowDeleteModal(false)}
-                            className="bg-gray-300 px-4 py-2 rounded-lg"
-                          >
-                            Hủy
-                          </button>
-                          <button
-                            onClick={handleDeleteAccount}
-                            className="bg-red-500 text-white px-4 py-2 rounded-lg"
-                          >
-                            Xóa tài khoản
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )} */}
                 </>
               )}
               <DropdownMenuSeparator />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {/* Mobile: Notification luôn hiện ngoài, các nút khác vào menu */}
+        <div className="flex md:hidden items-center gap-2">
+          <Notification />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              {user ? (
+                <div className="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer hover:opacity-60 transition">
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt="Avatar"
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="w-full h-full flex items-center justify-center rounded-full bg-black text-white text-lg font-bold">
+                      {user?.email?.[0]?.toUpperCase() || "U"}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <Button variant="outline" className="rounded-full p-2">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={8}
+              className="z-50 mt-2 w-56 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] p-2 shadow-2xl"
+            >
+              {/* Bỏ Notification khỏi menu mobile */}
+              <DropdownMenuItem asChild>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <span>Giao diện</span>
+                </div>
+              </DropdownMenuItem>
+              {/* Các mục menu người dùng như trên, có thể tái sử dụng code */}
+              {!token ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link to="/register" className="flex items-center gap-2">
+                      <FaUserPlus /> Đăng ký
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/login" className="flex items-center gap-2">
+                      <FaSignInAlt /> Đăng nhập
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link to="/" className="flex items-center gap-2">
+                      <FaRegHeart /> Danh sách yêu thích
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profilepage" className="flex items-center gap-2">
+                      <FaUser /> Thông tin cá nhân
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/messages" className="flex items-center gap-2">
+                      <FaRegCommentDots /> Tin nhắn
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="" className="flex items-center gap-2">
+                      <FaRegAddressCard /> Giới thiệu chủ nhà
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="" className="flex items-center gap-2">
+                      <FaRegLifeRing /> Hỗ trợ & đánh giá
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="flex items-center gap-2"
+                  >
+                    <FaSignOutAlt /> Đăng xuất
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/admin"
+                        className="flex items-center gap-2 text-red-600"
+                      >
+                        <FaUserShield /> Vào trang Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
+      {/* Modal tìm kiếm trên mobile */}
+      {showMobileSearch && (
+        <div className="fixed inset-0 z-[100] bg-black/40 flex items-start justify-center pt-24">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-lg mx-auto p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold text-lg">Tìm kiếm</span>
+              <button
+                onClick={() => setShowMobileSearch(false)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-100"
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M6 18L18 6M6 6l12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <ClientSearch />
+          </div>
+        </div>
+      )}
     </header>
   );
 }

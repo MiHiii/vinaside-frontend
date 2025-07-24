@@ -11,6 +11,7 @@ import PhoneField from "./fields/PhoneField";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { register } from "@/store/slices/authSlice";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function RegisterForm() {
   const methods = useForm<RegisterSchema>({
@@ -24,10 +25,43 @@ export default function RegisterForm() {
   });
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { loading, error, verifyEmail } = useAppSelector((state) => state.auth);
+  const { loading, verifyEmail } = useAppSelector((state) => state.auth);
 
   const onSubmit = async (data: RegisterSchema) => {
-    await dispatch(register(data));
+    try {
+      const result = await dispatch(register(data));
+      if (result.meta && result.meta.requestStatus === "fulfilled") {
+        toast("Đăng ký thành công! Vui lòng kiểm tra email để xác thực.", {
+          description: undefined,
+          style: {
+            background: "#ccccc",
+            color: "#00000",
+          },
+          className: "text-base py-5 px-7 min-w-[320px]",
+          descriptionClassName: "text-black text-sm",
+        });
+      } else {
+        toast("Đăng ký thất bại. Vui lòng thử lại.", {
+          description: undefined,
+          style: {
+            background: "#ccccc",
+            color: "#00000",
+          },
+          className: "text-base py-5 px-7 min-w-[320px]",
+          descriptionClassName: "text-black text-sm",
+        });
+      }
+    } catch {
+      toast("Đăng ký thất bại. Vui lòng thử lại.", {
+        description: undefined,
+        style: {
+          background: "#ccccc",
+          color: "#00000",
+        },
+        className: "text-base py-5 px-7 min-w-[320px]",
+        descriptionClassName: "text-black text-sm",
+      });
+    }
   };
 
   useEffect(() => {
@@ -63,8 +97,7 @@ export default function RegisterForm() {
               <NameField />
               <EmailField />
               <PhoneField />
-                <PasswordField />
-                {error && <div className="text-red-500 text-sm">{error}</div>}
+              <PasswordField />
               <Button
                 type="submit"
                 className="
