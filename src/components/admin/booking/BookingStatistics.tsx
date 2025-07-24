@@ -7,8 +7,13 @@ import {
   fetchBookingStatisticsCustomers,
 } from "@/store/slices/bookingSlice";
 import BookingCharts from "./BookingCharts";
-
-
+import { Card } from "@/components/ui/card";
+// Định nghĩa lại DatePicker nội bộ (bỏ comment, đặt lại vào đầu file)
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 
 
 // Helper to safely extract revenueByMonth
@@ -26,12 +31,38 @@ function getRevenueByMonth(statisticsFinancial: unknown): { month: string; reven
   return [];
 }
 
+function DatePicker({ value, onChange, label }: { value?: string; onChange: (date: string) => void; label: React.ReactNode; }) {
+  const [open, setOpen] = React.useState(false);
+  const dateValue = value ? new Date(value) : undefined;
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="w-full justify-start text-left font-normal">
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateValue ? format(dateValue, "dd/MM/yyyy") : <span className="text-gray-400">Chọn ngày</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={dateValue}
+            onSelect={date => { setOpen(false); if (date) onChange(format(date, "yyyy-MM-dd")); }}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
 export default function BookingStatisticsAdmin() {
   const dispatch = useAppDispatch();
   const statisticsOverview = useAppSelector(state => state.booking.statisticsOverview) || {};
   const statisticsFinancial = useAppSelector(state => state.booking.statisticsFinancial) || {};
-
-
+  const [startDate, setStartDate] = React.useState<string>("");
+  const [endDate, setEndDate] = React.useState<string>("");
 
 
   useEffect(() => {
@@ -77,19 +108,16 @@ export default function BookingStatisticsAdmin() {
   return (
     <div className="space-y-8">
       {/* Bộ lọc ngày */}
+      <Card className="p-2 md:p-3 bg-white/80 border-none shadow-none">
+        <div className="flex flex-col md:flex-row md:items-end gap-2 md:gap-3">
+          <DatePicker value={startDate} onChange={setStartDate} label={<span className='text-xs md:text-sm'>Từ ngày</span>} />
+          <DatePicker value={endDate} onChange={setEndDate} label={<span className='text-xs md:text-sm'>Đến ngày</span>} />
+        </div>
+      </Card>
 
 
-      {/* Tổng quan booking */}
-    
-
-      {/* Thống kê khách hàng */}
-   
-
-      {/* Cột phải */}
       <div className="flex flex-col gap-6">
-        {/* Thống kê tài chính */}
-
-        {/* Các biểu đồ booking */}
+  
         <BookingCharts
           statusData={statusData}
           revenueData={getRevenueByMonth(statisticsFinancial)}
@@ -101,7 +129,7 @@ export default function BookingStatisticsAdmin() {
 }
 
 
-// import React, { useEffect, useState, useMemo } from "react";
+
 // import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 // import {
 //   fetchBookingStatisticsOverview,

@@ -31,8 +31,8 @@ const BookingCharts: React.FC<BookingChartsProps> = ({ statusData, revenueData, 
   return (
     <div className="flex flex-col gap-4">
       {/* Biểu đồ trạng thái booking với legend đẹp */}
-      <Card className="flex flex-col">
-        <CardHeader className="items-center pb-0 pt-3 px-3 md:px-4 md:pt-4">
+      <Card className="flex flex-col border-0 shadow">
+        <CardHeader className="items-center pb-0">
           <CardTitle>Biểu đồ trạng thái booking</CardTitle>
           <CardDescription>Thống kê trạng thái booking</CardDescription>
         </CardHeader>
@@ -97,7 +97,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({ statusData, revenueData, 
       </Card>
       <div className="flex flex-col md:flex-row gap-4">
         {/* Biểu đồ doanh thu theo tháng */}
-        <Card className="flex-1">
+        <Card className="flex-1 border-0 shadow">
           <CardHeader className="pb-0 pt-3 px-3 md:px-4 md:pt-4"><CardTitle>Biểu đồ doanh thu theo tháng</CardTitle></CardHeader>
           <CardContent className="p-3 md:p-4">
             <ResponsiveContainer width="100%" height={220}>
@@ -114,7 +114,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({ statusData, revenueData, 
           </CardContent>
         </Card>
         {/* Biểu đồ số booking theo tháng */}
-        <Card className="flex-1">
+        <Card className="flex-1 border-0 shadow">
           <CardHeader className="pb-0 pt-3 px-3 md:px-4 md:pt-4"><CardTitle>Biểu đồ số booking theo tháng</CardTitle></CardHeader>
           <CardContent className="p-3 md:p-4">
             <ResponsiveContainer width="100%" height={220}>
