@@ -85,21 +85,53 @@ export const createListing = createAsyncThunk<
   }
 });
 
+// Định nghĩa type cho params search location
+export interface ListingSearchParams extends QueryListingDto {
+  place_id?: string;
+  fuzzy_place_search?: boolean;
+  lat?: number;
+  lng?: number;
+  locationKeyword?: string;
+  city?: string;
+  district?: string;
+  address?: string;
+  radius?: number;
+  [key: string]: unknown;
+}
+
+// fetchListings
 export const fetchListings = createAsyncThunk<
   { listings: Listing[]; total: number },
-  QueryListingDto,
+  ListingSearchParams,
   { rejectValue: string }
 >("listings/fetchListings", async (params, { rejectWithValue }) => {
   try {
+    // Ưu tiên search theo lat/lng (gọi endpoint /listings/location/nearby)
+    if (params.lat && params.lng) {
+      const res = await api.get("/listings/location/nearby", { params });
+      const data = res.data.data || res.data;
+      const listings =
+        data.listings || data.data || (Array.isArray(data) ? data : []);
+      const total = data.meta?.total || data.total || listings.length;
+      return { listings, total };
+    }
+    // Nếu có place_id thì gọi /listings?place_id=...
+    if (params.place_id) {
+      if (params.fuzzy_place_search === undefined) params.fuzzy_place_search = true;
+      const res = await api.get("/listings", { params });
+      const data = res.data.data || res.data;
+      const listings =
+        data.listings || data.data || (Array.isArray(data) ? data : []);
+      const total = data.meta?.total || data.total || listings.length;
+      return { listings, total };
+    }
+    // Nếu chỉ có keyword hoặc các trường khác
     const res = await api.get("/listings", { params });
     const data = res.data.data || res.data;
     const listings =
       data.listings || data.data || (Array.isArray(data) ? data : []);
     const total = data.meta?.total || data.total || listings.length;
-    return {
-      listings,
-      total,
-    };
+    return { listings, total };
   } catch (err) {
     return rejectWithValue(getErrorMessage(err));
   }
