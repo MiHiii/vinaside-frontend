@@ -64,9 +64,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const pricePerNight = listing.price_per_night || 0;
   const taxRate = 0.08;
 
-  const selectedServiceTotal = (services ?? [])
-    .filter((s) => (selectedServiceIds ?? []).includes(s._id))
-    .reduce((sum, s) => sum + (s.default_price || 0), 0);
+  const selectedServiceTotal = (selectedServices ?? []).reduce(
+    (sum, s) => sum + (s.total_price || s.service_price * s.quantity || 0),
+    0
+  );
 
   const calculatePrice = () => {
     const base = nights * pricePerNight;
@@ -85,6 +86,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
     // Lưu selectedServices vào Redux trước khi chuyển trang
     dispatch(setSelectedServices(selectedServices));
+    // Lưu selectedServices vào localStorage để giữ lại khi reload
+    localStorage.setItem("selectedServices", JSON.stringify(selectedServices));
 
     const formattedCheckIn = format(checkIn, "yyyy-MM-dd");
     const formattedCheckOut = format(checkOut, "yyyy-MM-dd");
