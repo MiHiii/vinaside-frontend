@@ -80,6 +80,9 @@ export interface IProperty {
     district: string;
     ward: string;
   };
+  address?: string;
+  city?: string;
+  province?: string;
 }
 
 export interface IListing {
@@ -128,6 +131,10 @@ export interface IListing {
   available?: boolean;
   lat?: number;
   lng?: number;
+  address?: string;
+  city?: string;
+  province?: string;
+  location?: any;
 }
 
 export interface IQueryListing {

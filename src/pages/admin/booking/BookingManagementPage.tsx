@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-// import BookingDashboard from "@/components/admin/booking/BookingDashboard";
 import BookingStatistics from "@/components/admin/booking/BookingStatistics";
 import BookingList from "@/components/admin/booking/BookingList";
 import BookingDetail from "@/components/admin/booking/BookingDetail";
@@ -18,11 +17,12 @@ const BookingManagementPage: React.FC = () => {
           <p className="text-gray-500 text-base md:text-lg">Theo dõi, thống kê và quản lý các booking một cách trực quan, hiện đại.</p>
         </header>
 
-        <section>
-          {/* <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-center">
+        {/* Nếu muốn dùng BookingDashboard, bỏ comment dòng dưới */}
+        {/* <section>
+          <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-center">
             <BookingDashboard />
-          </div> */}
-        </section>
+          </div>
+        </section> */}
 
         <section>
           <div className="bg-white rounded-2xl shadow p-6">

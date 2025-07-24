@@ -42,11 +42,33 @@ const VoucherListForUser: React.FC<Props> = ({
       .finally(() => setLoading(false));
   }, [totalAmount]);
 
+  // Khôi phục selectedVoucherId từ localStorage khi mount
+  useEffect(() => {
+    if (!selectedVoucherId) {
+      const savedVoucher = localStorage.getItem("selectedVoucher");
+      if (savedVoucher) {
+        try {
+          const parsed = JSON.parse(savedVoucher);
+          if (parsed && parsed._id) {
+            setSelectedVoucherId(parsed._id);
+          }
+        } catch {}
+      }
+    }
+    // eslint-disable-next-line
+  }, []);
+
   useEffect(() => {
     if (onVoucherSelect) {
       const selected =
         vouchers.find((v) => v._id === selectedVoucherId) || null;
       onVoucherSelect(selected);
+      // Lưu selectedVoucher vào localStorage
+      if (selected) {
+        localStorage.setItem("selectedVoucher", JSON.stringify(selected));
+      } else {
+        localStorage.removeItem("selectedVoucher");
+      }
     }
   }, [selectedVoucherId, vouchers, onVoucherSelect]);
 

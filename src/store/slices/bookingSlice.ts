@@ -364,6 +364,54 @@ export const deleteAdminBooking = createAsyncThunk<
   }
 );
 
+export const confirmAdminBooking = createAsyncThunk<
+  Booking,
+  { propertyId: string; id: string },
+  { rejectValue: string }
+>(
+  "booking/adminConfirmBooking",
+  async ({ propertyId, id }, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(
+        `/bookings/property/${propertyId}/${id}/confirm`
+      );
+      return res.data;
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: unknown } };
+        return rejectWithValue(
+          (axiosErr.response?.data as string) || "Unknown error"
+        );
+      }
+      return rejectWithValue("Unknown error");
+    }
+  }
+);
+
+export const completeAdminBooking = createAsyncThunk<
+  Booking,
+  { propertyId: string; id: string },
+  { rejectValue: string }
+>(
+  "booking/adminCompleteBooking",
+  async ({ propertyId, id }, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(`/bookings/property/${propertyId}/${id}`, {
+        status: "completed",
+      });
+      return res.data;
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: unknown } };
+        return rejectWithValue(
+          (axiosErr.response?.data as string) || "Unknown error"
+        );
+      }
+      return rejectWithValue("Unknown error");
+    }
+  }
+);
+
 // Lấy danh sách booking của một listing cụ thể (admin)
 export const fetchBookingsByListing = createAsyncThunk<
   Booking[],
@@ -658,6 +706,36 @@ const bookingSlice = createSlice({
         state.adminBookings = state.adminBookings.map((b) =>
           b._id === action.payload._id ? { ...b, deleted: false } : b
         );
+      })
+      // ADMIN: Xác nhận booking
+      .addCase(confirmAdminBooking.fulfilled, (state, action) => {
+        state.adminBookingDetail = action.payload;
+      })
+      .addCase(confirmAdminBooking.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : typeof action.payload === "object" &&
+              action.payload &&
+              "error" in action.payload
+            ? (action.payload as { error?: string }).error ?? "Đã xảy ra lỗi"
+            : JSON.stringify(action.payload) || "Đã xảy ra lỗi";
+      })
+      // ADMIN: Hoàn thành booking
+      .addCase(completeAdminBooking.fulfilled, (state, action) => {
+        state.adminBookingDetail = action.payload;
+      })
+      .addCase(completeAdminBooking.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : typeof action.payload === "object" &&
+              action.payload &&
+              "error" in action.payload
+            ? (action.payload as { error?: string }).error ?? "Đã xảy ra lỗi"
+            : JSON.stringify(action.payload) || "Đã xảy ra lỗi";
       })
       // Lấy danh sách booking của một listing cụ thể
       .addCase(fetchBookingsByListing.fulfilled, (state, action) => {
