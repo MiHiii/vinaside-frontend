@@ -1,7 +1,12 @@
 import React from "react";
+import ClientHeader from "../layouts/client/ClientHeader";
 
 const PaymentHeader: React.FC = () => {
-  return <div className="py-6 text-center text-2xl font-bold">Thanh toán <hr /></div>;
+  return (
+    <>
+      <ClientHeader />
+    </>
+  );
 };
 
 export default PaymentHeader;
