@@ -11,21 +11,40 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+import { useDispatch } from 'react-redux';
+import type { AppDispatch } from '@/store'; // Đường dẫn tới store/index.ts hoặc store.ts
+import { fetchListings } from '@/store/slices/listingSlice';
+import type { ListingSearchParams } from '@/services/api';
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const libraries: Array<'places'> = ['places'];
 
 export default function ClientSearch() {
   const [activeSection, setActiveSection] = React.useState<string | null>(null);
   const [location, setLocation] = React.useState("");
+  const [selectedPlace, setSelectedPlace] = React.useState<google.maps.places.PlaceResult | null>(null);
+  const [autocomplete, setAutocomplete] = React.useState<google.maps.places.Autocomplete | null>(null);
   const [date, setDate] = React.useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
   });
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const [adults, setAdults] = useState(0);
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
 
   const totalGuests = adults + children;
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+
+  // Google Maps API loader
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries,
+  });
 
   const handleIncrement = (type: "adults" | "children" | "infants") => {
     if (type === "adults") setAdults((prev) => prev + 1);
@@ -39,16 +58,57 @@ export default function ClientSearch() {
     if (type === "infants") setInfants((prev) => (prev > 0 ? prev - 1 : 0));
   };
 
+  // Ngăn Popover đóng khi click vào dropdown Google Autocomplete
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.pac-container')) {
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('mousedown', handler, true);
+    return () => document.removeEventListener('mousedown', handler, true);
+  }, []);
+
+  // Xử lý khi chọn địa điểm từ Google Places
+  const onPlaceChanged = () => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace();
+      setSelectedPlace(place);
+      setLocation(place.formatted_address || place.name || "");
+      setActiveSection(null); // Đóng Popover khi chọn gợi ý
+    }
+  };
+
+  // Hàm kiểm tra input có phải lat,lng không
+  function isLatLng(str: string) {
+    const regex = /^\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*$/;
+    return regex.test(str);
+  }
+
   const handleSearch = () => {
-    // Implement search functionality
-    console.log({ location, date, guests: totalGuests, infants });
-    setActiveSection(null);
+    const params: Record<string, unknown> = {};
+    if (selectedPlace && selectedPlace.place_id) {
+      params.place_id = selectedPlace.place_id;
+      params.fuzzy_place_search = true;
+    } else if (isLatLng(location)) {
+      const [lat, lng] = location.split(',').map(Number);
+      params.lat = lat;
+      params.lng = lng;
+    } else if (location) {
+      params.locationKeyword = location;
+    }
+    if (totalGuests > 0) params.guests = totalGuests;
+    // Có thể truyền thêm date nếu cần
+    dispatch(fetchListings(params as ListingSearchParams));
+    setActiveSection(null); // Đóng Popover khi nhấn tìm kiếm
+    navigate('/search');
   };
 
   // Suggested locations
   const suggestedLocations = [
     {
-      name: "Thành phố Hồ Chí Minh, Thành phố Hồ Chí Minh",
+      name: "Thành phố Hồ Chí Minh",
       description: "Có các thắng cảnh như Chợ Bến Thành",
       icon: "🏙️",
       color: "bg-blue-100 dark:bg-blue-900",
@@ -87,90 +147,63 @@ export default function ClientSearch() {
 
   return (
     <div className="relative p-3 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] flex justify-center items-center">
-      {/* Main search bar */}
-      <div className="flex h-16 w-full max-w-[900px] items-center bg-[hsl(var(--background))] text-[hsl(var(--foreground))] rounded-full border border-gray-300 shadow-md hover:shadow-lg md:w-auto overflow-hidden">
-        {/* Location Section */}
-        <Popover
-          open={activeSection === "location"}
-          onOpenChange={(open) => setActiveSection(open ? "location" : null)}
-        >
-          <PopoverTrigger asChild>
-            <div
-              className="flex h-full w-[300px] flex-1 cursor-pointer items-center px-6 py-2 rounded-full hover:bg-muted transition-all"
-              onClick={() => setActiveSection("location")}
-            >
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Địa điểm</span>
-                <span className="text-[13px] text-muted-foreground truncate">
-                  {location || "Tìm kiếm điểm đến"}
-                </span>
-              </div>
-            </div>
-          </PopoverTrigger>
-          <PopoverContent
-            className="z-50 mt-2 w-[400px] rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] p-4 shadow-2xl"
-            align="start"
-            sideOffset={8}
-          >
-            <div className="mb-4">
-              <div className="flex items-center gap-3 rounded-full bg-muted p-3">
-                <MapPin className="h-5 w-5 text-muted-foreground" />
+      {/* Main search bar ngang hàng */}
+      <div className="flex h-16 w-full max-w-[900px] items-center bg-[hsl(var(--background))] text-[hsl(var(--foreground))] rounded-full border border-gray-300 shadow-md hover:shadow-lg md:w-auto">
+        {/* Địa điểm */}
+        <div className="flex flex-col justify-center h-full px-6 py-2 bg-transparent relative">
+          <span className="text-xs font-semibold text-foreground mb-0.5 ml-6">Địa điểm</span>
+          <div className="flex items-center">
+            <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
+            {isLoaded && (
+              <Autocomplete
+                onLoad={setAutocomplete}
+                onPlaceChanged={onPlaceChanged}
+              >
                 <input
                   type="text"
                   placeholder="Tìm kiếm điểm đến"
-                  className="w-full bg-transparent border-none p-0 outline-none"
+                  className="bg-transparent border-none outline-none text-sm text-muted-foreground p-0 m-0 w-48"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    setSelectedPlace(null);
+                    setShowSuggestions(true);
+                  }}
+                  autoComplete="off"
                 />
-              </div>
-            </div>
-            <div className="mb-2">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
-                  <span className="text-lg">📍</span>
-                </div>
-                <div>
-                  <div className="font-medium">Lân cận</div>
-                  <div className="text-sm text-muted-foreground">
-                    Tìm xung quanh bạn
+              </Autocomplete>
+            )}
+          </div>
+          {/* Gợi ý địa điểm */}
+          {showSuggestions && suggestedLocations.length > 0 && (
+            <div className="absolute left-0 top-full mt-2 min-w-[350px] bg-white rounded-xl shadow-lg z-50 border border-gray-200">
+              {suggestedLocations.map((loc, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-muted py-2 px-3 rounded-md transition"
+                  onMouseDown={() => {
+                    setLocation(loc.name);
+                    setSelectedPlace(null);
+                    setShowSuggestions(false);
+                  }}
+                >
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${loc.color}`}>
+                    <span className="text-lg">{loc.icon}</span>
+                  </div>
+                  <div>
+                    <div className="font-medium">{loc.name}</div>
+                    <div className="text-sm text-muted-foreground">{loc.description}</div>
                   </div>
                 </div>
-              </div>
-              <div className="text-sm font-medium mb-2">
-                Điểm đến được đề xuất
-              </div>
-              <div className="space-y-4">
-                {suggestedLocations.map((loc, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 cursor-pointer hover:bg-muted p-1 rounded-md"
-                    onClick={() => {
-                      setLocation(loc.name);
-                      setActiveSection(null);
-                    }}
-                  >
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${loc.color}`}
-                    >
-                      <span className="text-lg">{loc.icon}</span>
-                    </div>
-                    <div>
-                      <div className="font-medium">{loc.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {loc.description}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
-          </PopoverContent>
-        </Popover>
-
+          )}
+        </div>
         {/* Vertical border */}
         <div className="h-2/3 w-px bg-border"></div>
-
-        {/* Date Section */}
+        {/* Popover chọn ngày */}
         <Popover
           open={activeSection === "date"}
           onOpenChange={(open) => setActiveSection(open ? "date" : null)}
@@ -201,11 +234,7 @@ export default function ClientSearch() {
             </div>
           </PopoverTrigger>
           <PopoverContent
-            className="
-              z-50 mt-2 w-auto p-7 rounded-2xl border border-[hsl(var(--border))]
-              bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]
-              shadow-2xl
-            "
+            className="z-50 mt-2 w-auto p-7 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] shadow-2xl"
             align="center"
           >
             <Calendar
@@ -262,11 +291,9 @@ export default function ClientSearch() {
             />
           </PopoverContent>
         </Popover>
-
         {/* Vertical border */}
         <div className="h-2/3 w-px bg-border"></div>
-
-        {/* Guests Section */}
+        {/* Popover chọn khách + nút tìm kiếm */}
         <Popover
           open={activeSection === "guests"}
           onOpenChange={(open) => setActiveSection(open ? "guests" : null)}
@@ -288,26 +315,20 @@ export default function ClientSearch() {
               </div>
               {/* Search Button */}
               <div>
-                <Link to={"/search"} className="flex items-center">
-                  <Button
-                    className="h-12 m-2 rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/90"
-                    onClick={handleSearch}
-                  >
-                    <Search className="h-5 w-5" />
-                    <span className="ml-2 hidden md:inline-block">
-                      Tìm kiếm
-                    </span>
-                  </Button>
-                </Link>
+                <Button
+                  className="h-12 m-2 rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/90"
+                  onClick={handleSearch}
+                >
+                  <Search className="h-5 w-5" />
+                  <span className="ml-2 hidden md:inline-block">
+                    Tìm kiếm
+                  </span>
+                </Button>
               </div>
             </div>
           </PopoverTrigger>
           <PopoverContent
-            className="
-              z-50 mt-2 w-80 border rounded-2xl border-[hsl(var(--border))]
-              bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]
-              shadow-2xl
-            "
+            className="z-50 mt-2 w-80 border rounded-2xl border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] shadow-2xl"
             align="end"
           >
             <div className="space-y-4 p-1">

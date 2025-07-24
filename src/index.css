@@ -78,6 +78,12 @@
   background-color: #2563eb !important;
 }
 
+<<<<<<< Updated upstream
 .recharts-active-bar-background {
   fill: transparent !important;
+=======
+/* src/index.css hoặc src/App.css */
+.pac-container {
+  z-index: 99999 !important;
+>>>>>>> Stashed changes
 }
