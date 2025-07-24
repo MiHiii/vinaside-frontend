@@ -13,7 +13,6 @@ const BookingManagementPage: React.FC = () => {
   return (
     <div>
       <BookingDashboard />
-     
       {selectedBooking ? (
         <BookingDetail
           propertyId={selectedBooking.propertyId}

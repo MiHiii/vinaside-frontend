@@ -84,6 +84,9 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
       propertyId: filters.propertyId,
       listingId: filters.listingId,
       guestId: filters.guestId,
+      paymentStatus: filters.paymentStatus
+        ? filters.paymentStatus.toLowerCase()
+        : undefined,
       includeDeleted:
         filters?.includeDeleted === "true"
           ? true
