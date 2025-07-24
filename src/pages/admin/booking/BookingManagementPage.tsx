@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import BookingDashboard from "@/components/admin/booking/BookingDashboard";
-import BookingStatistics from "@/components/admin/booking/BookingStatistics";
+// import BookingStatistics from "@/components/admin/booking/BookingStatistics";
 import BookingList from "@/components/admin/booking/BookingList";
 import BookingDetail from "@/components/admin/booking/BookingDetail";
 
@@ -13,7 +13,7 @@ const BookingManagementPage: React.FC = () => {
   return (
     <div>
       <BookingDashboard />
-      <BookingStatistics />
+      {/* <BookingStatistics /> */}
       {selectedBooking ? (
         <BookingDetail
           propertyId={selectedBooking.propertyId}

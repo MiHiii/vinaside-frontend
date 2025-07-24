@@ -216,11 +216,15 @@ const PastTrip = () => {
     );
   });
 
+  // Sửa: coi CONFIRMED hoặc PAID đã qua ngày checkout là completed (FE logic)
   const historyBookings = bookings.filter((b) => {
     const checkOutDate = new Date(b.check_out_date);
     return (
-      // Các booking đã hoàn thành
-      (b.status === BookingStatus.COMPLETED && checkOutDate < now) ||
+      // Các booking đã hoàn thành (status completed hoặc đã checkout)
+      b.status === BookingStatus.COMPLETED ||
+      ((b.status === BookingStatus.CONFIRMED ||
+        b.payment_status === PaymentStatus.PAID) &&
+        checkOutDate < now) ||
       // Các booking đã hủy
       b.status === BookingStatus.CANCELLED ||
       // Các booking bị từ chối
@@ -228,10 +232,7 @@ const PastTrip = () => {
       // Các booking thanh toán thất bại
       b.payment_status === PaymentStatus.FAILED ||
       // Các booking đã hoàn tiền
-      b.payment_status === PaymentStatus.REFUNDED ||
-      // Các booking quá hạn check-out
-      (STATUS_UPCOMING.includes(b.status as BookingStatus) &&
-        checkOutDate < now)
+      b.payment_status === PaymentStatus.REFUNDED
     );
   });
 
@@ -555,7 +556,23 @@ const PastTrip = () => {
   };
 
   // Hàm chuyển trạng thái sang tiếng Việt và màu sắc
-  const getStatusDisplay = (status: string) => {
+  const getStatusDisplay = (
+    status: string,
+    paymentStatus?: string,
+    checkOutDate?: Date
+  ) => {
+    // Nếu status là CONFIRMED hoặc PAID và đã qua ngày checkout, coi là hoàn thành
+    if (
+      (status === BookingStatus.CONFIRMED ||
+        paymentStatus === PaymentStatus.PAID) &&
+      checkOutDate &&
+      checkOutDate < now
+    ) {
+      return {
+        text: "Đã hoàn thành",
+        color: "text-green-600 bg-green-50 border-green-200",
+      };
+    }
     switch (status) {
       case BookingStatus.COMPLETED:
         return {
@@ -732,10 +749,20 @@ const PastTrip = () => {
                     <span className="font-medium">Trạng thái:</span>
                     <span
                       className={`inline-block px-2 py-1 rounded border text-sm font-semibold ml-2 ${
-                        getStatusDisplay(selectedBooking.status || "").color
+                        getStatusDisplay(
+                          selectedBooking.status || "",
+                          selectedBooking.payment_status,
+                          new Date(selectedBooking.check_out_date)
+                        ).color
                       }`}
                     >
-                      {getStatusDisplay(selectedBooking.status || "").text}
+                      {
+                        getStatusDisplay(
+                          selectedBooking.status || "",
+                          selectedBooking.payment_status,
+                          new Date(selectedBooking.check_out_date)
+                        ).text
+                      }
                     </span>
                   </div>
                 </div>
