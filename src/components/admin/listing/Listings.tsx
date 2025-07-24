@@ -40,7 +40,7 @@ import {
 import { toast } from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { fetchProperties, selectProperties } from "@/store/slices/propertySlice";
-import { fetchAmenities, selectAmenities } from "@/store/slices/amenitySlice";
+import { fetchAmenities } from "@/store/slices/amenitySlice";
 import { fetchServices } from '@/store/slices/serviceSlice';
 import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
 import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
@@ -69,12 +69,8 @@ export default function Listings() {
   const error = useAppSelector(selectListingsError);
   const total = useAppSelector(selectListingsTotal);
   const properties = useAppSelector(selectProperties);
-  const amenities = useAppSelector(selectAmenities);
   const services = useAppSelector((state) => state.service.services) ?? [];
   console.log('services in Listings:', services, Array.isArray(services));
-  const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
-  const houseRules = useAppSelector((state) => state.houseRule.houseRules);
-  const vouchers = useAppSelector((state) => state.voucher.vouchers);
 
   const [filters, setFilters] = useState<ListingFilters>({
     search: "",
@@ -229,13 +225,12 @@ export default function Listings() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50">
+                  <TableRow >
                     <TableHead className="text-xs font-bold uppercase text-gray-600">Ảnh</TableHead>
                     <TableHead className="text-xs font-bold uppercase text-gray-600">Tiêu đề</TableHead>
                     <TableHead className="text-xs font-bold uppercase text-gray-600 text-right">Giá/đêm</TableHead>
                     <TableHead className="text-xs font-bold uppercase text-gray-600 text-center">Khách tối đa</TableHead>
                     <TableHead className="text-xs font-bold uppercase text-gray-600">Property</TableHead>
-                    <TableHead className="text-xs font-bold uppercase text-gray-600">Thông tin chỗ ở</TableHead>
                     <TableHead className="text-xs font-bold uppercase text-gray-600 text-right">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -248,7 +243,7 @@ export default function Listings() {
                             <img
                               src={listing.images[0]}
                               alt={listing.title}
-                              className="w-24 h-10 object-cover rounded-lg"
+                              className="w-32 h-20 object-cover rounded-xl border border-gray-200 shadow-sm"
                             />
                           </Link>
                         ) : (
@@ -269,63 +264,6 @@ export default function Listings() {
                         {typeof listing.propertyId === 'object' && listing.propertyId !== null
                           ? <span className="text-green-700 font-medium">{listing.propertyId.name}</span>
                           : listing.propertyId || ''}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {/* Tiện ích */}
-                          <div className="flex items-start gap-1 text-xs text-gray-700">
-                            <span className="font-medium min-w-[60px]">🛏 Tiện ích:</span>
-                            <span>
-                              {listing.amenities && listing.amenities.length > 0
-                                ? listing.amenities.map(id => amenities.find(a => a._id === id)?.name).filter(Boolean).join(', ')
-                                : <span className="text-gray-400">Không có</span>
-                              }
-                            </span>
-                          </div>
-                          {/* Dịch vụ */}
-                          <div className="flex items-start gap-1 text-xs text-gray-700">
-                            <span className="font-medium min-w-[60px]">🛎 Dịch vụ:</span>
-                            <span>
-                              {listing.service_ids && listing.service_ids.length > 0
-                                ? listing.service_ids.map(id => services.find(s => s._id === id)?.name || id).join(', ')
-                                : <span className="text-gray-400">Không có</span>
-                              }
-                            </span>
-                          </div>
-                          {/* An toàn */}
-                          <div className="flex items-start gap-1 text-xs text-gray-700">
-                            <span className="font-medium min-w-[60px]">🛡 An toàn:</span>
-                            <span>
-                              {listing.safety_features && listing.safety_features.length > 0
-                                ? listing.safety_features.map(id => safetyFeatures.find(sf => sf._id === id)?.name || id).join(', ')
-                                : <span className="text-gray-400">Không có</span>
-                              }
-                            </span>
-                          </div>
-                          {/* Nội quy */}
-                          <div className="flex items-start gap-1 text-xs text-gray-700">
-                            <span className="font-medium min-w-[60px]">📋 Nội quy:</span>
-                            <span>
-                              {listing.house_rules_selected && listing.house_rules_selected.length > 0
-                                ? listing.house_rules_selected.map(id => houseRules.find(hr => hr._id === id)?.name || id).join(', ')
-                                : <span className="text-gray-400">Không có</span>
-                              }
-                            </span>
-                          </div>
-                          {/* Voucher */}
-                          <div className="flex items-start gap-1 text-xs text-gray-700">
-                            <span className="font-medium min-w-[60px]">🎟 Voucher:</span>
-                            <span>
-                              {listing.voucher_ids && listing.voucher_ids.length > 0
-                                ? listing.voucher_ids.map(id => {
-                                    const v = vouchers.find(v => v._id === id);
-                                    return v ? `${v.code} (${v.discount_percent}%)` : id;
-                                  }).join(', ')
-                                : <span className="text-gray-400">Không có</span>
-                              }
-                            </span>
-                          </div>
-                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

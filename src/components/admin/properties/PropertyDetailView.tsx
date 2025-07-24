@@ -1,384 +1,347 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { useParams } from "react-router-dom";
-import { fetchPropertyStatistics, selectPropertyStatistics, selectPropertyStatisticsLoading, selectPropertyStatisticsError, fetchPropertyById, selectPropertyDetail } from "@/store/slices/propertySlice";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import {
-  Users, Calendar as CalendarIcon, DollarSign, Star, TrendingUp, MapPin, Bed, UserCheck
-} from "lucide-react";
+import { useParams, Link } from "react-router-dom";
+import { fetchPropertyStatistics, selectPropertyStatistics, fetchPropertyById, selectPropertyDetail, fetchPropertyRoomStatus, selectPropertyRoomStatus } from "@/store/slices/propertySlice";
+import { fetchListings, selectListings } from "@/store/slices/listingSlice";
+import { Calendar as CalendarIcon, DollarSign, Star, TrendingUp, MapPin, UserCheck, CalendarCheck } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { PropertyStatistics } from "@/types/property";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { CalendarCheck } from "lucide-react";
 import { format } from "date-fns";
-import type { DateRange } from "react-day-picker";
+import { DateRange } from "react-day-picker";
+
+type RevenueByRoom = {
+  listingId: string;
+  listingTitle: string;
+  revenue: number;
+  bookings: number;
+  totalNights: number;
+  averageRevenuePerNight: number;
+};
+type MonthlyRevenue = {
+  month: string;
+  revenue: number;
+  bookings: number;
+};
 
 export default function PropertyDetailView() {
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const data = useAppSelector(selectPropertyStatistics) as PropertyStatistics | null;
-  const loading = useAppSelector(selectPropertyStatisticsLoading);
-  const error = useAppSelector(selectPropertyStatisticsError);
+  // const loading = useAppSelector(selectPropertyStatisticsLoading);
+  // const error = useAppSelector(selectPropertyStatisticsError);
   const propertyDetail = useAppSelector(selectPropertyDetail);
+  const roomStatus = useAppSelector(state => id ? selectPropertyRoomStatus(state, id) : undefined);
+  const listings = useAppSelector(selectListings);
 
-  // State cho chọn ngày
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [open, setOpen] = useState(false);
+  // State cho date range
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+  const [open, setOpen] = React.useState(false);
+
+  // Đóng popover khi chọn đủ ngày
+  React.useEffect(() => {
+    if (dateRange?.from && dateRange?.to) {
+      setOpen(false);
+    }
+  }, [dateRange]);
 
   useEffect(() => {
     if (id) {
-      // Giả sử fetchPropertyStatistics nhận thêm tham số dateRange
-      dispatch(fetchPropertyStatistics({ id, dateRange }));
+      // Nếu đã chọn khoảng ngày, truyền dateRange cho fetchPropertyStatistics
+      if (dateRange?.from && dateRange?.to) {
+        dispatch(fetchPropertyStatistics({ id, dateRange }));
+      } else {
+        dispatch(fetchPropertyStatistics({ id }));
+      }
       dispatch(fetchPropertyById(id));
+      dispatch(fetchPropertyRoomStatus(id));
+      dispatch(fetchListings({ propertyId: id }));
     }
   }, [id, dateRange, dispatch]);
 
   // Không return loading/error toàn trang nữa
   // Hiển thị loading/error ở từng phần bên dưới
 
-  // Prepare chart data
-  const ratingChartData = data?.reviewAnalysis?.ratingDistribution
-    ? Object.entries(data.reviewAnalysis.ratingDistribution).map(([rating, count]) => ({
-        rating: `${rating} sao`,
-        count: count as number,
-      }))
-    : [];
-  const bookingChartData = Array.isArray(data?.timeStatistics?.peakBookingDays)
-    ? data.timeStatistics.peakBookingDays.map((item) => ({
-        date: new Date(item.date).toLocaleDateString("vi-VN"),
-        bookings: item.bookingCount,
-      })) 
-    : [];
-  // Lấy dữ liệu chartData từ BE
-  const revenueChartData = Array.isArray(data?.chartData)
-    ? data.chartData.map((item) => ({
-        label: item.label,
-        revenue: item.revenue,
-        bookings: item.bookings,
-        occupancyRate: item.occupancyRate,
-      }))
-    : [];
+  // Không cần prepare chart data trung gian, dùng trực tiếp dưới render với type an toàn
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" });
   const renderStars = (rating: number) => Array.from({ length: 5 }, (_, i) => (
     <Star key={i} className={`w-4 h-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
   ));
 
+  // Debug: log trạng thái phòng và id các listing
+  console.log('roomStatus:', roomStatus);
+  console.log('listing._id:', listings && listings.map(l => l._id));
+
+  // Type-safe extraction for overview and customerInsights
+  const overview = (data && 'overview' in data) ? (data as { overview?: { utilizationRate?: number } }).overview : undefined;
+  const customerInsights = (data && 'customerInsights' in data) ? (data as { customerInsights?: { returningGuests?: number; returningGuestRate?: number } }).customerInsights : undefined;
+
   return (
-    <div className="min-h-screen  p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Date Range Picker Popover (theo style ListingDetail) */}
-        <div className="flex items-center gap-4 mb-4">
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={"w-[280px] justify-start text-left font-normal"}
-              >
-                <CalendarCheck className="mr-2 h-4 w-4" />
-                {dateRange?.from && dateRange?.to
-                  ? `${format(dateRange.from, "PPP")} - ${format(dateRange.to, "PPP")}`
-                  : "Chọn khoảng ngày"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-white rounded-xl shadow-lg border border-gray-200" align="start">
-              <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-                initialFocus
-                className="!bg-white rounded-xl p-2"
-                modifiersClassNames={{
-                  range_start: "!bg-black !text-white",
-                  range_end: "!bg-black !text-white",
-                  today: "border border-blue-400"
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-        {/* Header Section */}
-        <Card className="flex flex-col md:flex-row items-center gap-6 md:gap-8 p-4 md:p-6 border-0 !border-none w-full">
-          <img
-            src={propertyDetail?.thumbnail || "/placeholder.svg"}
-            alt={propertyDetail?.name || ""}
-            className="object-cover rounded-lg w-full max-w-xs md:w-60 h-40"
-          />
-          <div className="flex-1 space-y-2">
-            <h1 className="text-3xl font-bold">{propertyDetail?.name || "(Không có tên)"}</h1>
-            <p className="text-gray-600">{propertyDetail?.description || ""}</p>
-            <div className="flex items-center gap-4 text-gray-500">
-              <MapPin className="w-5 h-5" />
-              <span>{propertyDetail?.location?.address}{propertyDetail?.location?.district ? `, ${propertyDetail.location.district}` : ""}{propertyDetail?.location?.city ? `, ${propertyDetail.location.city}` : ""}</span>
-            </div>
-            <div className="flex items-center gap-4 text-gray-500">
-              <CalendarIcon className="w-5 h-5" />
-              <span>Tạo ngày: {propertyDetail?.createdAt ? formatDate(propertyDetail.createdAt) : "-"}</span>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              {renderStars(Math.round(data?.reviewAnalysis?.averageRating || 0))}
-              <span className="font-semibold text-lg">{(data?.reviewAnalysis?.averageRating ?? 0).toFixed(1)}</span>
-              <span className="text-sm text-gray-500">({data?.reviewAnalysis?.totalReviews ?? 0} đánh giá)</span>
-            </div>
-          </div>
-        </Card>
-
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
-            <Bed className="w-8 h-8 text-primary mb-2" />
-            <div className="text-3xl font-bold">{data?.roomOverview?.totalRooms ?? 0}</div>
-            <div className="text-xs text-gray-500">{data?.roomOverview?.activeRooms ?? 0} phòng đang hoạt động</div>
-            <Progress
-              value={data?.roomOverview?.activeRooms && data?.roomOverview?.totalRooms ? (data.roomOverview.activeRooms / data.roomOverview.totalRooms) * 100 : 0}
-              className="h-2 w-full mt-2"
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* UI chọn ngày giống bên listing detail */}
+      <div className="flex items-center gap-4 mb-8">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={"w-[280px] justify-start text-left font-normal"}
+            >
+              <CalendarCheck className="mr-2 h-4 w-4" />
+              {dateRange?.from && dateRange?.to
+                ? `${format(dateRange.from, "PPP")} - ${format(dateRange.to, "PPP")}`
+                : "Chọn khoảng ngày"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 bg-white rounded-xl shadow-lg border border-gray-200" align="start">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={setDateRange}
+              numberOfMonths={2}
+              initialFocus
+              className="!bg-white rounded-xl p-2"
+              modifiersClassNames={{
+                range_start: "!bg-black !text-white",
+                range_end: "!bg-black !text-white",
+                today: "border border-blue-400"
+              }}
             />
-          </Card>
-          <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
-            <CalendarCheck className="w-8 h-8 text-primary mb-2" />
-            <div className="text-3xl font-bold">{data?.bookingPerformance?.totalBookings ?? 0}</div>
-            <div className="text-xs text-gray-500">Tỷ lệ thành công: {data?.bookingPerformance?.successRate ?? 0}%</div>
-          </Card>
-          <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
-            <Users className="w-8 h-8 text-primary mb-2" />
-            <div className="text-3xl font-bold">{data?.customerStatistics?.uniqueCustomers ?? 0}</div>
-            <div className="text-xs text-gray-500">{data?.customerStatistics?.returnCustomerRate ?? 0}% khách quay lại</div>
-          </Card>
-          <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
-            <TrendingUp className="w-8 h-8 text-primary mb-2" />
-            <div className="text-3xl font-bold">{data?.roomOverview?.roomUtilizationRate?.toFixed(1) ?? "0.0"}%</div>
-            <div className="text-xs text-gray-500">{data?.roomOverview?.roomsWithBookings ?? 0}/{data?.roomOverview?.totalRooms ?? 0} phòng có booking</div>
-          </Card>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <Card className="p-4 border-0 !border-none">
-            <CardHeader>
-              <CardTitle>Phân bố đánh giá</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">Đang tải...</div>
-              ) : error ? (
-                <div className="text-center text-red-500 py-8">{error}</div>
-              ) : !data ? (
-                <div className="text-center py-8">Không có dữ liệu thống kê</div>
-              ) : (
-                <BarChart width={350} height={200} data={ratingChartData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="rating" />
-                  <YAxis />
-                  <Bar dataKey="count" fill="#22c55e" radius={4} />
-                </BarChart>
-              )}
-            </CardContent>
-          </Card>
-          <Card className="p-4 border-0 !border-none">
-            <CardHeader>
-              <CardTitle>Ngày đặt phòng cao điểm</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">Đang tải...</div>
-              ) : error ? (
-                <div className="text-center text-red-500 py-8">{error}</div>
-              ) : !data ? (
-                <div className="text-center py-8">Không có dữ liệu thống kê</div>
-              ) : (
-                <BarChart width={350} height={200} data={bookingChartData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Bar dataKey="bookings" fill="#fb923c" radius={4} />
-                </BarChart>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        <Card className="p-4 border-0 !border-none w-full overflow-x-auto">
-          <div className="w-[600px] md:w-full">
-            <CardHeader>
-              <CardTitle>Biểu đồ doanh thu</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">Đang tải...</div>
-              ) : error ? (
-                <div className="text-center text-red-500 py-8">{error}</div>
-              ) : !data ? (
-                <div className="text-center py-8">Không có dữ liệu thống kê</div>
-              ) : (
-                typeof ChartContainer !== "undefined" ? (
-                  <ChartContainer>
-                    <BarChart width={700} height={250} data={revenueChartData}>
-                      <CartesianGrid vertical={false} />
-                      <XAxis dataKey="label" />
-                      <YAxis />
-                      {typeof ChartTooltip !== "undefined" && typeof ChartTooltipContent !== "undefined" ? (
-                        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                      ) : null}
-                      <Bar dataKey="revenue" fill="var(--chart-1)" radius={8} />
-                    </BarChart>
-                  </ChartContainer>
-                ) : (
-                  <BarChart width={700} height={250} data={revenueChartData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="label" />
-                    <YAxis />
-                    <Bar dataKey="revenue" fill="#22c55e" radius={8} />
-                  </BarChart>
-                )
-              )}
-            </CardContent>
-          </div>
-        </Card>
-
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          <Card className="p-4 flex flex-col gap-2 border-0 !border-none">
-            {loading ? (
-              <div className="text-center py-8">Đang tải...</div>
-            ) : error ? (
-              <div className="text-center text-red-500 py-8">{error}</div>
-            ) : !data ? (
-              <div className="text-center py-8">Không có dữ liệu thống kê</div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="h-6 w-6 text-primary" />
-                  <span className="font-semibold">Thống kê doanh thu</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Tổng doanh thu:</span>
-                  <span className="font-semibold">{data.revenueAndPricing?.totalRevenue?.toLocaleString("vi-VN") ?? 0} VNĐ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Giá trung bình/đêm:</span>
-                  <span className="font-semibold">{data.revenueAndPricing?.averagePricePerNight?.toLocaleString("vi-VN") ?? 0} VNĐ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Tổng đêm đã đặt:</span>
-                  <span className="font-semibold">{data.revenueAndPricing?.totalNightsBooked ?? 0}</span>
-                </div>
-              </>
-            )}
-          </Card>
-          <Card className="p-4 flex flex-col gap-2 border-0 !border-none">
-            {loading ? (
-              <div className="text-center py-8">Đang tải...</div>
-            ) : error ? (
-              <div className="text-center text-red-500 py-8">{error}</div>
-            ) : !data ? (
-              <div className="text-center py-8">Không có dữ liệu thống kê</div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  <UserCheck className="h-6 w-6 text-primary" />
-                  <span className="font-semibold">Thống kê khách hàng</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Khách duy nhất:</span>
-                  <span className="font-semibold">{data.customerStatistics?.uniqueCustomers ?? 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Khách quay lại:</span>
-                  <span className="font-semibold">{data.customerStatistics?.returnCustomers ?? 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Booking TB/khách:</span>
-                  <span className="font-semibold">{data.customerStatistics?.averageBookingsPerCustomer ?? 0}</span>
-                </div>
-              </>
-            )}
-          </Card>
-          <Card className="p-4 flex flex-col gap-2 border-0 !border-none">
-            {loading ? (
-              <div className="text-center py-8">Đang tải...</div>
-            ) : error ? (
-              <div className="text-center text-red-500 py-8">{error}</div>
-            ) : !data ? (
-              <div className="text-center py-8">Không có dữ liệu thống kê</div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  <CalendarIcon className="h-6 w-6 text-primary" />
-                  <span className="font-semibold">Thống kê thời gian</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Thời gian lưu trú TB:</span>
-                  <span className="font-semibold">{data.timeStatistics?.averageStayDurationText ?? ""}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Booking sớm nhất:</span>
-                  <span className="font-semibold text-xs">{data.timeStatistics?.earliestBookingDate ? formatDate(data.timeStatistics.earliestBookingDate) : "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Booking muộn nhất:</span>
-                  <span className="font-semibold text-xs">{data.timeStatistics?.latestBookingDate ? formatDate(data.timeStatistics.latestBookingDate) : "-"}</span>
-                </div>
-              </>
-            )}
-          </Card>
-        </div>
-
-        {/* Recent Reviews */}
-        <Card className="p-6 border-0 !border-none w-full">
-          <CardHeader>
-            <CardTitle>Đánh giá gần đây</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">Đang tải...</div>
-            ) : error ? (
-              <div className="text-center text-red-500 py-8">{error}</div>
-            ) : !data ? (
-              <div className="text-center py-8">Không có dữ liệu thống kê</div>
-            ) : (
-              <div className="rounded-xl shadow-md overflow-x-auto">
-                <table className="min-w-[600px] bg-white rounded-xl border-0 !border-none">
-                  <thead className="bg-gray-100">
-                    <tr className="border-0 !border-none">
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Khách hàng</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Phòng</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Đánh giá</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Bình luận</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Ngày</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.reviewAnalysis?.recentReviews?.map((review) => (
-                      <tr key={review.id} className="hover:bg-gray-50 transition border-0 !border-none">
-                        <td className="py-3 px-4 border-0 !border-none">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={review.userAvatar || undefined} />
-                              <AvatarFallback>{review.userName.charAt(0).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{review.userName}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600 border-0 !border-none">{review.listingTitle}</td>
-                        <td className="py-3 px-4 border-0 !border-none">
-                          <div className="flex items-center gap-1">
-                            {renderStars(review.rating)}
-                            <span className="ml-1 text-sm font-medium">{review.rating}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-sm border-0 !border-none">{review.comment}</td>
-                        <td className="py-3 px-4 text-sm text-gray-500 border-0 !border-none">{formatDate(review.createdAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {dateRange?.from || dateRange?.to ? (
+              <div className="flex justify-end px-4 pb-2 pt-1">
+                <Button variant="ghost" size="sm" onClick={() => setDateRange(undefined)}>
+                  Xóa ngày
+                </Button>
               </div>
-            )}
+            ) : null}
+          </PopoverContent>
+        </Popover>
+      </div>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row gap-8 items-center mb-8">
+        <img src={propertyDetail?.thumbnail || "/placeholder.svg"} alt={propertyDetail?.name || ""} className="object-cover rounded-lg w-full max-w-xs md:w-60 h-40" />
+        <div>
+          <h1 className="text-3xl font-bold">{propertyDetail?.name || "(Không có tên)"}</h1>
+          <p className="text-gray-600">{propertyDetail?.description || ""}</p>
+          <div className="flex gap-4 text-gray-500 mt-2">
+            <MapPin className="w-5 h-5" /> {propertyDetail?.location?.address}{propertyDetail?.location?.district ? `, ${propertyDetail.location.district}` : ""}{propertyDetail?.location?.city ? `, ${propertyDetail.location.city}` : ""}
+            <CalendarIcon className="w-5 h-5 ml-4" /> Tạo ngày: {propertyDetail?.createdAt ? formatDate(propertyDetail.createdAt) : "-"}
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            {renderStars(Math.round(data?.reviewAnalysis?.averageRating || 0))}
+            <span className="font-semibold text-lg">{(data?.reviewAnalysis?.averageRating ?? 0).toFixed(1)}</span>
+            <span className="text-sm text-gray-500">({data?.reviewAnalysis?.totalReviews ?? 0} đánh giá)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
+          <TrendingUp className="w-8 h-8 text-primary mb-2" />
+          <div className="text-3xl font-bold">{overview?.utilizationRate?.toFixed(1) ?? "0.0"}%</div>
+          <div className="text-xs text-gray-500">Tỷ lệ sử dụng phòng</div>
+        </Card>
+        <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
+          <TrendingUp className="w-8 h-8 text-primary mb-2" />
+          <div className="text-3xl font-bold">{data?.bookingPerformance?.totalBookings ?? 0}</div>
+          <div className="text-xs text-gray-500">Tổng booking</div>
+        </Card>
+        <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
+          <DollarSign className="w-8 h-8 text-primary mb-2" />
+          <div className="text-3xl font-bold">{data?.revenueAndPricing?.totalRevenue?.toLocaleString("vi-VN") ?? 0}₫</div>
+          <div className="text-xs text-gray-500">Tổng doanh thu</div>
+        </Card>
+        <Card className="flex flex-col items-center gap-2 p-4 border-0 !border-none">
+          <UserCheck className="w-8 h-8 text-primary mb-2" />
+          <div className="text-3xl font-bold">
+            {customerInsights?.returningGuests ?? 0}
+            <span className="text-base text-gray-500 ml-1">
+              ({customerInsights?.returningGuestRate?.toFixed(1) ?? "0.0"}%)
+            </span>
+          </div>
+          <div className="text-xs text-gray-500">Khách quay lại</div>
+        </Card>
+      </div>
+
+      {/* Bảng danh sách phòng chi tiết */}
+      <Card className="p-4 border-0 !border-none w-full overflow-x-auto mb-8">
+        <CardHeader><CardTitle>Danh sách phòng</CardTitle></CardHeader>
+        <CardContent>
+          <table className="w-full min-w-0 table-auto bg-white rounded-xl border-0 !border-none">
+            <thead className="bg-gray-100">
+              <tr className="border-0 !border-none">
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Ảnh</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Tên phòng</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Giá/đêm</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Đánh giá</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {listings && listings.filter(l => l.propertyId === id || (typeof l.propertyId === 'object' && l.propertyId?._id === id)).map(listing => (
+                <tr key={listing._id} className="hover:bg-gray-50 transition border-0 !border-none">
+                  <td className="py-3 px-4 border-0 !border-none">
+                    <Link to={`/admin/listings/${listing._id}`} className="block">
+                      <img src={listing.images?.[0] || "/placeholder.svg"} alt={listing.title} className="w-16 h-12 object-cover rounded hover:opacity-80 transition" />
+                    </Link>
+                  </td>
+                  <td className="py-3 px-4 border-0 !border-none font-semibold">
+                    <Link to={`/admin/listings/${listing._id}`} className="hover:underline text-primary">
+                      {listing.title}
+                    </Link>
+                  </td>
+                  <td className="py-3 px-4 border-0 !border-none">{listing.price_per_night?.toLocaleString("vi-VN")}₫</td>
+                  <td className="py-3 px-4 border-0 !border-none">
+                    <div className="flex items-center gap-1">
+                      {renderStars(Math.round(listing.average_rating || 0))}
+                      <span className="ml-1 text-sm font-medium">{(listing.average_rating ?? 0).toFixed(1)}</span>
+                    </div>
+                  </td>
+                 
+                  <td className="py-3 px-4 border-0 !border-none">
+                    {/* Chỉ hiển thị 1 badge trạng thái cho từng phòng */}
+                    {(() => {
+                      const listingId = String(listing._id);
+                      const raw = roomStatus && roomStatus[listingId];
+                      const status = raw && typeof raw === 'object' ? (raw as { status?: string }).status : raw;
+                      if (status === 'available') return <span className="bg-green-100 text-green-700 rounded px-2 py-1">Còn trống</span>;
+                      if (status === 'reserved') return <span className="bg-red-100 text-red-700 rounded px-2 py-1">Đã đặt</span>;
+                      if (status === 'booked' || status === 'occupied') return <span className="bg-blue-100 text-blue-700 rounded px-2 py-1">Đang chờ xác nhận</span>;
+                      return <span className="bg-gray-100 text-gray-700 rounded px-2 py-1">Không rõ</span>;
+                    })()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      {/* Bảng doanh thu theo phòng */}
+      <Card className="p-4 border-0 !border-none w-full overflow-x-auto mb-8">
+        <CardHeader><CardTitle>Bảng doanh thu theo phòng</CardTitle></CardHeader>
+        <CardContent>
+          <table className="w-full min-w-0 table-auto bg-white rounded-xl border-0 !border-none">
+            <thead className="bg-gray-100">
+              <tr className="border-0 !border-none">
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Phòng</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Số booking</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Tổng đêm</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Doanh thu/đêm</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Doanh thu</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data && Array.isArray((data.revenueAndPricing && (data.revenueAndPricing as unknown as { revenueByRoom?: RevenueByRoom[] }).revenueByRoom)) &&
+                (data.revenueAndPricing as unknown as { revenueByRoom: RevenueByRoom[] }).revenueByRoom.map((room) => (
+                  <tr key={room.listingId} className="hover:bg-gray-50 transition border-0 !border-none">
+                    <td className="py-3 px-4 border-0 !border-none">
+                      <Link to={`/admin/listings/${room.listingId}`} className="text-primary">
+                        {room.listingTitle}
+                      </Link>
+                    </td>
+                    <td className="py-3 px-4 border-0 !border-none">{room.bookings}</td>
+                    <td className="py-3 px-4 border-0 !border-none">{room.totalNights}</td>
+                    <td className="py-3 px-4 border-0 !border-none">{room.averageRevenuePerNight?.toLocaleString("vi-VN")}₫</td>
+                    <td className="py-3 px-4 border-0 !border-none">{room.revenue?.toLocaleString("vi-VN")}₫</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      {/* Bảng doanh thu theo tháng */}
+      <Card className="p-4 border-0 !border-none w-full overflow-x-auto mb-8">
+        <CardHeader><CardTitle>Bảng doanh thu theo tháng</CardTitle></CardHeader>
+        <CardContent>
+          <table className="w-full min-w-0 table-auto bg-white rounded-xl border-0 !border-none">
+            <thead className="bg-gray-100">
+              <tr className="border-0 !border-none">
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Tháng</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Doanh thu</th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">Số booking</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data && Array.isArray((data.revenueAndPricing && (data.revenueAndPricing as unknown as { monthlyRevenue?: MonthlyRevenue[] }).monthlyRevenue)) &&
+                (data.revenueAndPricing as unknown as { monthlyRevenue: MonthlyRevenue[] }).monthlyRevenue.map((month) => (
+                  <tr key={month.month} className="hover:bg-gray-50 transition border-0 !border-none">
+                    <td className="py-3 px-4 border-0 !border-none">{month.month}</td>
+                    <td className="py-3 px-4 border-0 !border-none">{month.revenue?.toLocaleString("vi-VN")}₫</td>
+                    <td className="py-3 px-4 border-0 !border-none">{month.bookings}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      {/* Charts Section: Đưa biểu đồ phân bố đánh giá lên trước doanh thu theo phòng */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Biểu đồ phân bố đánh giá */}
+        <Card className="p-4 border-0 !border-none">
+          <CardHeader><CardTitle>Biểu đồ phân bố đánh giá</CardTitle></CardHeader>
+          <CardContent>
+            <BarChart width={350} height={200} data={
+              data?.reviewAnalysis?.ratingDistribution
+                ? Object.entries(data.reviewAnalysis.ratingDistribution).map(([rating, count]) => ({ rating: `${rating} sao`, count: Number(count) }))
+                : []
+            }>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="rating" />
+              <YAxis allowDecimals={false} />
+              <Bar dataKey="count" fill="#fbbf24" radius={4} />
+            </BarChart>
+          </CardContent>
+        </Card>
+        {/* Biểu đồ doanh thu theo ngày */}
+        <Card className="p-4 border-0 !border-none">
+          <CardHeader><CardTitle>Biểu đồ doanh thu theo ngày</CardTitle></CardHeader>
+          <CardContent>
+            <BarChart width={350} height={200} data={Array.isArray(data?.chartData) ? data.chartData : []}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="label" />
+              <YAxis />
+              <Bar dataKey="revenue" fill="#22c55e" radius={4} />
+            </BarChart>
+          </CardContent>
+        </Card>
+      </div>
+      {/* Biểu đồ doanh thu theo phòng */}
+      <div className="mb-8">
+        <Card className="p-4 border-0 !border-none">
+          <CardHeader><CardTitle>Biểu đồ doanh thu theo phòng</CardTitle></CardHeader>
+          <CardContent>
+            <BarChart width={Math.max(900, (listings.length || 8) * 120)} height={350} data={
+              data && Array.isArray((data.revenueAndPricing && (data.revenueAndPricing as unknown as { revenueByRoom?: RevenueByRoom[] }).revenueByRoom))
+                ? (data.revenueAndPricing as unknown as { revenueByRoom: RevenueByRoom[] }).revenueByRoom
+                : []
+            }>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="listingTitle" angle={0} interval={0} tick={{fontSize:16}} tickMargin={16} />
+              <YAxis />
+              <Bar dataKey="revenue" fill="#38bdf8" radius={4} barSize={36} />
+            </BarChart>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Biểu đồ số booking theo ngày */}
+      <div className="mb-8">
+        <Card className="p-4 border-0 !border-none">
+          <CardHeader><CardTitle>Biểu đồ số booking theo ngày</CardTitle></CardHeader>
+          <CardContent>
+            <BarChart width={600} height={250} data={Array.isArray(data?.chartData) ? data.chartData : []}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="label" />
+              <YAxis allowDecimals={false} />
+              <Bar dataKey="bookings" fill="#6366f1" radius={4} />
+            </BarChart>
           </CardContent>
         </Card>
       </div>

@@ -5,6 +5,13 @@ import { getErrorMessage } from "@/helper/message";
 import { Property, CreatePropertyDto, UpdatePropertyDto, QueryPropertyDto } from "@/types/property";
 import type { DateRange } from "react-day-picker";
 
+// Room status type (theo từng phòng)
+export interface RoomStatusItem {
+  listingId: string;
+  status: 'occupied' | 'available' | string;
+}
+export type PropertyRoomStatus = Record<string, string>; // { [listingId]: status }
+
 interface PropertyState {
   properties: Property[];
   property?: Property;
@@ -22,6 +29,7 @@ interface PropertyState {
   propertyDetail?: Property;
   propertyDetailLoading?: boolean;
   propertyDetailError?: string | null;
+  propertyRoomStatus: Record<string, PropertyRoomStatus>;
 }
 
 const initialState: PropertyState = {
@@ -41,6 +49,7 @@ const initialState: PropertyState = {
   propertyDetail: undefined,
   propertyDetailLoading: false,
   propertyDetailError: null,
+  propertyRoomStatus: {},
 };
 
 // Async thunks
@@ -267,6 +276,29 @@ export const fetchPropertyStatistics = createAsyncThunk(
   }
 );
 
+// Thunk lấy trạng thái phòng của property
+export const fetchPropertyRoomStatus = createAsyncThunk<
+  { propertyId: string; status: PropertyRoomStatus },
+  string,
+  { rejectValue: string }
+>(
+  'properties/fetchPropertyRoomStatus',
+  async (propertyId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/properties/${propertyId}/room-status`);
+      // res.data.data là mảng [{ listingId, status }]
+      const arr: RoomStatusItem[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const status: PropertyRoomStatus = {};
+      arr.forEach(item => {
+        if (item.listingId) status[String(item.listingId)] = item.status;
+      });
+      return { propertyId, status };
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err));
+    }
+  }
+);
+
 // Slice
 const propertySlice = createSlice({
   name: "properties",
@@ -436,6 +468,11 @@ const propertySlice = createSlice({
       .addCase(fetchPropertyStatistics.rejected, (state, action) => {
         state.propertyStatisticsLoading = false;
         state.propertyStatisticsError = action.payload as string;
+      })
+
+      // fetchPropertyRoomStatus
+      .addCase(fetchPropertyRoomStatus.fulfilled, (state, action) => {
+        state.propertyRoomStatus[action.payload.propertyId] = action.payload.status;
       });
   },
 });
@@ -457,5 +494,6 @@ export const selectPropertyStatistics = (state: RootState) => state.properties.p
 export const selectPropertyStatisticsLoading = (state: RootState) => state.properties.propertyStatisticsLoading;
 export const selectPropertyStatisticsError = (state: RootState) => state.properties.propertyStatisticsError;
 export const selectPropertyDetail = (state: RootState) => state.properties.propertyDetail;
+export const selectPropertyRoomStatus = (state: RootState, propertyId: string) => state.properties.propertyRoomStatus[propertyId];
 
 export default propertySlice.reducer; 
