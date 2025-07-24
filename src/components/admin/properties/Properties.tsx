@@ -8,13 +8,16 @@ import {
   selectPropertiesTotal,
   // createProperty
 } from '@/store/slices/propertySlice';
+import { fetchStaffByIds } from '@/store/slices/userSlice';
+import { selectStaffList, selectStaffLoading } from '@/store/slices/userSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Edit, Eye, Plus, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Edit, Eye, Plus, Filter, ChevronLeft, ChevronRight, Users as UsersIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface PropertiesFilters {
   search: string;
@@ -41,6 +44,27 @@ export default function AdminProperties() {
     page: 1,
     limit: 10,
   });
+
+  const staffList = useAppSelector(selectStaffList);
+  const staffLoading = useAppSelector(selectStaffLoading);
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+
+  function isStaffIdObject(id: unknown): id is { _id: string } {
+    return typeof id === 'object' && id !== null && '_id' in id && typeof (id as { _id?: unknown })._id === 'string';
+  }
+
+  const handleShowStaff = (staffIds: unknown[]) => {
+    // Chuyển về mảng id string nếu là object hoặc unknown
+    const ids = staffIds.map(id => {
+      if (typeof id === 'string') return id;
+      if (isStaffIdObject(id)) return id._id;
+      return '';
+    }).filter(Boolean);
+    console.log("Staff IDs:", ids);
+    if (!ids || ids.length === 0) return;
+    dispatch(fetchStaffByIds(ids));
+    setStaffModalOpen(true);
+  };
 
   const loadProperties = useCallback(async () => {
     try {
@@ -243,7 +267,26 @@ export default function AdminProperties() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className='text-sm text-gray-600'>{property.staffIds?.length || 0} staff</div>
+                        <div className='flex items-center gap-2'>
+                          <button
+                            className='flex items-center gap-1 text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 rounded-full transition hover:bg-blue-50 px-2 py-1'
+                            type='button'
+                            onClick={() => handleShowStaff(property.staffIds || [])}
+                            disabled={!property.staffIds || property.staffIds.length === 0}
+                            title={property.staffIds && property.staffIds.length > 0 && staffList.length > 0
+                              ? staffList
+                                  .filter(s => property.staffIds.includes(s._id))
+                                  .map(s => s.name || s.email || s._id)
+                                  .join(', ')
+                              : ''}
+                          >
+                            <UsersIcon className='w-4 h-4 text-blue-500' />
+                            <span className='inline-block min-w-[24px] text-center font-semibold text-sm bg-blue-100 text-blue-700 rounded-full px-2 py-0.5'>
+                              {property.staffIds?.length || 0}
+                            </span>
+                            <span className='ml-1 text-xs text-blue-700'>staff</span>
+                          </button>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className='text-sm text-gray-600'>
@@ -297,6 +340,31 @@ export default function AdminProperties() {
           </Button>
         </div>
       )}
+
+      {/* Modal hiển thị staff */}
+      <Dialog open={staffModalOpen} onOpenChange={setStaffModalOpen}>
+        <DialogContent className='bg-white rounded-2xl shadow-xl max-w-lg w-full p-8'>
+          <DialogHeader>
+            <DialogTitle>Danh sách nhân viên</DialogTitle>
+          </DialogHeader>
+          {staffLoading ? (
+            <div className='text-center py-4'>Đang tải thông tin nhân viên...</div>
+          ) : staffList.length === 0 ? (
+            <div className='text-center py-4 text-gray-500'>Chưa có nhân viên nào</div>
+          ) : (
+            <div className='space-y-4'>
+              {staffList.map((staff, idx) => (
+                <div key={staff._id || idx} className='border-b pb-2 mb-2'>
+                  <div className='font-semibold text-base'>{staff.name || staff.email || staff._id}</div>
+                  <div className='text-sm text-gray-600'>Email: {staff.email || '-'}</div>
+                  <div className='text-sm text-gray-600'>SĐT: {staff.phone || '-'}</div>
+                  <div className='text-sm text-gray-600'>Role: {staff.role || '-'}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

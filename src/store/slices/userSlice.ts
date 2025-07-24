@@ -133,6 +133,24 @@ export const updateMyAvatar = createAsyncThunk<
   }
 });
 
+export const fetchStaffByIds = createAsyncThunk<
+  User[],
+  string[],
+  { rejectValue: string }
+>(
+  "users/fetchStaffByIds",
+  async (ids, { rejectWithValue }) => {
+    try {
+      const results = await Promise.all(
+        ids.map(id => api.get(`/users/${id}`).then(res => res.data.data.data))
+      );
+      return results;
+    } catch  {
+      return rejectWithValue("Lỗi khi lấy thông tin staff");
+    }
+  }
+);
+
 const userSlice = createSlice({
   name: "users",
   initialState: {
@@ -154,7 +172,11 @@ const userSlice = createSlice({
       itemsPerPage: 10,
     },
   },
-  reducers: {},
+  reducers: {
+    clearStaffList: (state) => {
+      state.staffList = [];
+    },
+  },
   extraReducers: (builder) => {
     builder
       // fetchUsers
@@ -219,6 +241,19 @@ const userSlice = createSlice({
         state.staffLoading = false;
         state.staffError = action.payload as string;
       })
+      // fetchStaffByIds
+      .addCase(fetchStaffByIds.pending, (state) => {
+        state.staffLoading = true;
+        state.staffError = null;
+      })
+      .addCase(fetchStaffByIds.fulfilled, (state, action: PayloadAction<User[]>) => {
+        state.staffLoading = false;
+        state.staffList = action.payload;
+      })
+      .addCase(fetchStaffByIds.rejected, (state, action) => {
+        state.staffLoading = false;
+        state.staffError = action.payload as string;
+      })
       // fetchUserRoles
       .addCase(fetchUserRoles.fulfilled, (state, action) => {
         state.userRoles[action.payload.userId] = action.payload.roles;
@@ -228,6 +263,8 @@ const userSlice = createSlice({
 });
 
 export default userSlice.reducer;
+
+export const { clearStaffList } = userSlice.actions;
 
 // Selector cho staffList
 

@@ -202,7 +202,7 @@ export default function EditPropertyForm() {
       }
 
       // Gửi staffIds nếu thay đổi
-      if (id && staffIds[0]) {
+      if (id && staffIds.length > 0) {
         await dispatch(assignStaffToProperty({ id, staffIds }));
       }
     } catch {
@@ -383,20 +383,28 @@ export default function EditPropertyForm() {
             {/* Nhân viên được gán */}
             <div className="space-y-2">
               <Label>Nhân viên được gán</Label>
-              <select
-                value={staffIds[0] || ""}
-                onChange={e => setStaffIds([e.target.value])}
-                className="border border-gray-300 rounded-md px-3 py-2"
-                disabled={staffLoading}
-              >
-                <option value="">-- Chọn nhân viên --</option>
+              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white">
+                {staffLoading && <div className="text-xs text-gray-500">Đang tải danh sách nhân viên...</div>}
+                {staffOptions.length === 0 && !staffLoading && <div className="text-xs text-gray-500">Không có nhân viên nào</div>}
                 {staffOptions.map(staff => (
-                  <option key={staff._id} value={staff._id}>
-                    {staff.name} {staff.email ? `(${staff.email})` : ""}
-                  </option>
+                  <label key={staff._id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={staff._id}
+                      checked={staffIds.includes(staff._id)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setStaffIds(prev => [...prev, staff._id]);
+                        } else {
+                          setStaffIds(prev => prev.filter(id => id !== staff._id));
+                        }
+                      }}
+                      className="accent-blue-500 h-4 w-4 rounded"
+                    />
+                    <span>{staff.name} {staff.email ? `(${staff.email})` : ""}</span>
+                  </label>
                 ))}
-              </select>
-              {staffLoading && <div className="text-xs text-gray-500">Đang tải danh sách nhân viên...</div>}
+              </div>
             </div>
 
             {/* Error message */}

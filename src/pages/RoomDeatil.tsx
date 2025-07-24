@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { fetchListingById } from "@/store/slices/listingSlice";
+import { fetchListingById, incrementViewCount } from "@/store/slices/listingSlice";
 import { IListing } from "@/types/listing";
 import { fetchAmenities, selectAmenities } from "@/store/slices/amenitySlice";
 import { fetchServices } from "@/store/slices/serviceSlice";
@@ -51,6 +51,9 @@ export default function RoomDetailPage() {
 
   // Gọi API lấy thông tin phòng và tiện ích
   useEffect(() => {
+    if (id) {
+      dispatch(incrementViewCount(id));
+    }
     if (id) dispatch(fetchListingById(id));
     dispatch(fetchAmenities({}));
     dispatch(fetchServices({}));
