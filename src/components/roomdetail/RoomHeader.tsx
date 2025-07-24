@@ -1,10 +1,9 @@
 import React from "react";
 import { Star } from "lucide-react";
-import { IListing, IProperty } from "@/types/listing";
+import { IListing } from "@/types/listing";
 
 interface RoomHeaderProps {
   listing: IListing;
-  property: IProperty;
 }
 
 // Laurel SVG chuẩn Airbnb
