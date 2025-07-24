@@ -19,6 +19,7 @@ export interface Voucher {
   updatedBy?: string;
   deletedBy?: string;
   deletedAt?: string;
+  userUsageCount?: number;
 }
 
 export interface CreateVoucherDto {
@@ -33,4 +34,4 @@ export interface CreateVoucherDto {
   };
 }
 
-export type UpdateVoucherDto = Partial<CreateVoucherDto>; 
+export type UpdateVoucherDto = Partial<CreateVoucherDto>;

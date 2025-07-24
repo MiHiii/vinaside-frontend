@@ -1,17 +1,19 @@
-import React, { useState } from "react";
+"use client";
+
+import type React from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-// import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { IListing } from "@/types/listing";
+import type { IListing } from "@/types/listing";
 import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import { createBooking, createPayment } from "@/store/slices/bookingSlice";
-import { DateRange } from "react-day-picker";
-// import CancelPolicyDetail from "./CancelPolicyDetail";
+import type { DateRange } from "react-day-picker";
 import BookingInfoModal from "./BookingInfoModal";
 import PriceDetailModal from "./PriceDetailModal";
 import CancelPolicyDetail from "./CancelPolicyDetail";
-import { Voucher } from "@/types/voucher";
+import type { Voucher } from "@/types/voucher";
+import { cn } from "@/lib/utils"; // Assuming cn utility is available
 
 interface BookingSummaryProps {
   listing: IListing;
@@ -37,6 +39,8 @@ interface BookingSummaryProps {
     total_price: number;
     icon_url?: string;
   }>;
+  paymentType?: "full" | "deposit";
+  setPaymentType?: (type: "full" | "deposit") => void;
 }
 
 const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -50,12 +54,21 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   selectedServiceTotal,
   selectedVoucher,
   selectedServices = [],
+  paymentType: paymentTypeProp,
+  setPaymentType: setPaymentTypeProp,
 }) => {
   const [open, setOpen] = useState(false);
   const [showPriceDetail, setShowPriceDetail] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [paymentType, setPaymentType] = useState<"full" | "deposit">("full");
+  const [internalPaymentType, internalSetPaymentType] = useState<
+    "full" | "deposit"
+  >("full");
+  const paymentType = paymentTypeProp ?? internalPaymentType;
+  const setPaymentType = setPaymentTypeProp ?? internalSetPaymentType;
+  const [specialRequests, setSpecialRequests] = useState(""); // Thêm state cho specialRequests
+  const [infants, setInfants] = useState(0); // Thêm state cho infants
+  const [adults, setAdults] = useState(guestCount); // Để đồng bộ số người lớn nếu muốn
 
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
@@ -64,11 +77,10 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     if (loading) return;
     setLoading(true);
     try {
-      if (!tripStart || !tripEnd || !guestCount) {
+      if (!tripStart || !tripEnd || !adults) {
         alert("Vui lòng chọn ngày nhận phòng, trả phòng và số khách.");
         return;
       }
-
       if (
         !listing.propertyId ||
         typeof listing.propertyId !== "object" ||
@@ -79,29 +91,34 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
       }
 
       const bookingData = {
-        listingId: listing._id,
         propertyId: listing.propertyId._id,
+        listingId: listing._id,
         price_per_night: listing.price_per_night,
         total_price: listing.price_per_night * nights,
         final_amount: finalTotal,
         checkInDate: tripStart,
         checkOutDate: tripEnd,
-        guests: guestCount,
-        infants: 0,
+        guests: adults,
+        infants: infants,
         guest_name: user?.name || "Khách chưa đặt tên",
         guest_email: user?.email || "unknown@example.com",
-        ...(selectedVoucher?._id ? { voucher_id: selectedVoucher._id } : {}),
-        // Đổi tên trường:
-        selected_services: selectedServices,
+        specialRequests: specialRequests,
+        ...(paymentType === "full" && {
+          voucherCode: selectedVoucher?.code || undefined,
+          services: selectedServices.map((s) => ({
+            serviceId: s.service_id,
+            quantity: s.quantity,
+          })),
+        }),
       };
       console.log("[FE] bookingData gửi lên backend:", bookingData);
-
       const result = await dispatch(createBooking(bookingData)).unwrap();
 
       if (!result?._id) {
         alert("Lỗi sau khi đặt phòng.");
         return;
       }
+
       // Gọi API tạo payment
       const paymentPayload = {
         bookingId: result._id,
@@ -133,6 +150,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     guests: { adults: number; infants: number };
   }) => {
     onSaveBookingInfo({ dateRange, guests });
+    setInfants(guests.infants); // Lưu số infants từ modal
+    setAdults(guests.adults); // Lưu số người lớn nếu muốn đồng bộ
   };
 
   // Disable dịch vụ/voucher khi chọn đặt cọc
@@ -159,49 +178,90 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   }
 
   return (
-    <Card className="sticky top-6 max-w-md rounded-2xl border border-gray-200 shadow-sm">
-      <CardContent className="p-8 space-y-7">
+    <Card className="sticky top-6 rounded-xl border border-gray-200 shadow-sm">
+      <CardContent className="p-6 space-y-6">
         {/* Lựa chọn loại thanh toán */}
-        <div className="mb-4">
-          <label>
-            <input
-              type="radio"
-              value="full"
-              checked={paymentType === "full"}
-              onChange={() => setPaymentType("full")}
-            />
-            Thanh toán toàn bộ
-          </label>
-          <label className="ml-4">
-            <input
-              type="radio"
-              value="deposit"
-              checked={paymentType === "deposit"}
-              onChange={() => setPaymentType("deposit")}
-            />
-            Đặt cọc 50%
-          </label>
+        <div className="space-y-3">
+          <div className="font-semibold text-lg">Chọn loại thanh toán</div>
+          <div className="flex gap-4">
+            <label
+              className={cn(
+                "flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-colors",
+                paymentType === "full"
+                  ? "border-pink-600 bg-pink-50 text-pink-800"
+                  : "border-gray-300 bg-white hover:bg-gray-50"
+              )}
+            >
+              <input
+                type="radio"
+                value="full"
+                checked={paymentType === "full"}
+                onChange={() => setPaymentType("full")}
+                className="sr-only"
+              />
+              <span className="font-medium">Thanh toán toàn bộ</span>
+            </label>
+            <label
+              className={cn(
+                "flex-1 flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-colors",
+                paymentType === "deposit"
+                  ? "border-pink-600 bg-pink-50 text-pink-800"
+                  : "border-gray-300 bg-white hover:bg-gray-50"
+              )}
+            >
+              <input
+                type="radio"
+                value="deposit"
+                checked={paymentType === "deposit"}
+                onChange={() => setPaymentType("deposit")}
+                className="sr-only"
+              />
+              <span className="font-medium">Đặt cọc 50%</span>
+            </label>
+          </div>
           {isDeposit && (
-            <div className="text-red-500 text-sm mt-1">
+            <div className="text-red-500 text-sm mt-2">
               Dịch vụ & voucher chỉ áp dụng khi thanh toán toàn bộ!
             </div>
           )}
         </div>
+
+        {/* Input specialRequests */}
+        <div className="space-y-2">
+          <label
+            htmlFor="specialRequests"
+            className="block font-semibold text-lg"
+          >
+            Yêu cầu đặc biệt
+          </label>
+          <textarea
+            id="specialRequests"
+            className="w-full border border-input bg-background rounded-md px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder="Nhập yêu cầu thêm (nếu có)..."
+            value={specialRequests}
+            onChange={(e) => setSpecialRequests(e.target.value)}
+            rows={3}
+          />
+        </div>
+
         {/* Ảnh + Tiêu đề + Đánh giá */}
-        <div className="flex gap-5 items-center">
+        <div className="flex gap-4 items-center border-t pt-6">
           <img
-            src={listing.images?.[0]}
+            src={
+              listing.images?.[0] ||
+              "/placeholder.svg?height=96&width=96&text=Listing+Image"
+            }
             alt="Ảnh đặt chỗ"
-            className="w-24 h-24 object-cover rounded-xl border"
+            className="w-24 h-24 object-cover rounded-lg border border-gray-200"
           />
           <div className="flex-1">
             <div className="font-semibold text-lg leading-tight">
               {listing.title}
             </div>
-            <div className="flex items-center gap-1 text-base text-gray-600 mt-2">
+            <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
               <Star className="h-4 w-4 fill-current text-yellow-400" />
               <span className="font-medium">
-                {listing.average_rating?.toFixed(1) || 0}
+                {listing.average_rating?.toFixed(1) || "0.0"}
               </span>
               <span>({listing.reviews_count || 0})</span>
             </div>
@@ -209,17 +269,18 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
 
         {/* Chính sách hủy */}
-        <div>
-          <div className="font-semibold text-base">Hủy miễn phí</div>
+        <div className="space-y-2">
+          <div className="font-semibold text-lg">Chính sách hủy</div>
           <div className="text-sm text-gray-600">
             Hủy trước 21 thg 8 để được hoàn tiền đầy đủ
-            <button
-              className="underline font-medium text-black ml-1"
+            <Button
+              variant="link"
+              className="p-0 h-auto text-sm font-medium text-black ml-1 underline"
               onClick={() => setShowPolicy(true)}
               type="button"
             >
               Toàn bộ chính sách
-            </button>
+            </Button>
           </div>
           <CancelPolicyDetail
             open={showPolicy}
@@ -230,22 +291,22 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
 
         {/* Thông tin chuyến đi */}
-        <div className="border-t pt-5">
-          <div className="flex justify-between items-center mb-2">
-            <div className="font-medium text-base">Thông tin chuyến đi</div>
+        <div className="border-t pt-6 space-y-2">
+          <div className="flex justify-between items-center">
+            <div className="font-semibold text-lg">Thông tin chuyến đi</div>
             <Button
               onClick={() => setOpen(true)}
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="text-sm px-4 py-2 border-none hover:bg-gray-100"
+              className="text-sm px-3 py-1 hover:bg-gray-100"
             >
               Thay đổi
             </Button>
           </div>
-          <div className="text-base">
+          <div className="text-base text-gray-700">
             {tripStart} – {tripEnd}
           </div>
-          <div className="text-base">{guestCount} người lớn</div>
+          <div className="text-base text-gray-700">{adults} người lớn</div>
           <BookingInfoModal
             open={open}
             onClose={() => setOpen(false)}
@@ -253,7 +314,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
               from: tripStart ? new Date(tripStart) : undefined,
               to: tripEnd ? new Date(tripEnd) : undefined,
             }}
-            initialGuests={{ adults: guestCount, infants: 0 }}
+            initialGuests={{ adults: adults, infants: infants }}
             maxGuests={listing.max_guests}
             allowInfants={listing.allow_infants}
             maxInfants={listing.max_infants || 0}
@@ -262,78 +323,85 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           />
         </div>
 
-        {/* Chọn dịch vụ/voucher */}
-        {/*
-        <ServiceSelector disabled={isDeposit} ... />
-        <VoucherListForUser disabled={isDeposit} ... />
-        */}
-
         {/* Chi tiết giá */}
-        <div className="font-medium text-base mb-2">Chi tiết giá</div>
-        <div className="flex justify-between text-base">
-          <span>
-            ₫{listing.price_per_night.toLocaleString()} x {nights} đêm
-          </span>
-          <span>₫{base.toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between text-base">
-          <span>Phí dịch vụ</span>
-          <span>₫{serviceFee.toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between text-base">
-          <span>Thuế (8%)</span>
-          <span>₫{tax.toLocaleString()}</span>
-        </div>
-        {/* Dịch vụ/voucher chỉ hiển thị khi thanh toán toàn bộ */}
-        {paymentType === "full" && (
-          <div className="flex justify-between text-base">
-            <span>Dịch vụ kèm theo</span>
-            <span>₫{selectedServiceTotal.toLocaleString()}</span>
-          </div>
-        )}
-        {/* Tổng tiền */}
-        <div className="flex justify-between font-bold text-xl">
-          <span>Tổng VND</span>
-          <span
-            className={discount ? "line-through text-gray-400 text-lg" : ""}
-          >
-            ₫{total.toLocaleString()}
-          </span>
-        </div>
-        {/* Discount chỉ hiển thị khi thanh toán toàn bộ */}
-        {paymentType === "full" && discount > 0 && (
-          <div className="flex justify-between text-base text-green-600 font-semibold mt-1">
-            <span>Đã giảm ({selectedVoucher?.code})</span>
-            <span>-₫{discount.toLocaleString()}</span>
-          </div>
-        )}
-        {((paymentType === "full" && discount > 0) ||
-          paymentType === "deposit") && (
-          <div className="flex justify-between font-bold text-xl mt-1">
-            <span>Tổng sau giảm</span>
-            <span className="text-pink-600">
-              ₫{finalTotal.toLocaleString()}
+        <div className="border-t pt-6 space-y-3">
+          <div className="font-semibold text-lg mb-2">Chi tiết giá</div>
+          <div className="flex justify-between text-base text-gray-700">
+            <span>
+              ₫{listing.price_per_night.toLocaleString()} x {nights} đêm
             </span>
+            <span>₫{base.toLocaleString()}</span>
           </div>
-        )}
-        <a
-          href="#"
-          className="text-base text-black mt-2 underline cursor-pointer"
-          onClick={(e) => {
-            e.preventDefault();
-            setShowPriceDetail(true);
-          }}
-        >
-          Chi tiết giá
-        </a>
-        <PriceDetailModal
-          open={showPriceDetail}
-          onClose={() => setShowPriceDetail(false)}
-          pricePerNight={listing.price_per_night}
-          nights={nights}
-          discount={0}
-          selectedServiceTotal={selectedServiceTotal}
-        />
+          <div className="flex justify-between text-base text-gray-700">
+            <span>Phí dịch vụ</span>
+            <span>₫{serviceFee.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-base text-gray-700">
+            <span>Thuế (8%)</span>
+            <span>₫{tax.toLocaleString()}</span>
+          </div>
+
+          {/* Dịch vụ/voucher chỉ hiển thị khi thanh toán toàn bộ */}
+          {paymentType === "full" && (
+            <div className="flex justify-between text-base text-gray-700">
+              <span>Dịch vụ kèm theo</span>
+              <span>₫{selectedServiceTotal.toLocaleString()}</span>
+            </div>
+          )}
+
+          <div className="border-t pt-4 mt-4">
+            <div className="flex justify-between font-bold text-xl">
+              <span>Tổng VND</span>
+              <span
+                className={
+                  discount && paymentType === "full"
+                    ? "line-through text-gray-400 text-lg"
+                    : ""
+                }
+              >
+                ₫{total.toLocaleString()}
+              </span>
+            </div>
+
+            {/* Discount chỉ hiển thị khi thanh toán toàn bộ */}
+            {paymentType === "full" && discount > 0 && (
+              <div className="flex justify-between text-base text-green-600 font-semibold mt-2">
+                <span>Đã giảm ({selectedVoucher?.code})</span>
+                <span>-₫{discount.toLocaleString()}</span>
+              </div>
+            )}
+
+            {((paymentType === "full" && discount > 0) ||
+              paymentType === "deposit") && (
+              <div className="flex justify-between font-bold text-xl mt-2">
+                <span>Tổng sau giảm</span>
+                <span className="text-pink-600">
+                  ₫{finalTotal.toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <Button
+            variant="link"
+            className="p-0 h-auto text-base text-black mt-4 underline"
+            onClick={(e) => {
+              e.preventDefault();
+              setShowPriceDetail(true);
+            }}
+          >
+            Chi tiết giá
+          </Button>
+          <PriceDetailModal
+            open={showPriceDetail}
+            onClose={() => setShowPriceDetail(false)}
+            pricePerNight={listing.price_per_night}
+            nights={nights}
+            discount={0} // Discount is calculated internally, not passed here for display
+            selectedServiceTotal={selectedServiceTotal}
+          />
+        </div>
+
         <Button
           className="w-full h-12 bg-gradient-to-r from-[#ff4668] to-[#b91c5c] text-white font-bold text-lg rounded-xl border-0 hover:opacity-90 transition-all duration-200 mt-5"
           onClick={handlePayment}

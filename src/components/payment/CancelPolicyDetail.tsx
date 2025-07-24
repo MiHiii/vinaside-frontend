@@ -19,8 +19,6 @@ export default function CancelPolicyDetail({
   policy,
   checkInDate,
 }: CancelPolicyDetailProps) {
- 
-
   const renderDetail = () => {
     const checkIn = new Date(checkInDate);
     const fiveDaysBefore = format(subDays(checkIn, 5), "dd/MM/yyyy");

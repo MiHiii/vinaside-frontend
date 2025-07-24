@@ -44,6 +44,7 @@ interface BookingState {
   adminBookings: Booking[];
   adminTotal: number;
   adminBookingDetail: Booking | null;
+  selectedServices: any[]; // Thêm dòng này
 }
 
 const initialState: BookingState = {
@@ -62,6 +63,7 @@ const initialState: BookingState = {
   adminBookings: [],
   adminTotal: 0,
   adminBookingDetail: null,
+  selectedServices: [], // Thêm dòng này
 };
 
 // Async thunk để tạo booking
@@ -79,6 +81,16 @@ export const createBooking = createAsyncThunk(
     infants: number;
     guest_name: string;
     guest_email: string;
+    specialRequests?: string;
+    voucherCode?: string;
+    selected_services?: Array<{
+      service_id: string;
+      service_name: string;
+      service_price: number;
+      quantity: number;
+      total_price: number;
+    }>;
+    services_total_amount?: number;
   }) => {
     const response = await api.post("/bookings", bookingData);
     return response.data?.data;
@@ -435,12 +447,16 @@ const bookingSlice = createSlice({
     clearBookingState: (state) => {
       state.bookingData = null;
       state.error = null;
+      state.selectedServices = [];
     },
     setError: (state, action) => {
       state.error = action.payload;
     },
     clearError: (state) => {
       state.error = null;
+    },
+    setSelectedServices: (state, action) => {
+      state.selectedServices = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -623,5 +639,6 @@ const bookingSlice = createSlice({
   },
 });
 
-export const { clearBookingState, setError, clearError } = bookingSlice.actions;
+export const { clearBookingState, setError, clearError, setSelectedServices } =
+  bookingSlice.actions;
 export default bookingSlice.reducer;
