@@ -153,7 +153,10 @@ const BookingList: React.FC = () => {
                 let guestEmail = "";
                 if (typeof guestId === "object" && guestId !== null) {
                   guestName = guestId.name || "";
-                  guestEmail = guestId.email || "";
+                  guestEmail =
+                    "email" in guestId && typeof guestId.email === "string"
+                      ? guestId.email
+                      : "";
                 } else if (typeof b.guest_name === "string") {
                   guestName = b.guest_name;
                 }
