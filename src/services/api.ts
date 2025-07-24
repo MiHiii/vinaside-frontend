@@ -140,4 +140,33 @@ api.interceptors.response.use(
   }
 );
 
+// Định nghĩa type cho params search location
+export interface ListingSearchParams {
+  place_id?: string;
+  fuzzy_place_search?: boolean;
+  lat?: number;
+  lng?: number;
+  locationKeyword?: string;
+  city?: string;
+  district?: string;
+  address?: string;
+  radius?: number;
+  [key: string]: unknown;
+}
+
+// API service cho search location
+export const fetchListings = async (params: ListingSearchParams) => {
+  // Nếu có lat/lng thì gọi endpoint /listings/location/nearby
+  if (params.lat && params.lng) {
+    return api.get("/listings/location/nearby", { params }).then(res => res.data);
+  }
+  // Nếu có place_id thì gọi /listings?place_id=...
+  if (params.place_id) {
+    if (params.fuzzy_place_search === undefined) params.fuzzy_place_search = true;
+    return api.get("/listings", { params }).then(res => res.data);
+  }
+  // Nếu chỉ có keyword hoặc các trường khác
+  return api.get("/listings", { params }).then(res => res.data);
+};
+
 

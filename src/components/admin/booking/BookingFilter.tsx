@@ -84,6 +84,9 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
       propertyId: filters.propertyId,
       listingId: filters.listingId,
       guestId: filters.guestId,
+      paymentStatus: filters.paymentStatus
+        ? filters.paymentStatus.toLowerCase()
+        : undefined,
       includeDeleted:
         filters?.includeDeleted === "true"
           ? true
@@ -94,7 +97,7 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
   };
 
   return (
-    <Card className="mb-4 mt-10">
+    <Card className="mb-4 mt-10 border-0 shadow-none">
       <CardHeader>
         <CardTitle>Bộ lọc booking</CardTitle>
       </CardHeader>
@@ -107,12 +110,12 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
               <Select
                 onValueChange={(id) => handleSelectChange("propertyId", id)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all text-base h-12 px-4 font-medium bg-white shadow-sm">
                   <SelectValue placeholder="Chọn tài sản" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl shadow-lg bg-white text-base">
                   {properties.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
+                    <SelectItem key={property.id} value={property.id} className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">
                       {property.name}
                     </SelectItem>
                   ))}
@@ -124,15 +127,16 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
               <Select
                 onValueChange={(id) => handleSelectChange("listingId", id)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all text-base h-12 px-4 font-medium bg-white shadow-sm">
                   <SelectValue placeholder="Chọn listing" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl shadow-lg bg-white text-base">
                   {Array.isArray(listings) &&
                     listings.map((listing) => (
                       <SelectItem
                         key={String(listing.id || listing._id)}
                         value={String(listing.id || listing._id)}
+                        className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
                       >
                         {listing.name || listing.title}
                       </SelectItem>
@@ -143,15 +147,16 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
             <div className="flex flex-col gap-2">
               <Label htmlFor="guestId">Khách</Label>
               <Select onValueChange={(id) => handleSelectChange("guestId", id)}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all text-base h-12 px-4 font-medium bg-white shadow-sm">
                   <SelectValue placeholder="Chọn khách" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl shadow-lg bg-white text-base">
                   {Array.isArray(guests) &&
                     guests.map((guest) => (
                       <SelectItem
                         key={String(guest.id || guest._id)}
                         value={String(guest.id || guest._id)}
+                        className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
                       >
                         {guest.name}
                       </SelectItem>
@@ -162,16 +167,16 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
             <div className="flex flex-col gap-2">
               <Label htmlFor="status">Trạng thái</Label>
               <Select onValueChange={(v) => handleSelectChange("status", v)}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all text-base h-12 px-4 font-medium bg-white shadow-sm">
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="pending">Chờ xác nhận</SelectItem>
-                  <SelectItem value="confirmed">Đã xác nhận</SelectItem>
-                  <SelectItem value="cancelled">Đã hủy</SelectItem>
-                  <SelectItem value="completed">Hoàn thành</SelectItem>
-                  <SelectItem value="rejected">Từ chối</SelectItem>
+                <SelectContent className="rounded-xl shadow-lg bg-white text-base">
+                  <SelectItem value="all" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Tất cả</SelectItem>
+                  <SelectItem value="pending" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Chờ xác nhận</SelectItem>
+                  <SelectItem value="confirmed" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Đã xác nhận</SelectItem>
+                  <SelectItem value="cancelled" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Đã hủy</SelectItem>
+                  <SelectItem value="completed" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Hoàn thành</SelectItem>
+                  <SelectItem value="rejected" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Từ chối</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -180,15 +185,15 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
               <Select
                 onValueChange={(v) => handleSelectChange("paymentStatus", v)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all text-base h-12 px-4 font-medium bg-white shadow-sm">
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="pending">Chờ thanh toán</SelectItem>
-                  <SelectItem value="paid">Đã thanh toán</SelectItem>
-                  <SelectItem value="refunded">Đã hoàn tiền</SelectItem>
-                  <SelectItem value="failed">Thanh toán thất bại</SelectItem>
+                <SelectContent className="rounded-xl shadow-lg bg-white text-base">
+                  <SelectItem value="all" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Tất cả</SelectItem>
+                  <SelectItem value="pending" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Chờ thanh toán</SelectItem>
+                  <SelectItem value="paid" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Đã thanh toán</SelectItem>
+                  <SelectItem value="refunded" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Đã hoàn tiền</SelectItem>
+                  <SelectItem value="failed" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Thanh toán thất bại</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -201,7 +206,7 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left font-normal"
+                    className="w-67 justify-start text-left font-normal h-10 text-sm rounded-lg px-3"
                     type="button"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -228,6 +233,11 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                       }));
                     }}
                     initialFocus
+                    modifiersClassNames={{
+                      selected: "!bg-blue-600 !text-white",
+                      today: "border border-blue-400",
+                      hovered: "!bg-blue-100"
+                    }}
                   />
                 </PopoverContent>
               </Popover>
@@ -238,7 +248,7 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left font-normal"
+                    className="w-67 justify-start text-left font-normal h-10 text-sm rounded-lg px-3"
                     type="button"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -265,6 +275,11 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                       }));
                     }}
                     initialFocus
+                    modifiersClassNames={{
+                      selected: "!bg-blue-600 !text-white",
+                      today: "border border-blue-400",
+                      hovered: "!bg-blue-100"
+                    }}
                   />
                 </PopoverContent>
               </Popover>

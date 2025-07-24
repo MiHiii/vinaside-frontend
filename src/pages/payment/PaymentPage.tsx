@@ -10,6 +10,7 @@ import { Voucher } from "@/types/voucher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { setSelectedServices } from "@/store/slices/bookingSlice";
 
 export default function PaymentLayout() {
   const [searchParams] = useSearchParams();
@@ -65,6 +66,28 @@ export default function PaymentLayout() {
         dispatch(fetchListingById(listingId));
       });
     }
+    // Khôi phục selectedServices từ localStorage nếu Redux rỗng
+    if (!selectedServices || selectedServices.length === 0) {
+      const saved = localStorage.getItem("selectedServices");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            dispatch(setSelectedServices(parsed));
+          }
+        } catch {}
+      }
+    }
+    // Khôi phục selectedVoucher từ localStorage nếu chưa có
+    if (!selectedVoucher) {
+      const savedVoucher = localStorage.getItem("selectedVoucher");
+      if (savedVoucher) {
+        try {
+          const parsed = JSON.parse(savedVoucher);
+          setSelectedVoucher(parsed);
+        } catch {}
+      }
+    }
   }, [listingId, dispatch]);
 
   // Callback khi lưu ngày mới từ modal
@@ -114,13 +137,7 @@ export default function PaymentLayout() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div>
             {/* Voucher phía trên form thanh toán */}
-            <div
-              className={
-                paymentType === "deposit"
-                  ? "opacity-50 pointer-events-none"
-                  : ""
-              }
-            >
+            <div>
               <VoucherListForUser
                 onVoucherSelect={setSelectedVoucher}
                 totalAmount={

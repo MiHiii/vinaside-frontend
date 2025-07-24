@@ -14,6 +14,7 @@ import PriceDetailModal from "./PriceDetailModal";
 import CancelPolicyDetail from "./CancelPolicyDetail";
 import type { Voucher } from "@/types/voucher";
 import { cn } from "@/lib/utils"; // Assuming cn utility is available
+import { toast } from "sonner";
 
 interface BookingSummaryProps {
   listing: IListing;
@@ -103,13 +104,11 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         guest_name: user?.name || "Khách chưa đặt tên",
         guest_email: user?.email || "unknown@example.com",
         specialRequests: specialRequests,
-        ...(paymentType === "full" && {
-          voucherCode: selectedVoucher?.code || undefined,
-          services: selectedServices.map((s) => ({
-            serviceId: s.service_id,
-            quantity: s.quantity,
-          })),
-        }),
+        voucherCode: selectedVoucher?.code || undefined,
+        services: selectedServices.map((s) => ({
+          serviceId: s.service_id,
+          quantity: s.quantity,
+        })),
       };
       console.log("[FE] bookingData gửi lên backend:", bookingData);
       const result = await dispatch(createBooking(bookingData)).unwrap();
@@ -134,9 +133,23 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
       } else {
         alert("Không lấy được link thanh toán.");
       }
-    } catch (err) {
-      console.error("Thanh toán thất bại:", err);
-      alert("Đã có lỗi xảy ra khi thanh toán.");
+    } catch (err: any) {
+      // Nếu là lỗi từ API tạo booking
+      if (
+        err &&
+        err.statusCode === 400 &&
+        typeof err.message === "string" &&
+        err.message.toLowerCase().includes("voucher")
+      ) {
+        toast.error(err.message, { style: { color: "#dc2626" } });
+      } else {
+        toast.error(
+          "Đã có lỗi xảy ra khi thanh toán! Mã voucher đã bị vô hiệu hóa",
+          {
+            style: { color: "#dc2626" },
+          }
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -161,21 +174,28 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   let base = listing.price_per_night * nights;
   let serviceFee = Math.round(base * 0.1);
   let tax = Math.round(base * 0.08);
+  if (paymentType === "deposit") {
+    // Tính 50% giá phòng, nhưng vẫn cộng dịch vụ và trừ voucher
+    base = Math.round(listing.price_per_night * nights * 0.5);
+    serviceFee = Math.round(base * 0.1);
+    tax = Math.round(base * 0.08);
+  }
   let total = base + serviceFee + tax + selectedServiceTotal;
   let discount = selectedVoucher
     ? Math.round((total * selectedVoucher.discount_percent) / 100)
     : 0;
   let finalTotal = total - discount;
 
-  if (paymentType === "deposit") {
-    // Chỉ tính 50% giá phòng, không cộng dịch vụ/voucher
-    base = Math.round(listing.price_per_night * nights * 0.5);
-    serviceFee = Math.round(base * 0.1);
-    tax = Math.round(base * 0.08);
-    total = base + serviceFee + tax;
-    discount = 0;
-    finalTotal = total;
-  }
+  // Lấy vị trí từ property/location
+  const location = listing.propertyId?.location || listing.location || {};
+  const locationText = [
+    location.address,
+    location.ward,
+    location.district,
+    location.city,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Card className="sticky top-6 rounded-xl border border-gray-200 shadow-sm">
@@ -219,11 +239,6 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
               <span className="font-medium">Đặt cọc 50%</span>
             </label>
           </div>
-          {isDeposit && (
-            <div className="text-red-500 text-sm mt-2">
-              Dịch vụ & voucher chỉ áp dụng khi thanh toán toàn bộ!
-            </div>
-          )}
         </div>
 
         {/* Input specialRequests */}
@@ -236,7 +251,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           </label>
           <textarea
             id="specialRequests"
-            className="w-full border border-input bg-background rounded-md px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full border border-gray-400 bg-background rounded-md px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:border-pink-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Nhập yêu cầu thêm (nếu có)..."
             value={specialRequests}
             onChange={(e) => setSpecialRequests(e.target.value)}
@@ -245,7 +260,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
 
         {/* Ảnh + Tiêu đề + Đánh giá */}
-        <div className="flex gap-4 items-center border-t pt-6">
+        <div className="flex gap-4 items-center border-t border-gray-400 pt-6">
           <img
             src={
               listing.images?.[0] ||
@@ -258,6 +273,25 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             <div className="font-semibold text-lg leading-tight">
               {listing.title}
             </div>
+            {/* Hiển thị vị trí nếu có */}
+            {locationText && (
+              <div className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                <svg
+                  className="w-4 h-4 text-pink-500"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 0c-3.866 0-7 3.134-7 7 0 1.657 1.343 3 3 3h8c1.657 0 3-1.343 3-3 0-3.866-3.134-7-7-7z"
+                  />
+                </svg>
+                <span>{locationText}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
               <Star className="h-4 w-4 fill-current text-yellow-400" />
               <span className="font-medium">
@@ -291,7 +325,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
 
         {/* Thông tin chuyến đi */}
-        <div className="border-t pt-6 space-y-2">
+        <div className="border-t border-gray-400  pt-6 space-y-2">
           <div className="flex justify-between items-center">
             <div className="font-semibold text-lg">Thông tin chuyến đi</div>
             <Button
@@ -324,11 +358,16 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
 
         {/* Chi tiết giá */}
-        <div className="border-t pt-6 space-y-3">
+        <div className="border-t border-gray-400  pt-6 space-y-3">
           <div className="font-semibold text-lg mb-2">Chi tiết giá</div>
           <div className="flex justify-between text-base text-gray-700">
             <span>
               ₫{listing.price_per_night.toLocaleString()} x {nights} đêm
+              {paymentType === "deposit" && (
+                <span className="ml-2 text-xs text-pink-600">
+                  (Chỉ tính 50%)
+                </span>
+              )}
             </span>
             <span>₫{base.toLocaleString()}</span>
           </div>
@@ -340,66 +379,38 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             <span>Thuế (8%)</span>
             <span>₫{tax.toLocaleString()}</span>
           </div>
-
-          {/* Dịch vụ/voucher chỉ hiển thị khi thanh toán toàn bộ */}
-          {paymentType === "full" && (
-            <div className="flex justify-between text-base text-gray-700">
-              <span>Dịch vụ kèm theo</span>
-              <span>₫{selectedServiceTotal.toLocaleString()}</span>
-            </div>
-          )}
-
-          <div className="border-t pt-4 mt-4">
-            <div className="flex justify-between font-bold text-xl">
+          <div className="flex justify-between text-base text-gray-700">
+            <span>Dịch vụ kèm theo</span>
+            <span>₫{selectedServiceTotal.toLocaleString()}</span>
+          </div>
+          <div className="border-t border-gray-400 pt-4 mt-4">
+            <div className="flex justify-between font-bold text-base">
               <span>Tổng VND</span>
               <span
-                className={
-                  discount && paymentType === "full"
-                    ? "line-through text-gray-400 text-lg"
-                    : ""
-                }
+                className={discount ? "line-through text-gray-400 text-lg" : ""}
               >
                 ₫{total.toLocaleString()}
               </span>
             </div>
-
-            {/* Discount chỉ hiển thị khi thanh toán toàn bộ */}
-            {paymentType === "full" && discount > 0 && (
-              <div className="flex justify-between text-base text-green-600 font-semibold mt-2">
+            {discount > 0 && (
+              <div className="flex justify-between text-base text-green-600 font-medium mt-2">
                 <span>Đã giảm ({selectedVoucher?.code})</span>
                 <span>-₫{discount.toLocaleString()}</span>
               </div>
             )}
-
-            {((paymentType === "full" && discount > 0) ||
-              paymentType === "deposit") && (
-              <div className="flex justify-between font-bold text-xl mt-2">
-                <span>Tổng sau giảm</span>
-                <span className="text-pink-600">
-                  ₫{finalTotal.toLocaleString()}
-                </span>
+            <div className="flex justify-between font-bold text-xl mt-2">
+              <span>Tổng sau giảm</span>
+              <span className="text-pink-600">
+                ₫{finalTotal.toLocaleString()}
+              </span>
+            </div>
+            {paymentType === "deposit" && (
+              <div className="text-xs text-gray-500 mt-1">
+                Bạn sẽ thanh toán trước 50% tổng tiền, phần còn lại sẽ thanh
+                toán sau.
               </div>
             )}
           </div>
-
-          <Button
-            variant="link"
-            className="p-0 h-auto text-base text-black mt-4 underline"
-            onClick={(e) => {
-              e.preventDefault();
-              setShowPriceDetail(true);
-            }}
-          >
-            Chi tiết giá
-          </Button>
-          <PriceDetailModal
-            open={showPriceDetail}
-            onClose={() => setShowPriceDetail(false)}
-            pricePerNight={listing.price_per_night}
-            nights={nights}
-            discount={0} // Discount is calculated internally, not passed here for display
-            selectedServiceTotal={selectedServiceTotal}
-          />
         </div>
 
         <Button
