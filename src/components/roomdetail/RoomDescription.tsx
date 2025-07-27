@@ -96,12 +96,12 @@ const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
           Hiển thị tất cả tiện nghi & chính sách & nội quy
         </Button>
         {/* Dịch vụ kèm theo ngoài modal - chuyển xuống dưới */}
-        <div className="mt-8">
+        <div className="mt-5 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="text-lg sm:text-xl font-semibold">
+            <div className="text-lg font-semibold text-black">
               Dịch vụ kèm theo
             </div>
-            <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <label className="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={
@@ -133,69 +133,98 @@ const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
                     setSelectedServices([]);
                   }
                 }}
-                className="accent-pink-500 h-5 w-5"
+                className="accent-red-500 h-4 w-4 rounded border-2 border-gray-300"
               />
-              <span>Chọn tất cả</span>
+              <span className="text-xs font-medium text-gray-600 group-hover:text-red-500 transition-colors">
+                Chọn tất cả
+              </span>
             </label>
           </div>
-          <div className="rounded-2xl bg-white shadow p-2 sm:p-4">
+
+          <div className="bg-white rounded-2xl overflow-hidden">
             {listing.service_ids && listing.service_ids.length > 0 ? (
-              (listing.service_ids ?? []).map((serviceId) => {
-                const service = services.find(
-                  (s) => s._id === String(serviceId)
-                );
-                if (!service) return null;
-                const selected = selectedServices.find(
-                  (s) => s.service_id === service._id
-                );
-                return (
-                  <div
-                    key={service._id}
-                    className="flex items-center gap-6 px-6 py-4 border-b border-gray-200 last:border-b-0"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!selected}
-                      onChange={() => {
-                        if (selected) {
-                          setSelectedServices(
-                            selectedServices.filter(
-                              (s) => s.service_id !== service._id
-                            )
-                          );
-                        } else {
-                          setSelectedServices([
-                            ...selectedServices,
-                            {
-                              service_id: service._id,
-                              service_name: service.name,
-                              service_price: service.default_price || 0,
-                              quantity: 1,
-                              total_price: service.default_price || 0,
-                            },
-                          ]);
-                        }
-                      }}
-                      className="accent-pink-500 h-5 w-5"
-                    />
-                    {service.icon_url && (
-                      <img
-                        src={service.icon_url}
-                        alt={service.name}
-                        className="h-10 w-10 rounded-xl object-contain border border-gray-200 shadow-sm"
+              <div className="divide-y divide-gray-100">
+                {(listing.service_ids ?? []).map((serviceId) => {
+                  const service = services.find(
+                    (s) => s._id === String(serviceId)
+                  );
+                  if (!service) return null;
+                  const selected = selectedServices.find(
+                    (s) => s.service_id === service._id
+                  );
+                  return (
+                    <div
+                      key={service._id}
+                      className={`flex items-center gap-4 p-3 transition-all duration-200 hover:bg-gray-50 ${
+                        selected ? "bg-red-50 border-l-4 border-l-red-500" : ""
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!selected}
+                        onChange={() => {
+                          if (selected) {
+                            setSelectedServices(
+                              selectedServices.filter(
+                                (s) => s.service_id !== service._id
+                              )
+                            );
+                          } else {
+                            setSelectedServices([
+                              ...selectedServices,
+                              {
+                                service_id: service._id,
+                                service_name: service.name,
+                                service_price: service.default_price || 0,
+                                quantity: 1,
+                                total_price: service.default_price || 0,
+                              },
+                            ]);
+                          }
+                        }}
+                        className="accent-red-500 h-4 w-4 rounded border-2 border-gray-300"
                       />
-                    )}
-                    <span className="text-gray-900 text-base font-semibold flex-1">
-                      {service.name}
-                    </span>
-                    <span className="text-pink-600 text-base font-bold">
-                      {service.default_price?.toLocaleString()}₫
-                    </span>
-                  </div>
-                );
-              })
+
+                      <div className="flex items-center gap-3 flex-1">
+                        {service.icon_url ? (
+                          <img
+                            src={service.icon_url}
+                            alt={service.name}
+                            className="h-12 w-12 rounded-lg object-cover bg-white"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <span className="text-gray-600 font-semibold text-sm">
+                              {service.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex-1">
+                          <div className="text-base font-medium text-black">
+                            {service.name}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Dịch vụ bổ sung
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-sm text-red-600 font-medium">
+                          {service.default_price?.toLocaleString()}đ
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <span className="text-gray-500">Không có dịch vụ kèm theo</span>
+              <div className="p-6 text-center">
+                <div className="text-gray-400 text-xs">
+                  Không có dịch vụ kèm theo
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -206,7 +235,7 @@ const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
           style={{ maxWidth: "1200px" }}
         >
           <DialogHeader>
-            <DialogTitle className="text-3xl font-bold mb-8">
+            <DialogTitle className="text-2xl font-bold mb-8">
               Nơi này có những gì cho bạn
             </DialogTitle>
           </DialogHeader>
