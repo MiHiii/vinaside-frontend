@@ -2,8 +2,16 @@
 import React, { useState } from "react";
 import { Search } from "lucide-react";
 
-export default function SearchableGoogleMap() {
-  const [input, setInput] = useState("Quận 1, Thành phố Hồ Chí Minh, Việt Nam");
+interface SearchableGoogleMapProps {
+  lat: number;
+  lng: number;
+}
+
+export default function SearchableGoogleMap({
+  lat,
+  lng,
+}: SearchableGoogleMapProps) {
+  const [input, setInput] = useState(`${lat}, ${lng}`);
   const [query, setQuery] = useState(input);
 
   const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(

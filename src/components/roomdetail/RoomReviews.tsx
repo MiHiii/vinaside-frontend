@@ -8,7 +8,6 @@ import {
   fetchReviewsByRoomId,
 } from "@/store/slices/reviewSlice";
 
-
 // Hàm loại bỏ dấu tiếng Việt
 function removeAccents(str: string) {
   return str.normalize("NFD").replace(/\p{Diacritic}/gu, "");
@@ -44,8 +43,6 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
     }
   }, [roomId, dispatch]);
 
-
-
   function getUserAvatar(user: unknown): string {
     if (
       user &&
@@ -77,41 +74,49 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
           .reduce((sum, r) => sum + r.rating, 0) / totalReviews
       : 0;
   return (
-    <div className="mt-12">
+    <div className="mt-5">
+      <h3 className="text-lg font-semibold text-black">Đánh giá</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Ngoài modal: luôn hiển thị 6 review đầu, không lọc searchTerm */}
         {(showAll
           ? []
           : reduxReviews.filter((r) => r && r.user).slice(0, 6)
         ).map((r, idx) => (
-          <div key={idx} className="flex flex-col gap-2 p-6">
-            <div className="flex items-center gap-4 mb-2">
+          <div
+            key={idx}
+            className="flex flex-col gap-2 p-4 shadow-sm border-0 rounded-lg mt-8 mb-8"
+          >
+            <div className="flex items-center gap-4 ">
               <img
                 src={getUserAvatar(r.user)}
                 alt={getUserName(r.user)}
-                className="h-12 w-12 rounded-full object-cover border border-gray-200"
+                className="h-16 w-16 rounded-full object-cover border border-gray-200"
               />
-              <div>
-                <div className="font-semibold text-lg text-gray-900">
+              <div className="flex-1">
+                <div className="font-semibold text-lg text-gray-900 mb-1">
                   {r.user?.name || "Khách hàng"}
+                </div>
+                <div className="flex items-center text-sm text-gray-700">
+                  {Array.from({ length: r.rating }).map((_, i) => (
+                    <span key={i} className="text-gray-800">
+                      ★
+                    </span>
+                  ))}
+                  <span className="ml-2 text-gray-500">
+                    {r.createdAt
+                      ? new Date(r.createdAt).toLocaleDateString()
+                      : ""}
+                  </span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-700 mb-1">
-              {Array.from({ length: r.rating }).map((_, i) => (
-                <span key={i}>★</span>
-              ))}
-              <span className="ml-2">
-                {r.createdAt
-                  ? new Date(r.createdAt).toLocaleDateString()
-                  : ""}
-              </span>
+            <div className="text-gray-900 text-base ml-2 font-normal leading-relaxed break-words whitespace-pre-wrap">
+              {r.comment}
             </div>
-            <div className="text-gray-900 text-base mb-2">{r.comment}</div>
           </div>
         ))}
       </div>
-      <div className="flex gap-4 mt-8">
+      <div className="flex gap-4">
         <Dialog open={showAll} onOpenChange={setShowAll}>
           <DialogTrigger asChild>
             <Button
@@ -337,12 +342,6 @@ const RoomReviews: React.FC<{ roomId: string }> = ({ roomId }) => {
             </div>
           </DialogContent>
         </Dialog>
-        <a
-          href="#"
-          className="text-gray-500 underline text-base flex items-center"
-        >
-          Tìm hiểu quy trình đánh giá
-        </a>
       </div>
     </div>
   );

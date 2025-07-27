@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight, Grid3X3 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GallerySectionProps {
   images?: string[];
@@ -16,6 +17,7 @@ const GallerySection: React.FC<GallerySectionProps> = ({
   const [imageLoading, setImageLoading] = useState<{ [key: number]: boolean }>(
     {}
   );
+  const [isLoading, setIsLoading] = useState(false);
 
   const fallbackImages = [
     "https://placehold.co/800x600?text=No+Image+1",
@@ -56,6 +58,26 @@ const GallerySection: React.FC<GallerySectionProps> = ({
   const handleImageLoadStart = (index: number) => {
     setImageLoading((prev) => ({ ...prev, [index]: true }));
   };
+
+  // Skeleton loading - chỉ hiển thị khi có ảnh đang load
+  if (isLoading && images.length > 0) {
+    return (
+      <div className="relative">
+        <div className="hidden md:grid md:grid-cols-2 gap-2 h-[300px] lg:h-[400px] xl:h-[500px] overflow-hidden rounded-xl lg:rounded-2xl">
+          <Skeleton className="w-full h-full rounded-xl" />
+          <div className="grid grid-cols-2 gap-2 h-full">
+            <Skeleton className="w-full h-full rounded-lg" />
+            <Skeleton className="w-full h-full rounded-lg" />
+            <Skeleton className="w-full h-full rounded-lg" />
+            <Skeleton className="w-full h-full rounded-lg" />
+          </div>
+        </div>
+        <div className="block md:hidden">
+          <Skeleton className="h-64 sm:h-80 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

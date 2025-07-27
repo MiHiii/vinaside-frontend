@@ -5,10 +5,12 @@ import { useNavigate } from "react-router-dom";
 import BookingCalendar from "./BookingCalendar";
 import GuestSelector from "./GuestSelector";
 import { IListing } from "@/types/listing";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { Service } from "@/types/services";
 import { useAppDispatch } from "@/hooks/useRedux";
 import { setSelectedServices } from "@/store/slices/bookingSlice";
+import { Skeleton } from "@/components/ui/skeleton";
+
 interface BookingFormProps {
   listing: IListing;
   checkIn: Date | null;
@@ -37,6 +39,7 @@ interface BookingFormProps {
   selectedServiceIds?: string[];
   services: Service[];
   selectedServices: any[]; // Thêm dòng này
+  loading?: boolean;
 }
 
 const BookingForm: React.FC<BookingFormProps> = ({
@@ -57,6 +60,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   selectedServiceIds,
   services,
   selectedServices,
+  loading = false,
 }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -80,7 +84,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const handlePayment = () => {
     if (!checkIn || !checkOut || !guests.adults) {
       toast.error(
-        "Vui lòng chọn ngày nhận phòng, trả phòng và số khách trước khi tiếp tục."
+        "Vui lòng chọn ngày nhận phòng, trả phòng và số khách trước khi tiếp tục.",
+        {
+          style: { color: "#dc2626" },
+        }
       );
       return;
     }
@@ -112,6 +119,22 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     navigate(`/payment?${params}`);
   };
+
+  if (loading) {
+    return (
+      <div className="w-full lg:w-[360px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

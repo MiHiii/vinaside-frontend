@@ -1,22 +1,27 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Heart } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { fetchListingById, incrementViewCount } from "@/store/slices/listingSlice";
+import {
+  fetchListingById,
+  incrementViewCount,
+} from "@/store/slices/listingSlice";
 import { IListing } from "@/types/listing";
 import { fetchAmenities, selectAmenities } from "@/store/slices/amenitySlice";
 import { fetchServices } from "@/store/slices/serviceSlice";
 import { fetchSafetyFeatures } from "@/store/slices/safetyFeatureSlice";
 import { fetchHouseRules } from "@/store/slices/houseRuleSlice";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // UI & Components
-
-import { Button } from "@/components/ui/button";
 import GallerySection from "@/components/roomdetail/GallerySection";
 import RoomInfo from "@/components/roomdetail/RoomInfo";
 import BookingForm from "@/components/roomdetail/BookingForm";
 import { useBookedDates } from "@/hooks/useBookedDates";
 import RoomReviews from "@/components/roomdetail/RoomReviews";
+import ButtonWishlist from "@/components/common/ButtonWishlist";
+import SearchableGoogleMap from "@/components/roomdetail/RoomMap";
+import Propertie from "@/components/roomdetail/Propertie";
 
 export default function RoomDetailPage() {
   const { id } = useParams();
@@ -90,10 +95,55 @@ export default function RoomDetailPage() {
     dispatch(fetchHouseRules({}));
   }, [id, dispatch]);
 
-  if (loading) return <p className="text-center py-10">Đang tải phòng...</p>;
-  if (error) return <p className="text-center text-red-500">{error}</p>;
-  if (!listing)
-    return <p className="text-center text-gray-500">Không tìm thấy phòng.</p>;
+  // Hiển thị toast error nếu có lỗi
+  useEffect(() => {
+    if (error) {
+      toast.error(error, {
+        style: { color: "#dc2626" },
+      });
+    }
+  }, [error]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          {/* Skeleton cho tiêu đề */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-10 w-20" />
+          </div>
+
+          {/* Skeleton cho gallery */}
+          <div className="mb-6">
+            <Skeleton className="h-[400px] w-full rounded-xl" />
+          </div>
+
+          {/* Skeleton cho layout chính */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-start">
+            <div className="lg:col-span-8 space-y-6 lg:space-y-8">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+            <div className="hidden lg:flex flex-col items-end lg:col-span-4">
+              <Skeleton className="h-[500px] w-[360px]" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!listing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Skeleton className="h-8 w-64 mx-auto mb-4" />
+          <Skeleton className="h-4 w-48 mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   // Dữ liệu phòng đã được lấy
   const listingData: IListing = listing as IListing;
@@ -102,32 +152,26 @@ export default function RoomDetailPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Tiêu đề & nút chia sẻ/lưu */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">
               {listingData.propertyId?.name}
             </h1>
           </div>
-          <div className="hidden sm:flex items-center gap-2 flex-shrink-0 underline">
-            <Button
-              variant="ghost"
-              className="flex items-center gap-2 text-gray-700 hover:bg-gray-100"
-              onClick={() => setIsFavorite(!isFavorite)}
-            >
-              <Heart
-                className={`h-4 w-4 ${
-                  isFavorite ? "fill-red-500 text-red-500" : ""
-                }`}
-              />
-              <span className="hidden lg:inline">Lưu</span>
-            </Button>
+          <div className="sm:flex items-center flex-shrink-0 underline relative">
+            <ButtonWishlist
+              className="static top-0 right-0"
+              liked={false}
+              roomId={listingData._id}
+            />
+            <span className="hidden lg:inline">Lưu</span>
           </div>
         </div>
 
         {/* Lưới bố cục các phần */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-3 items-start">
           {/* Gallery ảnh */}
           <div className="col-span-full">
             <GallerySection
@@ -148,7 +192,7 @@ export default function RoomDetailPage() {
             />
           </div>
           {/* Booking Form ngoài cùng bên phải */}
-          <div className="hidden lg:flex flex-col items-end lg:col-span-4">
+          <div className="hidden lg:flex flex-col items-end lg:col-span-4 sticky top-6">
             <BookingForm
               listing={listingData}
               checkIn={checkIn}
@@ -172,12 +216,19 @@ export default function RoomDetailPage() {
 
         {/* Đánh giá của khách */}
         <RoomReviews roomId={id || ""} />
-
+        <div className="mt-10 border-t border-gray-200 pt-8">
+          <Propertie propertyId={listingData.propertyId?._id} />
+        </div>
         {/* Google Map */}
-        {/* <div className="mt-12 border-t border-gray-200 pt-8">
+        <div className="mt-12 border-t border-gray-200 pt-8">
           <h2 className="text-2xl font-semibold mb-4">Nơi bạn sẽ đến</h2>
-          <SearchableGoogleMap lat={listing.lat} lng={listing.lng} />
-        </div> */}
+          {listingData.propertyId?.location && (
+            <SearchableGoogleMap
+              lat={listingData.propertyId.location.lat}
+              lng={listingData.propertyId.location.lng}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
