@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 import { Toaster as SonnerToaster } from "sonner";
 import { router } from "./routes";
 import { RootState } from "./store";
+import { GoogleMapsLoader } from "./components/GoogleMapsLoader";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -36,6 +37,7 @@ function App() {
   }
   return (
     <>
+      <GoogleMapsLoader />
       <RouterProvider router={router} />
       <Toaster />
       <SonnerToaster />

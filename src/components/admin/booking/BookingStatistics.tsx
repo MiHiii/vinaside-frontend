@@ -95,9 +95,9 @@ export default function BookingStatisticsAdmin() {
       Array.isArray((statisticsFinancial.financial as unknown as { revenueByMonth?: unknown }).revenueByMonth)
     ) {
       return ((statisticsFinancial.financial as { revenueByMonth: { month: string; bookings: number }[] }).revenueByMonth).map((item) => ({
-        month: item.month,
-        bookings: item.bookings,
-      }));
+      month: item.month,
+      bookings: item.bookings,
+    }));
     }
     return [];
   }, [statisticsFinancial]);

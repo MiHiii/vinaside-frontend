@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
 import {
   fetchProperties,
@@ -6,10 +6,10 @@ import {
   selectPropertiesLoading,
   selectPropertiesError,
   selectPropertiesTotal,
+  getStaffByProperty,
   // createProperty
 } from '@/store/slices/propertySlice';
-import { fetchStaffByIds } from '@/store/slices/userSlice';
-import { selectStaffList, selectStaffLoading } from '@/store/slices/userSlice';
+import { selectStaffList } from '@/store/slices/userSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,35 @@ interface PropertiesFilters {
   status: string;
   page: number;
   limit: number;
+}
+
+interface StaffData {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
+}
+
+interface AssignmentData {
+  _id: string;
+  propertyId: string;
+  staffId: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    role?: string;
+  };
+  assignedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  status: string;
+  assignedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function AdminProperties() {
@@ -46,25 +75,63 @@ export default function AdminProperties() {
   });
 
   const staffList = useAppSelector(selectStaffList);
-  const staffLoading = useAppSelector(selectStaffLoading);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
+  const [currentModalStaff, setCurrentModalStaff] = useState<StaffData[]>([]);
+  
+  // State để lưu trữ số nhân viên và danh sách staff cho từng property
+  const [propertyStaffCounts, setPropertyStaffCounts] = useState<Record<string, number>>({});
+  const [propertyStaffData, setPropertyStaffData] = useState<Record<string, AssignmentData[]>>({});
+  const [loadingStaffCounts, setLoadingStaffCounts] = useState<Record<string, boolean>>({});
+  
+  // Ref để track các property đã load để tránh gọi API trùng lặp
+  const loadedPropertiesRef = useRef<Set<string>>(new Set());
 
-  function isStaffIdObject(id: unknown): id is { _id: string } {
-    return typeof id === 'object' && id !== null && '_id' in id && typeof (id as { _id?: unknown })._id === 'string';
-  }
-
-  const handleShowStaff = (staffIds: unknown[]) => {
-    // Chuyển về mảng id string nếu là object hoặc unknown
-    const ids = staffIds.map(id => {
-      if (typeof id === 'string') return id;
-      if (isStaffIdObject(id)) return id._id;
-      return '';
-    }).filter(Boolean);
-    console.log("Staff IDs:", ids);
-    if (!ids || ids.length === 0) return;
-    dispatch(fetchStaffByIds(ids));
+  const handleShowStaff = (propertyId: string) => {
+    // Sử dụng dữ liệu staff đã load từ API mới
+    const staffData = propertyStaffData[propertyId] || [];
+    if (staffData.length === 0) {
+      toast.error("Không có nhân viên nào được gán cho tòa nhà này");
+      return;
+    }
+    
+    // Lấy danh sách staff từ dữ liệu đã load
+    // API trả về mảng các assignment, mỗi assignment có staffId object
+    const staffList = staffData.map((assignment: AssignmentData) => ({
+      _id: assignment.staffId._id,
+      name: assignment.staffId.name,
+      email: assignment.staffId.email,
+      phone: assignment.staffId.phone,
+      role: 'Staff' // Mặc định role
+    }));
+    
+    // Cập nhật state local để hiển thị trong modal
+    setCurrentModalStaff(staffList);
     setStaffModalOpen(true);
   };
+
+  // Hàm lấy số nhân viên cho một property
+  const loadStaffCountForProperty = useCallback(async (propertyId: string) => {
+    // Kiểm tra xem đã load property này chưa
+    if (loadedPropertiesRef.current.has(propertyId)) return;
+    
+    // Đánh dấu đã load
+    loadedPropertiesRef.current.add(propertyId);
+    
+    setLoadingStaffCounts(prev => ({ ...prev, [propertyId]: true }));
+    try {
+      const result = await dispatch(getStaffByProperty(propertyId));
+      if (getStaffByProperty.fulfilled.match(result)) {
+        const staffData = result.payload?.data || [];
+        const staffCount = staffData.length;
+        setPropertyStaffCounts(prev => ({ ...prev, [propertyId]: staffCount }));
+        setPropertyStaffData(prev => ({ ...prev, [propertyId]: staffData }));
+      }
+    } catch (error) {
+      console.error('Error loading staff count for property:', propertyId, error);
+    } finally {
+      setLoadingStaffCounts(prev => ({ ...prev, [propertyId]: false }));
+    }
+  }, [dispatch]);
 
   const loadProperties = useCallback(async () => {
     try {
@@ -86,6 +153,22 @@ export default function AdminProperties() {
     loadProperties();
   }, [loadProperties]); // Chạy khi loadProperties thay đổi
 
+  // Load số nhân viên cho từng property khi properties thay đổi
+  useEffect(() => {
+    // Reset dữ liệu cũ và ref khi properties thay đổi
+    setPropertyStaffCounts({});
+    setLoadingStaffCounts({});
+    loadedPropertiesRef.current.clear();
+    
+    if (properties.length > 0) {
+      properties.forEach(property => {
+        if (property._id) {
+          loadStaffCountForProperty(property._id);
+        }
+      });
+    }
+  }, [properties, loadStaffCountForProperty]);
+
   const handleFilterChange = (field: keyof PropertiesFilters, value: string | number) => {
     console.log(`Filter changed: ${field} = ${value}`); // Log khi filter thay đổi
     setFilters((prev) => ({
@@ -104,67 +187,14 @@ export default function AdminProperties() {
           <p className='text-gray-600'>Quản lý tất cả properties và bất động sản</p>
         </div>
         <div className='flex gap-2'>
-          {/* <Button 
-            variant="outline"
-            onClick={() => {
-              console.log("Manual test API call");
-              loadProperties();
-            }}
-          >
-            Test API
-          </Button> */}
-          {/* <Button 
-            variant="outline"
-            onClick={async () => {
-              console.log("Creating test property");
-              const testProperty = {
-                name: "Test Property",
-                type: "homestay",
-                description: "Test property description",
-                location: {
-                  lat: 10.762622,
-                  lng: 106.660172,
-                  address: "123 Test Street, Ho Chi Minh City",
-                  city: "Ho Chi Minh City",
-                  district: "District 1",
-                  ward: "Ben Nghe"
-                },
-                checkInTime: "14:00",
-                checkOutTime: "12:00",
-                contactPhone: "0123456789",
-                contactEmail: "test@example.com",
-                allowPets: false,
-                staffIds: [],
-                images: []
-              };
-              
-              try {
-                const result = await dispatch(createProperty(testProperty));
-                if (createProperty.fulfilled.match(result)) {
-                  toast.success("Tạo test property thành công!");
-                  loadProperties();
-                } else {
-                  toast.error("Tạo test property thất bại!");
-                }
-              } catch (error) {
-                console.error("Error creating test property:", error);
-                toast.error("Lỗi tạo test property!");
-              }
-            }}
-          >
-            Tạo Test Property
-          </Button> */}
+     
           <Link to='/admin/properties/create'>
             <Button>
               <Plus className='w-4 h-4 mr-2' />
               Thêm Property
             </Button>
           </Link>
-          {/* <Link to="/admin/properties/deleted">
-            <Button variant="outline">
-              Danh sách đã xóa
-            </Button>
-          </Link> */}
+    
         </div>
       </div>
 
@@ -206,73 +236,80 @@ export default function AdminProperties() {
       </Card>
 
       {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Danh sách Properties</CardTitle>
+      <Card className="border-none shadow-none bg-white">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-semibold text-gray-800">Danh sách HomeStay</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <div className='flex justify-center items-center py-8'>
-              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
+            <div className='flex justify-center items-center py-12'>
+              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
             </div>
           ) : error ? (
-            <div className='text-center py-8 text-red-500'>{error}</div>
+            <div className='text-center py-12 text-red-500'>{error}</div>
           ) : (
             <div className='overflow-x-auto'>
-              <Table>
+              <Table className="border-none">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Ảnh</TableHead>
-                    <TableHead>Tên</TableHead>
-                    <TableHead>Địa chỉ</TableHead>
-                    <TableHead>Staff</TableHead>
-                    <TableHead>Ngày tạo</TableHead>
-                    <TableHead className='text-right'>Thao tác</TableHead>
+                  <TableRow className="border-none bg-gray-50 hover:bg-gray-50">
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Ảnh</TableHead>
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Tên</TableHead>
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Địa chỉ</TableHead>
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Staff</TableHead>
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Ngày tạo</TableHead>
+                    <TableHead className='text-right border-none text-gray-700 font-semibold py-4 px-6'>Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {properties.map((property) => (
-                    <TableRow key={property._id}>
-                      <TableCell>
+                  {properties.map((property, index) => (
+                    <TableRow 
+                      key={property._id} 
+                      className={`border-none hover:bg-gray-50 transition-colors duration-200 ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                      }`}
+                    >
+                      <TableCell className="border-none py-4 px-6">
                         <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
                           {property.thumbnail ? (
                             <img
                               src={property.thumbnail}
                               alt={property.name}
-                              style={{ width: 48, height: 32, objectFit: 'cover', borderRadius: 4 }}
-                              className='cursor-pointer hover:opacity-80'
+                              style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
+                              className='cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm'
                             />
                           ) : property.images && property.images.length > 0 ? (
                             <img
                               src={property.images[0]}
                               alt={property.name}
-                              style={{ width: 48, height: 32, objectFit: 'cover', borderRadius: 4 }}
-                              className='cursor-pointer hover:opacity-80'
+                              style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
+                              className='cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm'
                             />
                           ) : (
-                            <span className='text-gray-400'>Không có ảnh</span>
+                            <div className="w-14 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                              <span className='text-gray-400 text-xs'>No image</span>
+                            </div>
                           )}
                         </Link>
                       </TableCell>
-                      <TableCell className='font-medium'>
+                      <TableCell className='font-medium border-none py-4 px-6'>
                         <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
-                          <div className='max-w-xs truncate cursor-pointer hover:underline' title={property.name}>
+                          <div className='max-w-xs truncate cursor-pointer hover:text-blue-600 transition-colors duration-200 font-semibold text-gray-800' title={property.name}>
                             {property.name}
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell>
-                        <div className='max-w-xs truncate' title={property.location?.address}>
+                      <TableCell className="border-none py-4 px-6">
+                        <div className='max-w-xs truncate text-gray-600' title={property.location?.address}>
                           {property.location?.address}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-none py-4 px-6">
                         <div className='flex items-center gap-2'>
                           <button
-                            className='flex items-center gap-1 text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-none p-0 rounded-full transition hover:bg-blue-50 px-2 py-1'
+                            className='flex items-center gap-2 text-blue-600 hover:text-blue-800 cursor-pointer bg-blue-50 hover:bg-blue-100 border-none rounded-lg px-3 py-1.5 transition-all duration-200'
                             type='button'
-                            onClick={() => handleShowStaff(property.staffIds || [])}
-                            disabled={!property.staffIds || property.staffIds.length === 0}
+                            onClick={() => handleShowStaff(property._id || '')}
+                            disabled={loadingStaffCounts[property._id || ''] || (propertyStaffCounts[property._id || ''] || 0) === 0}
                             title={property.staffIds && property.staffIds.length > 0 && staffList.length > 0
                               ? staffList
                                   .filter(s => property.staffIds.includes(s._id))
@@ -281,27 +318,31 @@ export default function AdminProperties() {
                               : ''}
                           >
                             <UsersIcon className='w-4 h-4 text-blue-500' />
-                            <span className='inline-block min-w-[24px] text-center font-semibold text-sm bg-blue-100 text-blue-700 rounded-full px-2 py-0.5'>
-                              {property.staffIds?.length || 0}
+                            <span className='inline-block min-w-[24px] text-center font-semibold text-sm bg-blue-600 text-white rounded-full px-2 py-0.5'>
+                              {loadingStaffCounts[property._id || ''] ? (
+                                <div className='animate-spin rounded-full h-3 w-3 border-b border-white'></div>
+                              ) : (
+                                propertyStaffCounts[property._id || ''] || 0
+                              )}
                             </span>
-                            <span className='ml-1 text-xs text-blue-700'>staff</span>
+                            <span className='ml-1 text-xs text-blue-700 font-medium'>staff</span>
                           </button>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className='text-sm text-gray-600'>
+                      <TableCell className="border-none py-4 px-6">
+                        <div className='text-sm text-gray-500 font-medium'>
                           {property.createdAt ? new Date(property.createdAt).toLocaleDateString('vi-VN') : ''}
                         </div>
                       </TableCell>
-                      <TableCell className='text-right'>
-                        <div className='flex items-center justify-end gap-2'>
+                      <TableCell className='text-right border-none py-4 px-6'>
+                        <div className='flex items-center justify-end gap-1'>
                           <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
-                            <Button variant='ghost' size='icon'>
+                            <Button variant='ghost' size='icon' className="hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200">
                               <Eye className='h-4 w-4' />
                             </Button>
                           </Link>
                           <Link to={`/admin/properties/edit/${property._id}`} title='Chỉnh sửa'>
-                            <Button variant='ghost' size='icon'>
+                            <Button variant='ghost' size='icon' className="hover:bg-green-50 hover:text-green-600 transition-colors duration-200">
                               <Edit className='h-4 w-4' />
                             </Button>
                           </Link>
@@ -312,7 +353,12 @@ export default function AdminProperties() {
                 </TableBody>
               </Table>
 
-              {properties.length === 0 && <div className='text-center py-8 text-gray-500'>Không có properties nào</div>}
+              {properties.length === 0 && (
+                <div className='text-center py-12 text-gray-500'>
+                  <div className="text-lg font-medium">Không có properties nào</div>
+                  <div className="text-sm text-gray-400 mt-1">Hãy thêm property đầu tiên</div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -347,13 +393,11 @@ export default function AdminProperties() {
           <DialogHeader>
             <DialogTitle>Danh sách nhân viên</DialogTitle>
           </DialogHeader>
-          {staffLoading ? (
-            <div className='text-center py-4'>Đang tải thông tin nhân viên...</div>
-          ) : staffList.length === 0 ? (
+          {currentModalStaff.length === 0 ? (
             <div className='text-center py-4 text-gray-500'>Chưa có nhân viên nào</div>
           ) : (
             <div className='space-y-4'>
-              {staffList.map((staff, idx) => (
+              {currentModalStaff.map((staff, idx) => (
                 <div key={staff._id || idx} className='border-b pb-2 mb-2'>
                   <div className='font-semibold text-base'>{staff.name || staff.email || staff._id}</div>
                   <div className='text-sm text-gray-600'>Email: {staff.email || '-'}</div>
