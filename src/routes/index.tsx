@@ -52,6 +52,8 @@ import CreatePropertyPage from "@/pages/admin/property/CreatePropertyPage";
 import EditPropertyPage from "@/pages/admin/property/EditPropertyPage";
 import PropertyDetailPage from "@/pages/admin/property/PropertyDetailPage";
 import PropertyDeletedPage from "@/pages/admin/property/PropertyDeletedPage";
+import PropertyStaffManagement from "@/pages/admin/properties/PropertyStaffManagement";
+import PropertyStaffOverview from "@/pages/admin/properties/PropertyStaffOverview";
 //listing
 import ListingsPage from "@/pages/admin/listing/ListingsPage";
 import EditListingPage from "@/pages/admin/listing/EditListingPage";
@@ -253,6 +255,8 @@ const routes: RouteObject[] = [
       { path: "properties/edit/:id", element: <EditPropertyPage /> },
       { path: "properties/:id", element: <PropertyDetailPage /> },
       { path: "properties/deleted", element: <PropertyDeletedPage /> },
+      { path: "properties/:id/staff", element: <PropertyStaffManagement /> },
+      { path: "property-staff", element: <PropertyStaffOverview /> },
       //amenities
       { path: "amenities", element: <AmenitiesPage /> },
       { path: "amenities/create", element: <CreateAmenities /> },

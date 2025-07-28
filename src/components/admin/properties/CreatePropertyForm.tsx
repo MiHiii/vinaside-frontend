@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { createProperty, selectCreatePropertyLoading, selectCreatePropertyError, clearCreateError, uploadPropertyImages, selectUploadImagesLoading, selectUploadImagesError, } from "@/store/slices/propertySlice";
+import { createProperty, selectCreatePropertyLoading, selectCreatePropertyError, clearCreateError, uploadPropertyImages, selectUploadImagesLoading, selectUploadImagesError, assignStaffToProperty } from "@/store/slices/propertySlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,8 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { fetchStaffList, selectStaffList, selectStaffLoading } from "@/store/slices/userSlice";
+import PlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-places-autocomplete';
+import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 
 interface CreatePropertyFormData {
   name: string;
@@ -19,6 +21,7 @@ interface CreatePropertyFormData {
     lat: number;
     lng: number;
     address: string;
+    place_id: string;
     city: string;
     district: string;
     ward: string;
@@ -45,11 +48,12 @@ const createPropertySchema = z.object({
   type: z.string().min(1, "Loại bất động sản là bắt buộc"),
   location: z.object({
     address: z.string().min(1, "Địa chỉ là bắt buộc"),
+    lat: z.preprocess((val) => Number(val), z.number().optional()),
+    lng: z.preprocess((val) => Number(val), z.number().optional()),
+    place_id: z.string().optional(),
     city: z.string().optional(),
     district: z.string().optional(),
     ward: z.string().optional(),
-    lat: z.preprocess((val) => Number(val), z.number().optional()),
-    lng: z.preprocess((val) => Number(val), z.number().optional()),
   }),
   checkInTime: z.string().optional(),
   checkOutTime: z.string().optional(),
@@ -60,6 +64,12 @@ const createPropertySchema = z.object({
   images: z.array(z.string()).min(1, "Cần upload ít nhất 1 ảnh"),
 });
 
+type Suggestion = {
+  description: string;
+  placeId: string;
+  [key: string]: any;
+};
+
 export default function CreatePropertyForm() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -69,6 +79,7 @@ export default function CreatePropertyForm() {
   const uploadError = useAppSelector(selectUploadImagesError);
   const staffOptions = useAppSelector(selectStaffList);
   const staffLoading = useAppSelector(selectStaffLoading);
+  const isGoogleMapsLoaded = useGoogleMaps();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -80,6 +91,7 @@ export default function CreatePropertyForm() {
       lat: 0,
       lng: 0,
       address: "",
+      place_id: "",
       city: "",
       district: "",
       ward: "",
@@ -95,6 +107,7 @@ export default function CreatePropertyForm() {
 
   const [files, setFiles] = useState<File[]>([]);
   const [staffIds, setStaffIds] = useState<string[]>([]);
+  const [staffRoles, setStaffRoles] = useState<Record<string, string>>({});
 
   useEffect(() => {
     dispatch(fetchStaffList());
@@ -156,10 +169,37 @@ export default function CreatePropertyForm() {
         ...formData,
         staffIds,
         images: formData.images,
-        thumbnail: formData.images[0] || ""
+        thumbnail: formData.images[0] || "",
+        location: {
+          ...formData.location,
+          lat: formData.location.lat,
+          lng: formData.location.lng,
+        }
       }));
+      
       if (createProperty.fulfilled.match(result)) {
-        toast.success("Tạo property thành công!");
+        const propertyId = result.payload._id;
+        
+        // Gán nhân viên với role sau khi tạo property thành công
+        if (staffIds.length > 0 && propertyId) {
+          try {
+            // Gán từng nhân viên với role tương ứng
+            for (const staffId of staffIds) {
+              const role = staffRoles[staffId] || 'Staff';
+              await dispatch(assignStaffToProperty({ 
+                id: propertyId, 
+                staffIds: [staffId],
+                role 
+              }));
+            }
+            toast.success("Tạo property và gán nhân viên thành công!");
+          } catch {
+            toast.success("Tạo property thành công nhưng gán nhân viên thất bại!");
+          }
+        } else {
+          toast.success("Tạo property thành công!");
+        }
+        
         navigate("/admin/properties");
       } else {
         toast.error(result.payload || "Tạo property thất bại!");
@@ -206,12 +246,101 @@ export default function CreatePropertyForm() {
             {/* Địa chỉ */}
             <div className="space-y-2">
               <Label htmlFor="address">Địa chỉ *</Label>
-              <Input
-                id="address"
-                value={formData.location.address}
-                onChange={(e) => handleLocationChange("address", e.target.value)}
-                placeholder="Địa chỉ đầy đủ"
-              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  {isGoogleMapsLoaded ? (
+                    <PlacesAutocomplete
+                    value={formData.location.address}
+                    onChange={(address: string) => handleLocationChange("address", address)}
+                    // Custom onSelect để lấy cả placeId
+                                    onSelect={(_address: string, placeId?: string, suggestion?: Suggestion) => {
+                  if (suggestion) {
+                    handleLocationChange("address", suggestion.description);
+                    handleLocationChange("place_id", suggestion.placeId || "");
+                    
+                    // Luôn lấy lat/lng từ geocodeByAddress để đảm bảo có tọa độ
+                    geocodeByAddress(suggestion.description)
+                      .then((results: google.maps.GeocoderResult[]) => getLatLng(results[0]))
+                      .then((latLng: {lat: number, lng: number}) => {
+                        handleLocationChange("lat", latLng.lat);
+                        handleLocationChange("lng", latLng.lng);
+                        console.log('Đã lấy tọa độ:', latLng);
+                      })
+                      .catch((error: unknown) => {
+                        console.error('Error getting lat/lng:', error);
+                        toast.error("Không thể lấy tọa độ từ địa chỉ!");
+                      });
+                  } else {
+                    handleLocationChange("address", _address);
+                    handleLocationChange("place_id", placeId || "");
+                  }
+                }}
+                                    searchOptions={{
+                  componentRestrictions: { country: ['vn'] },
+                  language: 'vi'
+                }}
+                  >
+                    {({ getInputProps, suggestions, getSuggestionItemProps, loading }: {
+                      getInputProps: (options: Record<string, unknown>) => any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      suggestions: Suggestion[]; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      getSuggestionItemProps: (suggestion: Suggestion, options?: any) => any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      loading: boolean;
+                    }) => (
+                      <div>
+                        <Input
+                          {...getInputProps({
+                            placeholder: 'Địa chỉ đầy đủ',
+                            className: 'w-full',
+                          })}
+                        />
+                        <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
+                          {loading && <div>Đang tìm kiếm...</div>}
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                          {suggestions.map((suggestion: Suggestion) => {
+                            const className = suggestion.active
+                              ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
+                              : 'suggestion-item px-2 py-1 cursor-pointer';
+                            return (
+                              <div
+                                {...getSuggestionItemProps(suggestion, {
+                                  className,
+                                  onClick: () => {
+                                    handleLocationChange("address", suggestion.description);
+                                    handleLocationChange("place_id", suggestion.placeId || "");
+                                    
+                                    // Luôn lấy lat/lng từ geocodeByAddress để đảm bảo có tọa độ
+                                    geocodeByAddress(suggestion.description)
+                                      .then((results: google.maps.GeocoderResult[]) => getLatLng(results[0]))
+                                      .then((latLng: {lat: number, lng: number}) => {
+                                        handleLocationChange("lat", latLng.lat);
+                                        handleLocationChange("lng", latLng.lng);
+                                        console.log('Đã lấy tọa độ:', latLng);
+                                      })
+                                      .catch((error: unknown) => {
+                                        console.error('Error getting lat/lng:', error);
+                                        toast.error("Không thể lấy tọa độ từ địa chỉ!");
+                                      });
+                                  }
+                                })}
+                                key={suggestion.placeId}
+                              >
+                                <span>{suggestion.description}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </PlacesAutocomplete>
+                  ) : (
+                    <Input
+                      placeholder="Đang tải Google Maps..."
+                      disabled
+                      className="w-full"
+                    />
+                  )}
+                </div>
+              </div>
               {errors["location.address"] && <span className="text-red-500 text-xs">{errors["location.address"]}</span>}
             </div>
 
@@ -219,30 +348,141 @@ export default function CreatePropertyForm() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="city">Thành phố</Label>
-                <Input
-                  id="city"
+                <PlacesAutocomplete
                   value={formData.location.city}
-                  onChange={(e) => handleLocationChange("city", e.target.value)}
-                  placeholder="Thành phố"
-                />
+                  onChange={(city: string) => handleLocationChange("city", city)}
+                  onSelect={(city: string) => handleLocationChange("city", city)}
+                  searchOptions={{
+                    types: ['(cities)'],
+                    componentRestrictions: { country: ['vn'] },
+                    language: 'vi'
+                  }}
+                >
+                  {({ getInputProps, suggestions, getSuggestionItemProps, loading }: {
+                    getInputProps: (options: Record<string, unknown>) => any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    suggestions: Suggestion[]; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    getSuggestionItemProps: (suggestion: Suggestion, options?: any) => any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    loading: boolean;
+                  }) => (
+                    <div>
+                      <Input
+                        {...getInputProps({
+                          placeholder: 'Thành phố',
+                          className: 'w-full',
+                        })}
+                      />
+                      <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
+                        {loading && <div>Đang tìm kiếm...</div>}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {suggestions.map((suggestion: Suggestion) => {
+                          const className = suggestion.active
+                            ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
+                            : 'suggestion-item px-2 py-1 cursor-pointer';
+                          return (
+                            <div
+                              {...getSuggestionItemProps(suggestion, { className })}
+                              key={suggestion.placeId}
+                            >
+                              <span>{suggestion.description}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </PlacesAutocomplete>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="district">Quận/Huyện</Label>
-                <Input
-                  id="district"
+                <PlacesAutocomplete
                   value={formData.location.district}
-                  onChange={(e) => handleLocationChange("district", e.target.value)}
-                  placeholder="Quận/Huyện"
-                />
+                  onChange={(district: string) => handleLocationChange("district", district)}
+                  onSelect={(district: string) => handleLocationChange("district", district)}
+                  searchOptions={{
+                    types: ['geocode'],
+                    componentRestrictions: { country: ['vn'] },
+                    language: 'vi'
+                  }}
+                >
+                  {({ getInputProps, suggestions, getSuggestionItemProps, loading }: {
+                    getInputProps: (options: Record<string, unknown>) => any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    suggestions: Suggestion[]; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    getSuggestionItemProps: (suggestion: Suggestion, options?: any) => any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    loading: boolean;
+                  }) => (
+                    <div>
+                      <Input
+                        {...getInputProps({
+                          placeholder: 'Quận/Huyện',
+                          className: 'w-full',
+                        })}
+                      />
+                      <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
+                        {loading && <div>Đang tìm kiếm...</div>}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {suggestions.map((suggestion: Suggestion) => {
+                          const className = suggestion.active
+                            ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
+                            : 'suggestion-item px-2 py-1 cursor-pointer';
+                          return (
+                            <div
+                              {...getSuggestionItemProps(suggestion, { className })}
+                              key={suggestion.placeId}
+                            >
+                              <span>{suggestion.description}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </PlacesAutocomplete>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ward">Phường/Xã</Label>
-                <Input
-                  id="ward"
+                <PlacesAutocomplete
                   value={formData.location.ward}
-                  onChange={(e) => handleLocationChange("ward", e.target.value)}
-                  placeholder="Phường/Xã"
-                />
+                  onChange={(ward: string) => handleLocationChange("ward", ward)}
+                  onSelect={(ward: string) => handleLocationChange("ward", ward)}
+                  searchOptions={{
+                    types: ['geocode'],
+                    componentRestrictions: { country: ['vn'] },
+                    language: 'vi'
+                  }}
+                >
+                  {({ getInputProps, suggestions, getSuggestionItemProps, loading }: {
+                    getInputProps: (options: Record<string, unknown>) => any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    suggestions: Suggestion[]; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    getSuggestionItemProps: (suggestion: Suggestion, options?: any) => any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    loading: boolean;
+                  }) => (
+                    <div>
+                      <Input
+                        {...getInputProps({
+                          placeholder: 'Phường/Xã',
+                          className: 'w-full',
+                        })}
+                      />
+                      <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
+                        {loading && <div>Đang tìm kiếm...</div>}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {suggestions.map((suggestion: Suggestion) => {
+                          const className = suggestion.active
+                            ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
+                            : 'suggestion-item px-2 py-1 cursor-pointer';
+                          return (
+                            <div
+                              {...getSuggestionItemProps(suggestion, { className })}
+                              key={suggestion.placeId}
+                            >
+                              <span>{suggestion.description}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </PlacesAutocomplete>
               </div>
             </div>
 
@@ -326,7 +566,7 @@ export default function CreatePropertyForm() {
                 {staffLoading && <div className="text-xs text-gray-500">Đang tải danh sách nhân viên...</div>}
                 {staffOptions.length === 0 && !staffLoading && <div className="text-xs text-gray-500">Không có nhân viên nào</div>}
                 {staffOptions.map(staff => (
-                  <label key={staff._id} className="flex items-center gap-2 cursor-pointer">
+                  <div key={staff._id} className="flex items-center gap-2 p-2 border rounded">
                     <input
                       type="checkbox"
                       value={staff._id}
@@ -334,14 +574,32 @@ export default function CreatePropertyForm() {
                       onChange={e => {
                         if (e.target.checked) {
                           setStaffIds(prev => [...prev, staff._id]);
+                          setStaffRoles(prev => ({ ...prev, [staff._id]: 'Staff' }));
                         } else {
                           setStaffIds(prev => prev.filter(id => id !== staff._id));
+                          setStaffRoles(prev => {
+                            const newRoles = { ...prev };
+                            delete newRoles[staff._id];
+                            return newRoles;
+                          });
                         }
                       }}
                       className="accent-blue-500 h-4 w-4 rounded"
                     />
-                    <span>{staff.name} {staff.email ? `(${staff.email})` : ""}</span>
-                  </label>
+                    <div className="flex-1">
+                      <span className="font-medium">{staff.name}</span>
+                      {staff.email && <span className="text-sm text-gray-600 ml-2">({staff.email})</span>}
+                    </div>
+                    {staffIds.includes(staff._id) && (
+                      <Input
+                        type="text"
+                        placeholder="Role"
+                        value={staffRoles[staff._id] || 'Staff'}
+                        onChange={(e) => setStaffRoles(prev => ({ ...prev, [staff._id]: e.target.value }))}
+                        className="w-24 h-8 text-sm"
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
