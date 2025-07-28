@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { fetchCurrentUser, logout } from "@/store/slices/authSlice";
 import { RouterProvider } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import { Toaster as SonnerToaster } from "sonner";
+import { CustomToaster } from "@/components/ui/custom-toaster";
 import { router } from "./routes";
 import { RootState } from "./store";
 import { GoogleMapsLoader } from "./components/GoogleMapsLoader";
@@ -40,7 +40,7 @@ function App() {
       <GoogleMapsLoader />
       <RouterProvider router={router} />
       <Toaster />
-      <SonnerToaster />
+      <CustomToaster />
     </>
   );
 }

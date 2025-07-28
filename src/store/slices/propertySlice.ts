@@ -2,14 +2,19 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { api } from "@/services/api";
 import { RootState } from "..";
 import { getErrorMessage } from "@/helper/message";
-import { Property, CreatePropertyDto, UpdatePropertyDto, QueryPropertyDto } from "@/types/property";
+import {
+  Property,
+  CreatePropertyDto,
+  UpdatePropertyDto,
+  QueryPropertyDto,
+} from "@/types/property";
 import type { DateRange } from "react-day-picker";
 import { propertyStaffAssignmentApi } from "@/services/propertyStaffAssignmentApi";
 
 // Room status type (theo từng phòng)
 export interface RoomStatusItem {
   listingId: string;
-  status: 'occupied' | 'available' | string;
+  status: "occupied" | "available" | string;
 }
 export type PropertyRoomStatus = Record<string, string>; // { [listingId]: status }
 
@@ -41,6 +46,9 @@ interface PropertyState {
   staffAssignmentCheck: { isAssigned: boolean } | null;
   staffAssignmentCheckLoading: boolean;
   staffAssignmentCheckError: string | null;
+  propertyRooms: unknown[];
+  propertyRoomsLoading: boolean;
+  propertyRoomsError: string | null;
 }
 
 const initialState: PropertyState = {
@@ -71,6 +79,9 @@ const initialState: PropertyState = {
   staffAssignmentCheck: null,
   staffAssignmentCheckLoading: false,
   staffAssignmentCheckError: null,
+  propertyRooms: [],
+  propertyRoomsLoading: false,
+  propertyRoomsError: null,
 };
 
 // Async thunks
@@ -105,7 +116,8 @@ export const fetchProperties = createAsyncThunk<
         // q: search?.trim(), // Hoặc q
       })
         .filter(([, value]) => {
-          if (value === "" || value === undefined || value === null) return false;
+          if (value === "" || value === undefined || value === null)
+            return false;
           return true;
         })
         .map(([key, value]) => {
@@ -115,23 +127,23 @@ export const fetchProperties = createAsyncThunk<
     );
 
     console.log("Clean params being sent to API:", cleanParams);
-    const response = await api.get("/properties", { 
+    const response = await api.get("/properties", {
       params: cleanParams,
       paramsSerializer: {
-        indexes: null
-      }
+        indexes: null,
+      },
     });
-    
+
     // Xử lý response data
     const data = response.data?.data || response.data;
     const properties = Array.isArray(data) ? data : data?.data || [];
     const total = data?.total || properties.length;
-    
+
     const mappedProperties = properties.map((property: Property) => ({
       ...property,
-      id: property._id || property.id
+      id: property._id || property.id,
     }));
-    
+
     return {
       properties: mappedProperties,
       total,
@@ -142,17 +154,18 @@ export const fetchProperties = createAsyncThunk<
   }
 });
 
-export const fetchPropertyById = createAsyncThunk<Property, string, { rejectValue: string }>(
-  'properties/fetchPropertyById',
-  async (id, { rejectWithValue }) => {
-    try {
-      const res = await api.get(`/properties/${id}`);
-      return res.data.data;
-    } catch (err) {
-      return rejectWithValue(getErrorMessage(err));
-    }
+export const fetchPropertyById = createAsyncThunk<
+  Property,
+  string,
+  { rejectValue: string }
+>("properties/fetchPropertyById", async (id, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/properties/${id}`);
+    return res.data.data;
+  } catch (err) {
+    return rejectWithValue(getErrorMessage(err));
   }
-);
+});
 
 export const updateProperty = createAsyncThunk<
   Property,
@@ -185,58 +198,11 @@ export const updatePropertyStatus = createAsyncThunk<
   Property,
   { id: string; status: string },
   { rejectValue: string }
->("properties/updatePropertyStatus", async ({ id, status }, { rejectWithValue }) => {
-  try {
-    const response = await api.patch(`/properties/${id}/status`, { status });
-    const property = response.data.data;
-    return { ...property, id: property._id };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error));
-  }
-});
-
-export const verifyProperty = createAsyncThunk<
-  Property,
-  { id: string; isVerified: boolean },
-  { rejectValue: string }
->("properties/verifyProperty", async ({ id, isVerified }, { rejectWithValue }) => {
-  try {
-    const response = await api.patch(`/properties/${id}/verify`, { isVerified });
-    const property = response.data.data;
-    return { ...property, id: property._id };
-  } catch (error) {
-    return rejectWithValue(getErrorMessage(error));
-  }
-});
-
-export const uploadPropertyImages = createAsyncThunk<
-  string[], // Trả về mảng url ảnh
-  File[],
-  { rejectValue: string }
 >(
-  "properties/uploadPropertyImages",
-  async (files, { rejectWithValue }) => {
+  "properties/updatePropertyStatus",
+  async ({ id, status }, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
-      for (const pair of formData.entries()) {
-        console.log("FormData:", pair[0], pair[1]);
-      }
-      // Truyền trực tiếp formData vào api.post, không truyền object
-      const response = await api.post("/upload/multiple", formData);
-      // Sửa: lấy đúng mảng urls từ response.data.data.urls
-      return response.data.data.urls;
-    } catch (error) {
-      return rejectWithValue(getErrorMessage(error));
-    }
-  }
-);
-
-export const restoreProperty = createAsyncThunk<Property, string, { rejectValue: string }>(
-  "properties/restoreProperty",
-  async (id, { rejectWithValue }) => {
-    try {
-      const response = await api.patch(`/properties/${id}/restore`);
+      const response = await api.patch(`/properties/${id}/status`, { status });
       const property = response.data.data;
       return { ...property, id: property._id };
     } catch (error) {
@@ -244,6 +210,59 @@ export const restoreProperty = createAsyncThunk<Property, string, { rejectValue:
     }
   }
 );
+
+export const verifyProperty = createAsyncThunk<
+  Property,
+  { id: string; isVerified: boolean },
+  { rejectValue: string }
+>(
+  "properties/verifyProperty",
+  async ({ id, isVerified }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`/properties/${id}/verify`, {
+        isVerified,
+      });
+      const property = response.data.data;
+      return { ...property, id: property._id };
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+export const uploadPropertyImages = createAsyncThunk<
+  string[], // Trả về mảng url ảnh
+  File[],
+  { rejectValue: string }
+>("properties/uploadPropertyImages", async (files, { rejectWithValue }) => {
+  try {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    for (const pair of formData.entries()) {
+      console.log("FormData:", pair[0], pair[1]);
+    }
+    // Truyền trực tiếp formData vào api.post, không truyền object
+    const response = await api.post("/upload/multiple", formData);
+    // Sửa: lấy đúng mảng urls từ response.data.data.urls
+    return response.data.data.urls;
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error));
+  }
+});
+
+export const restoreProperty = createAsyncThunk<
+  Property,
+  string,
+  { rejectValue: string }
+>("properties/restoreProperty", async (id, { rejectWithValue }) => {
+  try {
+    const response = await api.patch(`/properties/${id}/restore`);
+    const property = response.data.data;
+    return { ...property, id: property._id };
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error));
+  }
+});
 
 export const assignStaffToProperty = createAsyncThunk(
   "properties/assignStaff",
@@ -257,13 +276,18 @@ export const assignStaffToProperty = createAsyncThunk(
       return results[0]; // Trả về kết quả đầu tiên
     } catch (err: unknown) {
       if (
-        typeof err === 'object' &&
+        typeof err === "object" &&
         err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: { message?: string } } }).response === 'object' &&
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message
+        "response" in err &&
+        typeof (err as { response?: { data?: { message?: string } } })
+          .response === "object" &&
+        (err as { response?: { data?: { message?: string } } }).response?.data
+          ?.message
       ) {
-        return rejectWithValue((err as { response: { data: { message: string } } }).response.data.message);
+        return rejectWithValue(
+          (err as { response: { data: { message: string } } }).response.data
+            .message
+        );
       }
       return rejectWithValue("Lỗi gán nhân viên");
     }
@@ -349,13 +373,18 @@ export const fetchPropertyStatistics = createAsyncThunk(
       return res.data.data;
     } catch (err: unknown) {
       if (
-        typeof err === 'object' &&
+        typeof err === "object" &&
         err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: { message?: string } } }).response === 'object' &&
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message
+        "response" in err &&
+        typeof (err as { response?: { data?: { message?: string } } })
+          .response === "object" &&
+        (err as { response?: { data?: { message?: string } } }).response?.data
+          ?.message
       ) {
-        return rejectWithValue((err as { response: { data: { message: string } } }).response.data.message);
+        return rejectWithValue(
+          (err as { response: { data: { message: string } } }).response.data
+            .message
+        );
       }
       return rejectWithValue("Lỗi lấy thống kê property");
     }
@@ -368,14 +397,16 @@ export const fetchPropertyRoomStatus = createAsyncThunk<
   string,
   { rejectValue: string }
 >(
-  'properties/fetchPropertyRoomStatus',
+  "properties/fetchPropertyRoomStatus",
   async (propertyId, { rejectWithValue }) => {
     try {
       const res = await api.get(`/properties/${propertyId}/room-status`);
       // res.data.data là mảng [{ listingId, status }]
-      const arr: RoomStatusItem[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const arr: RoomStatusItem[] = Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
       const status: PropertyRoomStatus = {};
-      arr.forEach(item => {
+      arr.forEach((item) => {
         if (item.listingId) status[String(item.listingId)] = item.status;
       });
       return { propertyId, status };
@@ -384,6 +415,22 @@ export const fetchPropertyRoomStatus = createAsyncThunk<
     }
   }
 );
+
+// Thunk lấy danh sách phòng trong property
+export const fetchPropertyRooms = createAsyncThunk<
+  unknown[],
+  string,
+  { rejectValue: string }
+>("properties/fetchPropertyRooms", async (propertyId, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/properties/${propertyId}/rooms`);
+    // Lấy res.data.data.rooms từ response
+    const rooms = res.data.data?.rooms || [];
+    return rooms;
+  } catch (err) {
+    return rejectWithValue(getErrorMessage(err));
+  }
+});
 
 // Slice
 const propertySlice = createSlice({
@@ -404,14 +451,20 @@ const propertySlice = createSlice({
         state.createLoading = true;
         state.createError = null;
       })
-      .addCase(createProperty.fulfilled, (state, action: PayloadAction<Property>) => {
-        state.createLoading = false;
-        state.properties.unshift(action.payload);
-        state.property = action.payload;
-      })
+      .addCase(
+        createProperty.fulfilled,
+        (state, action: PayloadAction<Property>) => {
+          state.createLoading = false;
+          state.properties.unshift(action.payload);
+          state.property = action.payload;
+        }
+      )
       .addCase(createProperty.rejected, (state, action) => {
         state.createLoading = false;
-        state.createError = (action.payload as string) || action.error.message || "Tạo property thất bại!";
+        state.createError =
+          (action.payload as string) ||
+          action.error.message ||
+          "Tạo property thất bại!";
       })
 
       // fetchProperties
@@ -419,14 +472,23 @@ const propertySlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchProperties.fulfilled, (state, action: PayloadAction<{ properties: Property[]; total: number }>) => {
-        state.loading = false;
-        state.properties = action.payload.properties;
-        state.total = action.payload.total;
-      })
+      .addCase(
+        fetchProperties.fulfilled,
+        (
+          state,
+          action: PayloadAction<{ properties: Property[]; total: number }>
+        ) => {
+          state.loading = false;
+          state.properties = action.payload.properties;
+          state.total = action.payload.total;
+        }
+      )
       .addCase(fetchProperties.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || action.error.message || "Lỗi tải danh sách properties!";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi tải danh sách properties!";
       })
 
       // fetchPropertyById
@@ -440,7 +502,10 @@ const propertySlice = createSlice({
       })
       .addCase(fetchPropertyById.rejected, (state, action) => {
         state.propertyDetailLoading = false;
-        state.propertyDetailError = (action.payload as string) || action.error.message || 'Không tìm thấy property!';
+        state.propertyDetailError =
+          (action.payload as string) ||
+          action.error.message ||
+          "Không tìm thấy property!";
       })
 
       // updateProperty
@@ -448,18 +513,26 @@ const propertySlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateProperty.fulfilled, (state, action: PayloadAction<Property>) => {
-        state.loading = false;
-        state.property = action.payload;
-        // Update in properties array
-        const index = state.properties.findIndex(property => property.id === action.payload.id);
-        if (index !== -1) {
-          state.properties[index] = action.payload;
+      .addCase(
+        updateProperty.fulfilled,
+        (state, action: PayloadAction<Property>) => {
+          state.loading = false;
+          state.property = action.payload;
+          // Update in properties array
+          const index = state.properties.findIndex(
+            (property) => property.id === action.payload.id
+          );
+          if (index !== -1) {
+            state.properties[index] = action.payload;
+          }
         }
-      })
+      )
       .addCase(updateProperty.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || action.error.message || "Cập nhật property thất bại!";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Cập nhật property thất bại!";
       })
 
       // deleteProperty
@@ -467,37 +540,55 @@ const propertySlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(deleteProperty.fulfilled, (state, action: PayloadAction<string>) => {
-        state.loading = false;
-        state.properties = state.properties.filter(property => property.id !== action.payload);
-        if (state.property?.id === action.payload) {
-          state.property = undefined;
+      .addCase(
+        deleteProperty.fulfilled,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.properties = state.properties.filter(
+            (property) => property.id !== action.payload
+          );
+          if (state.property?.id === action.payload) {
+            state.property = undefined;
+          }
         }
-      })
+      )
       .addCase(deleteProperty.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || action.error.message || "Xóa property thất bại!";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Xóa property thất bại!";
       })
 
       // updatePropertyStatus
-      .addCase(updatePropertyStatus.fulfilled, (state, action: PayloadAction<Property>) => {
-        state.property = action.payload;
-        // Update in properties array
-        const index = state.properties.findIndex(property => property.id === action.payload.id);
-        if (index !== -1) {
-          state.properties[index] = action.payload;
+      .addCase(
+        updatePropertyStatus.fulfilled,
+        (state, action: PayloadAction<Property>) => {
+          state.property = action.payload;
+          // Update in properties array
+          const index = state.properties.findIndex(
+            (property) => property.id === action.payload.id
+          );
+          if (index !== -1) {
+            state.properties[index] = action.payload;
+          }
         }
-      })
+      )
 
       // verifyProperty
-      .addCase(verifyProperty.fulfilled, (state, action: PayloadAction<Property>) => {
-        state.property = action.payload;
-        // Update in properties array
-        const index = state.properties.findIndex(property => property.id === action.payload.id);
-        if (index !== -1) {
-          state.properties[index] = action.payload;
+      .addCase(
+        verifyProperty.fulfilled,
+        (state, action: PayloadAction<Property>) => {
+          state.property = action.payload;
+          // Update in properties array
+          const index = state.properties.findIndex(
+            (property) => property.id === action.payload.id
+          );
+          if (index !== -1) {
+            state.properties[index] = action.payload;
+          }
         }
-      })
+      )
 
       // uploadPropertyImages
       .addCase(uploadPropertyImages.pending, (state) => {
@@ -515,31 +606,44 @@ const propertySlice = createSlice({
       })
 
       // restoreProperty
-      .addCase(restoreProperty.fulfilled, (state, action: PayloadAction<Property>) => {
-        // Cập nhật lại property trong danh sách nếu có
-        const idx = state.properties.findIndex(p => p.id === action.payload.id);
-        if (idx !== -1) {
-          state.properties[idx] = action.payload;
-        } else {
-          state.properties.unshift(action.payload);
+      .addCase(
+        restoreProperty.fulfilled,
+        (state, action: PayloadAction<Property>) => {
+          // Cập nhật lại property trong danh sách nếu có
+          const idx = state.properties.findIndex(
+            (p) => p.id === action.payload.id
+          );
+          if (idx !== -1) {
+            state.properties[idx] = action.payload;
+          } else {
+            state.properties.unshift(action.payload);
+          }
+          state.property = action.payload;
         }
-        state.property = action.payload;
-      })
+      )
       .addCase(restoreProperty.rejected, (state, action) => {
-        state.error = (action.payload as string) || action.error.message || "Khôi phục property thất bại!";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Khôi phục property thất bại!";
       })
 
       // assignStaffToProperty
       .addCase(assignStaffToProperty.fulfilled, (state, action) => {
         state.property = action.payload;
         // Update in properties array
-        const index = state.properties.findIndex(property => property.id === action.payload.id);
+        const index = state.properties.findIndex(
+          (property) => property.id === action.payload.id
+        );
         if (index !== -1) {
           state.properties[index] = action.payload;
         }
       })
       .addCase(assignStaffToProperty.rejected, (state, action) => {
-        state.error = (action.payload as string) || action.error.message || "Lỗi gán nhân viên";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi gán nhân viên";
       })
 
       // unassignStaffFromProperty
@@ -613,7 +717,25 @@ const propertySlice = createSlice({
 
       // fetchPropertyRoomStatus
       .addCase(fetchPropertyRoomStatus.fulfilled, (state, action) => {
-        state.propertyRoomStatus[action.payload.propertyId] = action.payload.status;
+        state.propertyRoomStatus[action.payload.propertyId] =
+          action.payload.status;
+      })
+
+      // fetchPropertyRooms
+      .addCase(fetchPropertyRooms.pending, (state) => {
+        state.propertyRoomsLoading = true;
+        state.propertyRoomsError = null;
+      })
+      .addCase(fetchPropertyRooms.fulfilled, (state, action) => {
+        state.propertyRoomsLoading = false;
+        state.propertyRooms = action.payload;
+      })
+      .addCase(fetchPropertyRooms.rejected, (state, action) => {
+        state.propertyRoomsLoading = false;
+        state.propertyRoomsError =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi tải danh sách phòng!";
       });
   },
 });
@@ -621,21 +743,37 @@ const propertySlice = createSlice({
 export const { clearProperty, clearCreateError } = propertySlice.actions;
 
 // Selectors
-export const selectProperties = (state: RootState) => state.properties.properties;
+export const selectProperties = (state: RootState) =>
+  state.properties.properties;
 export const selectProperty = (state: RootState) => state.properties.property;
-export const selectPropertiesLoading = (state: RootState) => state.properties.loading;
-export const selectPropertiesError = (state: RootState) => state.properties.error;
-export const selectPropertiesTotal = (state: RootState) => state.properties.total;
-export const selectCreatePropertyLoading = (state: RootState) => state.properties.createLoading;
-export const selectCreatePropertyError = (state: RootState) => state.properties.createError;
-export const selectUploadImagesLoading = (state: RootState) => state.properties.uploadImagesLoading;
-export const selectUploadImagesError = (state: RootState) => state.properties.uploadImagesError;
-export const selectUploadedImageUrls = (state: RootState) => state.properties.uploadedImageUrls;
-export const selectPropertyStatistics = (state: RootState) => state.properties.propertyStatistics;
-export const selectPropertyStatisticsLoading = (state: RootState) => state.properties.propertyStatisticsLoading;
-export const selectPropertyStatisticsError = (state: RootState) => state.properties.propertyStatisticsError;
-export const selectPropertyDetail = (state: RootState) => state.properties.propertyDetail;
-export const selectPropertyRoomStatus = (state: RootState, propertyId: string) => state.properties.propertyRoomStatus[propertyId];
+export const selectPropertiesLoading = (state: RootState) =>
+  state.properties.loading;
+export const selectPropertiesError = (state: RootState) =>
+  state.properties.error;
+export const selectPropertiesTotal = (state: RootState) =>
+  state.properties.total;
+export const selectCreatePropertyLoading = (state: RootState) =>
+  state.properties.createLoading;
+export const selectCreatePropertyError = (state: RootState) =>
+  state.properties.createError;
+export const selectUploadImagesLoading = (state: RootState) =>
+  state.properties.uploadImagesLoading;
+export const selectUploadImagesError = (state: RootState) =>
+  state.properties.uploadImagesError;
+export const selectUploadedImageUrls = (state: RootState) =>
+  state.properties.uploadedImageUrls;
+export const selectPropertyStatistics = (state: RootState) =>
+  state.properties.propertyStatistics;
+export const selectPropertyStatisticsLoading = (state: RootState) =>
+  state.properties.propertyStatisticsLoading;
+export const selectPropertyStatisticsError = (state: RootState) =>
+  state.properties.propertyStatisticsError;
+export const selectPropertyDetail = (state: RootState) =>
+  state.properties.propertyDetail;
+export const selectPropertyRoomStatus = (
+  state: RootState,
+  propertyId: string
+) => state.properties.propertyRoomStatus[propertyId];
 
 // Property staff assignment selectors
 export const selectStaffByProperty = (state: RootState) => state.properties.staffByProperty;
@@ -648,4 +786,11 @@ export const selectStaffAssignmentCheck = (state: RootState) => state.properties
 export const selectStaffAssignmentCheckLoading = (state: RootState) => state.properties.staffAssignmentCheckLoading;
 export const selectStaffAssignmentCheckError = (state: RootState) => state.properties.staffAssignmentCheckError;
 
-export default propertySlice.reducer; 
+export const selectPropertyRooms = (state: RootState) =>
+  state.properties.propertyRooms;
+export const selectPropertyRoomsLoading = (state: RootState) =>
+  state.properties.propertyRoomsLoading;
+export const selectPropertyRoomsError = (state: RootState) =>
+  state.properties.propertyRoomsError;
+
+export default propertySlice.reducer;

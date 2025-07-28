@@ -78,6 +78,7 @@ import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import WishlistPage from "@/pages/WishlistPage";
 import SearchResultPage from "@/pages/SearchResultPage";
+import PropertieInfo from "@/components/roomdetail/PropertieInfo";
 const routes: RouteObject[] = [
   {
     path: "/",
@@ -144,6 +145,7 @@ const routes: RouteObject[] = [
       { path: "list/:id", element: <RoomDeatil /> },
       { path: "room-detail", element: <RoomDeatil /> },
       { path: "search", element: <SearchResultPage /> },
+      { path: "property/:id", element: <PropertieInfo /> },
     ],
   },
   {
