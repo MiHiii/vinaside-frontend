@@ -91,7 +91,7 @@ const editPropertySchema = z.object({
 type Suggestion = {
   description: string;
   placeId: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export default function EditPropertyForm() {
@@ -324,7 +324,7 @@ export default function EditPropertyForm() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
+    <div className="min-h-screen">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Chỉnh sửa Property</CardTitle>
@@ -360,6 +360,11 @@ export default function EditPropertyForm() {
             {/* Địa chỉ */}
             <div className="space-y-2">
               <Label htmlFor="address">Địa chỉ *</Label>
+              {!import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
+                <div className="text-red-500 text-sm mb-2">
+                  ⚠️ Google Maps API key chưa được cấu hình. Vui lòng tạo file .env và thêm VITE_GOOGLE_MAPS_API_KEY
+                </div>
+              )}
               <div className="flex gap-2">
                 <div className="flex-1">
                   {isGoogleMapsLoaded ? (
@@ -448,13 +453,13 @@ export default function EditPropertyForm() {
                    </div>
                  )}
                                 </PlacesAutocomplete>
-                 ) : (
-                   <Input
-                     placeholder="Đang tải Google Maps..."
-                     disabled
-                     className="w-full"
-                   />
-                 )}
+                                   ) : (
+                    <Input
+                      placeholder={!import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? "Google Maps API key chưa được cấu hình" : "Đang tải Google Maps..."}
+                      disabled
+                      className="w-full"
+                    />
+                  )}
                 </div>
               </div>
               {errors["location.address"] && <span className="text-red-500 text-xs">{errors["location.address"]}</span>}

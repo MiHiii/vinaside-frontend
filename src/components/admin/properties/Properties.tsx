@@ -12,7 +12,6 @@ import {
 import { selectStaffList } from '@/store/slices/userSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Edit, Eye, Plus, Filter, ChevronLeft, ChevronRight, Users as UsersIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -178,210 +177,247 @@ export default function AdminProperties() {
     }));
   };
 
-  return (
-    <div className='space-y-6'>
-      {/* Header */}
-      <div className='flex justify-between items-center'>
-        <div>
-          <h1 className='text-2xl font-bold'>Quản lý Properties</h1>
-          <p className='text-gray-600'>Quản lý tất cả properties và bất động sản</p>
+      return (
+      <div className='min-h-screen  dark:bg-gray-900 p-4'>
+        <div className='max-w-6xl mx-auto space-y-6'>
+          {/* Header */}
+          <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6'>
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-1'>
+                  Quản lý HomeStay
+                </h1>
+                <p className='text-gray-600 dark:text-gray-300'>Quản lý tất cả homestay và bất động sản</p>
+              </div>
+            <div className='flex gap-3'>
+              <Link to='/admin/properties/create'>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200 h-10 px-4 rounded-lg font-medium">
+                  <Plus className='w-4 h-4 mr-2' />
+                  Thêm HomeStay
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
-        <div className='flex gap-2'>
-     
-          <Link to='/admin/properties/create'>
-            <Button>
-              <Plus className='w-4 h-4 mr-2' />
-              Thêm Property
-            </Button>
-          </Link>
-    
-        </div>
-      </div>
 
-      {/* Filters + Tổng số properties */}
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2'>
-            <Filter className='w-5 h-5' />
-            Bộ lọc
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-            <div className='relative w-full'>
-              <Search className='absolute left-3 top-3 h-4 w-4 text-gray-400' />
+        {/* Filters + Tổng số properties */}
+        <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6'>
+          <div className='flex items-center gap-3 mb-6'>
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <Filter className='w-4 h-4 text-blue-600 dark:text-blue-400' />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Bộ lọc
+            </h2>
+          </div>
+          
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            {/* Search Input */}
+            <div className='relative'>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ top: '-45px' }}>
+                <Search className='h-4 w-4 text-gray-400' />
+              </div>
               <Input
                 placeholder='Tìm kiếm theo tên...'
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                className='pl-10 w-full'
+                className='pl-10 w-full h-10 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400'
               />
             </div>
-            <div>
+            
+            {/* Items per page dropdown */}
+            <div className="relative">
               <select
                 value={filters.limit}
                 onChange={(e) => handleFilterChange('limit', Number(e.target.value))}
-                className='border border-gray-300 rounded-md px-3 py-2 w-full'>
+                className='w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white'>
                 <option value={10}>10 items/page</option>
                 <option value={20}>20 items/page</option>
                 <option value={50}>50 items/page</option>
               </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style={{ top: '-45px' }}>
+                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
-            <div className='flex flex-col items-center justify-center border border-gray-300 bg-white rounded-md px-4 py-0 w-full min-h-[36px]'>
-              <div className='text-2xl font-bold'>{total}</div>
-              <div className='text-sm text-gray-600'>Tổng số properties</div>
+            
+            {/* Total count card */}
+            <div className='bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 text-center'>
+              <div className='text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1'>{total}</div>
+              <div className='text-sm text-blue-700 dark:text-blue-300 font-medium'>Tổng số homestay</div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Table */}
-      <Card className="border-none shadow-none bg-white">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold text-gray-800">Danh sách HomeStay</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className='flex justify-center items-center py-12'>
-              <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+              {/* Table */}
+        <div className='bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700'>
+          <div className='p-6 border-b border-gray-200 dark:border-gray-700'>
+            <div className='flex items-center gap-3'>
+              <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Danh sách HomeStay
+              </h2>
             </div>
-          ) : error ? (
-            <div className='text-center py-12 text-red-500'>{error}</div>
-          ) : (
-            <div className='overflow-x-auto'>
-              <Table className="border-none">
-                <TableHeader>
-                  <TableRow className="border-none bg-gray-50 hover:bg-gray-50">
-                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Ảnh</TableHead>
-                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Tên</TableHead>
-                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Địa chỉ</TableHead>
-                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Staff</TableHead>
-                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6">Ngày tạo</TableHead>
-                    <TableHead className='text-right border-none text-gray-700 font-semibold py-4 px-6'>Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {properties.map((property, index) => (
-                    <TableRow 
-                      key={property._id} 
-                      className={`border-none hover:bg-gray-50 transition-colors duration-200 ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
-                      }`}
-                    >
-                      <TableCell className="border-none py-4 px-6">
-                        <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
-                          {property.thumbnail ? (
-                            <img
-                              src={property.thumbnail}
-                              alt={property.name}
-                              style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
-                              className='cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm'
-                            />
-                          ) : property.images && property.images.length > 0 ? (
-                            <img
-                              src={property.images[0]}
-                              alt={property.name}
-                              style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
-                              className='cursor-pointer hover:opacity-80 transition-opacity duration-200 shadow-sm'
-                            />
-                          ) : (
-                            <div className="w-14 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <span className='text-gray-400 text-xs'>No image</span>
-                            </div>
-                          )}
-                        </Link>
-                      </TableCell>
-                      <TableCell className='font-medium border-none py-4 px-6'>
-                        <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
-                          <div className='max-w-xs truncate cursor-pointer hover:text-blue-600 transition-colors duration-200 font-semibold text-gray-800' title={property.name}>
-                            {property.name}
-                          </div>
-                        </Link>
-                      </TableCell>
-                      <TableCell className="border-none py-4 px-6">
-                        <div className='max-w-xs truncate text-gray-600' title={property.location?.address}>
-                          {property.location?.address}
-                        </div>
-                      </TableCell>
-                      <TableCell className="border-none py-4 px-6">
-                        <div className='flex items-center gap-2'>
-                          <button
-                            className='flex items-center gap-2 text-blue-600 hover:text-blue-800 cursor-pointer bg-blue-50 hover:bg-blue-100 border-none rounded-lg px-3 py-1.5 transition-all duration-200'
-                            type='button'
-                            onClick={() => handleShowStaff(property._id || '')}
-                            disabled={loadingStaffCounts[property._id || ''] || (propertyStaffCounts[property._id || ''] || 0) === 0}
-                            title={property.staffIds && property.staffIds.length > 0 && staffList.length > 0
-                              ? staffList
-                                  .filter(s => property.staffIds.includes(s._id))
-                                  .map(s => s.name || s.email || s._id)
-                                  .join(', ')
-                              : ''}
-                          >
-                            <UsersIcon className='w-4 h-4 text-blue-500' />
-                            <span className='inline-block min-w-[24px] text-center font-semibold text-sm bg-blue-600 text-white rounded-full px-2 py-0.5'>
-                              {loadingStaffCounts[property._id || ''] ? (
-                                <div className='animate-spin rounded-full h-3 w-3 border-b border-white'></div>
-                              ) : (
-                                propertyStaffCounts[property._id || ''] || 0
-                              )}
-                            </span>
-                            <span className='ml-1 text-xs text-blue-700 font-medium'>staff</span>
-                          </button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="border-none py-4 px-6">
-                        <div className='text-sm text-gray-500 font-medium'>
-                          {property.createdAt ? new Date(property.createdAt).toLocaleDateString('vi-VN') : ''}
-                        </div>
-                      </TableCell>
-                      <TableCell className='text-right border-none py-4 px-6'>
-                        <div className='flex items-center justify-end gap-1'>
-                          <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
-                            <Button variant='ghost' size='icon' className="hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200">
-                              <Eye className='h-4 w-4' />
-                            </Button>
-                          </Link>
-                          <Link to={`/admin/properties/edit/${property._id}`} title='Chỉnh sửa'>
-                            <Button variant='ghost' size='icon' className="hover:bg-green-50 hover:text-green-600 transition-colors duration-200">
-                              <Edit className='h-4 w-4' />
-                            </Button>
-                          </Link>
-                        </div>
-                      </TableCell>
+          </div>
+            
+            {loading ? (
+              <div className='flex justify-center items-center py-12'>
+                <div className='animate-spin rounded-full h-8 w-8 border-2 border-blue-200 border-t-blue-600'></div>
+              </div>
+            ) : error ? (
+              <div className='text-center py-12 text-red-500'>
+                <div className="text-lg font-medium mb-2">Có lỗi xảy ra</div>
+                <div className="text-sm text-gray-600">{error}</div>
+              </div>
+            ) : (
+              <div className='overflow-x-auto'>
+                <Table className="border-none">
+                  <TableHeader>
+                    <TableRow className="border-none bg-gray-50 dark:bg-gray-700">
+                      <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Ảnh</TableHead>
+                      <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Tên</TableHead>
+                      <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Địa chỉ</TableHead>
+                      <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Nhân Viên</TableHead>
+                      <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Ngày tạo</TableHead>
+                      <TableHead className='text-right border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide'>Thao tác</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {properties.map((property, index) => (
+                      <TableRow 
+                        key={property._id} 
+                        className={`border-none hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 ${
+                          index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'
+                        }`}
+                      >
+                        <TableCell className="border-none py-4 px-6">
+                          <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
+                            {property.thumbnail ? (
+                              <img
+                                src={property.thumbnail}
+                                alt={property.name}
+                                style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
+                                className='cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm'
+                              />
+                            ) : property.images && property.images.length > 0 ? (
+                              <img
+                                src={property.images[0]}
+                                alt={property.name}
+                                style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
+                                className='cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm'
+                              />
+                            ) : (
+                              <div className="w-14 h-10 bg-gray-100 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                                <span className='text-gray-400 dark:text-gray-500 text-xs'>No image</span>
+                              </div>
+                            )}
+                          </Link>
+                        </TableCell>
+                        <TableCell className='font-medium border-none py-4 px-6'>
+                          <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
+                            <div className='max-w-xs truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 font-semibold text-gray-800 dark:text-gray-200' title={property.name}>
+                              {property.name}
+                            </div>
+                          </Link>
+                        </TableCell>
+                        <TableCell className="border-none py-4 px-6">
+                          <div className='max-w-xs truncate text-gray-600 dark:text-gray-300 text-sm' title={property.location?.address}>
+                            {property.location?.address}
+                          </div>
+                        </TableCell>
+                        <TableCell className="border-none py-4 px-6">
+                          <div className='flex items-center gap-2'>
+                            <button
+                              className='flex items-center gap-2 text-blue-600 hover:text-blue-800 cursor-pointer bg-blue-50 hover:bg-blue-100 border-none rounded-lg px-3 py-1.5 transition-all duration-200'
+                              type='button'
+                              onClick={() => handleShowStaff(property._id || '')}
+                              disabled={loadingStaffCounts[property._id || ''] || (propertyStaffCounts[property._id || ''] || 0) === 0}
+                              title={property.staffIds && property.staffIds.length > 0 && staffList.length > 0
+                                ? staffList
+                                    .filter(s => property.staffIds.includes(s._id))
+                                    .map(s => s.name || s.email || s._id)
+                                    .join(', ')
+                                : ''}
+                            >
+                              <UsersIcon className='w-4 h-4 text-blue-500' />
+                              <span className='inline-block min-w-[24px] text-center font-semibold text-sm bg-blue-600 text-white rounded-full px-2 py-0.5'>
+                                {loadingStaffCounts[property._id || ''] ? (
+                                  <div className='animate-spin rounded-full h-3 w-3 border-b border-white'></div>
+                                ) : (
+                                  propertyStaffCounts[property._id || ''] || 0
+                                )}
+                              </span>
+                              <span className='ml-1 text-xs text-blue-700 dark:text-blue-300 font-medium'>staff</span>
+                            </button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="border-none py-4 px-6">
+                          <div className='text-sm text-gray-500 dark:text-gray-400 font-medium'>
+                            {property.createdAt ? new Date(property.createdAt).toLocaleDateString('vi-VN') : ''}
+                          </div>
+                        </TableCell>
+                        <TableCell className='text-right border-none py-4 px-6'>
+                          <div className='flex items-center justify-end gap-2'>
+                            <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
+                              <Button variant='ghost' size='icon' className="hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 rounded-lg h-8 w-8">
+                                <Eye className='h-4 w-4' />
+                              </Button>
+                            </Link>
+                            <Link to={`/admin/properties/edit/${property._id}`} title='Chỉnh sửa'>
+                              <Button variant='ghost' size='icon' className="hover:bg-green-50 hover:text-green-600 transition-all duration-200 rounded-lg h-8 w-8">
+                                <Edit className='h-4 w-4' />
+                              </Button>
+                            </Link>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
 
-              {properties.length === 0 && (
-                <div className='text-center py-12 text-gray-500'>
-                  <div className="text-lg font-medium">Không có properties nào</div>
-                  <div className="text-sm text-gray-400 mt-1">Hãy thêm property đầu tiên</div>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                {properties.length === 0 && (
+                  <div className='text-center py-12'>
+                    <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                      <svg className="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">Không có properties nào</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">Hãy thêm property đầu tiên để bắt đầu</div>
+                    <Link to='/admin/properties/create'>
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200">
+                        <Plus className='w-4 h-4 mr-2' />
+                        Thêm Property Đầu Tiên
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
       {/* Pagination */}
       {total > filters.limit && (
-        <div className='flex justify-center items-center space-x-2'>
+        <div className='flex justify-center items-center space-x-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700'>
           <Button
             variant='outline'
             onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
             disabled={filters.page === 1}
-            className='flex items-center justify-center'>
+            className='flex items-center justify-center h-10 px-4 rounded-lg border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200'>
             <ChevronLeft className='w-5 h-5' />
           </Button>
-          <span className='text-sm'>
-            Trang {filters.page} / {Math.ceil(total / filters.limit)}
-          </span>
+          <div className='flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg'>
+            <span className='text-sm font-medium text-gray-700 dark:text-gray-200'>
+              Trang {filters.page} / {Math.ceil(total / filters.limit)}
+            </span>
+          </div>
           <Button
             variant='outline'
             onClick={() => handleFilterChange('page', filters.page + 1)}
             disabled={filters.page >= Math.ceil(total / filters.limit)}
-            className='flex items-center justify-center'>
+            className='flex items-center justify-center h-10 px-4 rounded-lg border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200'>
             <ChevronRight className='w-5 h-5' />
           </Button>
         </div>
@@ -389,20 +425,35 @@ export default function AdminProperties() {
 
       {/* Modal hiển thị staff */}
       <Dialog open={staffModalOpen} onOpenChange={setStaffModalOpen}>
-        <DialogContent className='bg-white rounded-2xl shadow-xl max-w-lg w-full p-8'>
+        <DialogContent className='bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full p-6'>
           <DialogHeader>
-            <DialogTitle>Danh sách nhân viên</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">
+              Danh sách nhân viên
+            </DialogTitle>
           </DialogHeader>
           {currentModalStaff.length === 0 ? (
-            <div className='text-center py-4 text-gray-500'>Chưa có nhân viên nào</div>
+            <div className='text-center py-6'>
+              <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                <UsersIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+              </div>
+              <div className='text-base font-medium text-gray-600 dark:text-gray-300'>Chưa có nhân viên nào</div>
+            </div>
           ) : (
             <div className='space-y-4'>
               {currentModalStaff.map((staff, idx) => (
-                <div key={staff._id || idx} className='border-b pb-2 mb-2'>
-                  <div className='font-semibold text-base'>{staff.name || staff.email || staff._id}</div>
-                  <div className='text-sm text-gray-600'>Email: {staff.email || '-'}</div>
-                  <div className='text-sm text-gray-600'>SĐT: {staff.phone || '-'}</div>
-                  <div className='text-sm text-gray-600'>Role: {staff.role || '-'}</div>
+                <div key={staff._id || idx} className='bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600'>
+                  <div className='font-semibold text-base text-gray-800 dark:text-gray-200 mb-2'>{staff.name || staff.email || staff._id}</div>
+                  <div className='space-y-1 text-sm'>
+                    <div className='flex items-center gap-2 text-gray-600 dark:text-gray-300'>
+                      <span className="font-medium">Email:</span> {staff.email || '-'}
+                    </div>
+                    <div className='flex items-center gap-2 text-gray-600 dark:text-gray-300'>
+                      <span className="font-medium">SĐT:</span> {staff.phone || '-'}
+                    </div>
+                    <div className='flex items-center gap-2 text-gray-600 dark:text-gray-300'>
+                      <span className="font-medium">Role:</span> {staff.role || '-'}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
