@@ -36,12 +36,11 @@ function App() {
     );
   }
   return (
-    <>
-      <GoogleMapsLoader />
+    <GoogleMapsLoader>
       <RouterProvider router={router} />
       <Toaster />
       <CustomToaster />
-    </>
+    </GoogleMapsLoader>
   );
 }
 

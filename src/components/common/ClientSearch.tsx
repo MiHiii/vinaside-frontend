@@ -18,7 +18,7 @@ import type { AppDispatch } from '@/store'; // Đường dẫn tới store/index
 import { fetchListings } from '@/store/slices/listingSlice';
 import type { ListingSearchParams } from '@/services/api';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 const libraries: Array<'places'> = ['places'];
 
 export default function ClientSearch() {
@@ -42,7 +42,7 @@ export default function ClientSearch() {
 
   // Google Maps API loader
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY || '',
     libraries,
   });
 
