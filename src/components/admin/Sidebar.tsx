@@ -17,6 +17,7 @@ import {
   Ticket,
   Briefcase,
   MessageSquare,
+  UserCheck,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -255,11 +256,20 @@ export function Sidebar({ collapsed }: SidebarProps) {
               collapsed={collapsed}
             />
           </PermissionGuard>
+          <PermissionGuard permission="user.view">
+            <SidebarItem
+              to="/admin/staff"
+              icon={<UserCheck className="h-4 w-4" />}
+              label="Quản lý nhân viên"
+              active={pathname === "/admin/staff"}
+              collapsed={collapsed}
+            />
+          </PermissionGuard>
           <PermissionGuard permission="listing.view">
             <SidebarItem
               to="/admin/listings"
               icon={<Building2 className="h-4 w-4" />}
-              label="Listings"
+              label="Quản lý phòng"
               active={pathname.startsWith("/admin/listings")}
               collapsed={collapsed}
             />
@@ -268,8 +278,17 @@ export function Sidebar({ collapsed }: SidebarProps) {
             <SidebarItem
               to="/admin/properties"
               icon={<Home className="h-4 w-4" />}
-              label="Properties"
+              label="Quản lý homestay"
               active={pathname.startsWith("/admin/properties")}
+              collapsed={collapsed}
+            />
+          </PermissionGuard>
+          <PermissionGuard permission="property_staff.view">
+            <SidebarItem
+              to="/admin/property-staff"
+              icon={<UserCheck className="h-4 w-4" />}
+              label="Gán nhân viên"
+              active={pathname.startsWith("/admin/property-staff")}
               collapsed={collapsed}
             />
           </PermissionGuard>

@@ -7,6 +7,7 @@ import { CustomToaster } from "@/components/ui/custom-toaster";
 import { router } from "./routes";
 import { RootState } from "./store";
 import { ChatWidget } from "./pages/messages/ChatWidget";
+import { GoogleMapsLoader } from "./components/GoogleMapsLoader";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -36,12 +37,12 @@ function App() {
   //   );
   // }
   return (
-    <>
+    <GoogleMapsLoader>
       <RouterProvider router={router} />
       <Toaster />
       <CustomToaster />
       <ChatWidget />
-    </>
+    </GoogleMapsLoader>
   );
 }
 

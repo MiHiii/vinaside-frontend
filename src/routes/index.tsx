@@ -35,7 +35,7 @@ import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
 import Messages from "@/pages/messages/Messages";
 // Admin Pages
 import AdminLayout from "@/components/layouts/admin/AdminLayout";
-import { DashboardContent } from "@/components/admin/DashboardContent";
+import DashboardContent from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ProtectedAdminRoute from "@/components/common/ProtectedAdminRoute";
@@ -52,6 +52,8 @@ import CreatePropertyPage from "@/pages/admin/property/CreatePropertyPage";
 import EditPropertyPage from "@/pages/admin/property/EditPropertyPage";
 import PropertyDetailPage from "@/pages/admin/property/PropertyDetailPage";
 import PropertyDeletedPage from "@/pages/admin/property/PropertyDeletedPage";
+import PropertyStaffManagement from "@/pages/admin/properties/PropertyStaffManagement";
+import PropertyStaffOverview from "@/pages/admin/properties/PropertyStaffOverview";
 //listing
 import ListingsPage from "@/pages/admin/listing/ListingsPage";
 import EditListingPage from "@/pages/admin/listing/EditListingPage";
@@ -74,6 +76,7 @@ import ReviewManagementPage from "@/pages/admin/reviews/ReviewManagementPage";
 import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
 import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
+import StaffManagementPage from "@/pages/admin/user/StaffManagementPage";
 import WishlistPage from "@/pages/WishlistPage";
 import SearchResultPage from "@/pages/SearchResultPage";
 import PropertieInfo from "@/components/roomdetail/PropertieInfo";
@@ -253,6 +256,8 @@ const routes: RouteObject[] = [
       { path: "properties/edit/:id", element: <EditPropertyPage /> },
       { path: "properties/:id", element: <PropertyDetailPage /> },
       { path: "properties/deleted", element: <PropertyDeletedPage /> },
+      { path: "properties/:id/staff", element: <PropertyStaffManagement /> },
+      { path: "property-staff", element: <PropertyStaffOverview /> },
       //amenities
       { path: "amenities", element: <AmenitiesPage /> },
       { path: "amenities/create", element: <CreateAmenities /> },
@@ -268,6 +273,7 @@ const routes: RouteObject[] = [
       { path: "house-rules", element: <HouseRuleListPage /> },
       { path: "reviews", element: <ReviewManagementPage /> },
       { path: "users", element: <AdminUserPage /> },
+      { path: "staff", element: <StaffManagementPage /> },
     ],
   },
 

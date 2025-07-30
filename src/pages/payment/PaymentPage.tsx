@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import PaymentHeader from "@/components/payment/PaymentHeader";
-import PaymentForm from "@/components/payment/PaymentForm";
 import BookingSummary from "@/components/payment/BookingSummary";
 import VoucherListForUser from "@/components/payment/VoucherListForUser";
 import { IListing } from "@/types/listing";
@@ -185,7 +184,6 @@ export default function PaymentLayout() {
                 </CardContent>
               </Card>
             </div>
-            <PaymentForm />
           </div>
           <div className="lg:pl-8">
             {/* BookingSummary */}
