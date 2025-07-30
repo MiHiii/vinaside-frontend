@@ -43,6 +43,10 @@ export default function ListingDetail() {
   // State cho date range
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [open, setOpen] = React.useState(false);
+  
+  // State cho image pagination
+  const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
+  const [isTransitioning, setIsTransitioning] = React.useState(false);
 
   // Đóng popover khi chọn đủ ngày
   React.useEffect(() => {
@@ -153,7 +157,7 @@ export default function ListingDetail() {
 
   return (
     <div className="min-h-screen  p-4 md:p-6 lg:p-8">
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className=" space-y-8">
         <button
           className="mb-4 flex items-center gap-2 text-blue-600 hover:underline hover:text-blue-800"
           onClick={() => navigate(-1)}
@@ -168,7 +172,7 @@ export default function ListingDetail() {
             <PopoverTrigger asChild>
               <Button
                 variant={"outline"}
-                className={"w-[280px] justify-start text-left font-normal"}
+                className={"w-[280px] justify-start text-left font-normal border-none"}
               >
                 <CalendarCheck className="mr-2 h-4 w-4" />
                 {dateRange?.from && dateRange?.to
@@ -272,7 +276,7 @@ export default function ListingDetail() {
                 <div className="flex items-center gap-2 col-span-2">
                   <Info className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-600">Mô tả:</span>
-                  <span className="bg-gray-100 rounded px-2 py-1 text-gray-700 ml-1 flex-1 whitespace-pre-line">{listing.description}</span>
+                  <span className="  px-2 py-1 text-gray-700 ml-1 flex-1 whitespace-pre-line">{listing.description}</span>
                 </div>
               </div>
               {listing.service_ids && listing.service_ids.length > 0 && (
@@ -322,6 +326,114 @@ export default function ListingDetail() {
             </div>
           </div>
         </div>
+
+        {/* Gallery Section - Hiển thị tất cả ảnh của phòng */}
+        {listing.images && listing.images.length > 0 && (
+          <div className=" p-6 mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-xl font-semibold">Thư viện ảnh phòng ({listing.images.length} ảnh)</span>
+            </div>
+            <div className="relative">
+              <div 
+                className="flex gap-4 overflow-hidden relative hide-scrollbar" 
+                style={{ 
+                  width: '100%', 
+                  scrollbarWidth: 'none', 
+                  msOverflowStyle: 'none',
+                  transition: 'transform 0.5s ease-in-out'
+                }}
+              >
+                {listing.images.slice(currentImageIndex, currentImageIndex + 5).map((image, index) => (
+                  <div 
+                    key={currentImageIndex + index} 
+                    className={`relative group flex-shrink-0 transition-all duration-700 ease-out hover:scale-105 ${
+                      isTransitioning ? 'animate-pulse' : ''
+                    }`}
+                    style={{ 
+                      width: 'calc((100% - 64px) / 5)',
+                      transform: isTransitioning ? 'scale(0.95)' : 'scale(1)',
+                      opacity: isTransitioning ? 0.8 : 1
+                    }}
+                  >
+                    <img
+                      src={image}
+                      alt={`${listing.title} - Ảnh ${currentImageIndex + index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg shadow-lg hover:shadow-2xl transition-all duration-500 ease-out cursor-pointer filter hover:brightness-110"
+                      onClick={() => {
+                        // Có thể thêm modal để xem ảnh full size
+                        window.open(image, '_blank');
+                      }}
+                    />
+                    <div className="absolute top-2 right-2 bg-blue-500 bg-opacity-70 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-opacity-90">
+                      {currentImageIndex + index + 1}
+                    </div>
+                    {currentImageIndex + index === 0 && (
+                      <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm transition-all duration-300 hover:from-blue-600 hover:to-blue-700 shadow-lg">
+                        Ảnh chính
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {/* Mũi tên trái */}
+                {listing.images.length > 5 && currentImageIndex > 0 && (
+                  <button
+                    onClick={() => {
+                      setIsTransitioning(true);
+                      setTimeout(() => {
+                        setCurrentImageIndex(prev => Math.max(0, prev - 1));
+                        setIsTransitioning(false);
+                      }, 300);
+                    }}
+                    className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-2 bg-white bg-opacity-95 hover:bg-opacity-100 rounded-full p-3 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-500 hover:scale-125 hover:-translate-x-3 z-10 backdrop-blur-sm"
+                  >
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                )}
+                
+                {/* Mũi tên phải */}
+                {listing.images.length > 5 && currentImageIndex < listing.images.length - 1 && (
+                  <button
+                    onClick={() => {
+                      setIsTransitioning(true);
+                      setTimeout(() => {
+                        setCurrentImageIndex(prev => Math.min(listing.images.length - 1, prev + 1));
+                        setIsTransitioning(false);
+                      }, 300);
+                    }}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2 bg-white bg-opacity-95 hover:bg-opacity-100 rounded-full p-3 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-500 hover:scale-125 hover:translate-x-3 z-10 backdrop-blur-sm"
+                  >
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Counter ở dưới */}
+              {/* {listing.images.length > 5 && (
+                <div className="flex justify-center mt-4">
+                  <span className="text-sm text-gray-700 bg-white bg-opacity-90 px-4 py-2 rounded-full shadow-lg backdrop-blur-sm border border-gray-200 transition-all duration-300 hover:bg-opacity-100 hover:shadow-xl">
+                    {currentImageIndex + 1} / {listing.images.length}
+                  </span>
+                </div>
+              )} */}
+            </div>
+            {listing.images.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p>Chưa có ảnh nào</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Grid thống kê chi tiết */}
         {statistics && (

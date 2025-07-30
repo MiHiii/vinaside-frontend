@@ -81,3 +81,13 @@
 .recharts-active-bar-background {
   fill: transparent !important;
 }
+
+/* Hide scrollbar for gallery */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
