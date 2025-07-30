@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Bell,
   Check,
@@ -30,6 +30,9 @@ import { parseISO } from "date-fns";
 import { useAppSelector } from "@/hooks/useRedux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+// Global Set để chia sẻ giữa các instance của Notification component
+const globalShownNotiIds = new Set<string>();
 
 const getNotificationIcon = (type: string) => {
   const iconClass = "h-5 w-5 text-slate-600 dark:text-slate-400";
@@ -67,7 +70,11 @@ function formatVietnamTime(isoString: string) {
   }
 }
 
-export default function Notification() {
+export default function Notification({
+  isAdmin = false,
+}: {
+  isAdmin?: boolean;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const {
     notifications,
@@ -78,6 +85,7 @@ export default function Notification() {
     markAllNotificationsAsRead,
     removeNotification,
     addNotificationRealtime,
+    clearNotifications,
   } = useNotifications();
   // Lấy userId và token từ redux hoặc localStorage
   const userId = useAppSelector((state) => state.auth.user?._id);
@@ -87,6 +95,18 @@ export default function Notification() {
       : undefined;
 
   const navigate = useNavigate();
+
+  const handleNotificationClickToast = (notification: Notification) => {
+    if (notification.type === "message") {
+      navigate(isAdmin ? "/admin/messages" : "/messages");
+    } else if (notification.type === "booking") {
+      navigate("/profilepage");
+    } else if (notification.type === "review") {
+      navigate("/profilepage");
+    } else if (notification.type === "system") {
+      navigate("/");
+    }
+  };
 
   // Kết nối socket notification khi có userId và token
   useEffect(() => {
@@ -102,40 +122,37 @@ export default function Notification() {
     };
   }, [token, userId]);
 
-  // Lấy danh sách và số lượng chưa đọc khi mount
+  // Lấy danh sách và số lượng chưa đọc khi userId hoặc token thay đổi (đăng nhập/đăng xuất)
   useEffect(() => {
-    getNotifications();
-    getUnreadCount();
+    if (userId && token) {
+      getNotifications();
+      getUnreadCount();
+    } else {
+      if (typeof clearNotifications === "function") clearNotifications();
+    }
     // eslint-disable-next-line
-  }, []);
+  }, [userId, token]);
 
   // Lắng nghe notification realtime qua socket
   useEffect(() => {
     // Lắng nghe notification mới (KHÔNG gọi lại getUnreadCount hay getNotifications)
     const unsubNew = socketService.onNewNotificationV2((notification) => {
-      addNotificationRealtime(notification); // chỉ thêm vào state
-      toast(notification.title || "Bạn có thông báo mới", {
-        description: notification.message,
-        style: {
-          background: "#ccccc", // Đỏ nhạt
-          color: "#00000",
-        },
-        action: {
-          label: "Xem ngay",
-          onClick: () => {
-            // Điều hướng theo type
-            if (notification.type === "message") {
-              navigate("/messages");
-            } else if (notification.type === "booking") {
-              navigate("/profilepage");
-            } else if (notification.type === "review") {
-              navigate("/profilepage");
-            } else if (notification.type === "system") {
-              navigate("/");
-            }
+      // Chỉ toast và thêm vào state nếu notification chưa được hiển thị
+      if (!globalShownNotiIds.has(notification.id)) {
+        globalShownNotiIds.add(notification.id);
+        addNotificationRealtime(notification); // chỉ thêm vào state
+        toast(notification.title || "Bạn có thông báo mới", {
+          description: notification.message,
+          style: {
+            background: "#ccccc", // Đỏ nhạt
+            color: "#00000",
           },
-        },
-      });
+          action: {
+            label: "Xem ngay",
+            onClick: () => handleNotificationClickToast(notification),
+          },
+        });
+      }
     });
     // Lắng nghe notification V2 nếu backend có
     // const unsubV2 = socketService.onNewNotificationV2?.((notification) => {
@@ -162,7 +179,7 @@ export default function Notification() {
         socketService.notificationSocket.off("notification_deleted");
       }
     };
-  }, [addNotificationRealtime, getUnreadCount, navigate]);
+  }, [addNotificationRealtime, getUnreadCount, navigate, isAdmin]);
 
   const highPriorityUnread = unreadCount;
 
@@ -335,7 +352,7 @@ export default function Notification() {
 
         <DropdownMenuContent
           align="end"
-          className="w-[480px] bg-slate-900 rounded-2xl border border-slate-200 shadow-2xl p-0 mt-2 animate-slide-down"
+          className="w-[420px] bg-slate-900 rounded-2xl border border-slate-200 shadow-2xl p-0 mt-2 animate-slide-down"
           sideOffset={8}
         >
           {/* Header */}
@@ -543,7 +560,10 @@ export default function Notification() {
               <Button
                 variant="ghost"
                 className="w-full text-sm font-medium text-slate-900 hover:text-slate-700 hover:bg-slate-200 dark:text-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-700 py-2.5 rounded-xl transition-all duration-200"
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate("/notifications");
+                }}
               >
                 Xem tất cả thông báo
               </Button>

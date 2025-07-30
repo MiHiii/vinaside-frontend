@@ -9,6 +9,7 @@ import {
   clearNotificationDetail,
   clearNotificationError,
   addNotification,
+  clearNotifications,
 } from "@/store/slices/notificationSlice";
 import { useCallback } from "react";
 import {
@@ -63,6 +64,10 @@ export const useNotifications = () => {
 
   const clearError = useCallback(() => {
     dispatch(clearNotificationError());
+  }, [dispatch]);
+
+  const clearAllNotifications = useCallback(() => {
+    dispatch(clearNotifications());
   }, [dispatch]);
 
   // Hàm thêm notification mới từ socket
@@ -120,5 +125,6 @@ export const useNotifications = () => {
     clearDetail,
     clearError,
     addNotificationRealtime,
+    clearNotifications: clearAllNotifications,
   };
 };

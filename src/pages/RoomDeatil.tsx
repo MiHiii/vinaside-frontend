@@ -192,7 +192,7 @@ export default function RoomDetailPage() {
             />
           </div>
           {/* Booking Form ngoài cùng bên phải */}
-          <div className="hidden lg:flex flex-col items-end lg:col-span-4 sticky top-6">
+          <div className="lg:col-span-4 sticky top-6">
             <BookingForm
               listing={listingData}
               checkIn={checkIn}

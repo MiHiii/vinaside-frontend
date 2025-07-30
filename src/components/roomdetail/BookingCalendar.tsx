@@ -144,7 +144,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             fromDate={startOfToday()}
             className="bg-white rounded-xl p-6"
             classNames={{
-              
               months:
                 "flex flex-col sm:flex-row space-y-4 sm:space-x-8 sm:space-y-0",
               month: "space-y-4",
