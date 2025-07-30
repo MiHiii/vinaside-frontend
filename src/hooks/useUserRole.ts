@@ -33,6 +33,7 @@ export const useUserRole = () => {
     user,
     isAdmin,
     isStaff,
-    hasPermission
+    hasPermission,
+    role: user?.role
   };
 }; 
