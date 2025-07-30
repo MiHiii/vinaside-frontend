@@ -10,7 +10,7 @@ import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import { createBooking, createPayment } from "@/store/slices/bookingSlice";
 import type { DateRange } from "react-day-picker";
 import BookingInfoModal from "./BookingInfoModal";
-import PriceDetailModal from "./PriceDetailModal";
+
 import CancelPolicyDetail from "./CancelPolicyDetail";
 import type { Voucher } from "@/types/voucher";
 import { cn } from "@/lib/utils"; // Assuming cn utility is available
@@ -59,7 +59,6 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   setPaymentType: setPaymentTypeProp,
 }) => {
   const [open, setOpen] = useState(false);
-  const [showPriceDetail, setShowPriceDetail] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [internalPaymentType, internalSetPaymentType] = useState<
@@ -133,11 +132,14 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
       } else {
         alert("Không lấy được link thanh toán.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Nếu là lỗi từ API tạo booking
       if (
         err &&
+        typeof err === "object" &&
+        "statusCode" in err &&
         err.statusCode === 400 &&
+        "message" in err &&
         typeof err.message === "string" &&
         err.message.toLowerCase().includes("voucher")
       ) {
@@ -167,24 +169,38 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     setAdults(guests.adults); // Lưu số người lớn nếu muốn đồng bộ
   };
 
-  // Disable dịch vụ/voucher khi chọn đặt cọc
-  const isDeposit = paymentType === "deposit";
-
   // Tính toán giá dựa trên loại thanh toán
-  let base = listing.price_per_night * nights;
-  let serviceFee = Math.round(base * 0.1);
-  let tax = Math.round(base * 0.08);
-  if (paymentType === "deposit") {
-    // Tính 50% giá phòng, nhưng vẫn cộng dịch vụ và trừ voucher
-    base = Math.round(listing.price_per_night * nights * 0.5);
-    serviceFee = Math.round(base * 0.1);
-    tax = Math.round(base * 0.08);
-  }
-  let total = base + serviceFee + tax + selectedServiceTotal;
-  let discount = selectedVoucher
-    ? Math.round((total * selectedVoucher.discount_percent) / 100)
+  const base = listing.price_per_night * nights;
+  const subtotalAmount = base + selectedServiceTotal;
+
+  // Tính discount trước
+  const discount = selectedVoucher
+    ? Math.round((subtotalAmount * selectedVoucher.discount_percent) / 100)
     : 0;
-  let finalTotal = total - discount;
+  const amountAfterDiscount = subtotalAmount - discount;
+
+  // Tính phí và thuế dựa trên subtotalAmount (trước khi trừ voucher)
+  const serviceFee = Math.round(subtotalAmount * 0.1);
+  const tax = Math.round(subtotalAmount * 0.08);
+
+  let finalTotal = amountAfterDiscount + serviceFee + tax;
+
+  if (paymentType === "deposit") {
+    // Tính 50% của tổng tiền (giá phòng + dịch vụ) - phù hợp với homestay
+    const depositSubtotal = Math.round(subtotalAmount * 0.5); // 50% tổng giá phòng và dịch vụ
+
+    // Tính discount cho deposit
+    const depositDiscount = selectedVoucher
+      ? Math.round((depositSubtotal * selectedVoucher.discount_percent) / 100)
+      : 0;
+    const depositAmountAfterDiscount = depositSubtotal - depositDiscount;
+
+    // Tính phí và thuế cho deposit
+    const depositServiceFee = Math.round(depositSubtotal * 0.1);
+    const depositTax = Math.round(depositSubtotal * 0.08);
+
+    finalTotal = depositAmountAfterDiscount + depositServiceFee + depositTax;
+  }
 
   // Lấy vị trí từ property/location
   const location = listing.propertyId?.location || listing.location || {};
@@ -369,47 +385,50 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
                 </span>
               )}
             </span>
-            <span>₫{base.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-base text-gray-700">
-            <span>Phí dịch vụ</span>
-            <span>₫{serviceFee.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-base text-gray-700">
-            <span>Thuế (8%)</span>
-            <span>₫{tax.toLocaleString()}</span>
+            <span>
+              ₫
+              {paymentType === "deposit"
+                ? Math.round(base * 0.5).toLocaleString()
+                : base.toLocaleString()}
+            </span>
           </div>
           <div className="flex justify-between text-base text-gray-700">
             <span>Dịch vụ kèm theo</span>
             <span>₫{selectedServiceTotal.toLocaleString()}</span>
           </div>
-          <div className="border-t border-gray-400 pt-4 mt-4">
+          <div className="border-t border-gray-400 pt-2">
             <div className="flex justify-between font-bold text-base">
-              <span>Tổng VND</span>
-              <span
-                className={discount ? "line-through text-gray-400 text-lg" : ""}
-              >
-                ₫{total.toLocaleString()}
-              </span>
+              <span>Tổng giá phòng và dịch vụ</span>
+              <span>₫{subtotalAmount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-base text-gray-700">
+              <span>Phí dịch vụ (10%)</span>
+              <span>₫{serviceFee.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-base text-gray-700">
+              <span>Thuế (8%)</span>
+              <span>₫{tax.toLocaleString()}</span>
             </div>
             {discount > 0 && (
-              <div className="flex justify-between text-base text-green-600 font-medium mt-2">
+              <div className="flex justify-between text-base text-green-600 font-medium">
                 <span>Đã giảm ({selectedVoucher?.code})</span>
                 <span>-₫{discount.toLocaleString()}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-xl mt-2">
-              <span>Tổng sau giảm</span>
-              <span className="text-pink-600">
-                ₫{finalTotal.toLocaleString()}
-              </span>
-            </div>
-            {paymentType === "deposit" && (
-              <div className="text-xs text-gray-500 mt-1">
-                Bạn sẽ thanh toán trước 50% tổng tiền, phần còn lại sẽ thanh
-                toán sau.
+            <div className="border-t border-gray-400 pt-2 mt-2">
+              <div className="flex justify-between font-bold text-xl">
+                <span>Tổng thanh toán</span>
+                <span className="text-pink-600">
+                  ₫{finalTotal.toLocaleString()}
+                </span>
               </div>
-            )}
+              {paymentType === "deposit" && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Bạn sẽ thanh toán trước 50% tổng tiền, phần còn lại sẽ thanh
+                  toán sau.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

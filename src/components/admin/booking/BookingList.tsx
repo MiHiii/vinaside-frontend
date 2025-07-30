@@ -15,9 +15,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getPaymentStatusVN, getStatusVN } from "@/helper/status";
-import { Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
 type BookingWithDeleted = Booking & {
@@ -100,20 +98,17 @@ const BookingList: React.FC = () => {
           <TableHeader>
             <TableRow className="bg-gray-100 sticky top-0 z-10 text-base">
               <TableHead className="text-center">STT</TableHead>
-              <TableHead className="text-center">Booking ID</TableHead>
               <TableHead className="text-center">Khách hàng</TableHead>
               <TableHead className="text-center">Phòng</TableHead>
-              <TableHead className="text-center">Property</TableHead>
-              <TableHead className="text-center">Check-in</TableHead>
-              <TableHead className="text-center">Check-out</TableHead>
-              <TableHead className="text-center">Đêm</TableHead>
+              <TableHead className="text-center">HomeStay</TableHead>
+              <TableHead className="text-center">Ngày vào</TableHead>
+              <TableHead className="text-center">Ngày ra</TableHead>
               <TableHead className="text-center">Khách</TableHead>
               <TableHead className="text-center">Trạng thái</TableHead>
               <TableHead className="text-center">Thanh toán</TableHead>
               <TableHead className="text-center">Phương thức</TableHead>
               <TableHead className="text-center">Tổng tiền</TableHead>
               <TableHead className="text-center">Thao tác</TableHead>
-              <TableHead className="text-center">Chi tiết</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -152,59 +147,109 @@ const BookingList: React.FC = () => {
 
                 const bookingStatus = getStatusVN(b.status);
                 const paymentStatus = getPaymentStatusVN(
-                  b.payment_status || (b as { paymentStatus?: string }).paymentStatus || ""
+                  b.payment_status ||
+                    (b as { paymentStatus?: string }).paymentStatus ||
+                    ""
                 );
 
                 // Thêm màu nền cho booking đã hủy
                 const rowClassName =
                   b.status === "cancelled"
-                    ? "hover:bg-gray-50 bg-red-50"
-                    : "hover:bg-gray-50";
+                    ? "hover:bg-gray-100 bg-red-50 cursor-pointer"
+                    : "hover:bg-gray-100 cursor-pointer";
 
                 return (
                   <TableRow key={b._id} className={rowClassName}>
                     <TableCell className="text-center">{idx + 1}</TableCell>
-                    <TableCell className="text-center font-mono text-sm">
-                      {b._id.slice(-8)}
-                    </TableCell>
                     <TableCell className="text-center">
-                      <div>
-                        <div className="font-medium">{guestName}</div>
-                        <div className="text-xs text-gray-500">
-                          {guestEmail}
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        <div>
+                          <div className="font-medium">{guestName}</div>
+                          <div className="text-xs text-gray-500">
+                            {guestEmail}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">{roomName}</TableCell>
-                    <TableCell className="text-center">
-                      {propertyName}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-center">
-                      {new Date(b.checkInDate).toLocaleDateString("vi-VN")}
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        {roomName}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-center">
-                      {new Date(b.check_out_date).toLocaleDateString("vi-VN")}
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        {propertyName}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-center">
-                      {b.nights || 0}
-                    </TableCell>
-                    <TableCell className="text-center">{b.guests}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={bookingStatus.color}>
-                        {bookingStatus.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={paymentStatus.color}>
-                        {paymentStatus.label}
-                      </Badge>
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        {new Date(b.checkInDate).toLocaleDateString("vi-VN")}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-center">
-                      {b.payment_method === "vnpay" && <VNPayIcon />}
-                      {(b.payment_method as string)?.toUpperCase() || "N/A"}
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        {new Date(b.check_out_date).toLocaleDateString("vi-VN")}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        {b.guests}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        <Badge className={bookingStatus.color}>
+                          {bookingStatus.label}
+                        </Badge>
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        <Badge className={paymentStatus.color}>
+                          {paymentStatus.label}
+                        </Badge>
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        {b.payment_method === "vnpay" && <VNPayIcon />}
+                        {(b.payment_method as string)?.toUpperCase() || "N/A"}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-center font-medium">
-                      {(b.final_amount || 0).toLocaleString()}₫
+                      <Link
+                        to={`/admin/bookings/${propertyId}/${b._id}`}
+                        className="block"
+                      >
+                        {(b.final_amount || 0).toLocaleString()}₫
+                      </Link>
                     </TableCell>
                     <TableCell className="text-center">
                       <BookingActions
@@ -212,18 +257,6 @@ const BookingList: React.FC = () => {
                         propertyId={propertyId}
                         onSuccess={handleActionSuccess}
                       />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Link to={`/admin/bookings/${propertyId}/${b._id}`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-2"
-                        >
-                          <Eye size={16} />
-                          Xem chi tiết
-                        </Button>
-                      </Link>
                     </TableCell>
                   </TableRow>
                 );
