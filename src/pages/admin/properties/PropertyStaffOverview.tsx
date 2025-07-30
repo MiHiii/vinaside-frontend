@@ -14,29 +14,7 @@ interface AssignmentStats {
   totalStaff: number;
 }
 
-interface RecentAssignment {
-  _id: string;
-  propertyId: {
-    _id: string;
-    name: string;
-    type: string;
-  };
-  staffId: {
-    _id: string;
-    name: string;
-    email: string;
-    phone: string;
-  };
-  assignedBy: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  status: string;
-  assignedAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
+
 
 interface Assignment {
   _id: string;
@@ -63,9 +41,8 @@ interface Assignment {
 }
 
 export default function PropertyStaffOverview() {
-  const { isAdmin, isStaff, hasPermission } = useUserRole();
+  const { isAdmin, isStaff, hasPermission, user } = useUserRole();
   const [stats, setStats] = useState<AssignmentStats | null>(null);
-  const [recentAssignments, setRecentAssignments] = useState<RecentAssignment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,12 +56,6 @@ export default function PropertyStaffOverview() {
       if (isAdmin) {
         const allAssignments = await propertyStaffAssignmentApi.getAllAssignments();
         
-        // Load recent assignments
-        const recent = await propertyStaffAssignmentApi.getAssignmentHistory({
-          page: 1,
-          limit: 5
-        });
-
         // Tính toán stats
         const uniqueProperties = new Set(allAssignments.data?.map((a: Assignment) => a.propertyId?._id || a.propertyId) || []);
         const uniqueStaff = new Set(allAssignments.data?.map((a: Assignment) => a.staffId?._id || a.staffId) || []);
@@ -96,10 +67,27 @@ export default function PropertyStaffOverview() {
           totalStaff: uniqueStaff.size
         });
 
-        setRecentAssignments(recent.data || []);
       } else if (isStaff) {
         // Staff chỉ thấy assignments của mình
-        const myAssignments = await propertyStaffAssignmentApi.getPropertiesByStaff();
+        // Lấy user ID từ Redux hoặc localStorage
+        let userId = user?._id;
+        if (!userId) {
+          const storedUser = localStorage.getItem("user");
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              userId = parsedUser._id;
+            } catch (e) {
+              console.error("Error parsing localStorage user:", e);
+            }
+          }
+        }
+        
+        if (!userId) {
+          throw new Error("Không tìm thấy thông tin user");
+        }
+        
+        const myAssignments = await propertyStaffAssignmentApi.getPropertiesByStaff(userId);
         
         setStats({
           totalAssignments: myAssignments.data?.length || 0,
@@ -107,8 +95,6 @@ export default function PropertyStaffOverview() {
           totalProperties: myAssignments.data?.length || 0,
           totalStaff: 1 // Chỉ có mình
         });
-
-        setRecentAssignments(myAssignments.data || []);
       }
     } catch {
       toast.error("Không thể tải dữ liệu tổng quan");
@@ -117,13 +103,7 @@ export default function PropertyStaffOverview() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  };
+
 
   if (loading) {
     return (
