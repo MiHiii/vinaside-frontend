@@ -33,6 +33,7 @@ import Listing from "@/pages/hosting/Listing";
 import BecomeAHostLayout from "@/components/layouts/become-a-host/BecomeAHostLayout";
 import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
 import Messages from "@/pages/messages/Messages";
+import AllNotificationsPage from "@/pages/notifications/AllNotificationsPage";
 // Admin Pages
 import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import DashboardContent from "@/components/admin/DashboardContent";
@@ -132,6 +133,14 @@ const routes: RouteObject[] = [
         element: (
           <ProtectedRoute>
             <Messages />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "notifications",
+        element: (
+          <ProtectedRoute>
+            <AllNotificationsPage />
           </ProtectedRoute>
         ),
       },

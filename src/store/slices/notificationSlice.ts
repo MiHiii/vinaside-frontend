@@ -112,6 +112,12 @@ const notificationSlice = createSlice({
       state.notifications.unshift(action.payload);
       state.unreadCount += 1;
     },
+    clearNotifications(state) {
+      state.notifications = [];
+      state.unreadCount = 0;
+      state.error = null;
+      state.notificationDetail = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -160,5 +166,6 @@ export const {
   clearNotificationDetail,
   clearNotificationError,
   addNotification,
+  clearNotifications,
 } = notificationSlice.actions;
 export default notificationSlice.reducer;

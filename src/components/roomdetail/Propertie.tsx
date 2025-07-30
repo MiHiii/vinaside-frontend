@@ -138,7 +138,7 @@ export default function Propertie({ propertyId }: PropertieProps) {
         <div className="space-y-6">
           <div>
             <h4 className="text-lg font-semibold text-gray-900 mb-3">
-              Thông tin Chủ nhà
+              Thông tin
             </h4>
             <div className="space-y-2 text-gray-700">
               <div>Tỉ lệ phản hồi: 100%</div>

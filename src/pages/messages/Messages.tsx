@@ -97,6 +97,28 @@ export default function Messages() {
           animation: fadeIn 0.3s ease-out;
         }
         
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        .animate-pulse {
+          animation: pulse 2s infinite;
+        }
+        
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .animate-slide-in-right {
+          animation: slideInRight 0.3s ease-out;
+        }
+        
         /* Instagram-style scrollbar */
         .messages-scroll::-webkit-scrollbar {
           width: 4px;
@@ -286,12 +308,28 @@ export default function Messages() {
                 return (
                   <div
                     key={u._id}
-                    className={`mt-8 flex items-center gap-3 cursor-pointer p-3 rounded-2xl hover:bg-gray-200 ${
-                      selectedUser?.id === u._id ? "bg-gray-100" : ""
+                    className={`mt-8 bg-background text-card-foreground flex items-center gap-3 cursor-pointer p-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 ${
+                      selectedUser?.id === u._id
+                        ? "bg-gray-100 text-card-foreground"
+                        : ""
+                    } ${
+                      conversation &&
+                      typeof conversation.unreadCount === "number" &&
+                      conversation.unreadCount > 0
+                        ? "bg-blue-50 border-l-4 border-blue-500 shadow-md animate-slide-in-right"
+                        : ""
                     }`}
                     onClick={() => handleConnect(u._id!)}
                   >
-                    <Avatar className="h-10 w-10">
+                    <Avatar
+                      className={`h-10 w-10 ${
+                        conversation &&
+                        typeof conversation.unreadCount === "number" &&
+                        conversation.unreadCount > 0
+                          ? "ring-2 ring-red-300 ring-offset-2"
+                          : ""
+                      }`}
+                    >
                       <AvatarImage
                         src={u.avatar_url || "/placeholder.svg"}
                         alt={u.name}
@@ -302,7 +340,15 @@ export default function Messages() {
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex justify-between">
-                        <div className="font-medium text-foreground">
+                        <div
+                          className={`font-medium ${
+                            conversation &&
+                            typeof conversation.unreadCount === "number" &&
+                            conversation.unreadCount > 0
+                              ? "text-red-400 font-bold"
+                              : "text-foreground"
+                          }`}
+                        >
                           {u.name || `User ${u._id}`}
                         </div>
                         {conversation?.lastMessage?.createdAt && (
@@ -318,21 +364,35 @@ export default function Messages() {
                           </div>
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {conversation?.lastMessage?.content
-                          ? conversation.lastMessage.content.length > 30
-                            ? `${conversation.lastMessage.content.substring(
-                                0,
-                                30
-                              )}...`
-                            : conversation.lastMessage.content
-                          : "No messages"}
+                      <div
+                        className={`text-sm truncate max-w-[200px] text-foreground ${
+                          conversation &&
+                          typeof conversation.unreadCount === "number" &&
+                          conversation.unreadCount > 0
+                            ? "text-blue-600 font-semibold"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {conversation
+                          ? conversation.lastMessage
+                            ? conversation.lastMessage.content
+                              ? conversation.lastMessage.content.length > 50
+                                ? `${conversation.lastMessage.content.substring(
+                                    0,
+                                    50
+                                  )}...`
+                                : conversation.lastMessage.content
+                              : "Tin nhắn đã bị thu hồi"
+                            : "..."
+                          : "Đang tải..."}
                       </div>
                       {conversation &&
                         typeof conversation.unreadCount === "number" &&
                         conversation.unreadCount > 0 && (
-                          <div className="inline-flex items-center justify-center bg-primary text-primary-foreground text-xs font-medium rounded-full min-w-[20px] h-5 px-1.5 mt-1">
-                            {conversation.unreadCount}
+                          <div className="inline-flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1.5 mt-1 animate-pulse">
+                            {conversation.unreadCount > 99
+                              ? "99+"
+                              : conversation.unreadCount}
                           </div>
                         )}
                     </div>
@@ -366,20 +426,7 @@ export default function Messages() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {selectedUser && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setPropertyId(
-                      currentPropertyId ? undefined : "test-property-123"
-                    )
-                  }
-                  className="text-xs"
-                >
-                  {currentPropertyId ? "Clear Property" : "Set Property"}
-                </Button>
-              )}
+              {/* Đã xóa nút Set Property ở đây */}
               <Button variant="ghost" size="icon">
                 <MoreHorizontal className="h-4 w-4 text-foreground" />
               </Button>
