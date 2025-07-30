@@ -35,7 +35,7 @@ import BecomeAHost from "@/pages/become-a-host/BecomeAHost";
 import Messages from "@/pages/messages/Messages";
 // Admin Pages
 import AdminLayout from "@/components/layouts/admin/AdminLayout";
-import { DashboardContent } from "@/components/admin/DashboardContent";
+import DashboardContent from "@/components/admin/DashboardContent";
 import Tasks from "@/components/admin/Tasks";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ProtectedAdminRoute from "@/components/common/ProtectedAdminRoute";

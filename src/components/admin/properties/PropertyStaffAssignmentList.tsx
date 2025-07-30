@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "react-hot-toast";
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 interface Assignment {
   _id: string;
@@ -31,10 +34,23 @@ interface Assignment {
   updatedAt: string;
 }
 
-export default function PropertyStaffAssignmentList() {
+interface PropertyStaffAssignmentListProps {
+  isAdmin?: boolean;
+  canManage?: boolean;
+}
+
+export default function PropertyStaffAssignmentList({ 
+  isAdmin = false, 
+  canManage = false 
+}: PropertyStaffAssignmentListProps) {
+  const { user } = useSelector((state: RootState) => state.auth);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Debug: Log user info
+  console.log("Redux user:", user);
+  console.log("LocalStorage user:", localStorage.getItem("user"));
   
   // State cho input values (không trigger API call)
   const [inputValues, setInputValues] = useState({
@@ -54,9 +70,40 @@ export default function PropertyStaffAssignmentList() {
     setLoading(true);
     setError(null);
     try {
-      const response = await propertyStaffAssignmentApi.getAssignmentHistory(filters);
+      let response;
+      
+      if (isAdmin) {
+        // Admin có thể xem tất cả assignments
+        response = await propertyStaffAssignmentApi.getAssignmentHistory(filters);
+      } else {
+        // Staff chỉ xem assignments của mình - sử dụng user ID thực
+        console.log("User object:", user); // Debug log
+        console.log("User ID:", user?._id); // Debug log
+        
+        // Fallback: Lấy user từ localStorage nếu Redux chưa có
+        let userId = user?._id;
+        if (!userId) {
+          const storedUser = localStorage.getItem("user");
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              userId = parsedUser._id;
+              console.log("Using localStorage user ID:", userId);
+            } catch (e) {
+              console.error("Error parsing localStorage user:", e);
+            }
+          }
+        }
+        
+        if (!userId) {
+          throw new Error("Không tìm thấy thông tin user");
+        }
+        response = await propertyStaffAssignmentApi.getPropertiesByStaff(userId);
+      }
+      
       setAssignments(response.data || []);
-    } catch {
+    } catch (error) {
+      console.error("Load assignments error:", error); // Debug log
       setError("Không thể tải danh sách gán nhân viên");
       toast.error("Không thể tải danh sách gán nhân viên");
     } finally {
@@ -66,7 +113,7 @@ export default function PropertyStaffAssignmentList() {
 
   useEffect(() => {
     loadAssignments();
-  }, [filters]);
+  }, [filters, isAdmin]);
 
   // Làm sạch filters khi component mount để đảm bảo không có giá trị không hợp lệ
   useEffect(() => {
@@ -193,147 +240,141 @@ export default function PropertyStaffAssignmentList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Lịch sử gán nhân viên</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span>
+            {isAdmin ? "Tất cả Property Assignments" : "Properties của tôi"}
+          </span>
+          {isAdmin && (
+            <Badge variant="outline">Admin View</Badge>
+          )}
+          {!isAdmin && (
+            <Badge variant="secondary">Staff View</Badge>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                     {/* <div>
-              <Label htmlFor="propertyId">Tòa nhà</Label>
-              <div className="relative">
+        {/* Search Filters - Chỉ hiển thị cho admin có quyền quản lý */}
+        {isAdmin && canManage && (
+          <div className="mb-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="propertyId">Property ID</Label>
                 <Input
                   id="propertyId"
-                  placeholder="Nhập MongoDB ID tòa nhà và nhấn Ent"
+                  placeholder="Nhập Property ID (24 ký tự hex)"
                   value={inputValues.propertyId}
                   onChange={(e) => handleInputChange('propertyId', e.target.value)}
                   onKeyPress={handleKeyPress}
+                  maxLength={24}
                 />
-                {inputValues.propertyId && (
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('propertyId', '')}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                )}
               </div>
-           </div> */}
-                      <div>
-              <Label htmlFor="staffId">Nhân viên</Label>
-              <div className="relative">
+              <div>
+                <Label htmlFor="staffId">Staff ID</Label>
                 <Input
                   id="staffId"
-                  placeholder="Nhập ID nhân viên ..."
+                  placeholder="Nhập Staff ID (24 ký tự hex)"
                   value={inputValues.staffId}
                   onChange={(e) => handleInputChange('staffId', e.target.value)}
                   onKeyPress={handleKeyPress}
+                  maxLength={24}
                 />
-                {inputValues.staffId && (
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('staffId', '')}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                )}
               </div>
             </div>
-          <div>
-            <Label htmlFor="limit">Số lượng hiển thị</Label>
-            <Select
-              value={filters.limit.toString()}
-              onValueChange={handleLimitChange}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-
-
-        {/* Error message */}
-        {error && (
-          <div className="text-red-500 text-center py-4 mb-4">
-            {error}
+            <div className="flex items-center gap-4">
+              <Button onClick={handleSearch} disabled={loading}>
+                {loading ? "Đang tìm..." : "Tìm kiếm"}
+              </Button>
+              <Button variant="outline" onClick={() => {
+                setInputValues({ propertyId: "", staffId: "" });
+                setFilters({ propertyId: "", staffId: "", page: 1, limit: filters.limit });
+              }} disabled={loading}>
+                Xóa bộ lọc
+              </Button>
+            </div>
           </div>
         )}
 
-        {/* Assignments list */}
-        <div className="space-y-4">
-          {assignments.length > 0 ? (
-            assignments.map((assignment) => (
+        {/* Results */}
+        {loading ? (
+          <div className="text-center py-8">Đang tải...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-500">{error}</div>
+        ) : assignments.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            {isAdmin ? "Không có assignment nào" : "Bạn chưa được assign property nào"}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {assignments.map((assignment) => (
               <div
                 key={assignment._id}
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-lg">
-                          {assignment.propertyId?.name || 'Tòa nhà không xác định'}
-                        </h3>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {assignment.staffId?.name || 'Nhân viên không xác định'}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {assignment.staffId?.email || 'Email không xác định'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3 flex items-center justify-between text-sm text-gray-500">
-                      <div className="flex items-center space-x-4">
-                        <span>
-                          Gán bởi: {assignment.assignedBy?.name || 'Không xác định'}
-                        </span>
-                        <span>
-                          Ngày gán: {formatDate(assignment.assignedAt)}
-                        </span>
-                      </div>
-                    </div>
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-medium">
+                      {assignment.staffId?.name?.charAt(0)?.toUpperCase() || 'N'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-medium">{assignment.staffId?.name || 'Không xác định'}</p>
+                    <p className="text-sm text-gray-600">
+                      {isAdmin ? (
+                        <>
+                          Được gán cho {assignment.propertyId?.name || 'Không xác định'}
+                          {assignment.assignedBy && (
+                            <span className="ml-2 text-xs text-gray-400">
+                              bởi {assignment.assignedBy.name}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          Property: {assignment.propertyId?.name || 'Không xác định'}
+                          <span className="ml-2 text-xs text-gray-400">
+                            ({assignment.propertyId?.type || 'N/A'})
+                          </span>
+                        </>
+                      )}
+                    </p>
                   </div>
                 </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">
+                    {formatDate(assignment.assignedAt)}
+                  </p>
+                  <Badge 
+                    variant={assignment.status === 'ACTIVE' ? 'default' : 'secondary'}
+                    className="mt-1"
+                  >
+                    {assignment.status}
+                  </Badge>
+                </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              Không có lịch sử gán nhân viên nào
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {/* Pagination */}
-        {assignments.length > 0 && (
-          <div className="flex justify-between items-center mt-6 pt-4 border-t">
-            <Button
-              variant="outline"
-              disabled={filters.page <= 1}
-              onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
-            >
-              Trước
-            </Button>
-            <span className="text-sm text-gray-600">
-              Trang {filters.page}
-            </span>
-            <Button
-              variant="outline"
-              disabled={assignments.length < filters.limit}
-              onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
-            >
-              Sau
-            </Button>
+        {/* Pagination - Chỉ hiển thị cho admin */}
+        {isAdmin && assignments.length > 0 && (
+          <div className="mt-6 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="limit">Hiển thị:</Label>
+              <Select value={filters.limit.toString()} onValueChange={handleLimitChange}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-sm text-gray-500">
+              Trang {filters.page} - {assignments.length} kết quả
+            </div>
           </div>
         )}
       </CardContent>

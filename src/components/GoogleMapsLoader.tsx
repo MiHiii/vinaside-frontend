@@ -1,14 +1,24 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-export const GoogleMapsLoader = () => {
+interface GoogleMapsLoaderProps {
+  children?: React.ReactNode;
+}
+
+export const GoogleMapsLoader = ({ children }: GoogleMapsLoaderProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     // Kiểm tra xem Google Maps API đã được load chưa
     if (window.google && window.google.maps) {
       setIsLoaded(true);
+      return;
+    }
+
+    // Kiểm tra API key
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error('Google Maps API key is not configured. Please set VITE_GOOGLE_MAPS_API_KEY in your .env file.');
       return;
     }
 
@@ -38,13 +48,18 @@ export const GoogleMapsLoader = () => {
     };
   }, []);
 
-  // Chỉ render children khi Google Maps API đã load xong
-  return isLoaded ? null : (
-    <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-        <p className="text-sm text-gray-600">Đang tải Google Maps...</p>
+  // Hiển thị loading screen khi chưa load xong
+  if (!isLoaded) {
+    return (
+      <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Đang tải Google Maps...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Render children khi đã load xong
+  return <>{children}</>;
 }; 
