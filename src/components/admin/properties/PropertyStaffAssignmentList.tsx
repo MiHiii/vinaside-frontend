@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { toast } from "react-hot-toast";
 import { Users, Building2, Calendar, UserCheck, ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
 
@@ -32,7 +33,13 @@ interface Assignment {
   updatedAt: string;
 }
 
-export default function PropertyStaffAssignmentList() {
+interface PropertyStaffAssignmentListProps {
+  isAdmin?: boolean;
+}
+
+export default function PropertyStaffAssignmentList({ 
+  isAdmin = false
+}: PropertyStaffAssignmentListProps) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +76,7 @@ export default function PropertyStaffAssignmentList() {
 
   useEffect(() => {
     loadAssignments();
-  }, [filters]);
+  }, [filters, isAdmin]);
 
   // Xử lý thay đổi input (chỉ cập nhật state, không tự động tìm kiếm)
   const handleInputChange = (key: string, value: string) => {
@@ -238,8 +245,6 @@ export default function PropertyStaffAssignmentList() {
               </SelectContent>
             </Select>
           </div>
-
-
         </div>
       </div>
 
