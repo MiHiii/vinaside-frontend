@@ -38,41 +38,83 @@ const STATUS_UPCOMING = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
 type BookingWithStatus = BookingData;
 
 const canCancelBooking = (booking: BookingWithStatus) => {
-  if (!booking.checkInDate || booking.status !== BookingStatus.CONFIRMED) {
+  // Không cho phép hủy nếu:
+  // - Booking đã bị hủy
+  // - Booking đã hoàn thành
+  // - Booking bị từ chối
+  if (
+    booking.status === BookingStatus.CANCELLED ||
+    booking.status === BookingStatus.COMPLETED ||
+    booking.status === BookingStatus.REJECTED
+  ) {
+    return false;
+  }
+
+  // Chỉ cho phép hủy booking có status PENDING hoặc CONFIRMED
+  if (
+    booking.status !== BookingStatus.PENDING &&
+    booking.status !== BookingStatus.CONFIRMED
+  ) {
+    return false;
+  }
+
+  // Không cho phép hủy nếu đã qua ngày check-in
+  if (!booking.checkInDate) {
+    return false;
+  }
+
+  // Sử dụng múi giờ Việt Nam
+  const checkInDate = new Date(booking.checkInDate);
+
+  // Lấy thời gian hiện tại theo múi giờ Việt Nam
+  const now = new Date();
+  const vietnamTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+  );
+
+  // Cho phép hủy đến trước giờ check-in (14:00) theo múi giờ Việt Nam
+  const checkInDeadline = new Date(checkInDate);
+  checkInDeadline.setHours(14, 0, 0, 0); // 14:00 giờ Việt Nam
+
+  if (vietnamTime >= checkInDeadline) {
     return false;
   }
 
   // Nếu không có cancel_policy, mặc định là moderate
   const policy = booking.cancel_policy || CancelPolicy.MODERATE;
-  const checkInDate = new Date(booking.checkInDate);
-  const currentTime = new Date();
 
   let canCancel = false;
 
-  switch (policy) {
+  // So sánh không phân biệt hoa thường
+  const policyUpper = policy.toUpperCase();
+
+  switch (policyUpper) {
     case CancelPolicy.FLEXIBLE: {
+      // Flexible: Hủy trước 1 ngày → hoàn 100%
       const oneDayBefore = new Date(checkInDate);
       oneDayBefore.setDate(oneDayBefore.getDate() - 1);
-      oneDayBefore.setHours(14, 0, 0, 0);
-      canCancel = currentTime < oneDayBefore;
+      oneDayBefore.setHours(14, 0, 0, 0); // 14:00 giờ Việt Nam
+      canCancel = vietnamTime < oneDayBefore;
       break;
     }
     case CancelPolicy.MODERATE: {
+      // Moderate: Hủy trước 5 ngày → hoàn 100%
       const fiveDaysBefore = new Date(checkInDate);
       fiveDaysBefore.setDate(fiveDaysBefore.getDate() - 5);
-      fiveDaysBefore.setHours(14, 0, 0, 0);
-      canCancel = currentTime < fiveDaysBefore;
+      fiveDaysBefore.setHours(14, 0, 0, 0); // 14:00 giờ Việt Nam
+      canCancel = vietnamTime < fiveDaysBefore;
       break;
     }
     case CancelPolicy.STRICT:
+      // Strict: Không cho phép hủy
       canCancel = false;
       break;
     default: {
       // Mặc định xử lý như moderate policy
       const fiveDaysBefore = new Date(checkInDate);
       fiveDaysBefore.setDate(fiveDaysBefore.getDate() - 5);
-      fiveDaysBefore.setHours(14, 0, 0, 0);
-      canCancel = currentTime < fiveDaysBefore;
+      fiveDaysBefore.setHours(14, 0, 0, 0); // 14:00 giờ Việt Nam
+      canCancel = vietnamTime < fiveDaysBefore;
     }
   }
 
@@ -186,7 +228,7 @@ const PastTrip = () => {
   // Log cancel_policy khi mở modal hủy
   useEffect(() => {
     if (showCancelModal && selectedBookingForCancel) {
-      console.log("cancel_policy:", selectedBookingForCancel.cancel_policy);
+      // Log đã được xóa
     }
   }, [showCancelModal, selectedBookingForCancel]);
 
@@ -197,12 +239,13 @@ const PastTrip = () => {
   // Phân loại booking
   const upcomingBookings = bookings.filter((b) => {
     const checkInDate = new Date(b.checkInDate);
-    return (
+    const result =
       STATUS_UPCOMING.includes(b.status as BookingStatus) &&
       checkInDate > now &&
       (b.payment_status === PaymentStatus.PAID ||
-        b.payment_status === PaymentStatus.PENDING)
-    );
+        b.payment_status === PaymentStatus.PENDING);
+
+    return result;
   });
 
   const ongoingBookings = bookings.filter((b) => {
@@ -219,7 +262,7 @@ const PastTrip = () => {
   // Sửa: coi CONFIRMED hoặc PAID đã qua ngày checkout là completed (FE logic)
   const historyBookings = bookings.filter((b) => {
     const checkOutDate = new Date(b.check_out_date);
-    return (
+    const result =
       // Các booking đã hoàn thành (status completed hoặc đã checkout)
       b.status === BookingStatus.COMPLETED ||
       ((b.status === BookingStatus.CONFIRMED ||
@@ -232,8 +275,9 @@ const PastTrip = () => {
       // Các booking thanh toán thất bại
       b.payment_status === PaymentStatus.FAILED ||
       // Các booking đã hoàn tiền
-      b.payment_status === PaymentStatus.REFUNDED
-    );
+      b.payment_status === PaymentStatus.REFUNDED;
+
+    return result;
   });
 
   // Thêm PaymentStatus.PARTIALLY_PAID vào import
@@ -708,11 +752,6 @@ const PastTrip = () => {
                 </h4>
                 <div className="space-y-2 text-gray-700 text-base">
                   <div className="flex items-center gap-2">
-                    <FileText size={16} className="text-gray-400" />
-                    <span className="font-medium">Mã đặt phòng:</span>{" "}
-                    {selectedBooking._id}
-                  </div>
-                  <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-gray-400" />
                     <span className="font-medium">Ngày nhận phòng:</span>{" "}
                     {new Date(selectedBooking.checkInDate).toLocaleDateString(
@@ -731,17 +770,10 @@ const PastTrip = () => {
                     <span className="font-medium">Số khách:</span>{" "}
                     {selectedBooking.guests} người
                   </div>
-                  <div className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-gray-400" />
-                    <span className="font-medium">Tổng tiền phòng:</span>{" "}
-                    {selectedBooking.total_price?.toLocaleString()}₫
-                  </div>
 
                   <div className="flex items-center gap-2">
                     <DollarSign size={16} className="text-gray-400" />
-                    <span className="font-medium">
-                      Tổng tiền (bao gồm dịch vụ):
-                    </span>{" "}
+                    <span className="font-medium">Tổng tiền :</span>{" "}
                     {(selectedBooking.final_amount || 0).toLocaleString()}₫
                   </div>
                   <div className="flex items-center gap-2">
