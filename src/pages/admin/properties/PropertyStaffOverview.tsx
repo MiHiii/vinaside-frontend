@@ -63,6 +63,7 @@ interface Assignment {
 }
 
 export default function PropertyStaffOverview() {
+  // const { isAdmin, isStaff, hasPermission, user } = useUserRole();
   const [stats, setStats] = useState<AssignmentStats | null>(null);
   const [allAssignments, setAllAssignments] = useState<RecentAssignment[]>([]);
   const [recentAssignments, setRecentAssignments] = useState<RecentAssignment[]>([]);
@@ -117,10 +118,13 @@ export default function PropertyStaffOverview() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
       year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
