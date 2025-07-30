@@ -169,4 +169,9 @@ export const fetchListings = async (params: ListingSearchParams) => {
   return api.get("/listings", { params }).then(res => res.data);
 };
 
+// API service cho admin listings với staff filtering
+export const fetchAdminListings = async (params: ListingSearchParams) => {
+  return api.get("/listings/admin", { params }).then(res => res.data);
+};
+
 

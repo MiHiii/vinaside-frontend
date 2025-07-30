@@ -137,6 +137,24 @@ export const fetchListings = createAsyncThunk<
   }
 });
 
+// fetchAdminListings - cho admin với staff filtering
+export const fetchAdminListings = createAsyncThunk<
+  { listings: Listing[]; total: number },
+  ListingSearchParams,
+  { rejectValue: string }
+>("listings/fetchAdminListings", async (params, { rejectWithValue }) => {
+  try {
+    const res = await api.get("/listings/admin", { params });
+    const data = res.data.data || res.data;
+    const listings =
+      data.listings || data.data || (Array.isArray(data) ? data : []);
+    const total = data.meta?.total || data.total || listings.length;
+    return { listings, total };
+  } catch (err) {
+    return rejectWithValue(getErrorMessage(err));
+  }
+});
+
 export const fetchListingById = createAsyncThunk<
   Listing,
   string,
@@ -313,6 +331,30 @@ const listingSlice = createSlice({
         }
       )
       .addCase(fetchListings.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi tải danh sách listings!";
+      })
+
+      // fetchAdminListings
+      .addCase(fetchAdminListings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchAdminListings.fulfilled,
+        (
+          state,
+          action: PayloadAction<{ listings: Listing[]; total: number }>
+        ) => {
+          state.loading = false;
+          state.listings = action.payload.listings;
+          state.total = action.payload.total;
+        }
+      )
+      .addCase(fetchAdminListings.rejected, (state, action) => {
         state.loading = false;
         state.error =
           (action.payload as string) ||
