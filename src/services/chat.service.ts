@@ -131,6 +131,22 @@ interface AvailableUsersResponse {
   message: string;
 }
 
+interface PropertyStaffResponse {
+  success: boolean;
+  data: Array<{
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+    avatar_url: string;
+    is_online: boolean;
+    last_seen: string;
+  }>;
+  statusCode: number;
+  message: string;
+}
+
 interface ConversationMessage {
   _id: string;
   content: string;
@@ -175,6 +191,25 @@ class ChatService {
       return response.data;
     } catch (error) {
       console.error("❌ Error fetching available users:", error);
+      throw error;
+    }
+  }
+
+  // Lấy danh sách staff của property
+  async getPropertyStaff(propertyId: string) {
+    try {
+      const response = await api.get<PropertyStaffResponse>(
+        `/property-staff-assignment/public/property/${propertyId}/staff-info`
+      );
+      console.log("👥 Property staff API response:", response.data);
+
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        return { success: true, data: response.data.data };
+      }
+
+      return { success: false, data: [], message: "No staff found" };
+    } catch (error) {
+      console.error("❌ Error fetching property staff:", error);
       throw error;
     }
   }
@@ -427,7 +462,8 @@ class ChatService {
   async sendMessage(
     receiverId: string,
     content: string,
-    replyToMessageId?: string
+    replyToMessageId?: string,
+    propertyId?: string
   ) {
     // Validate input
     if (!receiverId || !receiverId.trim()) {
@@ -441,6 +477,7 @@ class ChatService {
       receiver_id: receiverId.trim(),
       content: content.trim(),
       ...(replyToMessageId && { reply_to_message_id: replyToMessageId }),
+      // ...(propertyId && { property_id: propertyId }), // Commented out - no longer needed
     };
 
     console.log("📤 Sending message with payload:", payload);

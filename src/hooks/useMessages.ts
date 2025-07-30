@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { useAppSelector } from "@/hooks/useRedux";
 import { RootState } from "@/store";
 import { User } from "@/types/user";
+import { toast } from "sonner";
 
 interface SocketMessage {
   _id?: string;
@@ -38,6 +39,17 @@ interface Conversation {
   unreadCount: number;
 }
 
+interface StaffMember {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  avatar_url: string;
+  is_online: boolean;
+  last_seen: string;
+}
+
 export const useMessages = () => {
   const { user, token } = useAppSelector((state: RootState) => state.auth);
   const [messageInput, setMessageInput] = useState("");
@@ -59,6 +71,9 @@ export const useMessages = () => {
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [currentPropertyId, setCurrentPropertyId] = useState<
+    string | undefined
+  >(undefined);
 
   const myId = user?._id;
 
@@ -567,7 +582,8 @@ export const useMessages = () => {
         const response = await chatService.sendMessage(
           selectedUser.id,
           messageInput,
-          replyingTo?.id
+          replyingTo?.id,
+          currentPropertyId
         );
 
         const responseData = response?.data || response;
@@ -833,6 +849,11 @@ export const useMessages = () => {
     }
   };
 
+  // Set property ID for current conversation
+  const setPropertyId = (propertyId: string | undefined) => {
+    setCurrentPropertyId(propertyId);
+  };
+
   // Handle loading more messages
   const handleLoadMoreMessages = async () => {
     if (!selectedUser || isLoadingMoreMessages || !hasMoreMessages) return;
@@ -879,11 +900,13 @@ export const useMessages = () => {
     myId,
     user,
     token,
+    currentPropertyId,
 
     // State setters
     setMessageInput,
     setShowEmojiPicker,
     setShowReactionPicker,
+    setCurrentPropertyId,
 
     // Handlers
     handleConnect,
@@ -896,10 +919,84 @@ export const useMessages = () => {
     handleCancelReply,
     handleDeleteMessage,
     handleLoadMoreMessages,
+    setPropertyId,
 
     // Utilities
     hasValidParticipants,
     scrollToBottom,
     format,
+  };
+};
+
+export const usePropertyStaff = (propertyId?: string) => {
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStaffList = async () => {
+    if (!propertyId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await chatService.getPropertyStaff(propertyId);
+      if (response.success && response.data.length > 0) {
+        setStaffList(response.data);
+      } else {
+        setStaffList([]);
+        setError("Không tìm thấy nhân viên cho tòa nhà này");
+      }
+    } catch (error) {
+      console.error("Error loading staff:", error);
+      setError("Không thể tải danh sách nhân viên");
+      toast.error("Không thể tải danh sách nhân viên");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendMessageToStaff = async (
+    staffId: string,
+    content: string,
+    propertyId?: string // Made optional since we're not using it anymore
+  ) => {
+    if (!staffId || !content.trim()) {
+      throw new Error("Thiếu thông tin cần thiết để gửi tin nhắn");
+    }
+
+    try {
+      const response = await chatService.sendMessage(
+        staffId,
+        content.trim(),
+        undefined
+        // propertyId parameter removed since it's no longer needed
+      );
+
+      if (response.success) {
+        toast.success("Tin nhắn đã được gửi thành công!");
+        return response;
+      } else {
+        throw new Error("Không thể gửi tin nhắn");
+      }
+    } catch (error) {
+      console.error("Error sending message to staff:", error);
+      toast.error("Không thể gửi tin nhắn. Vui lòng thử lại.");
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    if (propertyId) {
+      loadStaffList();
+    }
+  }, [propertyId]);
+
+  return {
+    staffList,
+    loading,
+    error,
+    loadStaffList,
+    sendMessageToStaff,
   };
 };

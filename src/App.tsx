@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 import { CustomToaster } from "@/components/ui/custom-toaster";
 import { router } from "./routes";
 import { RootState } from "./store";
+import { ChatWidget } from "./pages/messages/ChatWidget";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -22,23 +23,24 @@ function App() {
     }
   }, [dispatch]);
 
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary" />
-          <div className="text-lg font-semibold text-[hsl(var(--muted-foreground))]">
-            Đang xác thực tài khoản...
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (isCheckingAuth) {
+  //   return (
+  //     <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">
+  //       <div className="flex flex-col items-center gap-4">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary" />
+  //         <div className="text-lg font-semibold text-[hsl(var(--muted-foreground))]">
+  //           Đang xác thực tài khoản...
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
   return (
     <>
       <RouterProvider router={router} />
       <Toaster />
       <CustomToaster />
+      <ChatWidget />
     </>
   );
 }

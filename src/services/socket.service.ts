@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 
-const WS_URL = "http://localhost:8080";
+const WS_URL = import.meta.env.VITE_WS_URL || "http://localhost:8080";
 
 interface MessageData {
   _id?: string;
@@ -291,6 +291,7 @@ class SocketService {
     content: string;
     receiverId: string;
     replyToMessageId?: string;
+    propertyId?: string;
   }) {
     if (!this.socket?.connected) {
       console.error("Socket not connected - cannot send message");
@@ -304,8 +305,12 @@ class SocketService {
       ...(message.replyToMessageId && {
         reply_to_message_id: message.replyToMessageId,
       }),
+      ...(message.propertyId && {
+        property_id: message.propertyId,
+      }),
     };
 
+    console.log("📤 Sending message via socket:", messageData);
     this.socket.emit("send_message", messageData);
   }
 
