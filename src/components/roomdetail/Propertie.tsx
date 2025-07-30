@@ -1,18 +1,9 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
   fetchPropertyById,
@@ -20,15 +11,13 @@ import {
 } from "@/store/slices/propertySlice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
+import MessageHostDialog from "./MessageHostDialog";
 
 interface PropertieProps {
   propertyId?: string;
 }
 
 export default function Propertie({ propertyId }: PropertieProps) {
-  const [isMessageOpen, setIsMessageOpen] = useState(false);
-  const [message, setMessage] = useState("");
-
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const property = useAppSelector(selectPropertyDetail);
@@ -85,7 +74,7 @@ export default function Propertie({ propertyId }: PropertieProps) {
     return (
       <div className="max-w-3xl mt-5">
         <h1 className="text-2xl font-semibold mb-8 text-gray-900">
-          Gặp gỡ host của bạn
+          Gặp gỡ chủ nhà
         </h1>
         <div className="text-center text-gray-500 py-8">
           Không tìm thấy thông tin chủ nhà
@@ -101,7 +90,7 @@ export default function Propertie({ propertyId }: PropertieProps) {
   return (
     <div className="max-w-3xl mt-5">
       <h1 className="text-2xl font-semibold mb-8 text-gray-900">
-        Gặp gỡ host của bạn
+        Gặp gỡ chủ nhà
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -162,31 +151,7 @@ export default function Propertie({ propertyId }: PropertieProps) {
             </div>
           </div>
 
-          <Dialog open={isMessageOpen} onOpenChange={setIsMessageOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-3 rounded-lg transition-colors">
-                Nhắn tin cho host
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md bg-white border-0 shadow-2xl rounded-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-gray-900">
-                  Bạn vẫn còn thắc mắc? Nhắn tin cho host
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <Textarea
-                  placeholder="Tôi sẽ ghé thăm..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="min-h-[120px] resize-none border-gray-300 focus:border-gray-500 focus:ring-gray-500"
-                />
-                <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-3 rounded-lg transition-colors">
-                  Gửi tin nhắn
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <MessageHostDialog hostName={hostName} propertyId={propertyId} />
         </div>
       </div>
     </div>

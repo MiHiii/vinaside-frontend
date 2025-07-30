@@ -29,6 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useParams, useNavigate } from "react-router-dom";
 import ButtonWishlist from "@/components/common/ButtonWishlist";
+import MessageHostDialog from "./MessageHostDialog";
 
 export default function PropertyInfo() {
   const { id } = useParams();
@@ -234,10 +235,10 @@ export default function PropertyInfo() {
                     </div>
                   </div>
 
-                  <Button className="w-full bg-black hover:bg-gray-800 text-white font-medium py-3 rounded-lg transition-colors">
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Nhắn tin cho host
-                  </Button>
+                  <MessageHostDialog
+                    hostName={hostName}
+                    propertyId={property._id}
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -46,11 +46,13 @@ export default function Messages() {
     myId,
     user,
     token,
+    currentPropertyId,
 
     // State setters
     setMessageInput,
     setShowEmojiPicker,
     setShowReactionPicker,
+    setPropertyId,
 
     // Handlers
     handleConnect,
@@ -356,9 +358,28 @@ export default function Messages() {
                 <h2 className="font-semibold text-foreground text-[20px]">
                   {selectedUser?.name}
                 </h2>
+                {currentPropertyId && (
+                  <p className="text-sm text-muted-foreground">
+                    Property ID: {currentPropertyId}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {selectedUser && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setPropertyId(
+                      currentPropertyId ? undefined : "test-property-123"
+                    )
+                  }
+                  className="text-xs"
+                >
+                  {currentPropertyId ? "Clear Property" : "Set Property"}
+                </Button>
+              )}
               <Button variant="ghost" size="icon">
                 <MoreHorizontal className="h-4 w-4 text-foreground" />
               </Button>
