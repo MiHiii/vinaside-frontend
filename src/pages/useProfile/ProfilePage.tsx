@@ -5,7 +5,7 @@ import ProfileIntroductionCard from "@/components/useProfile/ProfileIntroduction
 import CompleteProfilePrompt from "@/components/useProfile/CompleteProfilePrompt";
 import { Button } from "@/components/ui/button";
 import PastTrip from "@/components/useProfile/PastTrip";
-import Connection from "@/components/useProfile/Connection";
+// import Connection from "@/components/useProfile/Connection";
 import { Link, useNavigate } from "react-router-dom";
 import { RootState } from "@/store";
 import toast from "react-hot-toast";
@@ -131,17 +131,7 @@ export default function UserProfilePage() {
             </section>
           )}
 
-          {activeSidebarItem === "reviews" && (
-            <section aria-labelledby="connection-section-title">
-              <h1
-                id="connection-section-title"
-                className="text-2xl sm:text-3xl font-bold mb-6"
-              >
-                Kết nối
-              </h1>
-              <Connection />
-            </section>
-          )}
+         
         </main>
       </div>
     </div>
