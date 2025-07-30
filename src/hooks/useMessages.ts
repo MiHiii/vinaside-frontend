@@ -341,8 +341,9 @@ export const useMessages = () => {
 
     // Listen for reaction updates
     const unsubscribeReactions = socketService.onReactionUpdate((data) => {
-      setMessages((prev) =>
-        prev.map((msg) => {
+      console.log("[SOCKET] reaction_update event received:", data);
+      setMessages((prev) => {
+        const updated = prev.map((msg) => {
           if (msg.id === data.messageId) {
             let updatedReactions: MessageReaction[] = [];
             if (Array.isArray(data.reactions)) {
@@ -360,8 +361,10 @@ export const useMessages = () => {
             };
           }
           return msg;
-        })
-      );
+        });
+        // Force update để useMemo chạy lại
+        return [...updated];
+      });
     });
 
     // Listen for message recall updates

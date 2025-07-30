@@ -92,10 +92,15 @@ export default function ClientHeader() {
                       src={user.avatar_url}
                       alt="Avatar"
                       className="w-full h-full rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.svg";
+                      }}
                     />
                   ) : (
                     <span className="w-full h-full flex items-center justify-center rounded-full bg-black text-white text-lg font-bold">
-                      {user?.email?.[0]?.toUpperCase() || "U"}
+                      {user?.name?.[0]?.toUpperCase() ||
+                        user?.email?.[0]?.toUpperCase() ||
+                        "U"}
                     </span>
                   )}
                 </div>
@@ -215,10 +220,15 @@ export default function ClientHeader() {
                       src={user.avatar_url}
                       alt="Avatar"
                       className="w-full h-full rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.svg";
+                      }}
                     />
                   ) : (
                     <span className="w-full h-full flex items-center justify-center rounded-full bg-black text-white text-lg font-bold">
-                      {user?.email?.[0]?.toUpperCase() || "U"}
+                      {user?.name?.[0]?.toUpperCase() ||
+                        user?.email?.[0]?.toUpperCase() ||
+                        "U"}
                     </span>
                   )}
                 </div>
