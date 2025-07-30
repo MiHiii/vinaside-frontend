@@ -31,7 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const STATUS_UPCOMING = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
 
@@ -392,20 +392,41 @@ const PastTrip = () => {
         <div className="flex flex-col md:flex-row gap-6">
           {/* Ảnh */}
           <div className="w-full md:w-1/3 h-48 relative overflow-hidden">
-            <img
-              src={image}
-              alt={title}
-              className="w-full h-full object-cover rounded-lg"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/placeholder.svg";
-              }}
-            />
+            {listing && typeof listing === "object" && listing._id ? (
+              <Link to={`/list/${listing._id}`}>
+                <img
+                  src={image}
+                  alt={title}
+                  className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/placeholder.svg";
+                  }}
+                />
+              </Link>
+            ) : (
+              <img
+                src={image}
+                alt={title}
+                className="w-full h-full object-cover rounded-lg"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder.svg";
+                }}
+              />
+            )}
           </div>
 
           {/* Thông tin */}
           <div className="flex-1">
             <div className="flex justify-between items-start mb-2">
-              <h3 className="text-xl font-semibold">{title}</h3>
+              {listing && typeof listing === "object" && listing._id ? (
+                <Link to={`/list/${listing._id}`}>
+                  <h3 className="text-xl font-semibold hover:text-blue-600 transition-colors cursor-pointer">
+                    {title}
+                  </h3>
+                </Link>
+              ) : (
+                <h3 className="text-xl font-semibold">{title}</h3>
+              )}
               <span className={`${statusColor} font-medium`}>
                 {statusDisplay}
               </span>
