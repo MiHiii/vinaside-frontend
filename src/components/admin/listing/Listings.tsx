@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
+  fetchAdminListings,
   fetchListings,
   deleteListing,
   selectListings,
@@ -45,6 +46,7 @@ import { fetchServices } from '@/store/slices/serviceSlice';
 import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
 import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
 import { fetchVouchers } from '@/store/slices/voucherSlice';
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface ListingFilters {
   search: string;
@@ -64,6 +66,7 @@ const formatPrice = (price: number) => {
 
 export default function Listings() {
   const dispatch = useAppDispatch();
+  const { isAdmin } = useUserRole();
   const listings = useAppSelector(selectListings);
   const loading = useAppSelector(selectListingsLoading);
   const error = useAppSelector(selectListingsError);
@@ -102,11 +105,14 @@ export default function Listings() {
     if (!params.status) {
       delete params.status;
     }
-    dispatch(fetchListings({
+    
+    // Sử dụng API khác nhau cho admin và staff
+    const fetchAction = isAdmin ? fetchAdminListings : fetchListings;
+    dispatch(fetchAction({
       ...params,
       search: params.search ? params.search.trim() : "",
     }));
-  }, [filters, dispatch]);
+  }, [filters, dispatch, isAdmin]);
 
   const handleFilterChange = (field: keyof ListingFilters, value: string | number) => {
     setFilters(prev => ({
@@ -125,7 +131,8 @@ export default function Listings() {
       const params: Partial<typeof filters> = { ...filters };
       if (!params.propertyId) delete params.propertyId;
       if (!params.status) delete params.status;
-      dispatch(fetchListings({
+      const fetchAction = isAdmin ? fetchAdminListings : fetchListings;
+      dispatch(fetchAction({
         ...params,
         search: params.search ? params.search.trim() : "",
       }));
