@@ -21,6 +21,14 @@ export interface Property {
   [key: string]: unknown;
 }
 
+export interface SelectedService {
+  service_id: string;
+  service_name: string;
+  service_price: number;
+  quantity: number;
+  total_price: number;
+}
+
 export interface BookingStatistics {
   total?: number;
   revenue?: number;
@@ -44,7 +52,7 @@ interface BookingState {
   adminBookings: Booking[];
   adminTotal: number;
   adminBookingDetail: Booking | null;
-  selectedServices: any[];
+  selectedServices: SelectedService[];
   bookingsByListing?: Booking[];
 }
 
@@ -153,26 +161,6 @@ export const getMyBookings = createAsyncThunk<
 >("booking/getMyBookings", async (params) => {
   const response = await api.get("/bookings/my-bookings", { params });
   return Array.isArray(response.data?.data) ? response.data.data : [];
-});
-
-// Thunk khôi phục booking
-export const restoreBooking = createAsyncThunk<
-  Booking,
-  string,
-  { rejectValue: string }
->("booking/restoreBooking", async (id, { rejectWithValue }) => {
-  try {
-    const res = await api.patch(`/bookings/${id}/restore`);
-    return res.data.data;
-  } catch (err: unknown) {
-    if (typeof err === "object" && err !== null && "response" in err) {
-      const axiosErr = err as { response?: { data?: unknown } };
-      return rejectWithValue(
-        (axiosErr.response?.data as string) || "Unknown error"
-      );
-    }
-    return rejectWithValue("Unknown error");
-  }
 });
 
 // Thống kê tổng quan booking
@@ -701,12 +689,7 @@ const bookingSlice = createSlice({
             ? (action.payload as { error?: string }).error ?? "Đã xảy ra lỗi"
             : JSON.stringify(action.payload) || "Đã xảy ra lỗi";
       })
-      // ADMIN: Khôi phục booking
-      .addCase(restoreBooking.fulfilled, (state, action) => {
-        state.adminBookings = state.adminBookings.map((b) =>
-          b._id === action.payload._id ? { ...b, deleted: false } : b
-        );
-      })
+
       // ADMIN: Xác nhận booking
       .addCase(confirmAdminBooking.fulfilled, (state, action) => {
         state.adminBookingDetail = action.payload;

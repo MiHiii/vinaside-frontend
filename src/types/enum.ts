@@ -32,6 +32,7 @@ export enum CancelPolicy {
 export enum PaymentStatus {
   PENDING = "pending",
   PAID = "paid",
+  REFUNDING = "refunding",
   REFUNDED = "refunded",
   FAILED = "failed",
   PARTIALLY_PAID = "partially_paid",

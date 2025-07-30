@@ -115,7 +115,11 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                 </SelectTrigger>
                 <SelectContent className="rounded-xl shadow-lg bg-white text-base">
                   {properties.map((property) => (
-                    <SelectItem key={property.id} value={property.id} className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">
+                    <SelectItem
+                      key={property.id}
+                      value={property.id}
+                      className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                    >
                       {property.name}
                     </SelectItem>
                   ))}
@@ -171,12 +175,42 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl shadow-lg bg-white text-base">
-                  <SelectItem value="all" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Tất cả</SelectItem>
-                  <SelectItem value="pending" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Chờ xác nhận</SelectItem>
-                  <SelectItem value="confirmed" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Đã xác nhận</SelectItem>
-                  <SelectItem value="cancelled" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Đã hủy</SelectItem>
-                  <SelectItem value="completed" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Hoàn thành</SelectItem>
-                  <SelectItem value="rejected" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Từ chối</SelectItem>
+                  <SelectItem
+                    value="all"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Tất cả
+                  </SelectItem>
+                  <SelectItem
+                    value="pending"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Chờ xác nhận
+                  </SelectItem>
+                  <SelectItem
+                    value="confirmed"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Đã xác nhận
+                  </SelectItem>
+                  <SelectItem
+                    value="cancelled"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Đã hủy
+                  </SelectItem>
+                  <SelectItem
+                    value="completed"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Hoàn thành
+                  </SelectItem>
+                  <SelectItem
+                    value="rejected"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Từ chối
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -189,11 +223,36 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl shadow-lg bg-white text-base">
-                  <SelectItem value="all" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Tất cả</SelectItem>
-                  <SelectItem value="pending" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Chờ thanh toán</SelectItem>
-                  <SelectItem value="paid" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Đã thanh toán</SelectItem>
-                  <SelectItem value="refunded" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Đã hoàn tiền</SelectItem>
-                  <SelectItem value="failed" className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer">Thanh toán thất bại</SelectItem>
+                  <SelectItem
+                    value="all"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Tất cả
+                  </SelectItem>
+                  <SelectItem
+                    value="pending"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Chờ thanh toán
+                  </SelectItem>
+                  <SelectItem
+                    value="paid"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Đã thanh toán
+                  </SelectItem>
+                  <SelectItem
+                    value="refunded"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Đã hoàn tiền
+                  </SelectItem>
+                  <SelectItem
+                    value="failed"
+                    className="hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-700 cursor-pointer"
+                  >
+                    Thanh toán thất bại
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -236,7 +295,7 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                     modifiersClassNames={{
                       selected: "!bg-blue-600 !text-white",
                       today: "border border-blue-400",
-                      hovered: "!bg-blue-100"
+                      hovered: "!bg-blue-100",
                     }}
                   />
                 </PopoverContent>
@@ -278,7 +337,7 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
                     modifiersClassNames={{
                       selected: "!bg-blue-600 !text-white",
                       today: "border border-blue-400",
-                      hovered: "!bg-blue-100"
+                      hovered: "!bg-blue-100",
                     }}
                   />
                 </PopoverContent>
