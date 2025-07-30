@@ -14,6 +14,8 @@ export interface UnassignStaffDto {
 export interface GetStaffAssignmentsDto {
   propertyId?: string;
   staffId?: string;
+  propertyName?: string;
+  staffName?: string;
   page?: number;
   limit?: number;
 }
@@ -45,12 +47,12 @@ export const propertyStaffAssignmentApi = {
 
   // Lấy lịch sử gán nhân viên
   getAssignmentHistory: async (queryDto: GetStaffAssignmentsDto) => {
-    // Chỉ gửi các tham số có giá trị và MongoDB ID hợp lệ
+    // Chỉ gửi các tham số có giá trị
     const cleanParams = Object.fromEntries(
       Object.entries(queryDto).filter(([key, value]) => {
         if (value === "" || value === undefined || value === null) return false;
         
-        // Validate MongoDB ID cho propertyId và staffId
+        // Validate MongoDB ID cho propertyId và staffId (nếu có)
         if ((key === 'propertyId' || key === 'staffId') && typeof value === 'string') {
           // MongoDB ID phải có đúng 24 ký tự hex
           const mongoIdRegex = /^[0-9a-fA-F]{24}$/;

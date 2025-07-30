@@ -76,6 +76,7 @@ import ReviewManagementPage from "@/pages/admin/reviews/ReviewManagementPage";
 import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
 import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
+import StaffManagementPage from "@/pages/admin/user/StaffManagementPage";
 import WishlistPage from "@/pages/WishlistPage";
 import SearchResultPage from "@/pages/SearchResultPage";
 import PropertieInfo from "@/components/roomdetail/PropertieInfo";
@@ -272,6 +273,7 @@ const routes: RouteObject[] = [
       { path: "house-rules", element: <HouseRuleListPage /> },
       { path: "reviews", element: <ReviewManagementPage /> },
       { path: "users", element: <AdminUserPage /> },
+      { path: "staff", element: <StaffManagementPage /> },
     ],
   },
 

@@ -324,45 +324,72 @@ export default function EditPropertyForm() {
   }
 
   return (
-    <div className="min-h-screen">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Chỉnh sửa Property</CardTitle>
-          <p className="text-gray-600">Cập nhật thông tin property</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="w-full p-4">
+        <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+          <CardHeader className="text-center pb-6">
+            <div className="flex items-center justify-center mb-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Chỉnh sửa HomeStay
+                </CardTitle>
+                <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm">Cập nhật thông tin chi tiết về HomeStay</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
             {/* Tên Property */}
             <div className="space-y-2">
-              <Label htmlFor="name">Tên Property *</Label>
+              <Label htmlFor="name" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                Tên HomeStay *
+              </Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="Nhập tên property"
+                placeholder="Nhập tên HomeStay"
+                className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-              {errors.name && <span className="text-red-500 text-xs">{errors.name}</span>}
+              {errors.name && <span className="text-red-500 text-sm font-medium">{errors.name}</span>}
             </div>
 
             {/* Mô tả */}
             <div className="space-y-2">
-              <Label htmlFor="description">Mô tả *</Label>
+              <Label htmlFor="description" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                Mô tả *
+              </Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
-                placeholder="Mô tả chi tiết về property"
-                rows={4}
+                placeholder="Mô tả chi tiết về HomeStay"
+                rows={3}
+                className="text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
               />
-              {errors.description && <span className="text-red-500 text-xs">{errors.description}</span>}
+              {errors.description && <span className="text-red-500 text-sm font-medium">{errors.description}</span>}
             </div>
 
             {/* Địa chỉ */}
             <div className="space-y-2">
-              <Label htmlFor="address">Địa chỉ *</Label>
+              <Label htmlFor="address" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                Địa chỉ *
+              </Label>
               {!import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
-                <div className="text-red-500 text-sm mb-2">
-                  ⚠️ Google Maps API key chưa được cấu hình. Vui lòng tạo file .env và thêm VITE_GOOGLE_MAPS_API_KEY
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span className="text-red-700 dark:text-red-300 text-sm font-medium">
+                      Google Maps API key chưa được cấu hình. Vui lòng tạo file .env và thêm VITE_GOOGLE_MAPS_API_KEY
+                    </span>
+                  </div>
                 </div>
               )}
               <div className="flex gap-2">
@@ -411,16 +438,16 @@ export default function EditPropertyForm() {
                      <Input
                        {...getInputProps({
                          placeholder: 'Địa chỉ đầy đủ',
-                         className: 'w-full',
+                         className: 'w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
                        })}
                      />
-                     <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
-                       {loading && <div>Đang tìm kiếm...</div>}
+                     <div className="autocomplete-dropdown-container bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                       {loading && <div className="p-3 text-gray-600 dark:text-gray-300 text-center">Đang tìm kiếm...</div>}
                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                        {suggestions.map((suggestion: Suggestion) => {
                          const className = suggestion.active
-                           ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
-                           : 'suggestion-item px-2 py-1 cursor-pointer';
+                           ? 'suggestion-item--active bg-blue-100 dark:bg-blue-900/50 px-4 py-3 cursor-pointer border-l-4 border-blue-500'
+                           : 'suggestion-item px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 border-l-4 border-transparent';
                          return (
                            <div
                              {...getSuggestionItemProps(suggestion, {
@@ -445,7 +472,7 @@ export default function EditPropertyForm() {
                              })}
                              key={suggestion.placeId}
                            >
-                             <span>{suggestion.description}</span>
+                             <span className="text-gray-900 dark:text-gray-100">{suggestion.description}</span>
                            </div>
                          );
                        })}
@@ -453,22 +480,24 @@ export default function EditPropertyForm() {
                    </div>
                  )}
                                 </PlacesAutocomplete>
-                                   ) : (
-                    <Input
-                      placeholder={!import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? "Google Maps API key chưa được cấu hình" : "Đang tải Google Maps..."}
-                      disabled
-                      className="w-full"
-                    />
-                  )}
+                                                 ) : (
+                <Input
+                  placeholder={!import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? "Google Maps API key chưa được cấu hình" : "Đang tải Google Maps..."}
+                  disabled
+                  className="w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                />
+              )}
                 </div>
               </div>
-              {errors["location.address"] && <span className="text-red-500 text-xs">{errors["location.address"]}</span>}
+              {errors["location.address"] && <span className="text-red-500 text-sm font-medium">{errors["location.address"]}</span>}
             </div>
 
             {/* Thành phố, Quận, Phường */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="city">Thành phố</Label>
+                <Label htmlFor="city" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                  Thành phố
+                </Label>
                 <PlacesAutocomplete
                   value={formData.location.city}
                   onChange={(city: string) => handleLocationChange("city", city)}
@@ -489,19 +518,19 @@ export default function EditPropertyForm() {
                     loading: boolean;
                   }) => (
                     <div>
-                      <Input
-                        {...getInputProps({
-                          placeholder: 'Thành phố',
-                          className: 'w-full',
-                        })}
-                      />
-                      <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
-                        {loading && <div>Đang tìm kiếm...</div>}
+                                              <Input
+                          {...getInputProps({
+                            placeholder: 'Thành phố',
+                            className: 'w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                          })}
+                        />
+                      <div className="autocomplete-dropdown-container bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                        {loading && <div className="p-3 text-gray-600 dark:text-gray-300 text-center">Đang tìm kiếm...</div>}
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {suggestions.map((suggestion: Suggestion) => {
                           const className = suggestion.active
-                            ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
-                            : 'suggestion-item px-2 py-1 cursor-pointer';
+                            ? 'suggestion-item--active bg-blue-100 dark:bg-blue-900/50 px-4 py-3 cursor-pointer border-l-4 border-blue-500'
+                            : 'suggestion-item px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 border-l-4 border-transparent';
                           return (
                             <div
                               {...getSuggestionItemProps(suggestion, {
@@ -512,7 +541,7 @@ export default function EditPropertyForm() {
                               })}
                               key={suggestion.placeId}
                             >
-                              <span>{suggestion.description}</span>
+                              <span className="text-gray-900 dark:text-gray-100">{suggestion.description}</span>
                             </div>
                           );
                         })}
@@ -522,7 +551,9 @@ export default function EditPropertyForm() {
                 </PlacesAutocomplete>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="district">Quận/Huyện</Label>
+                <Label htmlFor="district" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                  Quận/Huyện
+                </Label>
                 <PlacesAutocomplete
                   value={formData.location.district}
                   onChange={(district: string) => handleLocationChange("district", district)}
@@ -543,19 +574,19 @@ export default function EditPropertyForm() {
                     loading: boolean;
                   }) => (
                     <div>
-                      <Input
-                        {...getInputProps({
-                          placeholder: 'Quận/Huyện',
-                          className: 'w-full',
-                        })}
-                      />
-                      <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
-                        {loading && <div>Đang tìm kiếm...</div>}
+                                              <Input
+                          {...getInputProps({
+                            placeholder: 'Quận/Huyện',
+                            className: 'w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                          })}
+                        />
+                      <div className="autocomplete-dropdown-container bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                        {loading && <div className="p-3 text-gray-600 dark:text-gray-300 text-center">Đang tìm kiếm...</div>}
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {suggestions.map((suggestion: Suggestion) => {
                           const className = suggestion.active
-                            ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
-                            : 'suggestion-item px-2 py-1 cursor-pointer';
+                            ? 'suggestion-item--active bg-blue-100 dark:bg-blue-900/50 px-4 py-3 cursor-pointer border-l-4 border-blue-500'
+                            : 'suggestion-item px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 border-l-4 border-transparent';
                           return (
                             <div
                               {...getSuggestionItemProps(suggestion, {
@@ -566,7 +597,7 @@ export default function EditPropertyForm() {
                               })}
                               key={suggestion.placeId}
                             >
-                              <span>{suggestion.description}</span>
+                              <span className="text-gray-900 dark:text-gray-100">{suggestion.description}</span>
                             </div>
                           );
                         })}
@@ -576,7 +607,9 @@ export default function EditPropertyForm() {
                 </PlacesAutocomplete>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ward">Phường/Xã</Label>
+                <Label htmlFor="ward" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                  Phường/Xã
+                </Label>
                 <PlacesAutocomplete
                   value={formData.location.ward}
                   onChange={(ward: string) => handleLocationChange("ward", ward)}
@@ -597,19 +630,19 @@ export default function EditPropertyForm() {
                     loading: boolean;
                   }) => (
                     <div>
-                      <Input
-                        {...getInputProps({
-                          placeholder: 'Phường/Xã',
-                          className: 'w-full',
-                        })}
-                      />
-                      <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
-                        {loading && <div>Đang tìm kiếm...</div>}
+                                              <Input
+                          {...getInputProps({
+                            placeholder: 'Phường/Xã',
+                            className: 'w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                          })}
+                        />
+                      <div className="autocomplete-dropdown-container bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                        {loading && <div className="p-3 text-gray-600 dark:text-gray-300 text-center">Đang tìm kiếm...</div>}
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {suggestions.map((suggestion: Suggestion) => {
                           const className = suggestion.active
-                            ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
-                            : 'suggestion-item px-2 py-1 cursor-pointer';
+                            ? 'suggestion-item--active bg-blue-100 dark:bg-blue-900/50 px-4 py-3 cursor-pointer border-l-4 border-blue-500'
+                            : 'suggestion-item px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 border-l-4 border-transparent';
                           return (
                             <div
                               {...getSuggestionItemProps(suggestion, {
@@ -620,7 +653,7 @@ export default function EditPropertyForm() {
                               })}
                               key={suggestion.placeId}
                             >
-                              <span>{suggestion.description}</span>
+                              <span className="text-gray-900 dark:text-gray-100">{suggestion.description}</span>
                             </div>
                           );
                         })}
@@ -632,160 +665,257 @@ export default function EditPropertyForm() {
             </div>
 
             {/* Thông tin liên hệ */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="contactPhone">Số điện thoại liên hệ</Label>
+                <Label htmlFor="contactPhone" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                  Số điện thoại liên hệ
+                </Label>
                 <Input
                   id="contactPhone"
                   value={formData.contactPhone}
                   onChange={(e) => handleInputChange("contactPhone", e.target.value)}
                   placeholder="Số điện thoại"
+                  className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactEmail">Email liên hệ</Label>
+                <Label htmlFor="contactEmail" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                  Email liên hệ
+                </Label>
                 <Input
                   id="contactEmail"
                   type="email"
                   value={formData.contactEmail}
                   onChange={(e) => handleInputChange("contactEmail", e.target.value)}
                   placeholder="Email"
+                  className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
 
             {/* Cho phép thú cưng */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-600">
               <input
                 type="checkbox"
                 id="allowPets"
                 checked={formData.allowPets}
                 onChange={(e) => handleInputChange("allowPets", e.target.checked)}
-                className="rounded"
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
-              <Label htmlFor="allowPets">Cho phép thú cưng</Label>
+              <Label htmlFor="allowPets" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                Cho phép thú cưng
+              </Label>
             </div>
 
             {/* Hiển thị ảnh property */}
             {property && (
-              <div className="space-y-2">
-                <Label>Ảnh đại diện (thumbnail)</Label>
-                {property.thumbnail ? (
-                  <img src={property.thumbnail} alt="Thumbnail" className="h-32 rounded object-cover border" />
-                ) : (
-                  <div className="text-gray-400 italic">Không có ảnh đại diện</div>
-                )}
-                {property.images && property.images.length > 0 && (
-                  <div>
-                    <Label>Gallery ảnh</Label>
-                    <div className="flex gap-2 flex-wrap mt-2">
-                      {property.images.map((url: string, idx: number) => (
-                        <img
-                          key={idx}
-                          src={url}
-                          alt={`Ảnh ${idx + 1}`}
-                          className="h-20 w-28 object-cover rounded border"
+              <div className="space-y-3">
+                <Label className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                  Ảnh hiện tại
+                </Label>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-600">
+                  {property.thumbnail ? (
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Ảnh đại diện
+                        </Label>
+                        <img 
+                          src={property.thumbnail} 
+                          alt="Thumbnail" 
+                          className="h-32 w-full rounded-lg object-cover border-2 border-gray-200 dark:border-gray-600 shadow-md" 
                         />
-                      ))}
+                      </div>
+                      {property.images && property.images.length > 0 && (
+                        <div>
+                          <Label className="text-base font-medium text-gray-700 dark:text-gray-300 mb-3 block">
+                            Gallery ảnh ({property.images.length} ảnh)
+                          </Label>
+                                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              {property.images.map((url: string, idx: number) => (
+                                <div key={idx} className="relative group">
+                                  <img
+                                    src={url}
+                                    alt={`Ảnh ${idx + 1}`}
+                                    className="h-20 w-full object-cover rounded-lg border-2 border-gray-200 dark:border-gray-600 shadow-sm transition-transform duration-200 group-hover:scale-105"
+                                  />
+                                  <div className="absolute top-1 right-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded">
+                                    {idx + 1}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-center py-8">
+                      <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">Không có ảnh nào</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Thay ảnh mới */}
-            <div className="space-y-2">
-              <Label htmlFor="newImages">Chọn ảnh mới (thay thế toàn bộ ảnh cũ)</Label>
-              <Input
-                id="newImages"
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={e => setNewFiles(Array.from(e.target.files || []))}
-              />
-              {newFiles && newFiles.length > 0 && (
-                <p className="text-sm text-gray-600">Đã chọn {newFiles.length} file(s) mới</p>
-              )}
+            <div className="space-y-3">
+              <Label htmlFor="newImages" className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                Chọn ảnh mới
+              </Label>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-600 border-dashed">
+                <div className="text-center">
+                  <svg className="w-10 h-10 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">Kéo thả ảnh vào đây hoặc click để chọn</p>
+                  <Input
+                    id="newImages"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={e => setNewFiles(Array.from(e.target.files || []))}
+                    className="hidden"
+                  />
+                  <label htmlFor="newImages" className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg cursor-pointer transition-colors duration-200">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Chọn ảnh
+                  </label>
+                </div>
+                {newFiles && newFiles.length > 0 && (
+                  <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-green-700 dark:text-green-300 font-medium">
+                        Đã chọn {newFiles.length} file(s) mới
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Debug section */}
          
 
             {/* Nhân viên được gán */}
-            <div className="space-y-2">
-              <Label>Nhân viên được gán</Label>
-              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white">
-                {staffLoading && <div className="text-xs text-gray-500">Đang tải danh sách nhân viên...</div>}
-                {staffOptions.length === 0 && !staffLoading && <div className="text-xs text-gray-500">Không có nhân viên nào</div>}
-                {staffOptions.map(staff => {
-                  const isChecked = staffIds.includes(staff._id);
-                  
-                  return (
-                    <div key={staff._id} className="flex items-center gap-2 p-2 border rounded">
-                      <input
-                        type="checkbox"
-                        value={staff._id}
-                        checked={isChecked}
-                        onChange={e => {
-                          if (e.target.checked) {
-                            setStaffIds(prev => [...prev, staff._id]);
-                            setStaffRoles(prev => ({ ...prev, [staff._id]: 'Staff' }));
-                          } else {
-                            setStaffIds(prev => prev.filter(id => id !== staff._id));
-                            setStaffRoles(prev => {
-                              const newRoles = { ...prev };
-                              delete newRoles[staff._id];
-                              return newRoles;
-                            });
-                          }
-                        }}
-                        className="accent-blue-500 h-4 w-4 rounded"
-                      />
-                      <div className="flex-1">
-                        <span className="font-medium">{staff.name}</span>
-                        {staff.email && <span className="text-sm text-gray-600 ml-2">({staff.email})</span>}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                Nhân viên được gán
+              </Label>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-600">
+                {staffLoading && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-3 text-gray-600 dark:text-gray-300">Đang tải danh sách nhân viên...</span>
+                  </div>
+                )}
+                {staffOptions.length === 0 && !staffLoading && (
+                  <div className="text-center py-8">
+                    <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    </svg>
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">Không có nhân viên nào</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
+                  {staffOptions.map(staff => {
+                    const isChecked = staffIds.includes(staff._id);
+                    
+                    return (
+                      <div key={staff._id} className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                        isChecked 
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                          : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            value={staff._id}
+                            checked={isChecked}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setStaffIds(prev => [...prev, staff._id]);
+                                setStaffRoles(prev => ({ ...prev, [staff._id]: 'Staff' }));
+                              } else {
+                                setStaffIds(prev => prev.filter(id => id !== staff._id));
+                                setStaffRoles(prev => {
+                                  const newRoles = { ...prev };
+                                  delete newRoles[staff._id];
+                                  return newRoles;
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900 dark:text-white text-sm">{staff.name}</div>
+                            {staff.email && <div className="text-xs text-gray-600 dark:text-gray-400">{staff.email}</div>}
+                          </div>
+
+                        </div>
                       </div>
-                      {isChecked && (
-                        <Input
-                          type="text"
-                          placeholder="Role"
-                          value={staffRoles[staff._id] || 'Staff'}
-                          onChange={(e) => setStaffRoles(prev => ({ ...prev, [staff._id]: e.target.value }))}
-                          className="w-24 h-8 text-sm"
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
             {/* Error message */}
             {error && (
-              <div className="text-red-500 text-sm">{error}</div>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <span className="text-red-700 dark:text-red-300 font-medium">{error}</span>
+                </div>
+              </div>
             )}
 
             {/* Submit button */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 pt-6">
               <Button 
                 type="button" 
                 variant="outline"
                 onClick={() => navigate("/admin/properties")}
-                className="flex-1"
+                className="flex-1 h-12 text-base font-semibold border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
               >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
                 Hủy
               </Button>
               <Button 
                 type="submit" 
-                className="flex-1" 
+                className="flex-1 h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200" 
                 disabled={loading}
               >
-                {loading ? "Đang cập nhật..." : "Cập nhật Property"}
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Đang cập nhật...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Cập nhật HomeStay
+                  </>
+                )}
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 } 

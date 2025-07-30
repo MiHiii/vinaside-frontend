@@ -5,6 +5,7 @@ import { fetchListingById, updateListing, selectListing, selectListingsLoading, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { toast } from "react-hot-toast";
 import { Listing } from "@/types/listing";
 import { DropzoneUpload } from "@/components/become-a-host/DropzoneUpload";
@@ -141,89 +142,246 @@ export default function EditListing() {
   if (loading || !form) return <div className="p-8 text-center">Đang tải...</div>;
 
   return (
-    <form className="space-y-4 max-w-xl mx-auto" onSubmit={handleSubmit}>
-      <h2 className="text-xl font-bold mb-2">Chỉnh sửa Listing</h2>
-      <label className="block font-medium">Tiêu đề
-        <Input name="title" placeholder="Tiêu đề" value={form.title || ""} onChange={handleChange} />
-        {errors.title && <span className="text-red-500 text-xs">{errors.title}</span>}
-      </label>
-      <label className="block font-medium">Mô tả
-        <Textarea name="description" placeholder="Mô tả chi tiết về phòng" value={form.description || ""} onChange={handleTextareaChange} rows={4} />
-        {errors.description && <span className="text-red-500 text-xs">{errors.description}</span>}
-      </label>
-      <div className="grid grid-cols-2 gap-4">
-        <label className="block font-medium">Số khách
-          <Input name="guests" type="number" min={1} value={form.guests || 1} onChange={handleChange} />
-          {errors.guests && <span className="text-red-500 text-xs">{errors.guests}</span>}
-        </label>
-        <label className="block font-medium">Số khách tối đa
-          <Input name="max_guests" type="number" min={1} value={form.max_guests || 1} onChange={handleChange} />
-          {errors.max_guests && <span className="text-red-500 text-xs">{errors.max_guests}</span>}
-        </label>
+    <div className="min-h-screen  dark:bg-gray-900 p-4">
+      <div className="w-full p-4">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mr-4">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Chỉnh sửa Phòng
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm">Cập nhật thông tin chi tiết về phòng</p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="title" className="text-base text-gray-800 dark:text-gray-200">
+              Tiêu đề *
+            </Label>
+            <Input
+              id="title"
+              name="title"
+              placeholder="Nhập tiêu đề phòng"
+              value={form.title || ""}
+              onChange={handleChange}
+              className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+            {errors.title && <span className="text-red-500 text-sm font-medium">{errors.title}</span>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-base text-gray-800 dark:text-gray-200">
+              Mô tả
+            </Label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Mô tả chi tiết về phòng"
+              value={form.description || ""}
+              onChange={handleTextareaChange}
+              rows={3}
+              className="text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+            {errors.description && <span className="text-red-500 text-sm font-medium">{errors.description}</span>}
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <label className="block font-medium">Số giường
-          <Input name="beds" type="number" min={1} value={form.beds || 1} onChange={handleChange} />
-          {errors.beds && <span className="text-red-500 text-xs">{errors.beds}</span>}
-        </label>
-        <label className="block font-medium">Số phòng tắm
-          <Input name="bathrooms" type="number" min={1} value={form.bathrooms || 1} onChange={handleChange} />
-          {errors.bathrooms && <span className="text-red-500 text-xs">{errors.bathrooms}</span>}
-        </label>
+            <div className="space-y-2">
+              <Label htmlFor="guests" className="text-base text-gray-800 dark:text-gray-200">
+                Số khách
+              </Label>
+              <Input
+                id="guests"
+                name="guests"
+                type="number"
+                min={1}
+                value={form.guests || 1}
+                onChange={handleChange}
+                className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              {errors.guests && <span className="text-red-500 text-sm font-medium">{errors.guests}</span>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="max_guests" className="text-base text-gray-800 dark:text-gray-200">
+                Số khách tối đa *
+              </Label>
+              <Input
+                id="max_guests"
+                name="max_guests"
+                type="number"
+                min={1}
+                value={form.max_guests || 1}
+                onChange={handleChange}
+                className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              {errors.max_guests && <span className="text-red-500 text-sm font-medium">{errors.max_guests}</span>}
+            </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <label className="block font-medium">Giờ check-in
-          <Input name="check_in_time" type="time" value={form.check_in_time || "15:00"} onChange={handleChange} />
-        </label>
-        <label className="block font-medium">Giờ check-out
-          <Input name="check_out_time" type="time" value={form.check_out_time || "11:00"} onChange={handleChange} />
-        </label>
+            <div className="space-y-2">
+              <Label htmlFor="beds" className="text-base text-gray-800 dark:text-gray-200">
+                Số giường
+              </Label>
+              <Input
+                id="beds"
+                name="beds"
+                type="number"
+                min={1}
+                value={form.beds || 1}
+                onChange={handleChange}
+                className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              {errors.beds && <span className="text-red-500 text-sm font-medium">{errors.beds}</span>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bathrooms" className="text-base text-gray-800 dark:text-gray-200">
+                Số phòng tắm
+              </Label>
+              <Input
+                id="bathrooms"
+                name="bathrooms"
+                type="number"
+                min={1}
+                value={form.bathrooms || 1}
+                onChange={handleChange}
+                className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              {errors.bathrooms && <span className="text-red-500 text-sm font-medium">{errors.bathrooms}</span>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="check_in_time" className="text-base text-gray-800 dark:text-gray-200">
+                Giờ check-in
+              </Label>
+              <Input
+                id="check_in_time"
+                name="check_in_time"
+                type="time"
+                value={form.check_in_time || "15:00"}
+                onChange={handleChange}
+                className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="check_out_time" className="text-base text-gray-800 dark:text-gray-200">
+                Giờ check-out
+              </Label>
+              <Input
+                id="check_out_time"
+                name="check_out_time"
+                type="time"
+                value={form.check_out_time || "11:00"}
+                onChange={handleChange}
+                className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
       </div>
 
-      <label className="block font-medium">Thuộc bất động sản
+          <div className="space-y-2">
+            <Label htmlFor="propertyId" className="text-base text-gray-800 dark:text-gray-200">
+              Thuộc bất động sản *
+            </Label>
         <select
+              id="propertyId"
           name="propertyId"
           value={typeof form.propertyId === "object" && form.propertyId !== null ? form.propertyId._id : form.propertyId || ""}
           onChange={handleChange}
-          className="border rounded px-3 py-2 w-full"
+              className="w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white"
         >
           <option value="">-- Chọn bất động sản --</option>
           {properties.map((p: Property) => (
             <option key={p._id || p.id} value={p._id}>{p.name}</option>
           ))}
         </select>
-        {errors.propertyId && <span className="text-red-500 text-xs">{errors.propertyId}</span>}
-      </label>
-      <label className="block font-medium">Giá/đêm
-        <Input name="price_per_night" type="number" placeholder="Giá/đêm" value={form.price_per_night || 0} onChange={handleChange} min={0} />
-        {errors.price_per_night && <span className="text-red-500 text-xs">{errors.price_per_night}</span>}
-      </label>
-      <label className="block font-medium">Trạng thái
-        <select name="status" value={form.status || "draft"} onChange={handleChange} className="border rounded px-3 py-2 w-full">
+            {errors.propertyId && <span className="text-red-500 text-sm font-medium">{errors.propertyId}</span>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="price_per_night" className="text-base text-gray-800 dark:text-gray-200">
+              Giá/đêm *
+            </Label>
+            <Input
+              id="price_per_night"
+              name="price_per_night"
+              type="number"
+              placeholder="Nhập giá/đêm"
+              value={form.price_per_night || 0}
+              onChange={handleChange}
+              min={0}
+              className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+            {errors.price_per_night && <span className="text-red-500 text-sm font-medium">{errors.price_per_night}</span>}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {/* <div className="space-y-2">
+              <Label htmlFor="status" className="text-base text-gray-800 dark:text-gray-200">
+                Trạng thái *
+              </Label>
+              <select
+                id="status"
+                name="status"
+                value={form.status || "draft"}
+                onChange={handleChange}
+                className="w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white"
+              >
           <option value="active">Hoạt động</option>
           <option value="inactive">Không hoạt động</option>
           <option value="draft">Bản nháp</option>
           <option value="pending_approval">Chờ duyệt</option>
           <option value="verified">Đã kiểm duyệt</option>
         </select>
-        {errors.status && <span className="text-red-500 text-xs">{errors.status}</span>}
-      </label>
-      <label className="block font-medium">Chính sách hủy
-        <select name="cancel_policy" value={form.cancel_policy || "flexible"} onChange={handleChange} className="border rounded px-3 py-2 w-full">
+              {errors.status && <span className="text-red-500 text-sm font-medium">{errors.status}</span>}
+            </div> */}
+
+            <div className="space-y-2">
+              <Label htmlFor="cancel_policy" className="text-base text-gray-800 dark:text-gray-200">
+                Chính sách hủy *
+              </Label>
+              <select
+                id="cancel_policy"
+                name="cancel_policy"
+                value={form.cancel_policy || "flexible"}
+                onChange={handleChange}
+                className="w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white"
+              >
           <option value="flexible">Linh hoạt</option>
           <option value="moderate">Vừa phải</option>
           <option value="strict">Nghiêm ngặt</option>
         </select>
-        {errors.cancel_policy && <span className="text-red-500 text-xs">{errors.cancel_policy}</span>}
-      </label>
-      <label className="flex items-center gap-2 font-medium">
-        <input type="checkbox" name="allow_pets" checked={form.allow_pets || false} onChange={handleChange} />
+              {errors.cancel_policy && <span className="text-red-500 text-sm font-medium">{errors.cancel_policy}</span>}
+            </div>
+          </div>
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+            <input
+              type="checkbox"
+              id="allow_pets"
+              name="allow_pets"
+              checked={form.allow_pets || false}
+              onChange={handleChange}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <Label htmlFor="allow_pets" className="text-base text-gray-800 dark:text-gray-200">
         Cho phép thú cưng
-      </label>
-      <div className="space-y-2">
+            </Label>
+          </div>
+          <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="block font-medium">Chọn tiện ích</label>
-          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+                <Label className="text-base font-medium text-gray-800 dark:text-gray-200">Chọn tiện ích</Label>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-blue-600 dark:text-blue-400">
             <input
               type="checkbox"
               checked={(form.amenities || []).length === amenities.length && amenities.length > 0}
@@ -234,6 +392,7 @@ export default function EditListing() {
                   handleAmenitiesChange([]);
                 }
               }}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
             <span>Chọn tất cả</span>
           </label>
@@ -258,10 +417,17 @@ export default function EditListing() {
           ))}
         </div>
       </div>
-      <div className="space-y-2">
+          <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="block font-medium">Chọn dịch vụ</label>
-          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <Label className="text-base font-medium text-gray-800 dark:text-gray-200">Chọn dịch vụ</Label>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-green-600 dark:text-green-400">
             <input
               type="checkbox"
               checked={(form.service_ids || []).length === services.length && services.length > 0}
@@ -272,6 +438,7 @@ export default function EditListing() {
                   handleServicesChange([]);
                 }
               }}
+                  className="w-4 h-4 text-green-600 bg-gray-100 border border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
             <span>Chọn tất cả</span>
           </label>
@@ -296,10 +463,17 @@ export default function EditListing() {
           ))}
         </div>
       </div>
-      <div className="space-y-2">
+          <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="block font-medium">Chọn tính năng an toàn</label>
-          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                  <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <Label className="text-base font-medium text-gray-800 dark:text-gray-200">Chọn tính năng an toàn</Label>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-red-600 dark:text-red-400">
             <input
               type="checkbox"
               checked={(form.safety_features || []).length === safetyFeatures.length && safetyFeatures.length > 0}
@@ -310,6 +484,7 @@ export default function EditListing() {
                   handleSafetyFeaturesChange([]);
                 }
               }}
+                  className="w-4 h-4 text-red-600 bg-gray-100 border border-gray-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
             <span>Chọn tất cả</span>
           </label>
@@ -334,10 +509,17 @@ export default function EditListing() {
           ))}
         </div>
       </div>
-      <div className="space-y-2">
+          <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="block font-medium">Chọn nội quy</label>
-          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                  <svg className="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <Label className="text-base font-medium text-gray-800 dark:text-gray-200">Chọn nội quy</Label>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-yellow-600 dark:text-yellow-400">
             <input
               type="checkbox"
               checked={(form.house_rules_selected || []).length === houseRules.length && houseRules.length > 0}
@@ -348,6 +530,7 @@ export default function EditListing() {
                   handleHouseRulesChange([]);
                 }
               }}
+                  className="w-4 h-4 text-yellow-600 bg-gray-100 border border-gray-300 rounded focus:ring-yellow-500 dark:focus:ring-yellow-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
             <span>Chọn tất cả</span>
           </label>
@@ -372,10 +555,17 @@ export default function EditListing() {
           ))}
         </div>
       </div>
-      <div className="space-y-2">
+          <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="block font-medium">Chọn voucher áp dụng</label>
-          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                  <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                  </svg>
+                </div>
+                <Label className="text-base font-medium text-gray-800 dark:text-gray-200">Chọn voucher áp dụng</Label>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-purple-600 dark:text-purple-400">
             <input
               type="checkbox"
               checked={(form.voucher_ids || []).length === vouchers.length && vouchers.length > 0}
@@ -386,6 +576,7 @@ export default function EditListing() {
                   handleVouchersChange([]);
                 }
               }}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
             <span>Chọn tất cả</span>
           </label>
@@ -447,7 +638,37 @@ export default function EditListing() {
           </button>
         </div>
       </label>
-      <Button type="submit" disabled={updateLoading}>Cập nhật Listing</Button>
+          <div className="flex gap-4 pt-6">
+            <Button
+              type="submit"
+              disabled={updateLoading}
+              className="h-12 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl px-8"
+            >
+              {updateLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  Đang cập nhật...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Cập nhật Phòng
+                </div>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/admin/listings")}
+              className="h-12 text-base border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 rounded-xl px-8"
+            >
+              Hủy
+            </Button>
+          </div>
     </form>
+      </div>
+    </div>
   );
 } 

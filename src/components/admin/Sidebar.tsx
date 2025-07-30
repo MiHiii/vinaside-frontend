@@ -256,6 +256,15 @@ export function Sidebar({ collapsed }: SidebarProps) {
               collapsed={collapsed}
             />
           </PermissionGuard>
+          <PermissionGuard permission="user.view">
+            <SidebarItem
+              to="/admin/staff"
+              icon={<UserCheck className="h-4 w-4" />}
+              label="Quản lý nhân viên"
+              active={pathname === "/admin/staff"}
+              collapsed={collapsed}
+            />
+          </PermissionGuard>
           <PermissionGuard permission="listing.view">
             <SidebarItem
               to="/admin/listings"
