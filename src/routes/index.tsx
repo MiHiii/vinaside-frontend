@@ -78,6 +78,7 @@ import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
 import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import StaffManagementPage from "@/pages/admin/user/StaffManagementPage";
+import AdminWishlistPage from "@/pages/admin/wishlist/AdminWishlistPage";
 import WishlistPage from "@/pages/WishlistPage";
 import SearchResultPage from "@/pages/SearchResultPage";
 import PropertieInfo from "@/components/roomdetail/PropertieInfo";
@@ -283,6 +284,7 @@ const routes: RouteObject[] = [
       { path: "reviews", element: <ReviewManagementPage /> },
       { path: "users", element: <AdminUserPage /> },
       { path: "staff", element: <StaffManagementPage /> },
+      { path: "wishlists", element: <AdminWishlistPage /> },
     ],
   },
 
