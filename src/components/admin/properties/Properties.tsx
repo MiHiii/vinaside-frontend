@@ -10,6 +10,11 @@ import {
   // createProperty
 } from '@/store/slices/propertySlice';
 import { selectStaffList } from '@/store/slices/userSlice';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { propertyStaffAssignmentApi } from '@/services/propertyStaffAssignmentApi';
+import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -36,7 +41,23 @@ interface StaffData {
 
 interface AssignmentData {
   _id: string;
-  propertyId: string;
+  propertyId: {
+    _id: string;
+    name: string;
+    type: string;
+    location?: {
+      address: string;
+      city?: string;
+      district?: string;
+      ward?: string;
+      coordinates?: [number, number];
+    };
+    thumbnail?: string;
+    images?: string[];
+    status?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
   staffId: {
     _id: string;
     name: string;
@@ -57,13 +78,22 @@ interface AssignmentData {
 
 export default function AdminProperties() {
   const dispatch = useAppDispatch();
+  const { isAdmin, isStaff } = useUserRole();
+  const { user } = useSelector((state: RootState) => state.auth);
+  
   const properties = useAppSelector(selectProperties);
-  console.log('Properties to render:', properties);
   const loading = useAppSelector(selectPropertiesLoading);
   const error = useAppSelector(selectPropertiesError);
   const total = useAppSelector(selectPropertiesTotal);
+  
+  // Local state cho staff properties
+  const [staffProperties, setStaffProperties] = useState<Property[]>([]);
+  
+  // Sử dụng staffProperties cho staff, properties cho admin
+  const displayProperties = isStaff ? staffProperties : properties;
+  console.log('Properties to render:', displayProperties);
 
-  console.log('Properties state:', { properties, loading, error, total });
+  console.log('Properties state:', { properties, staffProperties, loading, error, total });
 
   const [filters, setFilters] = useState<PropertiesFilters>({
     search: '',
@@ -135,38 +165,108 @@ export default function AdminProperties() {
   const loadProperties = useCallback(async () => {
     try {
       console.log('Current filters state:', filters); // Log state hiện tại của filters
-      const result = await dispatch(
-        fetchProperties({
-          ...filters,
-          search: filters.search.trim(), // Đảm bảo cắt khoảng trắng
-        }),
-      );
-      console.log('API call result:', result); // Log kết quả API
+      
+      if (isAdmin) {
+        // Admin có thể xem tất cả properties
+        const result = await dispatch(
+          fetchProperties({
+            ...filters,
+            search: filters.search.trim(), // Đảm bảo cắt khoảng trắng
+          }),
+        );
+        console.log('Admin API call result:', result); // Log kết quả API
+      } else if (isStaff) {
+        // Staff chỉ thấy properties được assign cho mình
+        let userId = user?._id;
+        if (!userId) {
+          const storedUser = localStorage.getItem("user");
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              userId = parsedUser._id;
+            } catch (e) {
+              console.error("Error parsing localStorage user:", e);
+            }
+          }
+        }
+        
+        if (!userId) {
+          throw new Error("Không tìm thấy thông tin user");
+        }
+        
+        console.log('Staff loading properties for user:', userId);
+        const myAssignments = await propertyStaffAssignmentApi.getPropertiesByStaff(userId);
+        console.log('Staff assignments:', myAssignments);
+        
+        // Chuyển đổi assignments thành properties format
+        const staffAssignments = myAssignments.data?.data || myAssignments.data || [];
+        console.log('Staff assignments:', staffAssignments);
+        
+                 // Chuyển đổi assignments thành properties format
+         const staffProperties = staffAssignments.map((assignment: AssignmentData) => ({
+           ...assignment.propertyId,
+           // Thêm các field cần thiết cho Property interface
+           _id: assignment.propertyId._id,
+           name: assignment.propertyId.name,
+           type: assignment.propertyId.type,
+           // Thêm các field mặc định nếu thiếu
+           location: assignment.propertyId.location ?? {
+             address: '',
+             city: '',
+             district: '',
+             ward: '',
+             coordinates: [0, 0]
+           },
+           thumbnail: assignment.propertyId.thumbnail ?? '',
+           images: assignment.propertyId.images ?? [],
+           createdAt: assignment.propertyId.createdAt ?? assignment.createdAt ?? new Date().toISOString(),
+           updatedAt: assignment.propertyId.updatedAt ?? assignment.updatedAt ?? new Date().toISOString(),
+           status: assignment.propertyId.status ?? 'active',
+           // Thêm staffIds để hiển thị số staff
+           staffIds: [assignment.staffId._id]
+         }));
+        
+        console.log('Converted staff properties:', staffProperties);
+        
+                 // Update local state với staff properties
+         console.log('Updating local state with staff properties:', staffProperties);
+         setStaffProperties(staffProperties);
+         
+         // Cập nhật total count cho staff
+         if (isStaff) {
+           // Dispatch action để update total count
+           dispatch({
+             type: 'properties/setPropertiesTotal',
+             payload: staffProperties.length
+           });
+         }
+      }
     } catch (error) {
       console.error('Error loading properties:', error);
       toast.error('Lỗi tải danh sách properties!');
     }
-  }, [filters, dispatch]);
+  }, [filters, dispatch, isAdmin, isStaff, user]);
 
   useEffect(() => {
     loadProperties();
   }, [loadProperties]); // Chạy khi loadProperties thay đổi
 
-  // Load số nhân viên cho từng property khi properties thay đổi
-  useEffect(() => {
-    // Reset dữ liệu cũ và ref khi properties thay đổi
-    setPropertyStaffCounts({});
-    setLoadingStaffCounts({});
-    loadedPropertiesRef.current.clear();
-    
-    if (properties.length > 0) {
-      properties.forEach(property => {
-        if (property._id) {
-          loadStaffCountForProperty(property._id);
-        }
-      });
-    }
-  }, [properties, loadStaffCountForProperty]);
+     // Load số nhân viên cho từng property khi properties thay đổi
+   useEffect(() => {
+     // Reset dữ liệu cũ và ref khi properties thay đổi
+     setPropertyStaffCounts({});
+     setLoadingStaffCounts({});
+     loadedPropertiesRef.current.clear();
+     
+     // Sử dụng displayProperties thay vì properties
+     if (displayProperties && displayProperties.length > 0) {
+       displayProperties.forEach(property => {
+         if (property._id) {
+           loadStaffCountForProperty(property._id);
+         }
+       });
+     }
+   }, [displayProperties, loadStaffCountForProperty]);
 
   const handleFilterChange = (field: keyof PropertiesFilters, value: string | number) => {
     console.log(`Filter changed: ${field} = ${value}`); // Log khi filter thay đổi
@@ -242,11 +342,13 @@ export default function AdminProperties() {
               </div>
             </div>
             
-            {/* Total count card */}
-            <div className='bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 text-center'>
-              <div className='text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1'>{total}</div>
-              <div className='text-sm text-blue-700 dark:text-blue-300 font-medium'>Tổng số homestay</div>
-            </div>
+                         {/* Total count card */}
+             <div className='bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 text-center'>
+               <div className='text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1'>
+                 {isStaff ? staffProperties.length : total}
+               </div>
+               <div className='text-sm text-blue-700 dark:text-blue-300 font-medium'>Tổng số homestay</div>
+             </div>
           </div>
         </div>
 
@@ -283,8 +385,8 @@ export default function AdminProperties() {
                       <TableHead className='text-right border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide'>Thao tác</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {properties.map((property, index) => (
+                                     <TableBody>
+                     {displayProperties?.map((property, index) => (
                       <TableRow 
                         key={property._id} 
                         className={`border-none hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 ${
@@ -376,7 +478,7 @@ export default function AdminProperties() {
                   </TableBody>
                 </Table>
 
-                {properties.length === 0 && (
+                                 {(!displayProperties || displayProperties.length === 0) && (
                   <div className='text-center py-12'>
                     <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center">
                       <svg className="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
