@@ -94,7 +94,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         propertyId: listing.propertyId._id,
         listingId: listing._id,
         price_per_night: listing.price_per_night,
-        total_price: listing.price_per_night * nights,
+        total_price: base, // Giá phòng gốc
         final_amount: finalTotal,
         checkInDate: tripStart,
         checkOutDate: tripEnd,
@@ -110,6 +110,14 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         })),
       };
       console.log("[FE] bookingData gửi lên backend:", bookingData);
+      console.log("[FE] Debug - Frontend calculation:", {
+        base,
+        discount,
+        amountAfterDiscount,
+        serviceFee,
+        tax,
+        finalTotal,
+      });
       const result = await dispatch(createBooking(bookingData)).unwrap();
 
       if (!result?._id) {
@@ -126,6 +134,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
       };
       console.log("[FE] Payload gửi lên createPayment:", paymentPayload);
       const paymentRes = await dispatch(createPayment(paymentPayload)).unwrap();
+      console.log("[FE] Response từ createPayment:", paymentRes);
       const paymentUrl = paymentRes?.paymentUrl;
       if (paymentUrl) {
         window.location.href = paymentUrl;
@@ -171,36 +180,50 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
 
   // Tính toán giá dựa trên loại thanh toán
   const base = listing.price_per_night * nights;
-  const subtotalAmount = base + selectedServiceTotal;
 
-  // Tính discount trước
+  // Tính discount trên tổng tiền (phòng + dịch vụ) để nhất quán với backend
+  const totalAmount = base + selectedServiceTotal;
   const discount = selectedVoucher
-    ? Math.round((subtotalAmount * selectedVoucher.discount_percent) / 100)
+    ? Math.round((totalAmount * selectedVoucher.discount_percent) / 100)
     : 0;
-  const amountAfterDiscount = subtotalAmount - discount;
 
-  // Tính phí và thuế dựa trên subtotalAmount (trước khi trừ voucher)
-  const serviceFee = Math.round(subtotalAmount * 0.1);
-  const tax = Math.round(subtotalAmount * 0.08);
+  // Tính tổng sau khi trừ discount
+  const amountAfterDiscount = totalAmount - discount;
 
+  // Tính phí và thuế dựa trên amountAfterDiscount (sau khi trừ voucher) - nhất quán với backend
+  const serviceFee = Math.round(amountAfterDiscount * 0.1);
+  const tax = Math.round(amountAfterDiscount * 0.08);
+
+  // Tính tổng cuối cùng: giá sau voucher + phí + thuế
   let finalTotal = amountAfterDiscount + serviceFee + tax;
 
   if (paymentType === "deposit") {
-    // Tính 50% của tổng tiền (giá phòng + dịch vụ) - phù hợp với homestay
-    const depositSubtotal = Math.round(subtotalAmount * 0.5); // 50% tổng giá phòng và dịch vụ
+    // Tính 50% của tổng tiền sau khi đã trừ voucher
+    const depositAmount = Math.round(amountAfterDiscount * 0.5);
 
-    // Tính discount cho deposit
-    const depositDiscount = selectedVoucher
-      ? Math.round((depositSubtotal * selectedVoucher.discount_percent) / 100)
-      : 0;
-    const depositAmountAfterDiscount = depositSubtotal - depositDiscount;
+    // Tính phí và thuế cho deposit (50% của phí và thuế gốc)
+    const depositServiceFee = Math.round(serviceFee * 0.5);
+    const depositTax = Math.round(tax * 0.5);
 
-    // Tính phí và thuế cho deposit
-    const depositServiceFee = Math.round(depositSubtotal * 0.1);
-    const depositTax = Math.round(depositSubtotal * 0.08);
-
-    finalTotal = depositAmountAfterDiscount + depositServiceFee + depositTax;
+    finalTotal = depositAmount + depositServiceFee + depositTax;
   }
+
+  // Debug logging
+  console.log("[DEBUG] Price calculation:", {
+    price_per_night: listing.price_per_night,
+    nights,
+    base,
+    selectedServiceTotal,
+    discount,
+    amountAfterDiscount,
+    serviceFee,
+    tax,
+    paymentType,
+    finalTotal,
+    originalTotal: base + selectedServiceTotal,
+    voucherCode: selectedVoucher?.code,
+    voucherDiscount: selectedVoucher?.discount_percent,
+  });
 
   // Lấy vị trí từ property/location
   const location = listing.propertyId?.location || listing.location || {};
@@ -394,25 +417,52 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           </div>
           <div className="flex justify-between text-base text-gray-700">
             <span>Dịch vụ kèm theo</span>
-            <span>₫{selectedServiceTotal.toLocaleString()}</span>
+            <span>
+              ₫
+              {paymentType === "deposit"
+                ? Math.round(selectedServiceTotal * 0.5).toLocaleString()
+                : selectedServiceTotal.toLocaleString()}
+            </span>
           </div>
           <div className="border-t border-gray-400 pt-2">
             <div className="flex justify-between font-bold text-base">
               <span>Tổng giá phòng và dịch vụ</span>
-              <span>₫{subtotalAmount.toLocaleString()}</span>
+              <span>
+                ₫
+                {paymentType === "deposit"
+                  ? Math.round(
+                      (base + selectedServiceTotal) * 0.5
+                    ).toLocaleString()
+                  : (base + selectedServiceTotal).toLocaleString()}
+              </span>
             </div>
             <div className="flex justify-between text-base text-gray-700">
               <span>Phí dịch vụ (10%)</span>
-              <span>₫{serviceFee.toLocaleString()}</span>
+              <span>
+                ₫
+                {paymentType === "deposit"
+                  ? Math.round(serviceFee * 0.5).toLocaleString()
+                  : serviceFee.toLocaleString()}
+              </span>
             </div>
             <div className="flex justify-between text-base text-gray-700">
               <span>Thuế (8%)</span>
-              <span>₫{tax.toLocaleString()}</span>
+              <span>
+                ₫
+                {paymentType === "deposit"
+                  ? Math.round(tax * 0.5).toLocaleString()
+                  : tax.toLocaleString()}
+              </span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-base text-green-600 font-medium">
                 <span>Đã giảm ({selectedVoucher?.code})</span>
-                <span>-₫{discount.toLocaleString()}</span>
+                <span>
+                  -₫
+                  {paymentType === "deposit"
+                    ? Math.round(discount * 0.5).toLocaleString()
+                    : discount.toLocaleString()}
+                </span>
               </div>
             )}
             <div className="border-t border-gray-400 pt-2 mt-2">
