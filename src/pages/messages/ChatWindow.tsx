@@ -6,10 +6,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import {
   MoreVertical,
-  ChevronDown,
   Bot,
-  Paperclip,
-  Smile,
   Send,
   X,
   Wifi,
@@ -20,6 +17,7 @@ import {
 import { useChatbot } from "@/hooks/useChatbot";
 import { useAppSelector } from "@/hooks/useRedux";
 import { format } from "date-fns";
+import { MarkdownText } from "@/components/common/MarkdownText";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -170,7 +168,6 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                   <li>• Tìm hiểu về dịch vụ của chúng tôi</li>
                   <li>• Hỗ trợ đặt phòng</li>
                   <li>• Giải đáp thắc mắc</li>
-                  <li>• Liên hệ với nhân viên hỗ trợ</li>
                 </ul>
                 {!isConnected && (
                   <div className="mt-4 p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
@@ -216,11 +213,15 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                       <AvatarFallback>VB</AvatarFallback>
                     </Avatar>
                     <div className="bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-50 rounded-xl p-3 max-w-[75%]">
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {message.reply}
-                      </p>
-                      <div className="text-xs opacity-60 mt-1">
-                        {format(new Date(message.createdAt), "HH:mm")}
+                      <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                        <MarkdownText text={message.reply} />
+                      </div>
+                      <div className="text-xs opacity-60 mt-2 flex items-center gap-1">
+                        <span>
+                          {format(new Date(message.createdAt), "HH:mm")}
+                        </span>
+                        <span>•</span>
+                        <span>Vinaside Bot</span>
                       </div>
                     </div>
                   </div>

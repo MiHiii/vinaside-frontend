@@ -154,7 +154,7 @@ const routes: RouteObject[] = [
         ),
       },
       { path: "list/:id", element: <RoomDeatil /> },
-      { path: "room-detail", element: <RoomDeatil /> },
+      { path: "room-detail/:id", element: <RoomDeatil /> },
       { path: "search", element: <SearchResultPage /> },
       { path: "property/:id", element: <PropertieInfo /> },
     ],

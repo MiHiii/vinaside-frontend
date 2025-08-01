@@ -977,7 +977,18 @@ export const usePropertyStaff = (propertyId?: string) => {
       );
 
       if (response.success) {
-        toast.success("Tin nhắn đã được gửi thành công!");
+        toast.success("Đã gửi tin nhắn thành công!", {
+          style: {
+            background: "#00000",
+            color: "#fffff",
+          },
+          className: "bg-white text-black border-gray-200",
+          action: {
+            label: "Xem tin nhắn",
+            onClick: () => (window.location.href = "/messages"),
+          },
+          duration: 4000,
+        });
         return response;
       } else {
         throw new Error("Không thể gửi tin nhắn");

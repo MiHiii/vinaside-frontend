@@ -24,6 +24,7 @@ import {
 import EmojiPicker from "emoji-picker-react";
 import { MessageReaction } from "@/services/chat.service";
 import { useMessages } from "@/hooks/useMessages";
+import { NavLink } from "react-router-dom";
 
 export default function Messages() {
   const {
@@ -308,17 +309,18 @@ export default function Messages() {
                 return (
                   <div
                     key={u._id}
-                    className={`mt-8 bg-background text-card-foreground flex items-center gap-3 cursor-pointer p-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 ${
-                      selectedUser?.id === u._id
-                        ? "bg-gray-100 text-card-foreground"
-                        : ""
-                    } ${
-                      conversation &&
-                      typeof conversation.unreadCount === "number" &&
-                      conversation.unreadCount > 0
-                        ? "bg-blue-50 border-l-4 border-blue-500 shadow-md animate-slide-in-right"
-                        : ""
-                    }`}
+                    className={`
+                w-full justify-start text-base font-medium
+                px-4 py-3 h-20 rounded-2xl shadow-none transition
+                flex items-center gap-3
+                ${
+                  selectedUser?.id === u._id
+                    ? "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] font-semibold"
+                    : "bg-transparent"
+                }
+                hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] 
+                focus:outline-none w-96
+              `}
                     onClick={() => handleConnect(u._id!)}
                   >
                     <Avatar
@@ -405,24 +407,23 @@ export default function Messages() {
         <div className="flex-1 flex flex-col min-h-0">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-background shadow-sm flex-shrink-0">
             <div className="flex items-center gap-3 ml-5">
-              <Avatar className="h-12 w-12">
-                <AvatarImage
-                  src={selectedUser?.avatar}
-                  alt={selectedUser?.name || "User"}
-                />
-                <AvatarFallback>
-                  {selectedUser?.name?.charAt(0) || "U"}
-                </AvatarFallback>
-              </Avatar>
+              <NavLink to={`/property/${selectedUser?.id}`}>
+                <Avatar className="h-12 w-12 cursor-pointer hover:opacity-80 transition-opacity">
+                  <AvatarImage
+                    src={selectedUser?.avatar}
+                    alt={selectedUser?.name || "User"}
+                  />
+                  <AvatarFallback>
+                    {selectedUser?.name?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+              </NavLink>
               <div>
-                <h2 className="font-semibold text-foreground text-[20px]">
-                  {selectedUser?.name}
-                </h2>
-                {currentPropertyId && (
-                  <p className="text-sm text-muted-foreground">
-                    Property ID: {currentPropertyId}
-                  </p>
-                )}
+                <NavLink to={`/property/${selectedUser?.id}`}>
+                  <h2 className="font-semibold text-foreground text-[20px]">
+                    {selectedUser?.name}
+                  </h2>
+                </NavLink>
               </div>
             </div>
             <div className="flex items-center gap-2">
