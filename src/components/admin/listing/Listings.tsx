@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
   fetchAdminListings,
@@ -47,6 +47,8 @@ import { fetchSafetyFeatures } from '@/store/slices/safetyFeatureSlice';
 import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
 import { fetchVouchers } from '@/store/slices/voucherSlice';
 import { useUserRole } from "@/hooks/useUserRole";
+import { propertyStaffAssignmentApi } from '@/services/propertyStaffAssignmentApi';
+import { api } from '@/services/api';
 
 interface ListingFilters {
   search: string;
@@ -54,6 +56,25 @@ interface ListingFilters {
   propertyId: string;
   page: number;
   limit: number;
+}
+
+interface AssignmentData {
+  _id: string;
+  propertyId: {
+    _id: string;
+    name: string;
+    type: string;
+  };
+  staffId: string;
+  assignedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  status: string;
+  assignedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Simple price formatter
@@ -66,14 +87,37 @@ const formatPrice = (price: number) => {
 
 export default function Listings() {
   const dispatch = useAppDispatch();
-  const { isAdmin } = useUserRole();
-  const listings = useAppSelector(selectListings);
+  const { isAdmin, isStaff } = useUserRole();
+  const allListings = useAppSelector(selectListings);
   const loading = useAppSelector(selectListingsLoading);
   const error = useAppSelector(selectListingsError);
   const total = useAppSelector(selectListingsTotal);
   const properties = useAppSelector(selectProperties);
+  
   const services = useAppSelector((state) => state.service.services) ?? [];
-  console.log('services in Listings:', services, Array.isArray(services));
+  
+  // State cho staff properties
+  const [staffProperties, setStaffProperties] = useState<any[]>([]);
+  const [staffPropertyIds, setStaffPropertyIds] = useState<string[]>([]);
+  const [staffPropertiesLoaded, setStaffPropertiesLoaded] = useState(false);
+  
+  // Track lần fetch đầu tiên
+  const hasInitialFetch = useRef(false);
+  
+  console.log('🔄 Listings component re-render:', { isAdmin, isStaff, staffPropertiesLoaded });
+  
+  // Sử dụng properties cho dropdown
+  const displayProperties = isStaff ? staffProperties : properties;
+  
+  // Filter listings cho staff
+  const listings = isStaff && staffPropertyIds.length > 0 
+    ? allListings.filter(listing => {
+        const propertyId = typeof listing.propertyId === 'object' && listing.propertyId !== null 
+          ? listing.propertyId._id 
+          : listing.propertyId;
+        return staffPropertyIds.includes(propertyId);
+      })
+    : allListings;
 
   const [filters, setFilters] = useState<ListingFilters>({
     search: "",
@@ -96,23 +140,103 @@ export default function Listings() {
     dispatch(fetchVouchers({}));
   }, [dispatch, properties]);
 
+  // Lấy properties được assign cho staff
   useEffect(() => {
-    // Chỉ truyền propertyId nếu có giá trị
-    const params: Partial<typeof filters> = { ...filters };
-    if (!params.propertyId) {
-      delete params.propertyId;
-    }
-    if (!params.status) {
-      delete params.status;
-    }
+    let mounted = true;
+    const loadStaffProperties = async () => {
+      if (isStaff && !staffPropertiesLoaded && mounted) {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const userId = user._id;
+          
+          if (userId) {
+            const myAssignments = await propertyStaffAssignmentApi.getPropertiesByStaff(userId);
+            const staffAssignments = myAssignments.data?.data || myAssignments.data || [];
+            
+            // Lấy property IDs được assign cho staff
+            const propertyIds = staffAssignments.map((assignment: AssignmentData) => assignment.propertyId._id);
+            setStaffPropertyIds(propertyIds);
+            
+            // Lấy thông tin chi tiết properties
+            const staffProperties = await Promise.all(
+              staffAssignments.map(async (assignment: AssignmentData) => {
+                try {
+                  const propertyResponse = await api.get(`/properties/${assignment.propertyId._id}`);
+                  const propertyData = propertyResponse.data;
+                  
+                  if (propertyData.success && propertyData.data) {
+                    return propertyData.data;
+                  } else {
+                    return assignment.propertyId;
+                  }
+                } catch (error) {
+                  console.error('Error fetching property details:', error);
+                  return assignment.propertyId;
+                }
+              })
+            );
+            
+            setStaffProperties(staffProperties);
+          }
+        } catch (error) {
+          console.error('Error loading staff properties:', error);
+        } finally {
+          if (mounted) {
+            setStaffPropertiesLoaded(true);
+          }
+        }
+      }
+    };
     
-    // Sử dụng API khác nhau cho admin và staff
-    const fetchAction = isAdmin ? fetchAdminListings : fetchListings;
-    dispatch(fetchAction({
-      ...params,
-      search: params.search ? params.search.trim() : "",
-    }));
-  }, [filters, dispatch, isAdmin]);
+    loadStaffProperties();
+    return () => {
+      mounted = false;
+    };
+  }, [isStaff]);
+
+  // Memoize filters để tránh re-render không cần thiết
+  const memoizedFilters = useMemo(() => filters, [
+    filters.search, filters.status, filters.propertyId, filters.page, filters.limit
+  ]);
+
+  // Fetch listings cho admin
+  useEffect(() => {
+    if (isAdmin) {
+      console.log('📞 Calling fetchAdminListings');
+      const params: Partial<typeof memoizedFilters> = { ...memoizedFilters };
+      if (!params.propertyId) {
+        delete params.propertyId;
+      }
+      if (!params.status) {
+        delete params.status;
+      }
+      
+      dispatch(fetchAdminListings({
+        ...params,
+        search: params.search ? params.search.trim() : "",
+      }));
+    }
+  }, [memoizedFilters, dispatch, isAdmin]);
+
+  // Fetch listings cho staff - chỉ khi properties đã load xong
+  useEffect(() => {
+    if (isStaff && staffPropertiesLoaded && !hasInitialFetch.current) {
+      console.log('📞 Calling fetchListings for staff (initial)');
+      const params: Partial<typeof memoizedFilters> = { ...memoizedFilters };
+      if (!params.propertyId) {
+        delete params.propertyId;
+      }
+      if (!params.status) {
+        delete params.status;
+      }
+      
+      dispatch(fetchListings({
+        ...params,
+        search: params.search ? params.search.trim() : "",
+      }));
+      hasInitialFetch.current = true;
+    }
+  }, [memoizedFilters, dispatch, isStaff]);
 
   const handleFilterChange = (field: keyof ListingFilters, value: string | number) => {
     setFilters(prev => ({
@@ -191,7 +315,7 @@ export default function Listings() {
               onChange={e => handleFilterChange("propertyId", e.target.value)}
               className='w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white'>
               <option value="">Tất cả properties</option>
-              {properties.map((p) => (
+              {displayProperties.map((p) => (
                 <option key={p._id || p.id} value={p._id}>{p.name}</option>
               ))}
             </select>

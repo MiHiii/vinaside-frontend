@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/hooks/useRedux";
-import { fetchAdminBookings } from "@/store/slices/bookingSlice";
+import { fetchAdminBookings, fetchStaffBookings } from "@/store/slices/bookingSlice";
 import { RootState } from "@/store";
 import BookingFilter from "./BookingFilter";
 import BookingActions from "./BookingActions";
@@ -17,6 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getPaymentStatusVN, getStatusVN } from "@/helper/status";
 import { Link } from "react-router-dom";
+import { useUserRole } from "@/hooks/useUserRole";
+import { propertyStaffAssignmentApi } from "@/services/propertyStaffAssignmentApi";
 
 type BookingWithDeleted = Booking & {
   isDeleted?: boolean;
@@ -36,15 +38,65 @@ type BookingWithDeleted = Booking & {
 
 const BookingList: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { adminBookings, loading, error } = useSelector(
+  const { isStaff, user } = useUserRole();
+  const { adminBookings, staffBookings, loading, error } = useSelector(
     (state: RootState) => state.booking
   );
   const [filters, setFilters] = useState<Record<string, unknown>>({});
   const [page, setPage] = useState(1);
 
+  // Debug staff assignments
   useEffect(() => {
-    dispatch(fetchAdminBookings({ ...filters, page }));
-  }, [dispatch, filters, page]);
+    if (isStaff && user?._id) {
+      console.log('🔍 Checking staff assignments for user:', user._id);
+      console.log('🔍 User object:', user);
+      
+      propertyStaffAssignmentApi.getPropertiesByStaff(user._id)
+        .then(response => {
+          console.log('🔍 Staff assignments response:', response);
+          const properties = response.data?.data || response.data || [];
+          console.log('🔍 Staff properties:', properties);
+          
+          // Log chi tiết từng property
+          properties.forEach((prop: Record<string, unknown>, index: number) => {
+            console.log(`🔍 Property ${index + 1}:`, {
+              id: (prop._id as string) || (prop.propertyId as Record<string, unknown>)?.id as string,
+              name: (prop.name as string) || (prop.propertyId as Record<string, unknown>)?.name as string,
+              type: (prop.type as string) || (prop.propertyId as Record<string, unknown>)?.type as string
+            });
+          });
+
+          // Log tất cả property IDs để so sánh với backend
+          const propertyIds = properties.map((prop: Record<string, unknown>) => 
+            (prop._id as string) || (prop.propertyId as Record<string, unknown>)?.id as string
+          );
+          console.log('🔍 All property IDs for staff:', propertyIds);
+        })
+        .catch(error => {
+          console.error('🔍 Error fetching staff assignments:', error);
+        });
+    }
+  }, [isStaff, user?._id]);
+
+  // Fetch bookings for admin (all bookings)
+  useEffect(() => {
+    if (!isStaff) {
+      console.log('🔍 Fetching admin bookings');
+      dispatch(fetchAdminBookings({ ...filters, page }));
+    }
+  }, [dispatch, filters, page, isStaff]);
+
+  // Fetch bookings for staff
+  useEffect(() => {
+    if (isStaff) {
+      console.log('🔍 Fetching staff bookings with filters:', { ...filters, page, limit: 50 });
+      dispatch(fetchStaffBookings({ 
+        ...filters,
+        page, 
+        limit: 50
+      }));
+    }
+  }, [isStaff, dispatch, filters, page]);
 
   const handleFilterChange = (newFilters: Record<string, unknown>) => {
     setFilters(newFilters);
@@ -52,7 +104,11 @@ const BookingList: React.FC = () => {
   };
 
   const handleActionSuccess = () => {
-    dispatch(fetchAdminBookings({ ...filters, page }));
+    if (isStaff) {
+      dispatch(fetchStaffBookings({ ...filters, page }));
+    } else {
+      dispatch(fetchAdminBookings({ ...filters, page }));
+    }
   };
 
   if (loading) return <p>Đang tải...</p>;
@@ -88,7 +144,23 @@ const BookingList: React.FC = () => {
   );
 
   // Hiển thị tất cả booking trong cùng một bảng
-  const allBookings = Array.isArray(adminBookings) ? adminBookings : [];
+  const allBookings = isStaff 
+    ? (Array.isArray(staffBookings) ? staffBookings : [])
+    : (Array.isArray(adminBookings) ? adminBookings : []);
+
+  console.log('🔍 Debug BookingList:', {
+    isStaff,
+    staffBookingsLength: staffBookings?.length || 0,
+    adminBookingsLength: adminBookings?.length || 0,
+    allBookingsLength: allBookings?.length || 0,
+    staffBookings: staffBookings?.slice(0, 2)?.map(b => ({
+      id: b._id,
+      guestName: b.guest_name,
+      propertyName: typeof b.propertyId === 'object' ? (b.propertyId as { name?: string })?.name : b.propertyId,
+      status: b.status
+    }))
+  });
+
 
   return (
     <div>
