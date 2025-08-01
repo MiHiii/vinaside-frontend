@@ -14,6 +14,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { propertyStaffAssignmentApi } from '@/services/propertyStaffAssignmentApi';
+import { api } from '@/services/api';
 import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -202,29 +203,66 @@ export default function AdminProperties() {
         const staffAssignments = myAssignments.data?.data || myAssignments.data || [];
         console.log('Staff assignments:', staffAssignments);
         
-                 // Chuyển đổi assignments thành properties format
-         const staffProperties = staffAssignments.map((assignment: AssignmentData) => ({
-           ...assignment.propertyId,
-           // Thêm các field cần thiết cho Property interface
-           _id: assignment.propertyId._id,
-           name: assignment.propertyId.name,
-           type: assignment.propertyId.type,
-           // Thêm các field mặc định nếu thiếu
-           location: assignment.propertyId.location ?? {
-             address: '',
-             city: '',
-             district: '',
-             ward: '',
-             coordinates: [0, 0]
-           },
-           thumbnail: assignment.propertyId.thumbnail ?? '',
-           images: assignment.propertyId.images ?? [],
-           createdAt: assignment.propertyId.createdAt ?? assignment.createdAt ?? new Date().toISOString(),
-           updatedAt: assignment.propertyId.updatedAt ?? assignment.updatedAt ?? new Date().toISOString(),
-           status: assignment.propertyId.status ?? 'active',
-           // Thêm staffIds để hiển thị số staff
-           staffIds: [assignment.staffId._id]
-         }));
+                 // Lấy thông tin chi tiết cho từng property
+         const staffProperties = await Promise.all(
+           staffAssignments.map(async (assignment: AssignmentData) => {
+             try {
+               // Gọi API lấy thông tin chi tiết property
+               const propertyResponse = await api.get(`/properties/${assignment.propertyId._id}`);
+               const propertyData = propertyResponse.data;
+               
+               if (propertyData.success && propertyData.data) {
+                 return {
+                   ...propertyData.data,
+                   staffIds: [assignment.staffId._id]
+                 };
+               } else {
+                 // Fallback nếu API lỗi
+                 return {
+                   ...assignment.propertyId,
+                   _id: assignment.propertyId._id,
+                   name: assignment.propertyId.name,
+                   type: assignment.propertyId.type,
+                   location: assignment.propertyId.location ?? {
+                     address: 'Địa chỉ chưa cập nhật',
+                     city: '',
+                     district: '',
+                     ward: '',
+                     coordinates: [0, 0]
+                   },
+                   thumbnail: assignment.propertyId.thumbnail ?? 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+                   images: assignment.propertyId.images ?? ['https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'],
+                   createdAt: assignment.propertyId.createdAt ?? assignment.createdAt ?? new Date().toISOString(),
+                   updatedAt: assignment.propertyId.updatedAt ?? assignment.updatedAt ?? new Date().toISOString(),
+                   status: assignment.propertyId.status ?? 'active',
+                   staffIds: [assignment.staffId._id]
+                 };
+               }
+             } catch (error) {
+               console.error('Error fetching property details:', error);
+               // Fallback nếu API lỗi
+               return {
+                 ...assignment.propertyId,
+                 _id: assignment.propertyId._id,
+                 name: assignment.propertyId.name,
+                 type: assignment.propertyId.type,
+                 location: assignment.propertyId.location ?? {
+                   address: 'Địa chỉ chưa cập nhật',
+                   city: '',
+                   district: '',
+                   ward: '',
+                   coordinates: [0, 0]
+                 },
+                 thumbnail: assignment.propertyId.thumbnail ?? 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+                 images: assignment.propertyId.images ?? ['https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'],
+                 createdAt: assignment.propertyId.createdAt ?? assignment.createdAt ?? new Date().toISOString(),
+                 updatedAt: assignment.propertyId.updatedAt ?? assignment.updatedAt ?? new Date().toISOString(),
+                 status: assignment.propertyId.status ?? 'active',
+                 staffIds: [assignment.staffId._id]
+               };
+             }
+           })
+         );
         
         console.log('Converted staff properties:', staffProperties);
         
@@ -395,25 +433,16 @@ export default function AdminProperties() {
                       >
                         <TableCell className="border-none py-4 px-6">
                           <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
-                            {property.thumbnail ? (
-                              <img
-                                src={property.thumbnail}
-                                alt={property.name}
-                                style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
-                                className='cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm'
-                              />
-                            ) : property.images && property.images.length > 0 ? (
-                              <img
-                                src={property.images[0]}
-                                alt={property.name}
-                                style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
-                                className='cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm'
-                              />
-                            ) : (
-                              <div className="w-14 h-10 bg-gray-100 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                                <span className='text-gray-400 dark:text-gray-500 text-xs'>No image</span>
-                              </div>
-                            )}
+                            <img
+                              src={property.thumbnail || property.images?.[0] || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}
+                              alt={property.name}
+                              style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 8 }}
+                              className='cursor-pointer hover:opacity-80 transition-all duration-200 shadow-sm'
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';
+                              }}
+                            />
                           </Link>
                         </TableCell>
                         <TableCell className='font-medium border-none py-4 px-6'>
@@ -424,8 +453,8 @@ export default function AdminProperties() {
                           </Link>
                         </TableCell>
                         <TableCell className="border-none py-4 px-6">
-                          <div className='max-w-xs truncate text-gray-600 dark:text-gray-300 text-sm' title={property.location?.address}>
-                            {property.location?.address}
+                          <div className='max-w-xs truncate text-gray-600 dark:text-gray-300 text-sm' title={property.location?.address || 'Địa chỉ chưa cập nhật'}>
+                            {property.location?.address || 'Địa chỉ chưa cập nhật'}
                           </div>
                         </TableCell>
                         <TableCell className="border-none py-4 px-6">

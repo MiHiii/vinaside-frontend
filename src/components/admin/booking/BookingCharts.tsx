@@ -26,7 +26,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({ statusData, revenueData, 
   }));
 
   // Debug log for revenueData
-  console.log('revenueData', revenueData);
+
 
   return (
     <div className="flex flex-col gap-4">

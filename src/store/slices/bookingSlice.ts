@@ -148,8 +148,8 @@ export const getMyBookingHistory = createAsyncThunk<
       check_out_date: b.check_out_date,
     }));
     return bookings;
-  } catch (error) {
-    console.log(error);
+  } catch  {
+          // console.log(error);
     return rejectWithValue("Lỗi khi lấy lịch sử booking của tôi");
   }
 });
@@ -267,7 +267,6 @@ export const fetchAdminBookings = createAsyncThunk<
       queryParams.paymentStatus = undefined;
     }
     const res = await api.get("/bookings", { params: queryParams });
-    console.log("sdsdsdsds : ", res.data.data);
 
     return res.data.data;
   } catch (err: unknown) {
@@ -281,6 +280,66 @@ export const fetchAdminBookings = createAsyncThunk<
   }
 });
 
+// Staff bookings thunk
+export const fetchStaffBookings = createAsyncThunk<
+  { data: Booking[]; total: number },
+  { status?: BookingStatus; paymentStatus?: PaymentStatus } & Record<
+    string,
+    unknown
+  >,
+  { rejectValue: string }
+>("booking/staffFetchBookings", async (params, { rejectWithValue }) => {
+  try {
+    // Đảm bảo status và paymentStatus là đúng enum (chữ thường)
+    const queryParams = { ...params };
+    if (
+      queryParams.status &&
+      !Object.values(BookingStatus).includes(
+        queryParams.status as BookingStatus
+      )
+    ) {
+      queryParams.status = undefined;
+    }
+    if (
+      queryParams.paymentStatus &&
+      !Object.values(PaymentStatus).includes(
+        queryParams.paymentStatus as PaymentStatus
+      )
+    ) {
+      queryParams.paymentStatus = undefined;
+    }
+
+    // Gọi API lấy tất cả bookings
+    const response = await api.get('/bookings/my-bookings-as-staff', {
+      params: queryParams,
+    });
+
+    console.log('🔍 Staff API response:', response.data);
+
+    if (response.data.success) {
+      const allBookings = response.data.data.bookings || [];
+      
+      console.log('🔍 Total staff bookings found:', allBookings.length);
+
+      return {
+        data: allBookings,
+        total: allBookings.length,
+      };
+    }
+
+    throw new Error(
+      response.data.message || "Không thể lấy danh sách bookings"
+    );
+  } catch (error) {
+    console.error("Error fetching staff bookings:", error);
+    return rejectWithValue(
+      error instanceof Error
+        ? error.message
+        : "Có lỗi xảy ra khi lấy danh sách bookings"
+    );
+  }
+});
+
 export const fetchAdminBookingDetail = createAsyncThunk<
   Booking,
   { propertyId: string; id: string },
@@ -290,7 +349,6 @@ export const fetchAdminBookingDetail = createAsyncThunk<
   async ({ propertyId, id }, { rejectWithValue }) => {
     try {
       const res = await api.get(`/bookings/property/${propertyId}/${id}`);
-      console.log("fdfdfdfdf : ", res.data.data);
 
       return res.data.data;
     } catch (err: unknown) {
@@ -617,6 +675,29 @@ const bookingSlice = createSlice({
         state.adminTotal = action.payload.total || 0;
       })
       .addCase(fetchAdminBookings.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : typeof action.payload === "object" &&
+              action.payload &&
+              "error" in action.payload
+            ? (action.payload as { error?: string }).error ?? "Đã xảy ra lỗi"
+            : JSON.stringify(action.payload) || "Đã xảy ra lỗi";
+      })
+      // STAFF: Danh sách booking
+      .addCase(fetchStaffBookings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStaffBookings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.staffBookings = Array.isArray(action.payload.data)
+          ? action.payload.data
+          : [];
+        state.adminTotal = action.payload.total || 0;
+      })
+      .addCase(fetchStaffBookings.rejected, (state, action) => {
         state.loading = false;
         state.error =
           typeof action.payload === "string"
