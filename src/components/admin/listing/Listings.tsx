@@ -49,6 +49,7 @@ import { fetchVouchers } from '@/store/slices/voucherSlice';
 import { useUserRole } from "@/hooks/useUserRole";
 import { propertyStaffAssignmentApi } from '@/services/propertyStaffAssignmentApi';
 import { api } from '@/services/api';
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 interface ListingFilters {
   search: string;
@@ -94,10 +95,8 @@ export default function Listings() {
   const total = useAppSelector(selectListingsTotal);
   const properties = useAppSelector(selectProperties);
   
-  const services = useAppSelector((state) => state.service.services) ?? [];
-  
   // State cho staff properties
-  const [staffProperties, setStaffProperties] = useState<any[]>([]);
+  const [staffProperties, setStaffProperties] = useState<{ _id: string; name: string; type?: string }[]>([]);
   const [staffPropertyIds, setStaffPropertyIds] = useState<string[]>([]);
   const [staffPropertiesLoaded, setStaffPropertiesLoaded] = useState(false);
   
@@ -274,12 +273,14 @@ export default function Listings() {
           <p className="text-gray-600 dark:text-gray-400">Quản lý tất cả phòng và bất động sản</p>
         </div>
         <div className="flex gap-2">
+          <PermissionGuard permission="listing.create">
           <Link to="/admin/listings/create">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200">
               <Plus className="w-4 h-4 mr-2" />
               Thêm Listing
             </Button>
           </Link>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -315,9 +316,9 @@ export default function Listings() {
               onChange={e => handleFilterChange("propertyId", e.target.value)}
               className='w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white'>
               <option value="">Tất cả properties</option>
-              {displayProperties.map((p) => (
-                <option key={p._id || p.id} value={p._id}>{p.name}</option>
-              ))}
+                             {displayProperties.map((p) => (
+                 <option key={p._id} value={p._id}>{p.name}</option>
+               ))}
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style={{ top: '-45px' }}>
               <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,16 +435,20 @@ export default function Listings() {
                     </TableCell>
                     <TableCell className='text-right border-none py-4 px-6'>
                       <div className='flex items-center justify-end gap-2'>
+                        <PermissionGuard permission="listing.view">
                         <Link to={`/admin/listings/${listing._id}`} title='Xem chi tiết'>
                           <Button variant='ghost' size='icon' className="hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 rounded-lg h-8 w-8">
                             <Eye className='h-4 w-4' />
                           </Button>
                         </Link>
+                        </PermissionGuard>
+                        <PermissionGuard permission="listing.edit">
                         <Link to={`/admin/listings/edit/${listing._id}`} title='Chỉnh sửa'>
                           <Button variant='ghost' size='icon' className="hover:bg-green-50 hover:text-green-600 transition-all duration-200 rounded-lg h-8 w-8">
                             <Edit className='h-4 w-4' />
                           </Button>
                         </Link>
+                        </PermissionGuard>
                       </div>
                     </TableCell>
                   </TableRow>

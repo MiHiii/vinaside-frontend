@@ -23,6 +23,7 @@ import { Search, Edit, Eye, Plus, Filter, ChevronLeft, ChevronRight, Users as Us
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PermissionGuard } from '@/components/common/PermissionGuard';
 
 interface PropertiesFilters {
   search: string;
@@ -328,12 +329,14 @@ export default function AdminProperties() {
                 <p className='text-gray-600 dark:text-gray-300'>Quản lý tất cả homestay và bất động sản</p>
               </div>
             <div className='flex gap-3'>
+              <PermissionGuard permission="property.create">
               <Link to='/admin/properties/create'>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200 h-10 px-4 rounded-lg font-medium">
                   <Plus className='w-4 h-4 mr-2' />
                   Thêm HomeStay
                 </Button>
               </Link>
+              </PermissionGuard>
             </div>
           </div>
         </div>
@@ -490,16 +493,20 @@ export default function AdminProperties() {
                         </TableCell>
                         <TableCell className='text-right border-none py-4 px-6'>
                           <div className='flex items-center justify-end gap-2'>
+                            <PermissionGuard permission="property.view">
                             <Link to={`/admin/properties/${property._id}`} title='Xem chi tiết'>
                               <Button variant='ghost' size='icon' className="hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 rounded-lg h-8 w-8">
                                 <Eye className='h-4 w-4' />
                               </Button>
                             </Link>
+                            </PermissionGuard>
+                            <PermissionGuard permission="property.edit">
                             <Link to={`/admin/properties/edit/${property._id}`} title='Chỉnh sửa'>
                               <Button variant='ghost' size='icon' className="hover:bg-green-50 hover:text-green-600 transition-all duration-200 rounded-lg h-8 w-8">
                                 <Edit className='h-4 w-4' />
                               </Button>
                             </Link>
+                            </PermissionGuard>
                           </div>
                         </TableCell>
                       </TableRow>
