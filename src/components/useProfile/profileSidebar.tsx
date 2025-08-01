@@ -22,7 +22,6 @@ const sidebarItems: SidebarItem[] = [
     label: "Chuyến đi trước đây",
     icon: "https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/797c1df2-a40c-4d93-9550-ca5b213cd01b.png?im_w=240",
   },
- 
 ];
 
 export default function ProfileSidebar({

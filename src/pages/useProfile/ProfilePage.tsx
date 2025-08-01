@@ -61,13 +61,13 @@ export default function UserProfilePage() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 lg:w-3/4 xl:w-4/5 lg:ml-[200px]">
+        <main className="flex-1 lg:w-3/4 xl:w-4/5 lg:ml-[100px]">
           {activeSidebarItem === "introduction" && (
             <section aria-labelledby="introduction-section-title">
               <div className="flex items-center gap-2 mb-6">
                 <h1
                   id="introduction-section-title"
-                  className="text-2xl sm:text-3xl font-bold"
+                  className="text-2xl sm:text-2xl font-bold"
                 >
                   Giới thiệu bản thân
                 </h1>
@@ -121,17 +121,9 @@ export default function UserProfilePage() {
 
           {activeSidebarItem === "trips" && (
             <section aria-labelledby="trips-section-title">
-              <h1
-                id="trips-section-title"
-                className="text-2xl sm:text-3xl font-bold mb-6"
-              >
-                Chuyến đi trước đây
-              </h1>
               <PastTrip />
             </section>
           )}
-
-         
         </main>
       </div>
     </div>
