@@ -20,6 +20,12 @@ import { useServices } from "@/hooks/useServices";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getStatusVN, getPaymentStatusVN } from "@/helper/status";
+
+// Define the interface for payment status
+interface PaymentStatusVM {
+  label: string;
+  color: string;
+}
 import { toast } from "sonner";
 import { BookingStatus, PaymentStatus } from "@/types/enum";
 import {
@@ -310,7 +316,7 @@ const BookingDetail: React.FC<{
   const getServiceIcon = (service: {
     service_name: string;
     service_id?: string;
-  }) => {
+  }): React.ReactElement => {
     // Tìm service trong danh sách services đã fetch
     const matchedService = services.find(
       (s) => {
@@ -361,6 +367,9 @@ const BookingDetail: React.FC<{
       return <Zap className="w-4 h-4" />;
     return <Settings className="w-4 h-4" />;
   };
+
+  // Đặt biến paymentStatus ngay trước phần JSX return
+  const paymentStatus = getPaymentStatusVN(payment_status) as PaymentStatusVM;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -596,8 +605,8 @@ const BookingDetail: React.FC<{
                   <div>
                     <label className="text-sm font-medium text-gray-500">Trạng thái thanh toán</label>
                     <div className="mt-1">
-                      <Badge className={`${getPaymentStatusVN(payment_status).color} text-xs`}>
-                        {getPaymentStatusVN(payment_status).label}
+                      <Badge className={`${paymentStatus.color} text-xs`}>
+                        {paymentStatus.label as string}
                       </Badge>
                     </div>
                   </div>

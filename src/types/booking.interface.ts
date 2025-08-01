@@ -42,3 +42,8 @@ export interface BookingDetail {
   updated_at: string;
   [key: string]: unknown; // fallback cho các trường động
 }
+
+export interface PaymentStatusVM {
+  label: React.ReactNode;
+  color: string;
+}
