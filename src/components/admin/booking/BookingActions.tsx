@@ -119,16 +119,16 @@ const BookingActions: React.FC<BookingActionsProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex items-center gap-1">
       {/* View Details - Hiển thị cho tất cả booking */}
       <Link to={`/admin/bookings/${propertyId}/${booking._id}`}>
         <Button
           variant="outline"
-          size="sm"
-          className="flex items-center gap-2 text-blue-600 border-blue-600 hover:bg-blue-50"
+          size="icon"
+          className="h-8 w-8 text-blue-600 border-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+          title="Xem chi tiết"
         >
-          <Eye size={16} />
-          Chi tiết
+          <Eye size={14} />
         </Button>
       </Link>
 
@@ -136,12 +136,12 @@ const BookingActions: React.FC<BookingActionsProps> = ({
       {booking.status === BookingStatus.PENDING && (
         <Button
           variant="default"
-          size="sm"
+          size="icon"
           onClick={handleConfirmBooking}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+          className="h-8 w-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white transition-all duration-200 rounded-lg shadow-sm hover:shadow-md transform hover:scale-105"
+          title="Xác nhận booking"
         >
-          <CheckCircle size={16} />
-          Xác nhận
+          <CheckCircle size={14} />
         </Button>
       )}
 
@@ -160,18 +160,17 @@ const BookingActions: React.FC<BookingActionsProps> = ({
           return (
             <Button
               variant="default"
-              size="sm"
+              size="icon"
               onClick={handleCompleteBooking}
               disabled={!canComplete}
-              className={`flex items-center gap-2 ${
+              className={`h-8 w-8 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md transform hover:scale-105 ${
                 canComplete
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-gray-400 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
-              title={!canComplete ? "Chưa đến ngày checkout" : ""}
+              title={canComplete ? "Hoàn thành booking" : "Chưa đến ngày checkout"}
             >
-              <Clock size={16} />
-              Hoàn thành
+              <Clock size={14} />
             </Button>
           );
         })()}
@@ -181,12 +180,12 @@ const BookingActions: React.FC<BookingActionsProps> = ({
         booking.status === BookingStatus.CONFIRMED) && (
         <Button
           variant="outline"
-          size="sm"
+          size="icon"
           onClick={handleCancelBooking}
-          className="flex items-center gap-2 text-orange-600 border-orange-600 hover:bg-orange-50"
+          className="h-8 w-8 text-orange-600 border-orange-600 hover:bg-orange-50 hover:border-orange-700 hover:text-orange-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+          title="Hủy booking"
         >
-          <XCircle size={16} />
-          Hủy
+          <XCircle size={14} />
         </Button>
       )}
 
@@ -195,12 +194,12 @@ const BookingActions: React.FC<BookingActionsProps> = ({
         booking.payment_status === PaymentStatus.REFUNDING && (
           <Button
             variant="default"
-            size="sm"
+            size="icon"
             onClick={handleRefundBooking}
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+            className="h-8 w-8 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white transition-all duration-200 rounded-lg shadow-sm hover:shadow-md transform hover:scale-105"
+            title="Hoàn tiền booking"
           >
-            <RefreshCw size={16} />
-            Hoàn tiền
+            <RefreshCw size={14} />
           </Button>
         )}
     </div>

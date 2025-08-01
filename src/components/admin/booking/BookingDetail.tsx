@@ -8,15 +8,15 @@ import { RootState } from "@/store";
 import type { BookingDetail } from "@/types/booking.interface";
 import { useSelector } from "react-redux";
 import { useServices } from "@/hooks/useServices";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
+// import {
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableHead,
+//   TableHeader,
+//   TableRow,
+// } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getStatusVN, getPaymentStatusVN } from "@/helper/status";
@@ -24,11 +24,6 @@ import { toast } from "sonner";
 import { BookingStatus, PaymentStatus } from "@/types/enum";
 import {
   User,
-  Home,
-  Calendar,
-  CreditCard,
-  FileText,
-  Gift,
   Settings,
   ArrowLeft,
   Wifi,
@@ -48,6 +43,8 @@ import {
   XCircle,
   Clock,
   RefreshCw,
+  Star,
+  AlertCircle,
 } from "lucide-react";
 
 const BookingDetail: React.FC<{
@@ -172,13 +169,39 @@ const BookingDetail: React.FC<{
     }
   };
 
-  if (loading) return <p>Đang tải...</p>;
-  if (error)
+  if (loading) {
     return (
-      <p style={{ color: "red" }}>
-        {typeof error === "string" ? error : JSON.stringify(error)}
-      </p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-600 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-10 h-10 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-red-900 mb-2">Có lỗi xảy ra</h2>
+            <p className="text-red-700">
+              {typeof error === "string" ? error : JSON.stringify(error)}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!adminBookingDetail) return <p>Không tìm thấy booking (null)</p>;
 
   // Lấy các trường cần hiển thị
@@ -196,8 +219,6 @@ const BookingDetail: React.FC<{
   const guest_phone = booking.guest_phone;
   const created_at = booking.created_at;
   const updated_at = booking.updated_at;
-  const deposit_paid_amount = booking.deposit_paid_amount;
-  const deposit_percent = booking.deposit_percent;
   const property = booking.propertyId;
 
   // Thêm các trường cho dịch vụ và voucher
@@ -292,15 +313,19 @@ const BookingDetail: React.FC<{
   }) => {
     // Tìm service trong danh sách services đã fetch
     const matchedService = services.find(
-      (s) =>
-        s.name.toLowerCase() === service.service_name.toLowerCase() ||
-        s._id === service.service_id
+      (s) => {
+        const serviceObj = s as { name?: string; _id?: string; icon_url?: string };
+        return (
+          serviceObj.name?.toLowerCase() === service.service_name.toLowerCase() ||
+          serviceObj._id === service.service_id
+        );
+      }
     );
 
-    if (matchedService?.icon_url) {
+    if (matchedService && typeof matchedService === 'object' && 'icon_url' in matchedService && matchedService.icon_url) {
       return (
         <img
-          src={matchedService.icon_url}
+          src={matchedService.icon_url as string}
           alt={service.service_name}
           className="w-4 h-4 object-contain"
         />
@@ -338,542 +363,389 @@ const BookingDetail: React.FC<{
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={onBack}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Quay lại
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900">Chi tiết Booking</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge className={getStatusVN(status).color}>
-            {getStatusVN(status).label}
-          </Badge>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            {/* Confirm Booking - Chỉ hiển thị khi status là PENDING */}
-            {status === BookingStatus.PENDING && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleConfirmBooking}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onBack}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               >
-                <CheckCircle size={16} />
-                Xác nhận
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Quay lại
               </Button>
-            )}
-
-            {/* Complete Booking - Chỉ hiển thị khi status là CONFIRMED */}
-            {status === BookingStatus.CONFIRMED &&
-              (() => {
-                const today = new Date();
-                const checkoutDate = new Date(check_out_date);
-
-                // Reset thời gian về 00:00:00 để so sánh chỉ ngày
-                today.setHours(0, 0, 0, 0);
-                checkoutDate.setHours(0, 0, 0, 0);
-
-                const canComplete = today >= checkoutDate;
-
-                return (
+           
+            </div>
+            <div className="flex items-center space-x-4">
+              <Badge className={`${getStatusVN(status).color} text-sm font-medium px-3 py-1`}>
+                {getStatusVN(status).label}
+              </Badge>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                {status === BookingStatus.PENDING && (
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={handleCompleteBooking}
-                    disabled={!canComplete}
-                    className={`flex items-center gap-2 ${
-                      canComplete
-                        ? "bg-blue-600 hover:bg-blue-700"
-                        : "bg-gray-400 cursor-not-allowed"
-                    }`}
-                    title={!canComplete ? "Chưa đến ngày checkout" : ""}
+                    onClick={handleConfirmBooking}
+                    className="bg-green-600 hover:bg-green-700 text-white"
                   >
-                    <Clock size={16} />
-                    Hoàn thành
+                    <CheckCircle size={16} className="mr-2" />
+                    Xác nhận
                   </Button>
-                );
-              })()}
+                )}
 
-            {/* Cancel Booking - Chỉ hiển thị khi status là PENDING hoặc CONFIRMED */}
-            {(status === BookingStatus.PENDING ||
-              status === BookingStatus.CONFIRMED) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancelBooking}
-                className="flex items-center gap-2 text-orange-600 border-orange-600 hover:bg-orange-50"
-              >
-                <XCircle size={16} />
-                Hủy
-              </Button>
-            )}
+                {status === BookingStatus.CONFIRMED && (() => {
+                  const today = new Date();
+                  const checkoutDate = new Date(check_out_date);
+                  today.setHours(0, 0, 0, 0);
+                  checkoutDate.setHours(0, 0, 0, 0);
+                  const canComplete = today >= checkoutDate;
 
-            {/* Refund Booking - Chỉ hiển thị khi status là CANCELLED và payment_status là REFUNDING */}
-            {status === BookingStatus.CANCELLED &&
-              payment_status === PaymentStatus.REFUNDING && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleRefundBooking}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
-                >
-                  <RefreshCw size={16} />
-                  Hoàn tiền
-                </Button>
-              )}
+                  return (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleCompleteBooking}
+                      disabled={!canComplete}
+                      className={`${
+                        canComplete
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                      title={!canComplete ? "Chưa đến ngày checkout" : ""}
+                    >
+                      <Clock size={16} className="mr-2" />
+                      Hoàn thành
+                    </Button>
+                  );
+                })()}
+
+                {(status === BookingStatus.PENDING || status === BookingStatus.CONFIRMED) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelBooking}
+                    className="text-red-600 border-red-600 hover:bg-red-50"
+                  >
+                    <XCircle size={16} className="mr-2" />
+                    Hủy
+                  </Button>
+                )}
+
+                {status === BookingStatus.CANCELLED && payment_status === PaymentStatus.REFUNDING && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleRefundBooking}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <RefreshCw size={16} className="mr-2" />
+                    Hoàn tiền
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-7xl mx-auto">
-        {/* Left Column */}
-        <div className="space-y-8">
-          {/* Thông tin đặt chỗ */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="text-blue-500" />
-                Thông tin đặt chỗ
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium w-1/3">
-                      Booking ID
-                    </TableCell>
-                    <TableCell className="font-mono break-all w-2/3">
-                      {booking._id}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Ngày đặt</TableCell>
-                    <TableCell>
-                      {created_at
-                        ? new Date(created_at).toLocaleString()
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      Cập nhật lần cuối
-                    </TableCell>
-                    <TableCell>
-                      {updated_at
-                        ? new Date(updated_at).toLocaleString()
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {/* Thông tin người dùng */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="text-green-500" />
-                Thông tin người dùng
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4 mb-4">
-                {getGuestAvatar(guest) ? (
-                  <img
-                    src={getGuestAvatar(guest)}
-                    alt="avatar"
-                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
-                    <User className="w-8 h-8" />
-                  </div>
-                )}
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {typeof guest === "object" && guest !== null
-                      ? guest.name
-                      : guest_name}
-                  </h3>
-                  <p className="text-gray-600">
-                    {typeof guest === "object" && guest !== null
-                      ? guest.email
-                      : guest_email}
-                  </p>
-                </div>
-              </div>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Số điện thoại</TableCell>
-                    <TableCell>
-                      {typeof guest === "object" && guest !== null
-                        ? guest.phone
-                        : guest_phone || "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium w-1/3">User ID</TableCell>
-                    <TableCell className="font-mono break-all w-2/3">
-                      {typeof booking.guestId === "string"
-                        ? booking.guestId
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {/* Thông tin chỗ ở */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Home className="text-orange-500" />
-                Thông tin chỗ ở
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Property & Guest Info */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Property Card */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="relative">
                 {getListingImage(listing) ? (
                   <img
                     src={getListingImage(listing)}
                     alt="room"
-                    className="w-full h-48 rounded-lg object-cover border"
+                    className="w-full h-48 object-cover"
                   />
                 ) : (
-                  <div className="w-full h-48 rounded-lg bg-gray-200 flex items-center justify-center text-gray-400">
-                    <Camera className="w-12 h-12" />
+                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                    <Camera className="w-12 h-12 text-gray-400" />
                   </div>
                 )}
+                <div className="absolute top-4 right-4 bg-white rounded-lg px-2 py-1 shadow-sm">
+                  <Star className="w-4 h-4 text-yellow-500 inline mr-1" />
+                  <span className="text-sm font-semibold text-gray-900">Premium</span>
+                </div>
               </div>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Tên phòng</TableCell>
-                    <TableCell>
-                      {hasListingFields(listing) && listing.title
-                        ? listing.title
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Tên homestay</TableCell>
-                    <TableCell>
-                      {hasPropertyName(propertyObj) && propertyObj.name
-                        ? propertyObj.name
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium w-1/3">
-                      Địa chỉ phòng
-                    </TableCell>
-                    <TableCell className="w-2/3">
-                      <div className="break-words text-sm">
-                        {hasPropertyLocation(propertyObj) &&
-                        propertyObj.location
-                          ? [propertyObj.location.address]
-                              .filter(Boolean)
-                              .join(", ")
-                          : "N/A"}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {hasListingFields(listing) && listing.title ? listing.title : "N/A"}
+                </h3>
+                <p className="text-gray-600 mb-2">
+                  {hasPropertyName(propertyObj) && propertyObj.name ? propertyObj.name : "N/A"}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {hasPropertyLocation(propertyObj) && propertyObj.location
+                    ? [propertyObj.location.address].filter(Boolean).join(", ")
+                    : "N/A"}
+                </p>
+              </div>
+            </div>
 
-        {/* Right Column */}
-        <div className="space-y-8">
-          {/* Thông tin lưu trú */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="text-purple-500" />
-                Thông tin lưu trú
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Check-in</TableCell>
-                    <TableCell>
-                      {checkInDate
-                        ? new Date(checkInDate).toLocaleDateString()
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Check-out</TableCell>
-                    <TableCell>
-                      {check_out_date
-                        ? new Date(check_out_date).toLocaleDateString()
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Số đêm</TableCell>
-                    <TableCell>{nights}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Số khách</TableCell>
-                    <TableCell>{guests}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+            {/* Guest Card */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center mb-4">
+                {getGuestAvatar(guest) ? (
+                  <img
+                    src={getGuestAvatar(guest)}
+                    alt="avatar"
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                    <User className="w-6 h-6 text-gray-500" />
+                  </div>
+                )}
+                <div className="ml-4">
+                  <h3 className="font-semibold text-gray-900">
+                    {typeof guest === "object" && guest !== null ? guest.name : guest_name}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {typeof guest === "object" && guest !== null ? guest.email : guest_email}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Số điện thoại:</span>
+                  <span className="font-medium">
+                    {typeof guest === "object" && guest !== null ? guest.phone : guest_phone || "N/A"}
+                  </span>
+                </div>
+            
+              </div>
+            </div>
 
-          {/* Thông tin thanh toán */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="text-pink-500" />
-                Thông tin thanh toán
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium w-1/3">
-                      Payment ID
-                    </TableCell>
-                    <TableCell className="font-mono break-all w-2/3">
-                      {typeof paymentId === "string" && paymentId
-                        ? paymentId
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Trạng thái</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={getPaymentStatusVN(payment_status).color}
-                      >
-                        {getPaymentStatusVN(payment_status).label}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Phương thức</TableCell>
-                    <TableCell>
-                      {typeof booking.payment_method === "string" &&
-                      booking.payment_method
-                        ? booking.payment_method.toUpperCase()
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Tổng tiền</TableCell>
-                    <TableCell className="font-semibold">
-                      {typeof final_amount === "number" && final_amount !== null
-                        ? final_amount.toLocaleString() + "₫"
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Đã trả trước</TableCell>
-                    <TableCell>
-                      {typeof deposit_paid_amount === "number" &&
-                      deposit_paid_amount > 0
-                        ? deposit_paid_amount.toLocaleString() + "₫"
-                        : typeof deposit_percent === "number"
-                        ? Math.round(deposit_percent * 100) + "%"
-                        : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      Ngày thanh toán
-                    </TableCell>
-                    <TableCell>
-                      {typeof paymentDate === "string" ? paymentDate : "N/A"}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+            {/* Quick Stats */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Thông tin nhanh</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Check-in:</span>
+                  <span className="text-sm font-medium">
+                    {checkInDate ? new Date(checkInDate).toLocaleDateString() : "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Check-out:</span>
+                  <span className="text-sm font-medium">
+                    {check_out_date ? new Date(check_out_date).toLocaleDateString() : "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Số đêm:</span>
+                  <span className="text-sm font-medium">{nights}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Số khách:</span>
+                  <span className="text-sm font-medium">{guests}</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          {/* Dịch vụ đã chọn */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="text-indigo-500" />
-                Dịch vụ đã chọn
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selected_services && selected_services.length > 0 ? (
-                <div className="space-y-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Dịch vụ</TableHead>
-                        <TableHead className="text-center">Số lượng</TableHead>
-                        <TableHead className="text-right">Đơn giá</TableHead>
-                        <TableHead className="text-right">Tổng</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selected_services.map(
-                        (
-                          service: {
-                            service_name: string;
-                            quantity: number;
-                            service_price: number;
-                            total_price: number;
-                            service_id?: string;
-                          },
-                          index: number
-                        ) => (
-                          <TableRow key={index}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getServiceIcon(service)}
-                                <span className="font-medium">
-                                  {service.service_name}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {service.quantity}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {service.service_price?.toLocaleString() || "0"}₫
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {service.total_price?.toLocaleString() || "0"}₫
-                            </TableCell>
-                          </TableRow>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                  <div className="flex justify-between items-center pt-4 border-t">
-                    <span className="font-semibold">Tổng dịch vụ:</span>
-                    <span className="font-semibold text-lg">
-                      {(
-                        (services_total_amount as number) || 0
-                      ).toLocaleString()}
-                      ₫
-                    </span>
+          {/* Right Column - Detailed Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Booking Details */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Thông tin booking</h2>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Ngày đặt</label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {created_at ? new Date(created_at).toLocaleString() : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Cập nhật lần cuối</label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {updated_at ? new Date(updated_at).toLocaleString() : "N/A"}
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Settings className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                  <p>Không có dịch vụ nào được chọn</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
 
-          {/* Voucher đã sử dụng */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Gift className="text-yellow-500" />
-                Voucher đã sử dụng
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {voucher_code ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-center">
-                    <Badge
-                      variant="outline"
-                      className="font-mono text-lg px-4 py-2"
-                    >
+            {/* Payment Information */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Thông tin thanh toán</h2>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Payment ID</label>
+                    <p className="text-sm font-mono text-gray-900 mt-1">
+                      {typeof paymentId === "string" && paymentId ? paymentId : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Trạng thái thanh toán</label>
+                    <div className="mt-1">
+                      <Badge className={`${getPaymentStatusVN(payment_status).color} text-xs`}>
+                        {getPaymentStatusVN(payment_status).label}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Phương thức</label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {typeof booking.payment_method === "string" && booking.payment_method
+                        ? booking.payment_method.toUpperCase()
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Ngày thanh toán</label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {typeof paymentDate === "string" ? paymentDate : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Services */}
+            {selected_services && selected_services.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Dịch vụ đã chọn</h2>
+                </div>
+                <div className="p-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dịch vụ</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn giá</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {selected_services.map((service, index) => (
+                          <tr key={index}>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="w-4 h-4">
+                                  {getServiceIcon(service)}
+                                </div>
+                                <span className="ml-2 text-sm font-medium text-gray-900">{service.service_name}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{service.quantity}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              {service.service_price?.toLocaleString() || "0"}₫
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                              {service.total_price?.toLocaleString() || "0"}₫
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-gray-50">
+                        <tr>
+                          <td colSpan={3} className="px-4 py-3 text-sm font-medium text-gray-900">Tổng dịch vụ:</td>
+                          <td className="px-4 py-3 text-sm font-bold text-blue-600 text-right">
+                            {((services_total_amount as number) || 0).toLocaleString()}₫
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Voucher */}
+            {voucher_code && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Voucher đã sử dụng</h2>
+                </div>
+                <div className="p-6">
+                  <div className="text-center mb-4">
+                    <Badge variant="outline" className="text-lg px-4 py-2">
                       {voucher_code as string}
                     </Badge>
                   </div>
-                  <Table>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">Giảm giá</TableCell>
-                        <TableCell>
-                          <Badge className="bg-green-100 text-green-800">
-                            {voucher_discount_percent as number}%
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">
-                          Số tiền giảm
-                        </TableCell>
-                        <TableCell className="font-semibold text-green-600">
-                          -{((discount_amount as number) || 0).toLocaleString()}
-                          ₫
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Giảm giá</label>
+                      <div className="mt-1">
+                        <Badge className="bg-green-100 text-green-800 text-xs">
+                          {voucher_discount_percent as number}%
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Số tiền giảm</label>
+                      <p className="text-sm font-bold text-red-600 mt-1">
+                        -{((discount_amount as number) || 0).toLocaleString()}₫
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Gift className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                  <p>Không có voucher nào được sử dụng</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              </div>
+            )}
 
-      {/* Tổng kết thanh toán */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="text-blue-500" />
-            Tổng kết thanh toán
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span>Giá phòng ({nights} đêm):</span>
-              <span className="font-medium">
-                {((subtotal_amount as number) || 0).toLocaleString()}₫
-              </span>
-            </div>
-            {((services_total_amount as number) || 0) > 0 && (
-              <div className="flex justify-between items-center">
-                <span>Dịch vụ:</span>
-                <span className="font-medium text-blue-600">
-                  +{((services_total_amount as number) || 0).toLocaleString()}₫
-                </span>
+            {/* Payment Summary */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Tổng kết thanh toán</h2>
               </div>
-            )}
-            {((discount_amount as number) || 0) > 0 && (
-              <div className="flex justify-between items-center">
-                <span>Giảm giá:</span>
-                <span className="font-medium text-green-600">
-                  -{((discount_amount as number) || 0).toLocaleString()}₫
-                </span>
+              <div className="p-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Giá phòng ({nights} đêm)</span>
+                    <span className="text-sm font-medium">
+                      {((subtotal_amount as number) || 0).toLocaleString()}₫
+                    </span>
+                  </div>
+                  {((services_total_amount as number) || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Dịch vụ</span>
+                      <span className="text-sm font-medium text-green-600">
+                        +{((services_total_amount as number) || 0).toLocaleString()}₫
+                      </span>
+                    </div>
+                  )}
+                  {((discount_amount as number) || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Giảm giá</span>
+                      <span className="text-sm font-medium text-red-600">
+                        -{((discount_amount as number) || 0).toLocaleString()}₫
+                      </span>
+                    </div>
+                  )}
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex justify-between">
+                      <span className="text-lg font-semibold text-gray-900">Tổng cộng</span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {((final_amount as number) || 0).toLocaleString()}₫
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-            <div className="flex justify-between items-center pt-4 border-t">
-              <span className="text-lg font-bold">Tổng cộng:</span>
-              <span className="text-xl font-bold text-blue-600">
-                {((final_amount as number) || 0).toLocaleString()}₫
-              </span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

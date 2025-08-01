@@ -77,6 +77,12 @@ interface AssignmentData {
   updatedAt: string;
 }
 
+interface StaffProperty {
+  _id: string;
+  name: string;
+  type?: string;
+}
+
 // Simple price formatter
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -94,10 +100,8 @@ export default function Listings() {
   const total = useAppSelector(selectListingsTotal);
   const properties = useAppSelector(selectProperties);
   
-  const services = useAppSelector((state) => state.service.services) ?? [];
-  
   // State cho staff properties
-  const [staffProperties, setStaffProperties] = useState<any[]>([]);
+  const [staffProperties, setStaffProperties] = useState<StaffProperty[]>([]);
   const [staffPropertyIds, setStaffPropertyIds] = useState<string[]>([]);
   const [staffPropertiesLoaded, setStaffPropertiesLoaded] = useState(false);
   
@@ -110,14 +114,19 @@ export default function Listings() {
   const displayProperties = isStaff ? staffProperties : properties;
   
   // Filter listings cho staff
-  const listings = isStaff && staffPropertyIds.length > 0 
-    ? allListings.filter(listing => {
-        const propertyId = typeof listing.propertyId === 'object' && listing.propertyId !== null 
-          ? listing.propertyId._id 
-          : listing.propertyId;
-        return staffPropertyIds.includes(propertyId);
-      })
+  const listings = isStaff 
+    ? (staffPropertyIds.length > 0 
+        ? allListings.filter(listing => {
+            const propertyId = typeof listing.propertyId === 'object' && listing.propertyId !== null 
+              ? listing.propertyId._id 
+              : listing.propertyId;
+            return staffPropertyIds.includes(propertyId);
+          })
+        : []) // Trả về mảng rỗng khi chưa load xong staff properties
     : allListings;
+
+  // Tính toán tổng số listings hiển thị cho staff
+  const displayTotal = isStaff ? listings.length : total;
 
   const [filters, setFilters] = useState<ListingFilters>({
     search: "",
@@ -146,12 +155,16 @@ export default function Listings() {
     const loadStaffProperties = async () => {
       if (isStaff && !staffPropertiesLoaded && mounted) {
         try {
+          // Lấy user từ Redux store thay vì localStorage
           const user = JSON.parse(localStorage.getItem('user') || '{}');
           const userId = user._id;
           
           if (userId) {
+            console.log('🔄 Loading staff properties for user:', userId);
             const myAssignments = await propertyStaffAssignmentApi.getPropertiesByStaff(userId);
             const staffAssignments = myAssignments.data?.data || myAssignments.data || [];
+            
+            console.log('📋 Staff assignments:', staffAssignments);
             
             // Lấy property IDs được assign cho staff
             const propertyIds = staffAssignments.map((assignment: AssignmentData) => assignment.propertyId._id);
@@ -177,6 +190,7 @@ export default function Listings() {
             );
             
             setStaffProperties(staffProperties);
+            console.log('✅ Staff properties loaded:', staffProperties);
           }
         } catch (error) {
           console.error('Error loading staff properties:', error);
@@ -193,6 +207,13 @@ export default function Listings() {
       mounted = false;
     };
   }, [isStaff]);
+
+  // Reset hasInitialFetch khi staff properties thay đổi
+  useEffect(() => {
+    if (isStaff && staffPropertiesLoaded && staffPropertyIds.length > 0) {
+      hasInitialFetch.current = false;
+    }
+  }, [isStaff, staffPropertiesLoaded, staffPropertyIds.length]);
 
   // Memoize filters để tránh re-render không cần thiết
   const memoizedFilters = useMemo(() => filters, [
@@ -220,7 +241,7 @@ export default function Listings() {
 
   // Fetch listings cho staff - chỉ khi properties đã load xong
   useEffect(() => {
-    if (isStaff && staffPropertiesLoaded && !hasInitialFetch.current) {
+    if (isStaff && staffPropertiesLoaded && staffPropertyIds.length > 0 && !hasInitialFetch.current) {
       console.log('📞 Calling fetchListings for staff (initial)');
       const params: Partial<typeof memoizedFilters> = { ...memoizedFilters };
       if (!params.propertyId) {
@@ -236,7 +257,7 @@ export default function Listings() {
       }));
       hasInitialFetch.current = true;
     }
-  }, [memoizedFilters, dispatch, isStaff]);
+  }, [memoizedFilters, dispatch, isStaff, staffPropertiesLoaded, staffPropertyIds.length]);
 
   const handleFilterChange = (field: keyof ListingFilters, value: string | number) => {
     setFilters(prev => ({
@@ -316,7 +337,7 @@ export default function Listings() {
               className='w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white'>
               <option value="">Tất cả properties</option>
               {displayProperties.map((p) => (
-                <option key={p._id || p.id} value={p._id}>{p.name}</option>
+                <option key={p._id} value={p._id}>{p.name}</option>
               ))}
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style={{ top: '-45px' }}>
@@ -345,8 +366,10 @@ export default function Listings() {
           
           {/* Total count card */}
           <div className='bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 text-center'>
-            <div className='text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1'>{total}</div>
-            <div className='text-sm text-blue-700 dark:text-blue-300 font-medium'>Tổng số phòng</div>
+            <div className='text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1'>{displayTotal}</div>
+            <div className='text-sm text-blue-700 dark:text-blue-300 font-medium'>
+              {isStaff ? 'Phòng được assign' : 'Tổng số phòng'}
+            </div>
           </div>
         </div>
       </div>
@@ -362,7 +385,7 @@ export default function Listings() {
           </div>
         </div>
           
-        {loading ? (
+        {(loading || (isStaff && !staffPropertiesLoaded)) ? (
           <div className='flex justify-center items-center py-12'>
             <div className='animate-spin rounded-full h-8 w-8 border-2 border-blue-200 border-t-blue-600'></div>
           </div>
@@ -473,7 +496,7 @@ export default function Listings() {
       </div>
 
       {/* Pagination */}
-      {total > filters.limit && (
+      {displayTotal > filters.limit && (
         <div className='flex justify-center items-center space-x-4  dark:bg-gray-800  p-4   dark:border-gray-700'>
           <Button
             variant='outline'
@@ -484,13 +507,13 @@ export default function Listings() {
           </Button>
           <div className='flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg'>
             <span className='text-sm font-medium text-gray-700 dark:text-gray-200'>
-              Trang {filters.page} / {Math.ceil(total / filters.limit)}
+              Trang {filters.page} / {Math.ceil(displayTotal / filters.limit)}
             </span>
           </div>
           <Button
             variant='outline'
             onClick={() => handleFilterChange("page", filters.page + 1)}
-            disabled={filters.page >= Math.ceil(total / filters.limit)}
+            disabled={filters.page >= Math.ceil(displayTotal / filters.limit)}
             className='flex items-center justify-center h-10 px-4 rounded-lg border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200'>
             <ChevronRight className='w-5 h-5' />
           </Button>
