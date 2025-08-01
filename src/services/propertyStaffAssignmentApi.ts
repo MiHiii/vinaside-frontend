@@ -41,7 +41,14 @@ export const propertyStaffAssignmentApi = {
 
   // Lấy danh sách property theo nhân viên
   getPropertiesByStaff: async (staffId: string) => {
+    console.log("🔍 API Call - getPropertiesByStaff");
+    console.log("Staff ID:", staffId);
+    console.log("URL:", `/property-staff-assignment/staff/${staffId}/properties`);
+    
     const response = await api.get(`/property-staff-assignment/staff/${staffId}/properties`);
+    console.log("API Response:", response);
+    console.log("Response Data:", response.data);
+    
     return response.data;
   },
 

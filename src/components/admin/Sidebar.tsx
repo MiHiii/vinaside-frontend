@@ -18,6 +18,7 @@ import {
   Briefcase,
   MessageSquare,
   UserCheck,
+  Heart,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -343,6 +344,15 @@ export function Sidebar({ collapsed }: SidebarProps) {
               icon={<MessageSquare className="h-4 w-4" />}
               label="Đánh giá"
               active={pathname.startsWith("/admin/reviews")}
+              collapsed={collapsed}
+            />
+          </PermissionGuard>
+          <PermissionGuard permission="user.view">
+            <SidebarItem
+              to="/admin/wishlists"
+              icon={<Heart className="h-4 w-4" />}
+              label="Quản lý Wishlist"
+              active={pathname === "/admin/wishlists"}
               collapsed={collapsed}
             />
           </PermissionGuard>

@@ -63,7 +63,11 @@ const BookingFilter: React.FC<BookingFilterProps> = ({ onFilterChange }) => {
   useEffect(() => {
     dispatch(fetchProperties({}));
     dispatch(fetchListings({}));
-    dispatch(fetchUsers({})); // Nếu fetchUsers cần tham số, truyền object rỗng
+    // Only fetch users if user has admin permissions
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.role === 'admin') {
+      dispatch(fetchUsers({}));
+    }
   }, [dispatch]);
 
   const handleSelectChange = (name: string, value: string) => {

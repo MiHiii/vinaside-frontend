@@ -19,7 +19,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePropertyStaff } from "@/hooks/useMessages";
-import { MessageCircle, Send, Users, Loader2 } from "lucide-react";
+import { MessageCircle, Send, Users, Loader2, XCircle } from "lucide-react";
 
 interface MessageHostDialogProps {
   hostName?: string;
@@ -49,6 +49,11 @@ export default function MessageHostDialog({
   const [sending, setSending] = useState(false);
   const { staffList, loading, error, sendMessageToStaff } =
     usePropertyStaff(propertyId);
+
+  // Reset selected staff when propertyId changes
+  useEffect(() => {
+    setSelectedStaffId("");
+  }, [propertyId]);
 
   // Auto-select first staff member when staff list loads
   useEffect(() => {
@@ -84,7 +89,7 @@ export default function MessageHostDialog({
           <div className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           <div className="relative flex items-center justify-center gap-3">
             <MessageCircle className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" />
-            <span className="text-base">Nhắn tin cho nhân viên</span>
+            <span className="text-[14px]">Nhắn tin cho nhân viên</span>
           </div>
         </Button>
       </DialogTrigger>
@@ -119,6 +124,21 @@ export default function MessageHostDialog({
                 <p className="text-sm text-gray-600 mt-4 font-medium">
                   Đang tải danh sách nhân viên...
                 </p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-4">
+                  <XCircle className="w-8 h-8 text-red-500" />
+                </div>
+                <p className="text-sm text-red-600 font-medium mb-2">{error}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                  className="text-xs"
+                >
+                  Thử lại
+                </Button>
               </div>
             ) : staffList.length > 0 ? (
               <div className="space-y-4">

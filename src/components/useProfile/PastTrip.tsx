@@ -34,10 +34,31 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, Link } from "react-router-dom";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
+import MessageHostDialog from "../roomdetail/MessageHostDialog";
+
+
 const STATUS_UPCOMING = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
+
+// Helper function to extract property ID string from booking.propertyId
+const getPropertyIdString = (
+  propertyId: string | { _id: string; name: string; type?: string } | undefined
+): string | null => {
+  if (!propertyId) return null;
+
+  if (typeof propertyId === "string") {
+    return propertyId;
+  }
+
+  if (typeof propertyId === "object" && propertyId._id) {
+    return propertyId._id;
+  }
+
+  return null;
+};
 
 type BookingWithStatus = BookingData;
 
@@ -787,15 +808,20 @@ const PastTrip = () => {
                     </Button>
                   )}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                    onClick={() => navigate("/messages")}
-                  >
-                    <MessageCircle size={16} />
-                    Liên hệ với nhân viên
-                  </Button>
+                  {(() => {
+                    const propertyIdString = getPropertyIdString(
+                      booking.propertyId
+                    );
+                    return (
+                      propertyIdString && (
+                        <MessageHostDialog
+                          propertyId={propertyIdString}
+                          hostName="nhân viên"
+                          className="w-auto flex items-center gap-2 text-[12px]"
+                        />
+                      )
+                    );
+                  })()}
                 </>
               )}
 
@@ -905,21 +931,37 @@ const PastTrip = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-5">
         <h2 className="text-2xl font-bold">Chuyến đi của tôi</h2>
-        <div className="flex gap-4">
-          <Button
-            variant={tab === "upcoming" ? "default" : "outline"}
-            onClick={() => setTab("upcoming")}
+        <div className="flex">
+          <button
+            className={`justify-start text-base font-medium text-center px-10 py-2 h-10 rounded-md shadow-none transition ${
+              tab === "upcoming"
+                ? "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                : "bg-transparent"
+            } hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))]`}
+            onClick={() => {
+              if (tab !== "upcoming") {
+                setTab("upcoming");
+              }
+            }}
           >
             Sắp tới
-          </Button>
-          <Button
-            variant={tab === "history" ? "default" : "outline"}
-            onClick={() => setTab("history")}
+          </button>
+          <button
+            className={`justify-start text-base font-medium text-center px-10 py-2 h-10 rounded-md shadow-none transition ${
+              tab === "history"
+                ? "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+                : "bg-transparent"
+            } hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))]`}
+            onClick={() => {
+              if (tab !== "history") {
+                setTab("history");
+              }
+            }}
           >
             Trước đây
-          </Button>
+          </button>
         </div>
       </div>
 
