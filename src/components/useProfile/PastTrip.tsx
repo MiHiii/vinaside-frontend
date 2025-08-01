@@ -20,6 +20,8 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Plus,
+  Package,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { postReview } from "@/store/slices/reviewSlice";
@@ -32,6 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const STATUS_UPCOMING = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
 
@@ -195,6 +199,24 @@ const PastTrip = () => {
     string | null
   >(null);
 
+  // State cho thêm dịch vụ
+  const [selectedBookingForService, setSelectedBookingForService] =
+    useState<BookingWithStatus | null>(null);
+  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [availableServices, setAvailableServices] = useState<
+    Array<{
+      _id: string;
+      name: string;
+      description?: string;
+      default_price: number;
+      unit: string;
+    }>
+  >([]);
+  const [selectedServices, setSelectedServices] = useState<{
+    [key: string]: number;
+  }>({});
+  const [addServiceLoading, setAddServiceLoading] = useState(false);
+
   useEffect(() => {
     dispatch(getMyBookingHistory(undefined))
       .then(() => {})
@@ -202,28 +224,6 @@ const PastTrip = () => {
         console.error("API Error:", error);
       });
   }, [dispatch]);
-
-  //   // Lấy tất cả listingId duy nhất từ bookings
-  //   const listingIds = Array.from(
-  //     new Set(
-  //       ((myBookingHistory as BookingWithStatus[]) || [])
-  //         .map((b) =>
-  //           typeof b.listingId === "object" && b.listingId._id
-  //             ? b.listingId._id
-  //             : null
-  //         )
-  //         .filter(Boolean)
-  //     )
-  //   );
-  //   // Fetch bookedDates cho từng listingId
-  //   listingIds.forEach((id) => {
-  //     if (!bookedDatesByListing[id]) {
-  //       const { bookedDates } = useBookedDates(id);
-  //       setBookedDatesByListing((prev) => ({ ...prev, [id]: bookedDates }));
-  //     }
-  //   });
-  //   // eslint-disable-next-line
-  // }, [myBookingHistory]);
 
   // Log cancel_policy khi mở modal hủy
   useEffect(() => {
@@ -243,7 +243,8 @@ const PastTrip = () => {
       STATUS_UPCOMING.includes(b.status as BookingStatus) &&
       checkInDate > now &&
       (b.payment_status === PaymentStatus.PAID ||
-        b.payment_status === PaymentStatus.PENDING);
+        b.payment_status === PaymentStatus.PENDING ||
+        b.payment_status === PaymentStatus.PARTIALLY_PAID);
 
     return result;
   });
@@ -255,7 +256,8 @@ const PastTrip = () => {
       STATUS_UPCOMING.includes(b.status as BookingStatus) &&
       checkInDate <= now &&
       checkOutDate >= now &&
-      b.payment_status === PaymentStatus.PAID
+      (b.payment_status === PaymentStatus.PAID ||
+        b.payment_status === PaymentStatus.PARTIALLY_PAID)
     );
   });
 
@@ -281,9 +283,7 @@ const PastTrip = () => {
   });
 
   // Thêm PaymentStatus.PARTIALLY_PAID vào import
-  const partiallyPaidBookings = bookings.filter(
-    (b) => b.payment_status === PaymentStatus.PARTIALLY_PAID
-  );
+
 
   const handleShowDetail = (booking: BookingWithStatus) => {
     setSelectedBooking(booking);
@@ -314,6 +314,93 @@ const PastTrip = () => {
     }
   };
 
+  // Functions cho thêm dịch vụ
+  const handleAddService = async (booking: BookingWithStatus) => {
+    setSelectedBookingForService(booking);
+    setShowAddServiceModal(true);
+    setSelectedServices({});
+
+    // Lấy danh sách dịch vụ có sẵn
+    try {
+      const res = await api.get("/services/active");
+      console.log("Available services response:", res.data);
+      setAvailableServices(res.data.data || []);
+    } catch (error) {
+      console.error("Error loading services:", error);
+      toast.error("Không thể tải danh sách dịch vụ");
+    }
+  };
+
+  const handleServiceSelection = (serviceId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedServices((prev) => ({ ...prev, [serviceId]: 1 }));
+    } else {
+      setSelectedServices((prev) => {
+        const newState = { ...prev };
+        delete newState[serviceId];
+        return newState;
+      });
+    }
+  };
+
+  const handleServiceQuantityChange = (serviceId: string, quantity: number) => {
+    if (quantity > 0) {
+      setSelectedServices((prev) => ({ ...prev, [serviceId]: quantity }));
+    } else {
+      setSelectedServices((prev) => {
+        const newState = { ...prev };
+        delete newState[serviceId];
+        return newState;
+      });
+    }
+  };
+
+  const handleConfirmAddServices = async () => {
+    if (
+      !selectedBookingForService ||
+      Object.keys(selectedServices).length === 0
+    ) {
+      toast.error("Vui lòng chọn ít nhất một dịch vụ");
+      return;
+    }
+
+    setAddServiceLoading(true);
+    try {
+      const selectedServicesArray = Object.entries(selectedServices).map(
+        ([serviceId, quantity]) => ({
+          serviceId,
+          quantity,
+        })
+      );
+
+      console.log("Sending selected services:", selectedServicesArray);
+
+      // Sử dụng API dành cho guest
+      const response = await api.patch(
+        `/bookings/my-bookings/${selectedBookingForService._id}`,
+        {
+          selected_services: selectedServicesArray,
+        }
+      );
+
+      console.log("API Response:", response.data);
+
+      toast.success("Thêm dịch vụ thành công!");
+      setShowAddServiceModal(false);
+      setSelectedServices({});
+
+      // Refresh booking list
+      dispatch(getMyBookingHistory(undefined));
+    } catch (error: unknown) {
+      console.error("Error adding services:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Có lỗi khi thêm dịch vụ";
+      toast.error(errorMessage);
+    } finally {
+      setAddServiceLoading(false);
+    }
+  };
+
   const renderBooking = (booking: BookingWithStatus) => {
     // Lấy object listing trực tiếp từ booking.listingId
     const listing:
@@ -333,6 +420,11 @@ const PastTrip = () => {
     let showPaymentButton = false;
     let showPayRemainderButton = false;
 
+    // Tính toán số tiền còn lại cần thanh toán
+    const finalAmount = booking.final_amount || 0;
+    const depositPaidAmount = booking.deposit_paid_amount || 0;
+    const outstandingAmount = finalAmount - depositPaidAmount;
+
     if (booking.payment_status === PaymentStatus.FAILED) {
       statusDisplay = "Thanh toán thất bại";
       statusColor = "text-red-600";
@@ -342,9 +434,44 @@ const PastTrip = () => {
       statusColor = "text-yellow-600";
       showPaymentButton = true;
     } else if (booking.payment_status === PaymentStatus.PARTIALLY_PAID) {
-      statusDisplay = "Đã trả trước 50%";
-      statusColor = "text-blue-600";
-      showPayRemainderButton = true;
+      // Phân biệt 2 trường hợp PARTIALLY_PAID
+      const hasAdditionalServices =
+        booking.selected_services && booking.selected_services.length > 0;
+
+      if (hasAdditionalServices && outstandingAmount > 0) {
+        // Trường hợp 1: Đã PAID nhưng thêm dịch vụ → chuyển về PARTIALLY_PAID
+        statusDisplay = "Cần thanh toán thêm dịch vụ";
+        statusColor = "text-orange-600";
+        showPaymentButton = true;
+      } else {
+        // Trường hợp 2: Trả trước 50% booking mới
+        statusDisplay = "Đã trả trước 50%";
+        statusColor = "text-blue-600";
+        // Hiển thị nút thanh toán nếu còn tiền cần thanh toán
+        if (outstandingAmount > 0) {
+          showPayRemainderButton = true;
+        }
+      }
+    } else if (booking.payment_status === PaymentStatus.PAID) {
+      // Kiểm tra nếu đã thanh toán nhưng có thêm dịch vụ
+      const hasAdditionalServices =
+        booking.selected_services && booking.selected_services.length > 0;
+      if (outstandingAmount > 0 && hasAdditionalServices) {
+        statusDisplay = "Cần thanh toán thêm";
+        statusColor = "text-orange-600";
+        showPaymentButton = true;
+      } else if (outstandingAmount > 0) {
+        // Trường hợp có tiền còn lại nhưng không có dịch vụ (có thể do lỗi data)
+        statusDisplay = "Cần thanh toán thêm";
+        statusColor = "text-orange-600";
+        showPaymentButton = true;
+      } else if (hasAdditionalServices && outstandingAmount === 0) {
+        statusDisplay = "Đã thanh toán đầy đủ (có dịch vụ)";
+        statusColor = "text-green-600";
+      } else {
+        statusDisplay = "Đã thanh toán";
+        statusColor = "text-green-600";
+      }
     } else if (booking.payment_status === PaymentStatus.REFUNDED) {
       statusDisplay = "Đã hoàn tiền";
       statusColor = "text-orange-600";
@@ -386,6 +513,17 @@ const PastTrip = () => {
       const checkOut = new Date(booking.check_out_date);
       isBooked = bookedDates.some((date) => date >= checkIn && date < checkOut);
     }
+
+    // Debug: Log thông tin để kiểm tra
+    console.log("Debug booking:", {
+      bookingId: booking._id,
+      payment_status: booking.payment_status,
+      outstandingAmount,
+      showPaymentButton,
+      isBooked,
+      hasAdditionalServices:
+        booking.selected_services && booking.selected_services.length > 0,
+    });
 
     return (
       <div key={booking._id} className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -443,8 +581,91 @@ const PastTrip = () => {
 
               <div className="flex items-center gap-2">
                 <DollarSign size={18} />
-                <span>{booking.final_amount?.toLocaleString()}₫</span>
+                <span>
+                  Tổng tiền: {booking.final_amount?.toLocaleString()}₫
+                </span>
+                {booking.services_total_amount &&
+                  booking.services_total_amount > 0 && (
+                    <span className="text-sm text-blue-600">
+                      (bao gồm {booking.services_total_amount.toLocaleString()}₫
+                      dịch vụ)
+                    </span>
+                  )}
               </div>
+
+              {/* Hiển thị thông tin thanh toán */}
+              {outstandingAmount > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <DollarSign size={16} className="text-green-600" />
+                    <span className="text-green-600 text-sm">
+                      Đã thanh toán:{" "}
+                      {(booking.deposit_paid_amount || 0).toLocaleString()}₫
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign size={16} className="text-orange-600" />
+                    <span className="text-orange-600 font-medium">
+                      Còn lại cần thanh toán:{" "}
+                      {outstandingAmount.toLocaleString()}₫
+                    </span>
+                  </div>
+                  {/* Thông tin bổ sung cho từng trường hợp */}
+                  {booking.payment_status === PaymentStatus.PARTIALLY_PAID &&
+                    booking.selected_services &&
+                    booking.selected_services.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Info size={14} className="text-blue-600" />
+                        <span className="text-blue-600 text-sm">
+                          Thanh toán thêm cho dịch vụ mới
+                        </span>
+                      </div>
+                    )}
+                  {booking.payment_status === PaymentStatus.PARTIALLY_PAID &&
+                    (!booking.selected_services ||
+                      booking.selected_services.length === 0) && (
+                      <div className="flex items-center gap-2">
+                        <Info size={14} className="text-blue-600" />
+                        <span className="text-blue-600 text-sm">
+                          Thanh toán 50% còn lại của booking
+                        </span>
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {/* Hiển thị danh sách dịch vụ đã thêm */}
+              {booking.selected_services &&
+                booking.selected_services.length > 0 && (
+                  <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                    <div className="text-sm font-medium text-blue-800 mb-2">
+                      Dịch vụ đã thêm:
+                    </div>
+                    <div className="space-y-1">
+                      {booking.selected_services.map(
+                        (
+                          service: {
+                            service_name?: string;
+                            quantity?: number;
+                            service_price?: number;
+                          },
+                          index: number
+                        ) => (
+                          <div
+                            key={index}
+                            className="text-sm text-blue-700 flex justify-between"
+                          >
+                            <span>• {service.service_name || "Dịch vụ"}</span>
+                            <span>
+                              {service.quantity || 1}x{" "}
+                              {(service.service_price || 0).toLocaleString()}₫
+                            </span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
             </div>
 
             {/* Các nút chức năng */}
@@ -459,64 +680,61 @@ const PastTrip = () => {
                 Xem chi tiết đặt chỗ
               </Button>
 
-              {showPaymentButton && !isBooked && (
+              {showPaymentButton && (outstandingAmount > 0 || !isBooked) && (
                 <Button
                   variant="default"
                   size="sm"
-                  className="flex items-center gap-2 bg-black text-white"
-                  onClick={() => {
-                    if (
-                      listing &&
-                      typeof listing === "object" &&
-                      "_id" in listing &&
-                      listing._id
-                    ) {
-                      const params = new URLSearchParams({
-                        listingId: listing._id,
-                        propertyId: booking.propertyId,
-                        checkInDate: new Date(booking.checkInDate)
-                          .toISOString()
-                          .slice(0, 10),
-                        checkOutDate: new Date(booking.check_out_date)
-                          .toISOString()
-                          .slice(0, 10),
-                        guests: String(booking.guests),
-                        infants: "0",
-                        pets: "0",
-                        total_price: String(booking.total_price),
-                        final_amount: String(booking.final_amount),
-                        bookedDates: (bookedDates || [])
-                          .map((d) => d.toISOString().slice(0, 10))
-                          .join(","),
-                        selectedServiceTotal: String(0),
-                      });
-                      navigate(`/payment?${params.toString()}`);
+                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white"
+                  onClick={async () => {
+                    try {
+                      // Tạo thanh toán VNPay trực tiếp
+                      const response = await api.post(
+                        `/bookings/${booking._id}/payment/remaining`,
+                        {
+                          paymentMethod: "vnpay",
+                          amount: outstandingAmount,
+                        }
+                      );
+
+                      const paymentUrl = response.data?.data?.paymentUrl;
+                      if (paymentUrl) {
+                        // Chuyển thẳng đến trang VNPay
+                        window.location.href = paymentUrl;
+                      } else {
+                        toast.error("Không lấy được link thanh toán VNPay");
+                      }
+                    } catch (error) {
+                      console.error("Error creating VNPay payment:", error);
+                      toast.error("Có lỗi khi tạo thanh toán VNPay");
                     }
                   }}
                 >
                   <DollarSign size={16} />
-                  Thanh toán ngay
+                  Thanh toán thêm {outstandingAmount.toLocaleString()}₫
                 </Button>
               )}
               {showPayRemainderButton && (
                 <Button
                   variant="default"
                   size="sm"
-                  className="flex items-center gap-2 bg-pink-600 text-white"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => handlePayRemainder(booking._id)}
                   disabled={payRemainderLoadingId === booking._id}
                 >
                   <DollarSign size={16} />
                   {payRemainderLoadingId === booking._id
                     ? "Đang xử lý..."
-                    : "Trả nốt"}
+                    : `Trả nốt ${outstandingAmount.toLocaleString()}₫`}
                 </Button>
               )}
-              {showPaymentButton && isBooked && (
-                <span className="text-red-500 font-medium">
-                  Phòng đã được đặt cho ngày này
-                </span>
-              )}
+              {showPaymentButton &&
+                isBooked &&
+                booking.payment_status !== PaymentStatus.PAID &&
+                outstandingAmount === 0 && (
+                  <span className="text-red-500 font-medium">
+                    Phòng đã được đặt cho ngày này
+                  </span>
+                )}
 
               {booking.status === BookingStatus.COMPLETED && (
                 <Button
@@ -580,6 +798,20 @@ const PastTrip = () => {
                     Liên hệ với nhân viên
                   </Button>
                 </>
+              )}
+
+              {/* Nút thêm dịch vụ - hiển thị cho tất cả booking đã thanh toán */}
+              {(booking.payment_status === PaymentStatus.PAID ||
+                booking.payment_status === PaymentStatus.PARTIALLY_PAID) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 text-blue-600 border-blue-600 hover:bg-blue-50"
+                  onClick={() => handleAddService(booking)}
+                >
+                  <Plus size={16} />
+                  Thêm dịch vụ
+                </Button>
               )}
             </div>
           </div>
@@ -724,16 +956,6 @@ const PastTrip = () => {
               )}
             </>
           )}
-        </div>
-      )}
-
-      {/* Danh sách phòng đã trả trước 50% */}
-      {partiallyPaidBookings.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-lg font-bold mb-2 text-blue-600">
-            Phòng đã trả trước 50%
-          </h3>
-          {partiallyPaidBookings.map((b) => renderBooking(b))}
         </div>
       )}
 
@@ -1011,6 +1233,115 @@ const PastTrip = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal thêm dịch vụ */}
+      <Dialog open={showAddServiceModal} onOpenChange={setShowAddServiceModal}>
+        <DialogContent className="bg-white shadow-xl border border-gray-200 rounded-2xl max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package size={20} />
+              Thêm dịch vụ cho booking
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {availableServices.length === 0 ? (
+              <div className="text-center py-8">
+                <Loader2 size={24} className="animate-spin mx-auto mb-2" />
+                <p>Đang tải danh sách dịch vụ...</p>
+              </div>
+            ) : (
+              availableServices.map((service) => (
+                <div
+                  key={service._id}
+                  className="border rounded-lg p-4 hover:bg-gray-50"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id={service._id}
+                        checked={!!selectedServices[service._id]}
+                        onCheckedChange={(checked) =>
+                          handleServiceSelection(
+                            service._id,
+                            checked as boolean
+                          )
+                        }
+                      />
+                      <div>
+                        <Label
+                          htmlFor={service._id}
+                          className="font-medium cursor-pointer"
+                        >
+                          {service.name}
+                        </Label>
+                        <p className="text-sm text-gray-600">
+                          {service.description}
+                        </p>
+                        <p className="text-sm font-medium text-blue-600">
+                          {service.default_price?.toLocaleString()}₫ /{" "}
+                          {service.unit}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedServices[service._id] && (
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor={`quantity-${service._id}`}
+                          className="text-sm"
+                        >
+                          Số lượng:
+                        </Label>
+                        <input
+                          id={`quantity-${service._id}`}
+                          type="number"
+                          min="1"
+                          value={selectedServices[service._id] || 1}
+                          onChange={(e) =>
+                            handleServiceQuantityChange(
+                              service._id,
+                              parseInt(e.target.value) || 1
+                            )
+                          }
+                          className="w-16 px-2 py-1 border rounded text-center"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowAddServiceModal(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmAddServices}
+              disabled={
+                addServiceLoading || Object.keys(selectedServices).length === 0
+              }
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {addServiceLoading ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Đang thêm...
+                </>
+              ) : (
+                "Thêm dịch vụ"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

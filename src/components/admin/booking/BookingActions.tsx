@@ -4,13 +4,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { updateAdminBookingStatus } from "@/store/slices/bookingSlice";
 import { toast } from "sonner";
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  RefreshCw,
-  Eye,
-} from "lucide-react";
+import { CheckCircle, XCircle, Clock, RefreshCw, Eye } from "lucide-react";
 import { BookingStatus, PaymentStatus } from "@/types/enum";
 import type { Booking } from "@/types/booking.interface";
 import { Link } from "react-router-dom";
@@ -49,6 +43,19 @@ const BookingActions: React.FC<BookingActionsProps> = ({
   };
 
   const handleCompleteBooking = async () => {
+    // Kiểm tra xem đã đến ngày checkout chưa
+    const today = new Date();
+    const checkoutDate = new Date(booking.check_out_date);
+
+    // Reset thời gian về 00:00:00 để so sánh chỉ ngày
+    today.setHours(0, 0, 0, 0);
+    checkoutDate.setHours(0, 0, 0, 0);
+
+    if (today < checkoutDate) {
+      toast.error("Không thể hoàn thành booking trước ngày checkout!");
+      return;
+    }
+
     try {
       await dispatch(
         updateAdminBookingStatus({
@@ -111,7 +118,6 @@ const BookingActions: React.FC<BookingActionsProps> = ({
     }
   };
 
-
   return (
     <div className="flex flex-wrap gap-2">
       {/* View Details - Hiển thị cho tất cả booking */}
@@ -139,20 +145,36 @@ const BookingActions: React.FC<BookingActionsProps> = ({
         </Button>
       )}
 
-    
-
       {/* Complete Booking - Chỉ hiển thị khi status là CONFIRMED */}
-      {booking.status === BookingStatus.CONFIRMED && (
-        <Button
-          variant="default"
-          size="sm"
-          onClick={handleCompleteBooking}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-        >
-          <Clock size={16} />
-          Hoàn thành
-        </Button>
-      )}
+      {booking.status === BookingStatus.CONFIRMED &&
+        (() => {
+          const today = new Date();
+          const checkoutDate = new Date(booking.check_out_date);
+
+          // Reset thời gian về 00:00:00 để so sánh chỉ ngày
+          today.setHours(0, 0, 0, 0);
+          checkoutDate.setHours(0, 0, 0, 0);
+
+          const canComplete = today >= checkoutDate;
+
+          return (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleCompleteBooking}
+              disabled={!canComplete}
+              className={`flex items-center gap-2 ${
+                canComplete
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
+              title={!canComplete ? "Chưa đến ngày checkout" : ""}
+            >
+              <Clock size={16} />
+              Hoàn thành
+            </Button>
+          );
+        })()}
 
       {/* Cancel Booking - Chỉ hiển thị khi status là PENDING hoặc CONFIRMED */}
       {(booking.status === BookingStatus.PENDING ||
@@ -181,8 +203,6 @@ const BookingActions: React.FC<BookingActionsProps> = ({
             Hoàn tiền
           </Button>
         )}
-
-   
     </div>
   );
 };
