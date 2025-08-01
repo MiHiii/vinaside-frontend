@@ -123,7 +123,7 @@ const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
                                 service_name: service.name,
                                 service_price: service.default_price || 0,
                                 quantity: 1,
-                                total_price: service.default_price || 0,
+                                total_price: (service.default_price || 0) * 1, // Đảm bảo tính đúng
                               }
                             : null;
                         })
@@ -163,23 +163,39 @@ const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
                         type="checkbox"
                         checked={!!selected}
                         onChange={() => {
+                          console.log(
+                            "Service clicked:",
+                            service.name,
+                            "Selected:",
+                            !!selected
+                          );
                           if (selected) {
-                            setSelectedServices(
-                              selectedServices.filter(
-                                (s) => s.service_id !== service._id
-                              )
+                            const newServices = selectedServices.filter(
+                              (s) => s.service_id !== service._id
                             );
+                            console.log(
+                              "Removing service, new services:",
+                              newServices
+                            );
+                            setSelectedServices(newServices);
                           } else {
-                            setSelectedServices([
+                            const servicePrice = service.default_price || 0;
+                            const newService = {
+                              service_id: service._id,
+                              service_name: service.name,
+                              service_price: servicePrice,
+                              quantity: 1,
+                              total_price: servicePrice * 1, // Đảm bảo tính đúng
+                            };
+                            const newServices = [
                               ...selectedServices,
-                              {
-                                service_id: service._id,
-                                service_name: service.name,
-                                service_price: service.default_price || 0,
-                                quantity: 1,
-                                total_price: service.default_price || 0,
-                              },
-                            ]);
+                              newService,
+                            ];
+                            console.log(
+                              "Adding service, new services:",
+                              newServices
+                            );
+                            setSelectedServices(newServices);
                           }
                         }}
                         className="accent-red-500 h-4 w-4 rounded border-2 border-gray-300"

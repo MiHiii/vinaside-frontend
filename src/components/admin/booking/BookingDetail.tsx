@@ -94,6 +94,19 @@ const BookingDetail: React.FC<{
   };
 
   const handleCompleteBooking = async () => {
+    // Kiểm tra xem đã đến ngày checkout chưa
+    const today = new Date();
+    const checkoutDate = new Date(booking.check_out_date);
+
+    // Reset thời gian về 00:00:00 để so sánh chỉ ngày
+    today.setHours(0, 0, 0, 0);
+    checkoutDate.setHours(0, 0, 0, 0);
+
+    if (today < checkoutDate) {
+      toast.error("Không thể hoàn thành booking trước ngày checkout!");
+      return;
+    }
+
     try {
       await dispatch(
         updateAdminBookingStatus({
@@ -356,17 +369,35 @@ const BookingDetail: React.FC<{
             )}
 
             {/* Complete Booking - Chỉ hiển thị khi status là CONFIRMED */}
-            {status === BookingStatus.CONFIRMED && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleCompleteBooking}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-              >
-                <Clock size={16} />
-                Hoàn thành
-              </Button>
-            )}
+            {status === BookingStatus.CONFIRMED &&
+              (() => {
+                const today = new Date();
+                const checkoutDate = new Date(check_out_date);
+
+                // Reset thời gian về 00:00:00 để so sánh chỉ ngày
+                today.setHours(0, 0, 0, 0);
+                checkoutDate.setHours(0, 0, 0, 0);
+
+                const canComplete = today >= checkoutDate;
+
+                return (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleCompleteBooking}
+                    disabled={!canComplete}
+                    className={`flex items-center gap-2 ${
+                      canComplete
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                    title={!canComplete ? "Chưa đến ngày checkout" : ""}
+                  >
+                    <Clock size={16} />
+                    Hoàn thành
+                  </Button>
+                );
+              })()}
 
             {/* Cancel Booking - Chỉ hiển thị khi status là PENDING hoặc CONFIRMED */}
             {(status === BookingStatus.PENDING ||

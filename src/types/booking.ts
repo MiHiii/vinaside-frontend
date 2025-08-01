@@ -16,6 +16,7 @@ export interface BookingData {
   price_per_night: number;
   total_price: number;
   final_amount: number;
+  deposit_paid_amount?: number;
   checkInDate: string;
   check_out_date: string;
   guests: number;

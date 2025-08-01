@@ -27,7 +27,6 @@ export default function RoomDetailPage() {
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const { listing, loading, error } = useAppSelector((state) => state.listings);
-  const [isFavorite, setIsFavorite] = useState(false);
 
   // Move hooks to top, use fallback values
   const [checkIn, setCheckIn] = useState<Date | null>(null);
@@ -62,26 +61,12 @@ export default function RoomDetailPage() {
   );
 
   // Hàm xử lý chọn dịch vụ (có thể truyền xuống RoomInfo)
-  const handleSelectService = (service: any, quantity: number) => {
-    setSelectedServices((prev) => {
-      const exists = prev.find((s) => s.service_id === service.service_id);
-      if (exists) {
-        return prev.map((s) =>
-          s.service_id === service.service_id
-            ? { ...s, quantity, total_price: service.service_price * quantity }
-            : s
-        );
-      }
-      return [
-        ...prev,
-        {
-          ...service,
-          quantity,
-          total_price: service.service_price * quantity,
-        },
-      ];
-    });
-  };
+
+
+  // Debug: Log selectedServices khi thay đổi
+  useEffect(() => {
+    console.log("RoomDetail selectedServices changed:", selectedServices);
+  }, [selectedServices]);
 
   // Gọi API lấy thông tin phòng và tiện ích
   useEffect(() => {

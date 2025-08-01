@@ -38,7 +38,7 @@ interface BookingFormProps {
   setGuestOpen: (open: boolean) => void;
   selectedServiceIds?: string[];
   services: Service[];
-  selectedServices: any[]; // Thêm dòng này
+  selectedServices: any[];
   loading?: boolean;
 }
 
@@ -57,8 +57,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
   setDateOpen,
   guestOpen,
   setGuestOpen,
-  selectedServiceIds,
-  services,
   selectedServices,
   loading = false,
 }) => {
@@ -66,19 +64,50 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const dispatch = useAppDispatch();
 
   const pricePerNight = listing.price_per_night || 0;
-  const taxRate = 0.08;
 
-  const selectedServiceTotal = (selectedServices ?? []).reduce(
-    (sum, s) => sum + (s.total_price || s.service_price * s.quantity || 0),
-    0
-  );
+  // Debug: Log selectedServices để kiểm tra
+  console.log("BookingForm selectedServices:", selectedServices);
+
+  // Force re-render khi selectedServices thay đổi
+  React.useEffect(() => {
+    console.log("BookingForm: selectedServices changed, recalculating...");
+  }, [selectedServices]);
 
   const calculatePrice = () => {
     const base = nights * pricePerNight;
-    const serviceFee = Math.round(base * 0.1);
-    const tax = Math.round(base * taxRate);
-    const total = base + serviceFee + tax + selectedServiceTotal;
-    return { base, tax, total, selectedServiceTotal, serviceFee };
+
+    // Tính lại selectedServiceTotal mỗi khi gọi calculatePrice
+    const currentSelectedServiceTotal = (selectedServices ?? []).reduce(
+      (sum, s) => {
+        const serviceTotal = s.total_price || s.service_price * s.quantity || 0;
+        return sum + serviceTotal;
+      },
+      0
+    );
+
+    // Tính tổng tiền (phòng + dịch vụ) - giống logic trang thanh toán
+    const totalAmount = base + currentSelectedServiceTotal;
+
+    // Tính phí dịch vụ và thuế dựa trên tổng tiền (phòng + dịch vụ)
+    const serviceFee = Math.round(totalAmount * 0.1);
+    const tax = Math.round(totalAmount * 0.08);
+
+    const total = base + serviceFee + tax + currentSelectedServiceTotal;
+    console.log("calculatePrice:", {
+      base,
+      currentSelectedServiceTotal,
+      totalAmount,
+      serviceFee,
+      tax,
+      total,
+    });
+    return {
+      base,
+      tax,
+      total,
+      selectedServiceTotal: currentSelectedServiceTotal,
+      serviceFee,
+    };
   };
 
   const handlePayment = () => {
@@ -122,7 +151,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   if (loading) {
     return (
-      <div className="w-full lg:w-[360px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white">
+      <div
+        key="booking-form-loading"
+        className="w-full lg:w-[360px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white"
+      >
         <Skeleton className="h-6 w-48" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-12 w-full" />
@@ -149,7 +181,13 @@ const BookingForm: React.FC<BookingFormProps> = ({
           Hiếm khi còn phòng! Chỗ ở này thường kín phòng
         </span>
       </div>
-      <div className="w-full lg:w-[360px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white">
+      <div
+        key={`booking-form-${selectedServices.length}-${selectedServices.reduce(
+          (sum, s) => sum + (s.total_price || 0),
+          0
+        )}`}
+        className="w-full lg:w-[360px] p-6 rounded-xl shadow-lg space-y-4 h-fit bg-white"
+      >
         <h3 className="text-lg font-semibold">Thêm ngày để xem giá</h3>
 
         {checkIn && checkOut && (
@@ -204,10 +242,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
               <span>Thuế (8%)</span>
               <span>{calculatePrice().tax.toLocaleString()}₫</span>
             </div>
-            {selectedServiceTotal > 0 && (
+            {calculatePrice().selectedServiceTotal > 0 && (
               <div className="flex justify-between">
                 <span>Dịch vụ kèm theo</span>
-                <span>{selectedServiceTotal.toLocaleString()}₫</span>
+                <span>
+                  {calculatePrice().selectedServiceTotal.toLocaleString()}₫
+                </span>
               </div>
             )}
             <div className="flex justify-between font-semibold pt-2 border-t">
