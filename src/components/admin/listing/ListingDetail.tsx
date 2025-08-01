@@ -66,7 +66,7 @@ export default function ListingDetail() {
   const services = useAppSelector((state) => state.service.services);
   const safetyFeatures = useAppSelector((state) => state.safetyFeature.safetyFeatures);
   const houseRules = useAppSelector((state) => state.houseRule.houseRules);
-  const vouchers = useAppSelector((state) => state.voucher.vouchers);
+  // const vouchers = useAppSelector((state) => state.voucher.vouchers);
   const bookings = useAppSelector(state => state.booking.bookingsByListing) ?? [];
 
   useEffect(() => {
@@ -312,17 +312,7 @@ export default function ListingDetail() {
                   </span>
                 </div>
               )}
-              {listing.voucher_ids && listing.voucher_ids.length > 0 && (
-                <div className="mt-2">
-                  <span className="font-medium text-gray-700">Voucher áp dụng:</span>
-                  <span className="ml-2 text-gray-800">
-                    {listing.voucher_ids.map(id => {
-                      const v = vouchers.find(v => v._id === id);
-                      return v ? `${v.code} (${v.discount_percent}%)` : id;
-                    }).join(', ')}
-                  </span>
-                </div>
-              )}
+            
             </div>
           </div>
         </div>

@@ -1,3 +1,9 @@
+// Define the return type for payment status
+export interface PaymentStatusVM {
+  label: string;
+  color: string;
+}
+
 export const getStatusVN = (status: string) => {
   switch (status) {
     case "pending":
@@ -14,7 +20,8 @@ export const getStatusVN = (status: string) => {
       return { label: status, color: "bg-gray-100 text-gray-700" };
   }
 };
-export function getPaymentStatusVN(status: string) {
+
+export function getPaymentStatusVN(status: string): PaymentStatusVM {
   switch (status) {
     case "pending":
       return {
