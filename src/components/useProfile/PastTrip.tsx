@@ -284,7 +284,6 @@ const PastTrip = () => {
 
   // Thêm PaymentStatus.PARTIALLY_PAID vào import
 
-
   const handleShowDetail = (booking: BookingWithStatus) => {
     setSelectedBooking(booking);
     setShowDetail(true);
