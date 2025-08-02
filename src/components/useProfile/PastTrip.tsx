@@ -13,7 +13,7 @@ import {
   FileText,
   Star,
   Redo,
-  MessageCircle,
+  // MessageCircle,
   X,
   Info,
   Users,
@@ -39,7 +39,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 import MessageHostDialog from "../roomdetail/MessageHostDialog";
-
 
 const STATUS_UPCOMING = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
 
@@ -238,6 +237,11 @@ const PastTrip = () => {
   }>({});
   const [addServiceLoading, setAddServiceLoading] = useState(false);
 
+  // Debug: Monitor selectedServices state changes
+  useEffect(() => {
+    console.log("Selected services state changed:", selectedServices);
+  }, [selectedServices]);
+
   useEffect(() => {
     dispatch(getMyBookingHistory(undefined))
       .then(() => {})
@@ -352,28 +356,34 @@ const PastTrip = () => {
   };
 
   const handleServiceSelection = (serviceId: string, checked: boolean) => {
+    console.log("Service selection:", serviceId, checked);
     if (checked) {
-      setSelectedServices((prev) => ({ ...prev, [serviceId]: 1 }));
+      setSelectedServices((prev) => {
+        const newState = { ...prev, [serviceId]: 1 };
+        console.log("Updated selected services:", newState);
+        return newState;
+      });
     } else {
       setSelectedServices((prev) => {
         const newState = { ...prev };
         delete newState[serviceId];
+        console.log("Updated selected services:", newState);
         return newState;
       });
     }
   };
 
-  const handleServiceQuantityChange = (serviceId: string, quantity: number) => {
-    if (quantity > 0) {
-      setSelectedServices((prev) => ({ ...prev, [serviceId]: quantity }));
-    } else {
-      setSelectedServices((prev) => {
-        const newState = { ...prev };
-        delete newState[serviceId];
-        return newState;
-      });
-    }
-  };
+  // const handleServiceQuantityChange = (serviceId: string, quantity: number) => {
+  //   if (quantity > 0) {
+  //     setSelectedServices((prev) => ({ ...prev, [serviceId]: quantity }));
+  //   } else {
+  //     setSelectedServices((prev) => {
+  //       const newState = { ...prev };
+  //       delete newState[serviceId];
+  //       return newState;
+  //     });
+  //   }
+  // };
 
   const handleConfirmAddServices = async () => {
     if (
@@ -1297,19 +1307,44 @@ const PastTrip = () => {
               availableServices.map((service) => (
                 <div
                   key={service._id}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
+                  className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
+                    selectedServices[service._id]
+                      ? "bg-blue-50 border-blue-300"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    console.log("Service item clicked:", service._id);
+                    const currentChecked = !!selectedServices[service._id];
+                    handleServiceSelection(service._id, !currentChecked);
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Checkbox
                         id={service._id}
                         checked={!!selectedServices[service._id]}
-                        onCheckedChange={(checked) =>
+                        onCheckedChange={(checked) => {
+                          console.log(
+                            "Checkbox clicked for service:",
+                            service._id,
+                            "checked:",
+                            checked
+                          );
                           handleServiceSelection(
                             service._id,
                             checked as boolean
-                          )
-                        }
+                          );
+                        }}
+                        onClick={(e) => {
+                          console.log(
+                            "Checkbox clicked directly:",
+                            service._id
+                          );
+                          e.stopPropagation();
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                        }}
                       />
                       <div>
                         <Label
@@ -1328,7 +1363,7 @@ const PastTrip = () => {
                       </div>
                     </div>
 
-                    {selectedServices[service._id] && (
+                    {/* {selectedServices[service._id] && (
                       <div className="flex items-center gap-2">
                         <Label
                           htmlFor={`quantity-${service._id}`}
@@ -1350,7 +1385,7 @@ const PastTrip = () => {
                           className="w-16 px-2 py-1 border rounded text-center"
                         />
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </div>
               ))
