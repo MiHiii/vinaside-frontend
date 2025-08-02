@@ -155,28 +155,43 @@ const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
                   return (
                     <div
                       key={service._id}
-                      className={`flex items-center gap-4 p-3 transition-all duration-200 hover:bg-gray-50 ${
+                      className={`flex items-center gap-4 p-3 transition-all duration-200 hover:bg-gray-50 cursor-pointer ${
                         selected ? "bg-red-50 border-l-4 border-l-red-500" : ""
-                      }`}
+                      } ${selected ? "ring-2 ring-red-200" : ""}`}
+                      onClick={() => {
+                        console.log("Service item clicked:", service.name, "Selected:", !!selected);
+                        if (selected) {
+                          const newServices = selectedServices.filter(
+                            (s) => s.service_id !== service._id
+                          );
+                          console.log("Removing service, new services:", newServices);
+                          setSelectedServices(newServices);
+                        } else {
+                          const servicePrice = service.default_price || 0;
+                          const newService = {
+                            service_id: service._id,
+                            service_name: service.name,
+                            service_price: servicePrice,
+                            quantity: 1,
+                            total_price: servicePrice * 1,
+                          };
+                          const newServices = [...selectedServices, newService];
+                          console.log("Adding service, new services:", newServices);
+                          setSelectedServices(newServices);
+                        }
+                      }}
                     >
                       <input
                         type="checkbox"
                         checked={!!selected}
-                        onChange={() => {
-                          console.log(
-                            "Service clicked:",
-                            service.name,
-                            "Selected:",
-                            !!selected
-                          );
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          console.log("Service checkbox clicked:", service.name, "Selected:", !!selected);
                           if (selected) {
                             const newServices = selectedServices.filter(
                               (s) => s.service_id !== service._id
                             );
-                            console.log(
-                              "Removing service, new services:",
-                              newServices
-                            );
+                            console.log("Removing service, new services:", newServices);
                             setSelectedServices(newServices);
                           } else {
                             const servicePrice = service.default_price || 0;
@@ -185,19 +200,14 @@ const RoomDescription: React.FC<RoomDescriptionProps> = (props) => {
                               service_name: service.name,
                               service_price: servicePrice,
                               quantity: 1,
-                              total_price: servicePrice * 1, // Đảm bảo tính đúng
+                              total_price: servicePrice * 1,
                             };
-                            const newServices = [
-                              ...selectedServices,
-                              newService,
-                            ];
-                            console.log(
-                              "Adding service, new services:",
-                              newServices
-                            );
+                            const newServices = [...selectedServices, newService];
+                            console.log("Adding service, new services:", newServices);
                             setSelectedServices(newServices);
                           }
                         }}
+                        onClick={(e) => e.stopPropagation()}
                         className="accent-red-500 h-4 w-4 rounded border-2 border-gray-300"
                       />
 

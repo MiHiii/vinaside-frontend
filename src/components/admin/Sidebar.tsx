@@ -243,7 +243,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
           <SidebarItem
             to="/admin/bookings"
             icon={<Ticket className="h-4 w-4" />}
-            label="Booking"
+            label="Quản lý đặt phòng"
             active={pathname.startsWith("/admin/bookings")}
             collapsed={collapsed}
           />
@@ -252,7 +252,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
             <SidebarItem
               to="/admin/users"
               icon={<Users className="h-4 w-4" />}
-              label="Users"
+              label="Quản lú người dùng"
               active={pathname === "/admin/users"}
               collapsed={collapsed}
             />
