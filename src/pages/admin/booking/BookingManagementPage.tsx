@@ -10,13 +10,8 @@ const BookingManagementPage: React.FC = () => {
   } | null>(null);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-2 md:px-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <header className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">Quản lý Booking</h1>
-          <p className="text-gray-500 text-base md:text-lg">Theo dõi, thống kê và quản lý các booking một cách trực quan, hiện đại.</p>
-        </header>
-
+    <div className="min-h-screen py-4 px-2 md:px-2">
+      <div className="max-w-full">
         {/* Nếu muốn dùng BookingDashboard, bỏ comment dòng dưới */}
         {/* <section>
           <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-center">
@@ -25,7 +20,7 @@ const BookingManagementPage: React.FC = () => {
         </section> */}
 
         <section>
-          <div className="bg-white rounded-2xl shadow p-6">
+          <div className="">
             {selectedBooking ? (
               <BookingDetail
                 propertyId={selectedBooking.propertyId}
@@ -39,7 +34,7 @@ const BookingManagementPage: React.FC = () => {
         </section>
 
         <section>
-          <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-center">
+          <div className="p-6 flex flex-col justify-center">
             <BookingStatistics />
           </div>
         </section>

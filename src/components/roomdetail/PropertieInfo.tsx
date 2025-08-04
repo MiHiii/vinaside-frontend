@@ -30,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useParams, useNavigate } from "react-router-dom";
 import ButtonWishlist from "@/components/common/ButtonWishlist";
 import MessageHostDialog from "./MessageHostDialog";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 export default function PropertyInfo() {
   const { id } = useParams();
@@ -48,6 +49,17 @@ export default function PropertyInfo() {
       dispatch(fetchPropertyRooms(id));
     }
   }, [id, dispatch]);
+
+  // Set dynamic title based on property data
+  useDocumentTitle(
+    property
+      ? `${property.name} tại ${
+          property.location?.city || property.location?.address
+        }`
+      : loading
+      ? "Đang tải..."
+      : "Chi tiết nơi ở"
+  );
 
   if (loading) {
     return (

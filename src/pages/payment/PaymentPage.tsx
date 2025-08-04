@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { setSelectedServices } from "@/store/slices/bookingSlice";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 export default function PaymentLayout() {
   const [searchParams] = useSearchParams();
@@ -48,6 +49,15 @@ export default function PaymentLayout() {
   const bookingId = searchParams.get("bookingId");
   const propertyId = searchParams.get("propertyId");
   const bookedDatesString = searchParams.get("bookedDates") || "";
+
+  // Set dynamic title based on listing data
+  useDocumentTitle(
+    listing
+      ? `Thanh toán - ${listing.title}`
+      : loading
+      ? "Đang tải..."
+      : "Thanh toán"
+  );
   const bookedDates = bookedDatesString
     ? bookedDatesString.split(",").map((d) => {
         const [year, month, day] = d.split("-");

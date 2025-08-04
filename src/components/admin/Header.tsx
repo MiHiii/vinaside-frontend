@@ -29,7 +29,7 @@ export function Header({ collapsed, onToggleSidebar }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-3 sm:px-6  border-gray-200 dark:border-slate-700">
+    <header className="h-16 flex items-center justify-between px-3 sm:px-6  border-gray-200 dark:border-slate-700 bg-gray-50">
       {/* Menu */}
       <nav className="flex items-center space-x-4 sm:space-x-6">
         <button
@@ -52,10 +52,6 @@ export function Header({ collapsed, onToggleSidebar }: HeaderProps) {
       <div className="flex items-center space-x-2">
         {/* Chuông thông báo */}
         <Notification isAdmin />
-
-        {/* Theme toggle */}
-        <ThemeToggle />
-
         {/* Dropdown hiển thị trên tất cả thiết bị */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -89,7 +85,7 @@ export function Header({ collapsed, onToggleSidebar }: HeaderProps) {
           >
             <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer">
               <Link
-                to="/profilepage"
+                to="/admin/profilepage"
                 className="w-full text-gray-700 dark:text-gray-200 flex items-center gap-2"
               >
                 <FaUser className="inline-block" />
