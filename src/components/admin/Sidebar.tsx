@@ -158,11 +158,18 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const [openSecured, setOpenSecured] = useState(false);
   const [openAuth, setOpenAuth] = useState(false);
   const [openErrors, setOpenErrors] = useState(false);
+  const [openUsers, setOpenUsers] = useState(false);
+  const [openSystem, setOpenSystem] = useState(false);
+  const [openReviews, setOpenReviews] = useState(false);
   const [activeCollapseId, setActiveCollapseId] = useState<string | null>(null);
 
   // Chỉ render Sidebar khi đã có user và permissions
   if (!user || !user.permissions) {
-    return <div className="p-4 text-center text-muted-foreground">Đang tải menu...</div>;
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        Đang tải menu...
+      </div>
+    );
   }
 
   const toggleSecured = (open: boolean) => {
@@ -180,6 +187,21 @@ export function Sidebar({ collapsed }: SidebarProps) {
     setActiveCollapseId(open ? "errors" : null);
   };
 
+  const toggleUsers = (open: boolean) => {
+    setOpenUsers(open);
+    setActiveCollapseId(open ? "users" : null);
+  };
+
+  const toggleSystem = (open: boolean) => {
+    setOpenSystem(open);
+    setActiveCollapseId(open ? "system" : null);
+  };
+
+  const toggleReviews = (open: boolean) => {
+    setOpenReviews(open);
+    setActiveCollapseId(open ? "reviews" : null);
+  };
+
   return (
     <aside
       className={`transition-all duration-300 bg-background min-h-screen flex flex-col rounded-xl shadow-xl m-2 overflow-hidden shrink-0 ${
@@ -187,29 +209,30 @@ export function Sidebar({ collapsed }: SidebarProps) {
       } `}
     >
       {/* Header */}
-      <div
-        className={`flex items-center h-16 px-2 ${
-          collapsed ? "justify-center" : "px-6"
-        }`}
-      >
-        <div className="bg-primary/10 p-2 rounded-lg">
-          <Home className="h-6 w-6 text-primary" />
-        </div>
-        {!collapsed && (
-          <div>
-            <div className="font-bold text-lg">Shadcn Admin</div>
-            <div className="text-xs text-muted-foreground">Vite + ShadcnUI</div>
+      <div className="p-2 sm:p-3 md:p-4 text-center border-b border-gray-300">
+        <Link
+          to="/"
+          className="flex items-center justify-center sm:justify-start gap-1 sm:gap-2"
+        >
+          <div className="text-rose-500">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8"
+            >
+              <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+              <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+            </svg>
           </div>
-        )}
-        {!collapsed && (
-          <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
-        )}
+          <span className="text-lg sm:text-xl font-bold ml-2">Vinaside</span>
+        </Link>
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 overflow-y-auto px-2 py-4">
+      <nav className="flex-1 overflow-y-auto px-2">
         {/* General */}
-        <SidebarSection label="General" collapsed={collapsed}>
+        <SidebarSection label="" collapsed={collapsed}>
           <SidebarItem
             to="/admin"
             icon={<Home className="h-4 w-4" />}
@@ -217,52 +240,20 @@ export function Sidebar({ collapsed }: SidebarProps) {
             active={pathname === "/admin"}
             collapsed={collapsed}
           />
-          <SidebarItem
-            to="/admin/tasks"
-            icon={<ListChecks className="h-4 w-4" />}
-            label="Tasks"
-            active={pathname === "/admin/tasks"}
-            collapsed={collapsed}
-          />
-          <SidebarItem
-            to="/admin/apps"
-            icon={<AppWindow className="h-4 w-4" />}
-            label="Apps"
-            active={pathname === "/admin/apps"}
-            collapsed={collapsed}
-          />
-           <PermissionGuard permission="message.view">
-          <SidebarItem
-            to="/admin/messages"
-            icon={<MessageCircle className="h-4 w-4" />}
-            label="Chats"
-            active={pathname.startsWith("/admin/messages")}
-            badge="3"
-            collapsed={collapsed}
-          />
-          <SidebarItem
-            to="/admin/bookings"
-            icon={<Ticket className="h-4 w-4" />}
-            label="Quản lý đặt phòng"
-            active={pathname.startsWith("/admin/bookings")}
-            collapsed={collapsed}
-          />
-          </PermissionGuard>
-          <PermissionGuard permission="user.view">
+          <PermissionGuard permission="message.view">
             <SidebarItem
-              to="/admin/users"
-              icon={<Users className="h-4 w-4" />}
-              label="Quản lú người dùng"
-              active={pathname === "/admin/users"}
+              to="/admin/messages"
+              icon={<MessageCircle className="h-4 w-4" />}
+              label="Tin nhắn"
+              active={pathname.startsWith("/admin/messages")}
+              badge="3"
               collapsed={collapsed}
             />
-          </PermissionGuard>
-          <PermissionGuard permission="user.view">
             <SidebarItem
-              to="/admin/staff"
-              icon={<UserCheck className="h-4 w-4" />}
-              label="Quản lý nhân viên"
-              active={pathname === "/admin/staff"}
+              to="/admin/bookings"
+              icon={<Ticket className="h-4 w-4" />}
+              label="Quản lý đặt phòng"
+              active={pathname.startsWith("/admin/bookings")}
               collapsed={collapsed}
             />
           </PermissionGuard>
@@ -284,41 +275,53 @@ export function Sidebar({ collapsed }: SidebarProps) {
               collapsed={collapsed}
             />
           </PermissionGuard>
-          <PermissionGuard permission="property_staff.view">
-            <SidebarItem
-              to="/admin/property-staff"
-              icon={<UserCheck className="h-4 w-4" />}
-              label="Gán nhân viên"
-              active={pathname.startsWith("/admin/property-staff")}
+          <PermissionGuard permission="user.view">
+            <SidebarCollapse
+              icon={<Users className="h-4 w-4" />}
+              label="Quản lý người dùng"
+              open={openUsers}
+              setOpen={toggleUsers}
+              id="users"
+              active={
+                pathname.startsWith("/admin/users") ||
+                pathname === "/admin/staff" ||
+                pathname.startsWith("/admin/property-staff")
+              }
               collapsed={collapsed}
-            />
-          </PermissionGuard>
-          <PermissionGuard permission="amenity.view">
-            <SidebarItem
-              to="/admin/amenities"
-              icon={<ListChecks className="h-4 w-4" />}
-              label="Tiện ích"
-              active={pathname.startsWith("/admin/amenities")}
-              collapsed={collapsed}
-            />
-          </PermissionGuard>
-          <PermissionGuard permission="house_rule.view">
-            <SidebarItem
-              to="/admin/house-rules"
-              icon={<BookOpen className="h-4 w-4" />}
-              label="Quản lý quy tắc nhà"
-              active={pathname === "/admin/house-rules"}
-              collapsed={collapsed}
-            />
-          </PermissionGuard>
-          <PermissionGuard permission="user.edit">
-            <SidebarItem
-              to="/admin/permissions-manager"
-              icon={<ShieldCheck className="h-4 w-4" />}
-              label="Quản lý vai trò"
-              active={pathname === "/admin/permissions-manager"}
-              collapsed={collapsed}
-            />
+            >
+              <div className="pl-7 space-y-1">
+                <SidebarItem
+                  to="/admin/staff"
+                  icon={<UserCheck className="h-4 w-4" />}
+                  label="Quản lý nhân viên"
+                  active={pathname === "/admin/staff"}
+                  collapsed={collapsed}
+                />
+                <SidebarItem
+                  to="/admin/users"
+                  icon={<Users className="h-4 w-4" />}
+                  label="Quản lý người dùng"
+                  active={pathname === "/admin/users"}
+                  collapsed={collapsed}
+                />
+                <SidebarItem
+                  to="/admin/property-staff"
+                  icon={<UserCheck className="h-4 w-4" />}
+                  label="Gán nhân viên"
+                  active={pathname.startsWith("/admin/property-staff")}
+                  collapsed={collapsed}
+                />
+                <PermissionGuard permission="user.edit">
+                  <SidebarItem
+                    to="/admin/permissions-manager"
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                    label="Quản lý vai trò"
+                    active={pathname === "/admin/permissions-manager"}
+                    collapsed={collapsed}
+                  />
+                </PermissionGuard>
+              </div>
+            </SidebarCollapse>
           </PermissionGuard>
           <PermissionGuard permission="voucher.view">
             <SidebarItem
@@ -339,121 +342,77 @@ export function Sidebar({ collapsed }: SidebarProps) {
             />
           </PermissionGuard>
           <PermissionGuard permission="review.view">
-            <SidebarItem
-              to="/admin/reviews"
+            <SidebarCollapse
               icon={<MessageSquare className="h-4 w-4" />}
-              label="Đánh giá"
-              active={pathname.startsWith("/admin/reviews")}
+              label="Quản lý đánh giá"
+              open={openReviews}
+              setOpen={toggleReviews}
+              id="reviews"
+              active={
+                pathname.startsWith("/admin/reviews") ||
+                pathname === "/admin/wishlists"
+              }
               collapsed={collapsed}
-            />
+            >
+              <div className="pl-7 space-y-1">
+                <SidebarItem
+                  to="/admin/reviews"
+                  icon={<MessageSquare className="h-4 w-4" />}
+                  label="Đánh giá"
+                  active={pathname.startsWith("/admin/reviews")}
+                  collapsed={collapsed}
+                />
+                <PermissionGuard permission="user.view">
+                  <SidebarItem
+                    to="/admin/wishlists"
+                    icon={<Heart className="h-4 w-4" />}
+                    label="Quản lý Wishlist"
+                    active={pathname === "/admin/wishlists"}
+                    collapsed={collapsed}
+                  />
+                </PermissionGuard>
+              </div>
+            </SidebarCollapse>
           </PermissionGuard>
-          <PermissionGuard permission="user.view">
-            <SidebarItem
-              to="/admin/wishlists"
-              icon={<Heart className="h-4 w-4" />}
-              label="Quản lý Wishlist"
-              active={pathname === "/admin/wishlists"}
+          <PermissionGuard permission="amenity.view">
+            <SidebarCollapse
+              icon={<Settings className="h-4 w-4" />}
+              label="Quản lý hệ thống"
+              open={openSystem}
+              setOpen={toggleSystem}
+              id="system"
+              active={
+                pathname.startsWith("/admin/amenities") ||
+                pathname === "/admin/house-rules" ||
+                pathname === "/admin/safety-features"
+              }
               collapsed={collapsed}
-            />
+            >
+              <div className="pl-7 space-y-1">
+                <SidebarItem
+                  to="/admin/amenities"
+                  icon={<ListChecks className="h-4 w-4" />}
+                  label="Tiện ích"
+                  active={pathname.startsWith("/admin/amenities")}
+                  collapsed={collapsed}
+                />
+                <SidebarItem
+                  to="/admin/house-rules"
+                  icon={<BookOpen className="h-4 w-4" />}
+                  label="Quản lý quy tắc nhà"
+                  active={pathname === "/admin/house-rules"}
+                  collapsed={collapsed}
+                />
+                <SidebarItem
+                  to="/admin/safety-features"
+                  icon={<ShieldCheck className="h-4 w-4" />}
+                  label="Chính sách an toàn"
+                  active={pathname === "/admin/safety-features"}
+                  collapsed={collapsed}
+                />
+              </div>
+            </SidebarCollapse>
           </PermissionGuard>
-          <PermissionGuard permission="safety_feature.view">
-            <SidebarItem
-              to="/admin/safety-features"
-              icon={<ShieldCheck className="h-4 w-4" />}
-              label="Chính sách an toàn"
-              active={pathname === "/admin/safety-features"}
-              collapsed={collapsed}
-            />
-          </PermissionGuard>
-
-          <SidebarCollapse
-            icon={<ShieldCheck className="h-4 w-4" />}
-            label="Secured by Clerk"
-            open={openSecured}
-            setOpen={toggleSecured}
-            id="secured"
-            active={activeCollapseId === "secured"}
-            collapsed={collapsed}
-          >
-            <div className="pl-7 space-y-1">
-              <SidebarItem
-                to="/admin/secured/profile"
-                icon={<User className="h-4 w-4" />}
-                label="Profile"
-                active={pathname === "/admin/secured/profile"}
-                small
-                collapsed={collapsed}
-              />
-              <SidebarItem
-                to="/admin/secured/settings"
-                icon={<Settings className="h-4 w-4" />}
-                label="Secured Settings"
-                active={pathname === "/admin/secured/settings"}
-                small
-                collapsed={collapsed}
-              />
-            </div>
-          </SidebarCollapse>
-        </SidebarSection>
-
-        {/* Pages */}
-        <SidebarSection label="Pages" collapsed={collapsed}>
-          <SidebarCollapse
-            icon={<Lock className="h-4 w-4" />}
-            label="Auth"
-            open={openAuth}
-            setOpen={toggleAuth}
-            id="auth"
-            active={activeCollapseId === "auth"}
-            collapsed={collapsed}
-          >
-            <div className="pl-7 space-y-1">
-              <SidebarItem
-                to="/admin/auth/login"
-                icon={<User className="h-4 w-4" />}
-                label="Login"
-                active={pathname === "/admin/auth/login"}
-                small
-                collapsed={collapsed}
-              />
-              <SidebarItem
-                to="/admin/auth/register"
-                icon={<User className="h-4 w-4" />}
-                label="Register"
-                active={pathname === "/admin/auth/register"}
-                small
-                collapsed={collapsed}
-              />
-            </div>
-          </SidebarCollapse>
-          <SidebarCollapse
-            icon={<AlertTriangle className="h-4 w-4" />}
-            label="404 & Errors"
-            open={openErrors}
-            setOpen={toggleErrors}
-            id="errors"
-            active={activeCollapseId === "errors"}
-            collapsed={collapsed}
-          >
-            <div className="pl-7 space-y-1">
-              <SidebarItem
-                to="/admin/errors/404"
-                icon={<AlertTriangle className="h-4 w-4" />}
-                label="404"
-                active={pathname === "/admin/errors/404"}
-                small
-                collapsed={collapsed}
-              />
-              <SidebarItem
-                to="/admin/errors/500"
-                icon={<AlertTriangle className="h-4 w-4" />}
-                label="500"
-                active={pathname === "/admin/errors/500"}
-                small
-                collapsed={collapsed}
-              />
-            </div>
-          </SidebarCollapse>
         </SidebarSection>
 
         {/* Other */}
@@ -463,13 +422,6 @@ export function Sidebar({ collapsed }: SidebarProps) {
             icon={<Settings className="h-4 w-4" />}
             label="Settings"
             active={pathname === "/admin/settings"}
-            collapsed={collapsed}
-          />
-          <SidebarItem
-            to="/admin/help"
-            icon={<LifeBuoy className="h-4 w-4" />}
-            label="Help Center"
-            active={pathname === "/admin/help"}
             collapsed={collapsed}
           />
         </SidebarSection>
@@ -482,15 +434,13 @@ export function Sidebar({ collapsed }: SidebarProps) {
         }`}
       >
         <div className="bg-muted rounded-full h-10 w-10 flex items-center justify-center font-semibold text-sm text-primary">
-          SN
+          {user.name?.charAt(0).toUpperCase()}
         </div>
         {!collapsed && (
           <>
             <div className="flex-1">
-              <div className="font-medium text-sm">satnaing</div>
-              <div className="text-xs text-muted-foreground">
-                satnaingdev@gmail.com
-              </div>
+              <div className="font-medium text-sm">{user.name}</div>
+              <div className="text-xs text-muted-foreground">{user.email}</div>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </>

@@ -37,7 +37,6 @@ import AllNotificationsPage from "@/pages/notifications/AllNotificationsPage";
 // Admin Pages
 import AdminLayout from "@/components/layouts/admin/AdminLayout";
 import DashboardContent from "@/components/admin/DashboardContent";
-import Tasks from "@/components/admin/Tasks";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ProtectedAdminRoute from "@/components/common/ProtectedAdminRoute";
 import AdminLoginPage from "@/pages/auth/AdminLoginPage";
@@ -130,14 +129,6 @@ const routes: RouteObject[] = [
         ),
       },
       {
-        path: "messages",
-        element: (
-          <ProtectedRoute>
-            <Messages />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: "notifications",
         element: (
           <ProtectedRoute>
@@ -174,6 +165,14 @@ const routes: RouteObject[] = [
   {
     path: "/payment/failed",
     element: <PaymentFailedPage />,
+  },
+  {
+    path: "messages",
+    element: (
+      <ProtectedRoute>
+        <Messages />
+      </ProtectedRoute>
+    ),
   },
 
   // Các route trở thành host, có thể cho phép tất cả user đăng nhập, hoặc chỉ một số role, nếu cần thì wrap bằng ProtectedRoute luôn
@@ -245,8 +244,6 @@ const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <DashboardContent /> },
-      { path: "tasks", element: <Tasks /> },
-
       //listing
       { path: "listings", element: <ListingsPage /> },
       { path: "listings/create", element: <CreateListingPage /> },

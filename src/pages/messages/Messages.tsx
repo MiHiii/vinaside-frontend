@@ -25,6 +25,7 @@ import EmojiPicker from "emoji-picker-react";
 import { MessageReaction } from "@/services/chat.service";
 import { useMessages } from "@/hooks/useMessages";
 import { NavLink } from "react-router-dom";
+import ClientHeader from "@/components/layouts/client/ClientHeader";
 
 export default function Messages() {
   const {
@@ -83,6 +84,7 @@ export default function Messages() {
 
   return (
     <>
+      <ClientHeader />
       <style>{`
         @keyframes fadeIn {
           from {
@@ -270,8 +272,7 @@ export default function Messages() {
           transition: all 0.2s ease-in-out;
         }
       `}</style>
-
-      <div className="flex container p-3 mx-auto h-[calc(100vh-100px)] bg-background">
+      <div className="flex container p-3 mx-auto h-[calc(90vh-40px)] bg-background">
         <div className="w-[400px] border-r border-gray-200 p-2 bg-background">
           <div className="bg-background mt-3">
             <div className="flex items-center justify-between space-x-4">
