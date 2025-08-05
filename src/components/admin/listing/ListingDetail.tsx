@@ -225,10 +225,7 @@ export default function ListingDetail() {
               <div className="flex items-center gap-2 mb-2">
                 <Badge className="text-xs px-3 py-1">
                   {listing.status === "active" && "Hoạt động"}
-                  {listing.status === "inactive" && "Không hoạt động"}
-                  {listing.status === "draft" && "Bản nháp"}
-                  {listing.status === "pending_approval" && "Chờ duyệt"}
-                  {listing.status === "verified" && "Đã kiểm duyệt"}  
+                  {listing.status === "inactive" && "Sửa chữa - Bảo trì"}
                 </Badge>
                 <span className="flex items-center gap-1">
                   {renderStars(statistics?.reviews?.averageRating || 0)}

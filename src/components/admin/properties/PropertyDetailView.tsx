@@ -326,38 +326,46 @@ export default function PropertyDetailView() {
                       </td>
 
                       <td className="py-3 px-4 border-0 !border-none">
-                        {/* Chỉ hiển thị 1 badge trạng thái cho từng phòng */}
-                        {(() => {
-                          const listingId = String(listing._id);
-                          const raw = roomStatus && roomStatus[listingId];
-                          const status =
-                            raw && typeof raw === "object"
-                              ? (raw as { status?: string }).status
-                              : raw;
-                          if (status === "available")
-                            return (
-                              <span className="bg-green-100 text-green-700 rounded px-2 py-1">
-                                Còn trống
-                              </span>
-                            );
-                          if (status === "reserved")
-                            return (
-                              <span className="bg-red-100 text-red-700 rounded px-2 py-1">
-                                Đã đặt
-                              </span>
-                            );
-                          if (status === "booked" || status === "occupied")
-                            return (
-                              <span className="bg-blue-100 text-blue-700 rounded px-2 py-1">
-                                Đang chờ xác nhận
-                              </span>
-                            );
-                          return (
-                            <span className="bg-gray-100 text-gray-700 rounded px-2 py-1">
-                              Không rõ
+                        {/* Nếu phòng bảo trì thì chỉ hiển thị badge bảo trì, nếu hoạt động thì chỉ hiển thị trạng thái booking */}
+                        <div className="flex flex-col gap-1">
+                          {listing.status === 'inactive' ? (
+                            <span className="px-2 py-3 text-sm font-semibold rounded-full bg-red-100 text-red-800 text-center">
+                              Sửa chữa - Bảo trì
                             </span>
-                          );
-                        })()}
+                          ) : (
+                            (() => {
+                              const listingId = String(listing._id);
+                              const raw = roomStatus && roomStatus[listingId];
+                              const status =
+                                raw && typeof raw === "object"
+                                  ? (raw as { status?: string }).status
+                                  : raw;
+                              if (status === "available")
+                                return (
+                                  <span className="bg-green-100 text-blue-700 rounded-full px-2 py-3 text-center ">
+                                    Còn trống
+                                  </span>
+                                );
+                              if (status === "reserved")
+                                return (
+                                  <span className="bg-orange-100 text-orange-700 rounded-full px-2 py-3 text-sm text-center">
+                                    Đã đặt
+                                  </span>
+                                );
+                              if (status === "booked" || status === "occupied")
+                                return (
+                                  <span className="bg-purple-100 text-purple-700 rounded-full px-2 py-3 text-sm text-center">
+                                    Đang chờ xác nhận
+                                  </span>
+                                );
+                              return (
+                                <span className="bg-gray-100 text-gray-700 rounded-full px-2 py-3 text-sm text-center">
+                                  Không rõ
+                                </span>
+                              );
+                            })()
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -372,7 +380,7 @@ export default function PropertyDetailView() {
           <CardTitle>Bảng doanh thu theo phòng</CardTitle>
         </CardHeader>
         <CardContent>
-          <table className="w-full min-w-0 table-auto bg-white rounded-xl border-0 !border-none">
+          <table className="w-full min-w-0 table-auto rounded-xl border-0 !border-none">
             <thead className="bg-gray-100">
               <tr className="border-0 !border-none">
                 <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">
