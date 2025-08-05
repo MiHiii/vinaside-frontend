@@ -196,7 +196,7 @@ export default function Notification({
     (id: string, event: React.MouseEvent) => {
       event.stopPropagation();
       // Kiểm tra nếu notification chưa đọc thì trừ unreadCount ngay
-      const noti = notifications.find((n) => n.id === id);
+      const noti = notifications.find((n: Notification) => n.id === id);
       if (noti && !noti.isRead) {
         // Nếu có thể, cập nhật unreadCount ngay (nếu dùng Redux, dispatch action custom hoặc setState tạm thời)
         // Nếu dùng Redux slice, có thể dispatch action custom ở đây
@@ -215,7 +215,7 @@ export default function Notification({
 
   const handleClearAll = useCallback(() => {
     // Xóa từng notification (có thể tối ưu bằng API xóa all nếu backend hỗ trợ)
-    notifications.forEach((n) => removeNotification(n.id));
+    notifications.forEach((n: Notification) => removeNotification(n.id));
   }, [notifications, removeNotification]);
 
   // Xử lý click vào notification
@@ -436,7 +436,7 @@ export default function Notification({
           </div>
 
           {/* Notifications List */}
-          <ScrollArea className="notification-scroll">
+          <ScrollArea className="notification-scroll bg-white">
             {notifications.length === 0 ? (
               <div className="p-12 text-center animate-fade-in">
                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -451,105 +451,109 @@ export default function Notification({
               </div>
             ) : (
               <div className="py-2">
-                {notifications.map((notification, index) => (
-                  <div
-                    key={notification.id}
-                    className="notification-item animate-fade-in"
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                    onClick={() => handleNotificationClick(notification)}
-                  >
+                {notifications.map(
+                  (notification: Notification, index: number) => (
                     <div
-                      className={`notification-item px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer relative group border-l-4 ${
-                        !notification.isRead
-                          ? "bg-slate-50/80 dark:bg-slate-800/30 border-l-slate-900 dark:border-l-white"
-                          : "border-l-transparent"
-                      }`}
+                      key={notification.id}
+                      className="notification-item animate-fade-in"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                      onClick={() => handleNotificationClick(notification)}
                     >
-                      <div className="flex items-start gap-4">
-                        {/* Avatar or Icon */}
-                        <div className="flex-shrink-0 relative">
-                          {notification.avatar ? (
-                            <Avatar className="h-12 w-12 ring-2 ring-slate-200 dark:ring-slate-700 shadow-md">
-                              <AvatarImage
-                                src={notification.avatar || "/placeholder.svg"}
-                                alt="Avatar"
-                              />
-                              <AvatarFallback className="bg-gradient-to-br from-slate-700 to-slate-900 dark:from-slate-200 dark:to-slate-400 text-white dark:text-slate-900 font-semibold">
-                                {notification.title.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                          ) : (
-                            <div className="h-12 w-12 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 rounded-full flex items-center justify-center shadow-md">
-                              {getNotificationIcon(notification.type)}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4
-                              className={`text-base font-semibold leading-tight ${
-                                !notification.isRead
-                                  ? "text-slate-900 dark:text-white"
-                                  : "text-slate-700 dark:text-slate-300"
-                              }`}
-                            >
-                              {notification.title}
-                            </h4>
-                            {!notification.isRead && (
-                              <div className="w-2.5 h-2.5 bg-red-600 dark:bg-red-500 rounded-full flex-shrink-0 ml-2 mt-1"></div>
+                      <div
+                        className={`notification-item bg-white px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer relative group border-l-4 ${
+                          !notification.isRead
+                            ? "bg-slate-50/80 dark:bg-slate-800/30 border-l-slate-900 dark:border-l-white"
+                            : "border-l-transparent"
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Avatar or Icon */}
+                          <div className="flex-shrink-0 relative">
+                            {notification.avatar ? (
+                              <Avatar className="h-12 w-12 ring-2 ring-slate-200 dark:ring-slate-700 shadow-md">
+                                <AvatarImage
+                                  src={
+                                    notification.avatar || "/placeholder.svg"
+                                  }
+                                  alt="Avatar"
+                                />
+                                <AvatarFallback className="bg-gradient-to-br from-slate-700 to-slate-900 dark:from-slate-200 dark:to-slate-400 text-white dark:text-slate-900 font-semibold">
+                                  {notification.title.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                            ) : (
+                              <div className="h-12 w-12 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 rounded-full flex items-center justify-center shadow-md">
+                                {getNotificationIcon(notification.type)}
+                              </div>
                             )}
                           </div>
 
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 leading-relaxed line-clamp-2">
-                            {notification.message}
-                          </p>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                              <Clock className="h-3 w-3" />
-                              <span className="font-medium">
-                                {formatVietnamTime(notification.time)}
-                              </span>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4
+                                className={`text-base font-semibold leading-tight ${
+                                  !notification.isRead
+                                    ? "text-slate-900 dark:text-white"
+                                    : "text-slate-700 dark:text-slate-300"
+                                }`}
+                              >
+                                {notification.title}
+                              </h4>
+                              {!notification.isRead && (
+                                <div className="w-2.5 h-2.5 bg-red-600 dark:bg-red-500 rounded-full flex-shrink-0 ml-2 mt-1"></div>
+                              )}
                             </div>
 
-                            {/* Action buttons */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              {!notification.isRead && (
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 leading-relaxed line-clamp-2">
+                              {notification.message}
+                            </p>
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                <Clock className="h-3 w-3" />
+                                <span className="font-medium">
+                                  {formatVietnamTime(notification.time)}
+                                </span>
+                              </div>
+
+                              {/* Action buttons */}
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                {!notification.isRead && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) =>
+                                      handleMarkAsRead(notification.id, e)
+                                    }
+                                    className="h-8 w-8 p-0 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg"
+                                    title="Đánh dấu đã đọc"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={(e) =>
-                                    handleMarkAsRead(notification.id, e)
+                                    handleDeleteNotification(notification.id, e)
                                   }
-                                  className="h-8 w-8 p-0 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg"
-                                  title="Đánh dấu đã đọc"
+                                  className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 rounded-lg"
+                                  title="Xóa thông báo"
                                 >
-                                  <Check className="h-4 w-4" />
+                                  <X className="h-4 w-4" />
                                 </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) =>
-                                  handleDeleteNotification(notification.id, e)
-                                }
-                                className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 rounded-lg"
-                                title="Xóa thông báo"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
+                      {index < notifications.length - 1 && (
+                        <div className="mx-6 border-b border-slate-100 dark:border-slate-700"></div>
+                      )}
                     </div>
-                    {index < notifications.length - 1 && (
-                      <div className="mx-6 border-b border-slate-100 dark:border-slate-700"></div>
-                    )}
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             )}
           </ScrollArea>

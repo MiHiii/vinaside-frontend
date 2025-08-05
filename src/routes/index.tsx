@@ -36,7 +36,7 @@ import Messages from "@/pages/messages/Messages";
 import AllNotificationsPage from "@/pages/notifications/AllNotificationsPage";
 // Admin Pages
 import AdminLayout from "@/components/layouts/admin/AdminLayout";
-import DashboardContent from "@/components/admin/DashboardContent";
+import DashboardContent from "@/components/admin/dasboard/DashboardContent";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ProtectedAdminRoute from "@/components/common/ProtectedAdminRoute";
 import AdminLoginPage from "@/pages/auth/AdminLoginPage";
@@ -144,6 +144,14 @@ const routes: RouteObject[] = [
           </ProtectedRoute>
         ),
       },
+      {
+        path: "messages",
+        element: (
+          <ProtectedRoute>
+            <Messages />
+          </ProtectedRoute>
+        ),
+      },
       { path: "list/:id", element: <RoomDeatil /> },
       { path: "room-detail/:id", element: <RoomDeatil /> },
       { path: "search", element: <SearchResultPage /> },
@@ -165,14 +173,6 @@ const routes: RouteObject[] = [
   {
     path: "/payment/failed",
     element: <PaymentFailedPage />,
-  },
-  {
-    path: "messages",
-    element: (
-      <ProtectedRoute>
-        <Messages />
-      </ProtectedRoute>
-    ),
   },
 
   // Các route trở thành host, có thể cho phép tất cả user đăng nhập, hoặc chỉ một số role, nếu cần thì wrap bằng ProtectedRoute luôn
