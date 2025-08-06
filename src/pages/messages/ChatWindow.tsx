@@ -84,12 +84,12 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex flex-col h-full rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 p-4 relative flex-shrink-0">
+      <div className="bg-gray-900 dark:bg-gray-100 text-white p-4 relative flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar className="border-2 border-white dark:border-gray-900">
               <AvatarImage src="/logo.png" alt="Vinaside Bot" />
-              <AvatarFallback className="bg-gray-700 text-white dark:bg-gray-200 dark:text-gray-900">
+              <AvatarFallback className="bg-gray-700 text-white dark:bg-gray-200 ">
                 VB
               </AvatarFallback>
             </Avatar>
@@ -129,7 +129,7 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white dark:text-gray-900 hover:bg-white/20 dark:hover:bg-gray-900/20"
+                  className="text-white hover:bg-white/20"
                 >
                   <MoreVertical className="h-5 w-5" />
                 </Button>
@@ -144,7 +144,7 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
             <Button
               variant="ghost"
               size="icon"
-              className="text-white dark:text-gray-900 hover:bg-white/20 dark:hover:bg-gray-900/20"
+              className="text-white hover:bg-white/20"
               onClick={onClose}
             >
               <X className="h-5 w-5" />
@@ -155,10 +155,10 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
 
       {/* Message Area */}
       <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full p-4 bg-white dark:bg-gray-900">
+        <ScrollArea className="h-full p-4 bg-white">
           <div className="space-y-4 pb-4">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 dark:text-gray-400 py-10">
+              <div className="text-center text-gray-500 py-10">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-lg font-medium mb-2">
                   Chào mừng bạn đến với Vinaside Bot!
@@ -170,8 +170,8 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                   <li>• Giải đáp thắc mắc</li>
                 </ul>
                 {!isConnected && (
-                  <div className="mt-4 p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                  <div className="mt-4 p-2 bg-orange-50 rounded-lg">
+                    <div className="flex items-center gap-2 text-orange-600 ">
                       <AlertCircle className="h-4 w-4" />
                       <span className="text-xs">Đang sử dụng chế độ API</span>
                     </div>
@@ -183,7 +183,7 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
               <div key={message._id} className="space-y-2">
                 {/* User Message */}
                 <div className="flex items-start gap-3 justify-end">
-                  <div className="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 rounded-xl p-3 max-w-[75%]">
+                  <div className="bg-gray-900 text-white dark:bg-gray-100 rounded-xl p-3 max-w-[75%]">
                     <p className="text-sm whitespace-pre-wrap break-words">
                       {message.content}
                     </p>
@@ -212,7 +212,7 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                       <AvatarImage src="/logo.png" alt="Vinaside Bot" />
                       <AvatarFallback>VB</AvatarFallback>
                     </Avatar>
-                    <div className="bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-50 rounded-xl p-3 max-w-[75%]">
+                    <div className="bg-gray-100 text-gray-900 rounded-xl p-3 max-w-[75%]">
                       <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                         <MarkdownText text={message.reply} />
                       </div>
@@ -258,11 +258,11 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
       <div className="flex-shrink-0">
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col p-4 border-t border-gray-300 bg-white dark:bg-gray-900"
+          className="flex flex-col p-4 border-t border-gray-300 bg-white"
         >
           <div className="flex items-center justify-between">
             <Input
-              className="flex-1 mb-2 px-4 py-2 rounded-full border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 mb-2 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={input}
               placeholder={
                 isLoading ? "Đang tải..." : "Nhập tin nhắn của bạn..."
