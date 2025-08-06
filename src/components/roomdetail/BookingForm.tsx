@@ -10,6 +10,7 @@ import { Service } from "@/types/services";
 import { useAppDispatch } from "@/hooks/useRedux";
 import { setSelectedServices } from "@/store/slices/bookingSlice";
 import { Skeleton } from "@/components/ui/skeleton";
+import { calculateWeekendSurcharge } from "@/utils/priceCalculation";
 
 interface BookingFormProps {
   listing: IListing;
@@ -38,7 +39,14 @@ interface BookingFormProps {
   setGuestOpen: (open: boolean) => void;
   selectedServiceIds?: string[];
   services: Service[];
-  selectedServices: any[];
+  selectedServices: Array<{
+    service_id: string;
+    service_name: string;
+    service_price: number;
+    quantity: number;
+    total_price: number;
+    icon_url?: string;
+  }>;
   loading?: boolean;
 }
 
@@ -74,7 +82,17 @@ const BookingForm: React.FC<BookingFormProps> = ({
   }, [selectedServices]);
 
   const calculatePrice = () => {
-    const base = nights * pricePerNight;
+    // Tính weekend surcharge nếu có
+    let weekendSurcharge = 0;
+    if (listing.has_weekend_surcharge && listing.weekend_surcharge_percent && checkIn && checkOut) {
+      const startDate = new Date(checkIn);
+      const endDate = new Date(checkOut);
+      
+      // Sử dụng utility function giống Backend
+      weekendSurcharge = calculateWeekendSurcharge(listing, startDate, endDate);
+    }
+
+    const base = nights * pricePerNight + weekendSurcharge;
 
     // Tính lại selectedServiceTotal mỗi khi gọi calculatePrice
     const currentSelectedServiceTotal = (selectedServices ?? []).reduce(
@@ -94,7 +112,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     const total = base + serviceFee + tax + currentSelectedServiceTotal;
     console.log("calculatePrice:", {
-      base,
+      base: nights * pricePerNight,
+      weekendSurcharge,
+      totalBase: base,
       currentSelectedServiceTotal,
       totalAmount,
       serviceFee,
@@ -102,7 +122,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
       total,
     });
     return {
-      base,
+      base: nights * pricePerNight,
+      weekendSurcharge,
+      totalBase: base,
       tax,
       total,
       selectedServiceTotal: currentSelectedServiceTotal,
@@ -234,6 +256,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </span>
               <span>{(pricePerNight * nights).toLocaleString()}₫</span>
             </div>
+            {calculatePrice().weekendSurcharge > 0 && (
+              <div className="flex justify-between text-yellow-600">
+                <span>Phụ phí cuối tuần (+{listing.weekend_surcharge_percent}%)</span>
+                <span>+{calculatePrice().weekendSurcharge.toLocaleString()}₫</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>Phí dịch vụ</span>
               <span>{calculatePrice().serviceFee.toLocaleString()}₫</span>

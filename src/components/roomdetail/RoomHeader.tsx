@@ -36,6 +36,9 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ listing }) => {
         <span>{listing.max_guests} khách</span>
         <span>· {listing.beds} giường</span>
         <span>· {listing.bathrooms} phòng tắm</span>
+        {listing.has_weekend_surcharge && (
+          <span className="text-yellow-600 font-medium">· +{listing.weekend_surcharge_percent || 0}% cuối tuần</span>
+        )}
       </div>
       <div className="rounded-2xl border border-gray-300 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
         <div className="flex items-center gap-3 flex-1 min-w-0">

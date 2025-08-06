@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -42,6 +43,9 @@ interface CreateListingFormData {
   safety_features: string[];     // tính năng an toàn
   house_rules_selected: string[];// nội quy
   voucher_ids: string[];         // voucher áp dụng
+  // Weekend surcharge fields
+  has_weekend_surcharge: boolean;
+  weekend_surcharge_percent: number;
 }
 
 // Status options using ListingStatus enum
@@ -84,6 +88,12 @@ const createListingSchema = z.object({
   status: z.string().min(1, "Trạng thái là bắt buộc"),
   images: z.array(z.string()).min(1, "Cần upload ít nhất 1 ảnh"),
   amenities: z.array(z.string()).min(1, "Cần chọn ít nhất 1 tiện ích"),
+  // Weekend surcharge validation
+  has_weekend_surcharge: z.boolean(),
+  weekend_surcharge_percent: z.preprocess(
+    (val) => Number(val),
+    z.number().min(0, "Phần trăm phụ phí phải lớn hơn hoặc bằng 0").max(100, "Phần trăm phụ phí không được vượt quá 100%")
+  ),
 });
 
 export default function CreateListing() {
@@ -119,8 +129,12 @@ export default function CreateListing() {
     safety_features: [],
     house_rules_selected: [],
     voucher_ids: [],
+    // Weekend surcharge fields
+    has_weekend_surcharge: false,
+    weekend_surcharge_percent: 0,
   });
   
+  console.log("Initial formData:", formData);
   console.log("Initial formData status:", formData.status);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -142,10 +156,15 @@ export default function CreateListing() {
   }, [dispatch]);
 
   const handleInputChange = (field: keyof CreateListingFormData, value: string | number | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    console.log(`handleInputChange - ${field}:`, value);
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      console.log("Updated formData:", newData);
+      return newData;
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,6 +205,10 @@ export default function CreateListing() {
     }
 
     console.log("formData submit:", formData);
+    console.log("Weekend surcharge in formData:", {
+      has_weekend_surcharge: formData.has_weekend_surcharge,
+      weekend_surcharge_percent: formData.weekend_surcharge_percent
+    });
 
     try {
       const { property_id, ...rest } = formData;
@@ -202,14 +225,24 @@ export default function CreateListing() {
         safety_features: formData.safety_features, // Sẽ thêm sau
         other_rules: [], // Sẽ thêm sau
         voucher_ids: formData.voucher_ids, // Thêm voucher_ids vào payload
+        // Đảm bảo weekend surcharge fields được include
+        has_weekend_surcharge: formData.has_weekend_surcharge,
+        weekend_surcharge_percent: formData.weekend_surcharge_percent,
       };
 
       console.log("listingData being sent:", listingData);
+      console.log("Weekend surcharge data:", {
+        has_weekend_surcharge: listingData.has_weekend_surcharge,
+        weekend_surcharge_percent: listingData.weekend_surcharge_percent
+      });
       console.log("Status being sent:", listingData.status);
 
       const result = await dispatch(createListing(listingData));
       
+      console.log("API Response:", result);
+      
       if (createListing.fulfilled.match(result)) {
+        console.log("Success response:", result.payload);
         toast.success("Tạo phòng thành công!");
         navigate("/admin/listings");
         setFormData({
@@ -236,12 +269,17 @@ export default function CreateListing() {
           safety_features: [],
           house_rules_selected: [],
           voucher_ids: [],
+          // Weekend surcharge fields
+          has_weekend_surcharge: false,
+          weekend_surcharge_percent: 0,
         });
         setFiles([]);
       } else {
+        console.log("Error response:", result.payload);
         toast.error(result.payload || "Tạo phòng thất bại!");
       }
-    } catch {
+    } catch (error) {
+      console.log("Exception error:", error);
       toast.error("Có lỗi xảy ra!");
     }
   };
@@ -429,6 +467,60 @@ export default function CreateListing() {
                 </SelectContent>
               </Select>
               {errors.cancel_policy && <span className="text-red-500 text-sm font-medium">{errors.cancel_policy}</span>}
+            </div>
+
+            {/* Weekend Surcharge */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+                <Label className="text-base text-gray-800 dark:text-gray-200">Phụ phí cuối tuần</Label>
+              </div>
+              
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                  <input
+                    type="checkbox"
+                    checked={formData.has_weekend_surcharge}
+                    onChange={(e) => {
+                      console.log("Checkbox changed:", e.target.checked);
+                      handleInputChange("has_weekend_surcharge", e.target.checked);
+                    }}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Áp dụng phụ phí cuối tuần</span>
+                </label>
+                
+                {formData.has_weekend_surcharge && (
+                  <div className="space-y-2 pl-7">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="weekend_surcharge_percent" className="text-sm text-gray-700 dark:text-gray-300">
+                        Phần trăm phụ phí (%)
+                      </Label>
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                        {formData.weekend_surcharge_percent}%
+                      </span>
+                    </div>
+                    <Slider
+                      value={[formData.weekend_surcharge_percent]}
+                      onValueChange={(val: number[]) => {
+                        console.log("Slider value changed:", val[0]);
+                        handleInputChange("weekend_surcharge_percent", val[0]);
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Phụ phí sẽ được tính thêm vào giá gốc mỗi đêm vào cuối tuần (Thứ 6, Thứ 7, Chủ nhật)
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Trạng thái */}
