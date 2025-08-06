@@ -159,8 +159,8 @@ export default function CreateListing() {
     console.log(`handleInputChange - ${field}:`, value);
     setFormData(prev => {
       const newData = {
-        ...prev,
-        [field]: value
+      ...prev,
+      [field]: value
       };
       console.log("Updated formData:", newData);
       return newData;

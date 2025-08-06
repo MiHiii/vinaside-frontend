@@ -32,6 +32,9 @@ export interface BookingData {
     total_price?: number;
   }>;
   services_total_amount?: number;
+  // Additional cost fields
+  additionalCost?: number;
+  additionalCostReason?: string;
 }
 
 export interface BookingDetail extends BookingData {
@@ -51,6 +54,9 @@ export interface BookingDetail extends BookingData {
   updatedBy: string;
   created_at: string;
   updated_at: string;
+  // Additional cost fields (inherited from BookingData)
+  additionalCost?: number;
+  additionalCostReason?: string;
   [key: string]: unknown;
 }
 
