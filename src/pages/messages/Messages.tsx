@@ -25,7 +25,6 @@ import EmojiPicker from "emoji-picker-react";
 import { MessageReaction } from "@/services/chat.service";
 import { useMessages } from "@/hooks/useMessages";
 import { NavLink } from "react-router-dom";
-import ClientHeader from "@/components/layouts/client/ClientHeader";
 
 export default function Messages() {
   const {
@@ -84,7 +83,6 @@ export default function Messages() {
 
   return (
     <>
-      <ClientHeader />
       <style>{`
         @keyframes fadeIn {
           from {
