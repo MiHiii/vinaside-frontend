@@ -422,8 +422,8 @@ export default function Listings() {
                   <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Ảnh</TableHead>
                   <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Tiêu đề</TableHead>
                   <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide text-right">Giá/đêm</TableHead>
-                  <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide text-center">Khách tối đa</TableHead>
-                  <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Property</TableHead>
+                  <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide text-center">Phí cuối tuần</TableHead>
+                  <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">HomeStay</TableHead>
                   <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide text-center">Trạng thái</TableHead>
                   <TableHead className='text-right border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide'>Thao tác</TableHead>
                 </TableRow>
@@ -465,10 +465,18 @@ export default function Listings() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center border-none py-4 px-6">
-                      <div className='text-gray-700 dark:text-gray-300 font-medium'>
-                        {listing.max_guests}
-                      </div>
+                      {listing.has_weekend_surcharge ? (
+                        <div className='flex flex-col items-center'>
+                          <span className='text-xs font-medium text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/20 px-2 py-1 rounded-full'>
+                            +{listing.weekend_surcharge_percent || 0}%
+                          </span>
+                          <span className='text-xs text-gray-500 dark:text-gray-400 mt-1'>Weekend</span>
+                        </div>
+                      ) : (
+                        <span className='text-xs text-gray-400 dark:text-gray-500'>-</span>
+                      )}
                     </TableCell>
+  
                     <TableCell className="border-none py-4 px-6">
                       <div className='max-w-xs truncate text-gray-600 dark:text-gray-300 text-sm' title={typeof listing.propertyId === 'object' && listing.propertyId !== null ? listing.propertyId.name : listing.propertyId || ''}>
                         {typeof listing.propertyId === 'object' && listing.propertyId !== null

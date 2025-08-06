@@ -247,6 +247,11 @@ export default function ListingDetail() {
                 <Tag className="w-4 h-4 mr-2" />
                 <span className="text-sm">Giá/đêm: </span>
                 <span className="font-semibold text-blue-600 ml-1">{listing.price_per_night?.toLocaleString()}₫</span>
+                {listing.has_weekend_surcharge && (
+                  <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                    +{listing.weekend_surcharge_percent || 0}% weekend
+                  </span>
+                )}
               </div>
               {/* Thông tin bổ sung */}
               <div className="grid grid-cols-2 gap-4 mt-4">
@@ -270,6 +275,13 @@ export default function ListingDetail() {
                   <span className="text-gray-600">Bình luận:</span>
                   <span className="font-semibold">{listing.reviews_count ?? 0}</span>
                 </div>
+                {listing.has_weekend_surcharge && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-yellow-500" />
+                    <span className="text-gray-600">Phí cuối tuần:</span>
+                    <span className="font-semibold text-yellow-600">+{listing.weekend_surcharge_percent || 0}%</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 col-span-2">
                   <Info className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-600">Mô tả:</span>
