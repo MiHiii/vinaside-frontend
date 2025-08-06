@@ -47,7 +47,9 @@ export default function HomePage() {
 
   // Cập nhật localListings khi listings redux thay đổi
   React.useEffect(() => {
-    setLocalListings(listings);
+    // Chỉ hiển thị những phòng có trạng thái active
+    const activeListings = listings.filter(listing => listing.status === 'active');
+    setLocalListings(activeListings);
   }, [listings]);
 
   const scrollRow = (index: number, direction: "left" | "right") => {

@@ -300,7 +300,7 @@ export default function Listings() {
           <Link to="/admin/listings/create">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200">
               <Plus className="w-4 h-4 mr-2" />
-              Thêm Listing
+              Thêm Phòng
             </Button>
           </Link>
           </PermissionGuard>
@@ -318,7 +318,7 @@ export default function Listings() {
           </h2>
         </div>
         
-        <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+        <div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
           {/* Search Input */}
           <div className='relative'>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ top: '-45px' }}>
@@ -342,6 +342,23 @@ export default function Listings() {
               {displayProperties.map((p) => (
                 <option key={p._id} value={p._id}>{p.name}</option>
               ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style={{ top: '-45px' }}>
+              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+          
+          {/* Status filter */}
+          <div className="relative">
+            <select
+              value={filters.status}
+              onChange={e => handleFilterChange("status", e.target.value)}
+              className='w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white'>
+              <option value="">Tất cả trạng thái</option>
+              <option value="active">Hoạt động</option>
+              <option value="inactive">Sửa chữa-Bảo trì</option>
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style={{ top: '-45px' }}>
               <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -407,6 +424,7 @@ export default function Listings() {
                   <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide text-right">Giá/đêm</TableHead>
                   <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide text-center">Khách tối đa</TableHead>
                   <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide">Property</TableHead>
+                  <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide text-center">Trạng thái</TableHead>
                   <TableHead className='text-right border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm uppercase tracking-wide'>Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
@@ -457,6 +475,13 @@ export default function Listings() {
                           ? <span className="text-green-700 dark:text-green-400 font-medium">{listing.propertyId.name}</span>
                           : listing.propertyId || ''}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-center border-none py-4 px-6">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        listing.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-400 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                      }`}>
+                        {listing.status === 'active' ? 'Hoạt động' : 'Sửa chữa - Bảo trì'}
+                      </span>
                     </TableCell>
                     <TableCell className='text-right border-none py-4 px-6'>
                       <div className='flex items-center justify-end gap-2'>

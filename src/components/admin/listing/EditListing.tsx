@@ -320,25 +320,22 @@ export default function EditListing() {
             {errors.price_per_night && <span className="text-red-500 text-sm font-medium">{errors.price_per_night}</span>}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {/* <div className="space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="status" className="text-base text-gray-800 dark:text-gray-200">
                 Trạng thái *
               </Label>
               <select
                 id="status"
                 name="status"
-                value={form.status || "draft"}
+                value={form.status || "active"}
                 onChange={handleChange}
                 className="w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white"
               >
           <option value="active">Hoạt động</option>
-          <option value="inactive">Không hoạt động</option>
-          <option value="draft">Bản nháp</option>
-          <option value="pending_approval">Chờ duyệt</option>
-          <option value="verified">Đã kiểm duyệt</option>
+          <option value="inactive">Sửa chữa - Bảo trì</option>
         </select>
               {errors.status && <span className="text-red-500 text-sm font-medium">{errors.status}</span>}
-            </div> */}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="cancel_policy" className="text-base text-gray-800 dark:text-gray-200">
@@ -358,19 +355,7 @@ export default function EditListing() {
               {errors.cancel_policy && <span className="text-red-500 text-sm font-medium">{errors.cancel_policy}</span>}
             </div>
           </div>
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-            <input
-              type="checkbox"
-              id="allow_pets"
-              name="allow_pets"
-              checked={form.allow_pets || false}
-              onChange={handleChange}
-              className="w-4 h-4 text-blue-600 bg-gray-100 border border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-            />
-            <Label htmlFor="allow_pets" className="text-base text-gray-800 dark:text-gray-200">
-        Cho phép thú cưng
-            </Label>
-          </div>
+
           <div className="space-y-3">
         <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

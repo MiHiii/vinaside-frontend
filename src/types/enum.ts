@@ -2,17 +2,11 @@
  * Trạng thái của bài đăng (listing)
  */
 export enum ListingStatus {
-  /** Bản nháp - chưa công khai */
-  DRAFT = "DRAFT",
+  /** Phòng đang hoạt động và hiển thị */
+  ACTIVE = "active",
 
-  /** Đã công khai */
-  PUBLISHED = "PUBLISHED",
-
-  /** Đã gỡ khỏi danh sách */
-  UNLISTED = "UNLISTED",
-
-  /** Lưu trữ - không còn sử dụng */
-  ARCHIVED = "ARCHIVED",
+  /** Tạm ngưng hiển thị */
+  INACTIVE = "inactive",
 }
 
 /**

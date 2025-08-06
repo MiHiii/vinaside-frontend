@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
+import { ListingStatus } from "@/types/enum";
 
 interface CreateListingFormData {
   title: string;
@@ -43,12 +44,10 @@ interface CreateListingFormData {
   voucher_ids: string[];         // voucher áp dụng
 }
 
+// Status options using ListingStatus enum
 // const statusOptions = [
-//   { value: "active", label: "Hoạt động" },
-//   { value: "inactive", label: "Không hoạt động" },
-//   { value: "draft", label: "Bản nháp" },
-//   { value: "pending_approval", label: "Chờ duyệt" },
-//   { value: "verified", label: "Đã kiểm duyệt" },
+//   { value: ListingStatus.ACTIVE, label: "Hoạt động" },
+//   { value: ListingStatus.INACTIVE, label: "Không hoạt động" },
 // ];
 
 const cancelPolicies = [
@@ -113,7 +112,7 @@ export default function CreateListing() {
     cancel_policy: "flexible",
     allow_pets: false,
     property_id: "",
-    status: "draft",
+    status: ListingStatus.ACTIVE,
     images: [],
     amenities: [],
     service_ids: [],
@@ -121,6 +120,8 @@ export default function CreateListing() {
     house_rules_selected: [],
     voucher_ids: [],
   });
+  
+  console.log("Initial formData status:", formData.status);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -167,6 +168,10 @@ export default function CreateListing() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(clearCreateError());
+    
+    console.log("Current formData status:", formData.status);
+    console.log("ListingStatus.ACTIVE value:", ListingStatus.ACTIVE);
+    
     const resultZod = createListingSchema.safeParse(formData);
     if (!resultZod.success) {
       const fieldErrors: Record<string, string> = {};
@@ -187,6 +192,7 @@ export default function CreateListing() {
       const listingData = {
         ...rest,
         propertyId: property_id,
+        status: formData.status, // Đảm bảo status được include
         location: {
           type: "Point",
           coordinates: [0, 0], // Sẽ thêm sau khi có map
@@ -197,6 +203,9 @@ export default function CreateListing() {
         other_rules: [], // Sẽ thêm sau
         voucher_ids: formData.voucher_ids, // Thêm voucher_ids vào payload
       };
+
+      console.log("listingData being sent:", listingData);
+      console.log("Status being sent:", listingData.status);
 
       const result = await dispatch(createListing(listingData));
       
@@ -220,7 +229,7 @@ export default function CreateListing() {
           cancel_policy: "flexible",
           allow_pets: false,
           property_id: "",
-          status: "draft",
+          status: ListingStatus.ACTIVE,
           images: [],
           amenities: [],
           service_ids: [],

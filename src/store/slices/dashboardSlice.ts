@@ -41,7 +41,6 @@ export interface DashboardData {
     listingsByStatus: {
       active: number;
       inactive: number;
-      draft: number;
     };
     totalBookings: number;
     totalRevenue: number;

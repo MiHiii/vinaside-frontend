@@ -45,9 +45,6 @@ export default function DeletedListings() {
   const statusMap: Record<string, { label: string; bg: string }> = {
     active: { label: 'Hoạt động', bg: 'bg-green-100 text-green-700' },
     inactive: { label: 'Không hoạt động', bg: 'bg-gray-200 text-gray-700' },
-    draft: { label: 'Bản nháp', bg: 'bg-yellow-100 text-yellow-700' },
-    pending_approval: { label: 'Chờ duyệt', bg: 'bg-blue-100 text-blue-700' },
-    verified: { label: 'Đã kiểm duyệt', bg: 'bg-purple-100 text-purple-700' },
   };
 
   return (
