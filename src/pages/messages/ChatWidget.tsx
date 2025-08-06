@@ -25,7 +25,7 @@ export function ChatWidget() {
         variant="default"
         size="icon"
         className={cn(
-          "fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg bg-gray-900 hover:bg-gray-800 text-white dark:bg-gray-100 dark:hover:bg-gray-200 dark:text-gray-900 z-50 transition-all duration-300",
+          "fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg bg-gray-900 hover:bg-gray-800 text-white dark:bg-gray-100 dark:hover:bg-gray-200 z-50 transition-all duration-300",
           isOpen && "scale-110"
         )}
         aria-label="Mở cửa sổ trò chuyện"

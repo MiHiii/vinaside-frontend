@@ -17,11 +17,9 @@ import {
   DollarSign,
   Calendar,
   BarChart3,
-  PieChart,
   RefreshCw,
 } from "lucide-react";
-import { ResponsiveContainer, Tooltip } from "recharts";
-import RevenueChartWithDatePicker from "./revenueChart";
+import RevenueChart from "./revenueChart";
 import { DateRangePicker } from "./DateRangePicker";
 
 export default function DashboardContent() {
@@ -382,7 +380,7 @@ export default function DashboardContent() {
         </Card>
       </div>
       {/* Charts danh thu */}
-      <RevenueChartWithDatePicker />
+      <RevenueChart />
       {/* Charts Section */}
       {statistics && (
         <div className="grid gap-6 lg:grid-cols-4">

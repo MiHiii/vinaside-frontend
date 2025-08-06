@@ -87,8 +87,9 @@ export default function Notification({
     addNotificationRealtime,
     clearNotifications,
   } = useNotifications();
-  // Lấy userId và token từ redux hoặc localStorage
+  // Lấy userId, token và user role từ redux hoặc localStorage
   const userId = useAppSelector((state) => state.auth.user?._id);
+  const userRole = useAppSelector((state) => state.auth.user?.role);
   const token =
     typeof window !== "undefined"
       ? localStorage.getItem("access_token")
@@ -100,7 +101,10 @@ export default function Notification({
     if (notification.type === "message") {
       navigate(isAdmin ? "/admin/messages" : "/messages");
     } else if (notification.type === "booking") {
-      navigate("/profilepage");
+      // Nếu là admin hoặc staff thì chuyển đến trang quản lý booking
+      if (userRole === "admin" || userRole === "staff") {
+        navigate("/admin/bookings");
+      }
     } else if (notification.type === "review") {
       navigate("/profilepage");
     } else if (notification.type === "system") {
@@ -229,7 +233,12 @@ export default function Notification({
       if (notification.type === "message") {
         navigate("/messages");
       } else if (notification.type === "booking") {
-        navigate("/profilepage");
+        // Nếu là admin hoặc staff thì chuyển đến trang quản lý booking
+        if (userRole === "admin" || userRole === "staff") {
+          navigate("/admin/bookings");
+        } else {
+          navigate("/profilepage");
+        }
       } else if (notification.type === "review") {
         navigate("/profilepage");
       } else if (notification.type === "system") {
@@ -238,7 +247,7 @@ export default function Notification({
         // Dự phòng: các type khác có thể mở modal chi tiết hoặc log
       }
     },
-    [navigate, markNotificationAsRead]
+    [navigate, markNotificationAsRead, userRole]
   );
 
   return (
