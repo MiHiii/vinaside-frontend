@@ -19,12 +19,12 @@ import {
   BarChart3,
   RefreshCw,
 } from "lucide-react";
-import RevenueChart from "./revenueChart";
+import RevenueChart from "./RevenueChart";
 import { DateRangePicker } from "./DateRangePicker";
 
 export default function DashboardContent() {
   const dispatch = useDispatch<AppDispatch>();
-  const { isAdmin, isStaff, user } = useUserRole();
+  const { isStaff, user } = useUserRole();
 
   const {
     statistics,
