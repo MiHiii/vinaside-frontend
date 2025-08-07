@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
   fetchAdminListings,
-  fetchListings,
   deleteListing,
   selectListings,
   selectListingsLoading,
@@ -106,29 +105,6 @@ export default function Listings() {
   const [staffPropertyIds, setStaffPropertyIds] = useState<string[]>([]);
   const [staffPropertiesLoaded, setStaffPropertiesLoaded] = useState(false);
   
-  // Track lần fetch đầu tiên
-  const hasInitialFetch = useRef(false);
-  
-  console.log('🔄 Listings component re-render:', { isAdmin, isStaff, staffPropertiesLoaded });
-  
-  // Sử dụng properties cho dropdown
-  const displayProperties = isStaff ? staffProperties : properties;
-  
-  // Filter listings cho staff
-  const listings = isStaff 
-    ? (staffPropertyIds.length > 0 
-        ? allListings.filter(listing => {
-            const propertyId = typeof listing.propertyId === 'object' && listing.propertyId !== null 
-              ? listing.propertyId._id 
-              : listing.propertyId;
-            return staffPropertyIds.includes(propertyId);
-          })
-        : []) // Trả về mảng rỗng khi chưa load xong staff properties
-    : allListings;
-
-  // Tính toán tổng số listings hiển thị cho staff
-  const displayTotal = isStaff ? listings.length : total;
-
   const [filters, setFilters] = useState<ListingFilters>({
     search: "",
     status: "",
@@ -138,6 +114,17 @@ export default function Listings() {
   });
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  console.log('🔄 Listings component re-render:', { isAdmin, isStaff, staffPropertiesLoaded });
+  
+  // Sử dụng properties cho dropdown
+  const displayProperties = isStaff ? staffProperties : properties;
+  
+  // Sử dụng dữ liệu từ Redux trực tiếp - backend đã filter theo staff permissions
+  const listings = allListings;
+
+  // Tính toán tổng số listings hiển thị
+  const displayTotal = total;
 
   useEffect(() => {
     if (!properties || properties.length === 0) {
@@ -209,13 +196,6 @@ export default function Listings() {
     };
   }, [isStaff]);
 
-  // Reset hasInitialFetch khi staff properties thay đổi
-  useEffect(() => {
-    if (isStaff && staffPropertiesLoaded && staffPropertyIds.length > 0) {
-      hasInitialFetch.current = false;
-    }
-  }, [isStaff, staffPropertiesLoaded, staffPropertyIds.length]);
-
   // Memoize filters để tránh re-render không cần thiết
   const memoizedFilters = useMemo(() => filters, [
     filters.search, filters.status, filters.propertyId, filters.page, filters.limit
@@ -224,7 +204,7 @@ export default function Listings() {
   // Fetch listings cho admin
   useEffect(() => {
     if (isAdmin) {
-      console.log('📞 Calling fetchAdminListings');
+      console.log('📞 Calling fetchAdminListings for admin with params:', memoizedFilters);
       const params: Partial<typeof memoizedFilters> = { ...memoizedFilters };
       if (!params.propertyId) {
         delete params.propertyId;
@@ -240,10 +220,11 @@ export default function Listings() {
     }
   }, [memoizedFilters, dispatch, isAdmin]);
 
-  // Fetch listings cho staff - chỉ khi properties đã load xong
+  // Fetch listings cho staff - sử dụng backend pagination
   useEffect(() => {
-    if (isStaff && staffPropertiesLoaded && staffPropertyIds.length > 0 && !hasInitialFetch.current) {
-      console.log('📞 Calling fetchListings for staff (initial)');
+    if (isStaff && staffPropertiesLoaded && staffPropertyIds.length > 0) {
+      console.log('📞 Calling fetchAdminListings for staff with params:', memoizedFilters);
+      
       const params: Partial<typeof memoizedFilters> = { ...memoizedFilters };
       if (!params.propertyId) {
         delete params.propertyId;
@@ -252,13 +233,13 @@ export default function Listings() {
         delete params.status;
       }
       
-      dispatch(fetchListings({
+      // Sử dụng backend pagination cho staff - backend sẽ tự động filter theo staff permissions
+      dispatch(fetchAdminListings({
         ...params,
         search: params.search ? params.search.trim() : "",
       }));
-      hasInitialFetch.current = true;
     }
-  }, [memoizedFilters, dispatch, isStaff, staffPropertiesLoaded, staffPropertyIds.length]);
+  }, [memoizedFilters, dispatch, isStaff, staffPropertiesLoaded, staffPropertyIds]);
 
   const handleFilterChange = (field: keyof ListingFilters, value: string | number) => {
     setFilters(prev => ({
@@ -277,8 +258,8 @@ export default function Listings() {
       const params: Partial<typeof filters> = { ...filters };
       if (!params.propertyId) delete params.propertyId;
       if (!params.status) delete params.status;
-      const fetchAction = isAdmin ? fetchAdminListings : fetchListings;
-      dispatch(fetchAction({
+      // Use fetchAdminListings for both admin and staff
+      dispatch(fetchAdminListings({
         ...params,
         search: params.search ? params.search.trim() : "",
       }));

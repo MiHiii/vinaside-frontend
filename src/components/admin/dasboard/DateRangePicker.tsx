@@ -26,20 +26,35 @@ import {
 
 interface DateRangePickerProps {
   className?: string;
+  dateRange?: DateRange | undefined;
+  onDateRangeChange?: (dateRange: DateRange | undefined) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  useRedux?: boolean;
 }
 
-export function DateRangePicker({ className }: DateRangePickerProps) {
+export function DateRangePicker({ 
+  className, 
+  dateRange: externalDateRange,
+  onDateRangeChange: externalOnDateRangeChange,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
+  useRedux = true 
+}: DateRangePickerProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { dateRange, dateRangeType, selectedPropertyId } = useSelector(
+  const { dateRange: reduxDateRange, dateRangeType, selectedPropertyId } = useSelector(
     (state: RootState) => state.dashboard
   );
 
-  // Initialize date state from Redux store
+  // Initialize date state from Redux store or external props
   const [date, setDate] = React.useState<DateRange | undefined>(() => {
-    if (dateRange.startDate && dateRange.endDate) {
+    if (!useRedux && externalDateRange) {
+      return externalDateRange;
+    }
+    if (useRedux && reduxDateRange.startDate && reduxDateRange.endDate) {
       return {
-        from: new Date(dateRange.startDate),
-        to: new Date(dateRange.endDate),
+        from: new Date(reduxDateRange.startDate),
+        to: new Date(reduxDateRange.endDate),
       };
     }
     // Default to today
@@ -54,13 +69,24 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
 
   // Update local state when Redux state changes
   React.useEffect(() => {
-    if (dateRange.startDate && dateRange.endDate) {
+    if (useRedux && reduxDateRange.startDate && reduxDateRange.endDate) {
       setDate({
-        from: new Date(dateRange.startDate),
-        to: new Date(dateRange.endDate),
+        from: new Date(reduxDateRange.startDate),
+        to: new Date(reduxDateRange.endDate),
       });
     }
-  }, [dateRange]);
+  }, [reduxDateRange, useRedux]);
+
+  // Update local state when external props change
+  React.useEffect(() => {
+    if (!useRedux && externalDateRange) {
+      setDate(externalDateRange);
+    }
+  }, [externalDateRange, useRedux]);
+
+  // Use external open state if provided
+  const isOpenState = externalOpen !== undefined ? externalOpen : isOpen;
+  const setIsOpenState = externalOnOpenChange || setIsOpen;
 
   // Preset options
   const presets = [
@@ -124,47 +150,58 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
 
     setDate(newDate);
 
-    // Update Redux store
-    const startDate = format(newDate.from, "yyyy-MM-dd");
-    const endDate = format(newDate.to, "yyyy-MM-dd");
+    if (useRedux) {
+      // Update Redux store
+      const startDate = format(newDate.from, "yyyy-MM-dd");
+      const endDate = format(newDate.to, "yyyy-MM-dd");
 
-    dispatch(setDateRange({ startDate, endDate }));
-    dispatch(setDateRangeType("custom"));
+      dispatch(setDateRange({ startDate, endDate }));
+      dispatch(setDateRangeType("custom"));
 
-    // Fetch all dashboard data with new date range
-    fetchAllDashboardData({
-      dateRange: "custom",
-      startDate,
-      endDate,
-      propertyId: selectedPropertyId,
-    });
+      // Fetch all dashboard data with new date range
+      fetchAllDashboardData({
+        dateRange: "custom",
+        startDate,
+        endDate,
+        propertyId: selectedPropertyId,
+      });
+    } else if (externalOnDateRangeChange) {
+      // Use external callback
+      console.log("🔄 DateRangePicker: Calling externalOnDateRangeChange with:", newDate);
+      externalOnDateRangeChange(newDate);
+    }
   };
 
   const handlePresetClick = (preset: (typeof presets)[0]) => {
     const newDate = preset.value();
     setDate(newDate);
 
-    // Update Redux store
-    const startDate = format(newDate.from, "yyyy-MM-dd");
-    const endDate = format(newDate.to, "yyyy-MM-dd");
+    if (useRedux) {
+      // Update Redux store
+      const startDate = format(newDate.from, "yyyy-MM-dd");
+      const endDate = format(newDate.to, "yyyy-MM-dd");
 
-    dispatch(setDateRangeType(preset.type));
-    dispatch(setDateRange({ startDate, endDate }));
+      dispatch(setDateRangeType(preset.type));
+      dispatch(setDateRange({ startDate, endDate }));
 
-    // Fetch all dashboard data with preset
-    fetchAllDashboardData({
-      dateRange: preset.type,
-      startDate,
-      endDate,
-      propertyId: selectedPropertyId,
-    });
+      // Fetch all dashboard data with preset
+      fetchAllDashboardData({
+        dateRange: preset.type,
+        startDate,
+        endDate,
+        propertyId: selectedPropertyId,
+      });
+    } else if (externalOnDateRangeChange) {
+      // Use external callback
+      externalOnDateRangeChange(newDate);
+    }
 
-    setIsOpen(false);
+    setIsOpenState(false);
   };
 
   return (
     <div className={cn("grid gap-2", className)}>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover open={isOpenState} onOpenChange={setIsOpenState}>
         <PopoverTrigger asChild>
           <Button
             id="date"
@@ -204,12 +241,12 @@ export function DateRangePicker({ className }: DateRangePickerProps) {
                   <Button
                     key={preset.label}
                     variant={
-                      dateRangeType === preset.type ? "default" : "ghost"
+                      (useRedux ? dateRangeType === preset.type : false) ? "default" : "ghost"
                     }
                     size="sm"
                     className={cn(
                       "w-full justify-start text-sm font-normal h-10 transition-all",
-                      dateRangeType === preset.type
+                      (useRedux ? dateRangeType === preset.type : false)
                         ? "bg-gray-900 text-white hover:bg-gray-800 shadow-sm"
                         : "hover:bg-white hover:shadow-sm text-gray-700"
                     )}

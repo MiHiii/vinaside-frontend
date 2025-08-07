@@ -288,11 +288,50 @@ export default function CreatePropertyForm() {
                             handleLocationChange("place_id", suggestion.placeId || "");
                             
                             geocodeByAddress(suggestion.description)
-                              .then((results: google.maps.GeocoderResult[]) => getLatLng(results[0]))
-                              .then((latLng: {lat: number, lng: number}) => {
-                                handleLocationChange("lat", latLng.lat);
-                                handleLocationChange("lng", latLng.lng);
-                                console.log('Đã lấy tọa độ:', latLng);
+                              .then((results: google.maps.GeocoderResult[]) => {
+                                const result = results[0];
+                                getLatLng(result).then((latLng: {lat: number, lng: number}) => {
+                                  handleLocationChange("lat", latLng.lat);
+                                  handleLocationChange("lng", latLng.lng);
+                                  console.log('Đã lấy tọa độ:', latLng);
+                                });
+                                
+                                // Parse address components để tự động điền các trường
+                                const addressComponents = result.address_components;
+                                let city = '';
+                                let district = '';
+                                let ward = '';
+                                
+                                addressComponents.forEach((component: google.maps.GeocoderAddressComponent) => {
+                                  const types = component.types;
+                                  
+                                  // Thành phố
+                                  if (types.includes('administrative_area_level_1') || 
+                                      types.includes('locality') || 
+                                      types.includes('sublocality_level_1')) {
+                                    city = component.long_name;
+                                  }
+                                  
+                                  // Quận/Huyện
+                                  if (types.includes('administrative_area_level_2') || 
+                                      types.includes('sublocality_level_2')) {
+                                    district = component.long_name;
+                                  }
+                                  
+                                  // Phường/Xã
+                                  if (types.includes('administrative_area_level_3') || 
+                                      types.includes('sublocality_level_3') ||
+                                      types.includes('sublocality')) {
+                                    ward = component.long_name;
+                                  }
+                                });
+                                
+                                // Tự động điền các trường
+                                if (city) handleLocationChange("city", city);
+                                if (district) handleLocationChange("district", district);
+                                if (ward) handleLocationChange("ward", ward);
+                                
+                                console.log('Đã tự động điền:', { city, district, ward });
                               })
                               .catch((error: unknown) => {
                                 console.error('Error getting lat/lng:', error);
@@ -331,11 +370,50 @@ export default function CreatePropertyForm() {
                                         handleLocationChange("place_id", suggestion.placeId || "");
                                         
                                         geocodeByAddress(suggestion.description)
-                                          .then((results: google.maps.GeocoderResult[]) => getLatLng(results[0]))
-                                          .then((latLng: {lat: number, lng: number}) => {
-                                            handleLocationChange("lat", latLng.lat);
-                                            handleLocationChange("lng", latLng.lng);
-                                            console.log('Đã lấy tọa độ:', latLng);
+                                          .then((results: google.maps.GeocoderResult[]) => {
+                                            const result = results[0];
+                                            getLatLng(result).then((latLng: {lat: number, lng: number}) => {
+                                              handleLocationChange("lat", latLng.lat);
+                                              handleLocationChange("lng", latLng.lng);
+                                              console.log('Đã lấy tọa độ:', latLng);
+                                            });
+                                            
+                                            // Parse address components để tự động điền các trường
+                                            const addressComponents = result.address_components;
+                                            let city = '';
+                                            let district = '';
+                                            let ward = '';
+                                            
+                                            addressComponents.forEach((component: google.maps.GeocoderAddressComponent) => {
+                                              const types = component.types;
+                                              
+                                              // Thành phố
+                                              if (types.includes('administrative_area_level_1') || 
+                                                  types.includes('locality') || 
+                                                  types.includes('sublocality_level_1')) {
+                                                city = component.long_name;
+                                              }
+                                              
+                                              // Quận/Huyện
+                                              if (types.includes('administrative_area_level_2') || 
+                                                  types.includes('sublocality_level_2')) {
+                                                district = component.long_name;
+                                              }
+                                              
+                                              // Phường/Xã
+                                              if (types.includes('administrative_area_level_3') || 
+                                                  types.includes('sublocality_level_3') ||
+                                                  types.includes('sublocality')) {
+                                                ward = component.long_name;
+                                              }
+                                            });
+                                            
+                                            // Tự động điền các trường
+                                            if (city) handleLocationChange("city", city);
+                                            if (district) handleLocationChange("district", district);
+                                            if (ward) handleLocationChange("ward", ward);
+                                            
+                                            console.log('Đã tự động điền:', { city, district, ward });
                                           })
                                           .catch((error: unknown) => {
                                             console.error('Error getting lat/lng:', error);
@@ -366,126 +444,39 @@ export default function CreatePropertyForm() {
               </div>
 
               {/* Thành phố, Quận, Phường */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city" className="text-base font-semibold text-gray-800 dark:text-gray-200">Thành phố</Label>
-                  <PlacesAutocomplete
-                    value={formData.location.city}
-                    onChange={(city: string) => handleLocationChange("city", city)}
-                    onSelect={(city: string) => handleLocationChange("city", city)}
-                    searchOptions={{
-                      types: ['(cities)'],
-                      componentRestrictions: { country: ['vn'] },
-                      language: 'vi'
-                    }}
-                  >
-                    {({ getInputProps, suggestions, getSuggestionItemProps, loading }: PlacesAutocompleteRenderProps) => (
-                      <div>
-                        <Input
-                          {...getInputProps({
-                            placeholder: 'Thành phố',
-                            className: 'w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                          })}
-                        />
-                        <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
-                          {loading && <div>Đang tìm kiếm...</div>}
-                          {suggestions.map((suggestion: Suggestion) => {
-                            const className = suggestion.active
-                              ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
-                              : 'suggestion-item px-2 py-1 cursor-pointer';
-                            return (
-                              <div
-                                {...getSuggestionItemProps(suggestion, { className })}
-                                key={suggestion.placeId}
-                              >
-                                <span>{suggestion.description}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </PlacesAutocomplete>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="district" className="text-base font-semibold text-gray-800 dark:text-gray-200">Quận/Huyện</Label>
-                  <PlacesAutocomplete
-                    value={formData.location.district}
-                    onChange={(district: string) => handleLocationChange("district", district)}
-                    onSelect={(district: string) => handleLocationChange("district", district)}
-                    searchOptions={{
-                      types: ['geocode'],
-                      componentRestrictions: { country: ['vn'] },
-                      language: 'vi'
-                    }}
-                  >
-                    {({ getInputProps, suggestions, getSuggestionItemProps, loading }: PlacesAutocompleteRenderProps) => (
-                      <div>
-                        <Input
-                          {...getInputProps({
-                            placeholder: 'Quận/Huyện',
-                            className: 'w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                          })}
-                        />
-                        <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
-                          {loading && <div>Đang tìm kiếm...</div>}
-                          {suggestions.map((suggestion: Suggestion) => {
-                            const className = suggestion.active
-                              ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
-                              : 'suggestion-item px-2 py-1 cursor-pointer';
-                            return (
-                              <div
-                                {...getSuggestionItemProps(suggestion, { className })}
-                                key={suggestion.placeId}
-                              >
-                                <span>{suggestion.description}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </PlacesAutocomplete>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ward" className="text-base font-semibold text-gray-800 dark:text-gray-200">Phường/Xã</Label>
-                  <PlacesAutocomplete
-                    value={formData.location.ward}
-                    onChange={(ward: string) => handleLocationChange("ward", ward)}
-                    onSelect={(ward: string) => handleLocationChange("ward", ward)}
-                    searchOptions={{
-                      types: ['geocode'],
-                      componentRestrictions: { country: ['vn'] },
-                      language: 'vi'
-                    }}
-                  >
-                    {({ getInputProps, suggestions, getSuggestionItemProps, loading }: PlacesAutocompleteRenderProps) => (
-                      <div>
-                        <Input
-                          {...getInputProps({
-                            placeholder: 'Phường/Xã',
-                            className: 'w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
-                          })}
-                        />
-                        <div className="autocomplete-dropdown-container bg-white border rounded shadow z-50">
-                          {loading && <div>Đang tìm kiếm...</div>}
-                          {suggestions.map((suggestion: Suggestion) => {
-                            const className = suggestion.active
-                              ? 'suggestion-item--active bg-blue-100 px-2 py-1 cursor-pointer'
-                              : 'suggestion-item px-2 py-1 cursor-pointer';
-                            return (
-                              <div
-                                {...getSuggestionItemProps(suggestion, { className })}
-                                key={suggestion.placeId}
-                              >
-                                <span>{suggestion.description}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </PlacesAutocomplete>
+              <div className="space-y-3">
+      
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city" className="text-base font-semibold text-gray-800 dark:text-gray-200">Thành phố</Label>
+                    <Input
+                      id="city"
+                      value={formData.location.city}
+                      onChange={(e) => handleLocationChange("city", e.target.value)}
+                      placeholder="Thành phố"
+                      className="w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="district" className="text-base font-semibold text-gray-800 dark:text-gray-200">Quận/Huyện</Label>
+                    <Input
+                      id="district"
+                      value={formData.location.district}
+                      onChange={(e) => handleLocationChange("district", e.target.value)}
+                      placeholder="Quận/Huyện"
+                      className="w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ward" className="text-base font-semibold text-gray-800 dark:text-gray-200">Phường/Xã</Label>
+                    <Input
+                      id="ward"
+                      value={formData.location.ward}
+                      onChange={(e) => handleLocationChange("ward", e.target.value)}
+                      placeholder="Phường/Xã"
+                      className="w-full h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -515,16 +506,7 @@ export default function CreatePropertyForm() {
               </div>
 
               {/* Cho phép thú cưng */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="allowPets"
-                  checked={formData.allowPets}
-                  onChange={(e) => handleInputChange("allowPets", e.target.checked)}
-                  className="rounded border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                />
-                <Label htmlFor="allowPets" className="text-base font-semibold text-gray-800 dark:text-gray-200">Cho phép thú cưng</Label>
-              </div>
+        
 
               {/* Upload Images */}
               <div className="space-y-2">

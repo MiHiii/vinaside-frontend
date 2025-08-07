@@ -168,6 +168,20 @@ export const fetchListingById = createAsyncThunk<
   }
 });
 
+// Thunk mới cho admin/staff - không tăng lượt xem
+export const fetchListingByIdForAdmin = createAsyncThunk<
+  Listing,
+  string,
+  { rejectValue: string }
+>("listings/fetchListingByIdForAdmin", async (id, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/listings/${id}`);
+    return res.data.data;
+  } catch (err) {
+    return rejectWithValue(getErrorMessage(err));
+  }
+});
+
 export const updateListing = createAsyncThunk<
   Listing,
   { id: string } & UpdateListingDto,
@@ -375,6 +389,26 @@ const listingSlice = createSlice({
         }
       )
       .addCase(fetchListingById.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Không tìm thấy listing!";
+      })
+
+      // fetchListingByIdForAdmin - không tăng lượt xem
+      .addCase(fetchListingByIdForAdmin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchListingByIdForAdmin.fulfilled,
+        (state, action: PayloadAction<Listing>) => {
+          state.loading = false;
+          state.listing = action.payload;
+        }
+      )
+      .addCase(fetchListingByIdForAdmin.rejected, (state, action) => {
         state.loading = false;
         state.error =
           (action.payload as string) ||

@@ -968,5 +968,5 @@ const BookingDetail: React.FC<{
     </div>
   );
 };
-
 export default BookingDetail;
+
