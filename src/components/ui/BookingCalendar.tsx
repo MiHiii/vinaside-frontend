@@ -13,7 +13,7 @@ import { vi } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './button';
 import { Card } from './card';
-import { calendarApi, CalendarQueryParams, Booking } from '@/services/calendarApi';
+import { calendarApi, CalendarQueryParams, Booking, CalendarData, CalendarDay } from '@/services/calendarApi';
 import { DayDetailModal } from './DayDetailModal';
 
 interface BookingCalendarProps {
@@ -34,7 +34,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   onBookingClick,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [calendarData, setCalendarData] = useState<any>(null);
+  const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayDetailModalOpen, setDayDetailModalOpen] = useState(false);
@@ -98,7 +98,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     if (!calendarData || !calendarData.days) return [];
 
     const dateString = format(date, 'yyyy-MM-dd');
-    const dayData = calendarData.days.find((day: any) => day.date === dateString);
+    const dayData = calendarData.days.find((day: CalendarDay) => day.date === dateString);
 
     console.log('📅 Getting bookings for date:', dateString, 'Found:', dayData);
     return dayData ? dayData.bookings : [];
@@ -249,7 +249,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
           bookings={getBookingsForDay(new Date(selectedDate))}
           totalBookings={getBookingsForDay(new Date(selectedDate)).length}
           totalRevenue={getBookingsForDay(new Date(selectedDate)).reduce(
-            (sum, booking) => sum + booking.total_amount,
+            (sum: number, booking: Booking) => sum + booking.total_amount,
             0,
           )}
         />
