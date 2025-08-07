@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import { fetchListingById, selectListing, selectListingsLoading, selectListingsError } from "@/store/slices/listingSlice";
+import { fetchListingByIdForAdmin, selectListing, selectListingsLoading, selectListingsError } from "@/store/slices/listingSlice";
 import { fetchListingStatistics, selectListingStatistics } from "@/store/slices/listingSlice";
 import { fetchReviewsByRoomId, selectReviews, selectReviewsLoading, selectReviewsError } from '@/store/slices/reviewSlice';
 import { fetchServices } from '@/store/slices/serviceSlice';
@@ -10,11 +10,9 @@ import { fetchHouseRules } from '@/store/slices/houseRuleSlice';
 import { fetchVouchers } from '@/store/slices/voucherSlice';
 import { fetchBookingsByListing } from '@/store/slices/bookingSlice';
 import { Badge } from "@/components/ui/badge";
-import { Home, Users, MapPin, Tag, ShieldCheck, Info, ArrowLeft, BarChart3, DollarSign, Star, CalendarCheck } from "lucide-react";
+import { Home, Users, MapPin, Tag, ShieldCheck, Info, ArrowLeft, BarChart3, DollarSign, Star, Calendar } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/admin/dasboard/DateRangePicker";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -28,7 +26,7 @@ type ChartDataPoint = {
   occupancyRate: number;
 };
 
-export default function ListingDetail() {
+const ListingDetail = () => {
   const { id } = useParams<{ id: string }>();
   const dispatch = useAppDispatch();
   const listing = useAppSelector(selectListing);
@@ -71,7 +69,7 @@ export default function ListingDetail() {
 
   useEffect(() => {
     if (id) {
-      dispatch(fetchListingById(id));
+      dispatch(fetchListingByIdForAdmin(id));
       dispatch(fetchListingStatistics({ id }));
     }
     dispatch(fetchServices({}));
@@ -103,11 +101,12 @@ export default function ListingDetail() {
     }
   }, [listing, dispatch]);
 
-  useEffect(() => {
-    if (id) {
-      fetch(`/api/v1/listings/${id}/view`, { method: "GET" });
-    }
-  }, [id]);
+  // Xóa useEffect gọi API tăng lượt xem vì đây là trang admin/staff
+  // useEffect(() => {
+  //   if (id) {
+  //     fetch(`/api/v1/listings/${id}/view`, { method: "GET" });
+  //   }
+  // }, [id]);
 
   if (loading) return <div className="p-8 text-center">Đang tải...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
@@ -155,6 +154,25 @@ export default function ListingDetail() {
     }
   };
 
+  // Hàm tính tổng tiền giảm giá
+  const calculateTotalDiscount = () => {
+    // Lấy tổng tiền giảm giá từ backend
+    let totalDiscount = statistics?.voucherImpact?.totalDiscountAmount || 0;
+    
+    // Nếu backend trả về 0, thử tính từ booking data
+    if (totalDiscount === 0 && Array.isArray(bookings) && bookings.length > 0) {
+      totalDiscount = bookings.reduce((sum, booking) => {
+        if (booking.final_amount && booking.total_price) {
+          const discount = booking.total_price - booking.final_amount;
+          return sum + (discount > 0 ? discount : 0);
+        }
+        return sum;
+      }, 0);
+    }
+    
+    return totalDiscount;
+  };
+
   return (
     <div className="min-h-screen  p-4 md:p-6 lg:p-8">
       <div className=" space-y-8">
@@ -166,44 +184,16 @@ export default function ListingDetail() {
           <ArrowLeft className="w-5 h-5" />
           Quay lại
         </button>
-              {/* Đặt UI chọn ngày trước bảng đánh giá */}
-              <div className="flex items-center gap-4 mb-4">
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={"w-[280px] justify-start text-left font-normal border-none"}
-              >
-                <CalendarCheck className="mr-2 h-4 w-4" />
-                {dateRange?.from && dateRange?.to
-                  ? `${format(dateRange.from, "PPP")} - ${format(dateRange.to, "PPP")}`
-                  : "Chọn khoảng ngày"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-white rounded-xl shadow-lg border border-gray-200" align="start">
-              <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-                initialFocus
-                className="!bg-white rounded-xl p-2"
-                modifiersClassNames={{
-                  range_start: "!bg-black !text-white",
-                  range_end: "!bg-black !text-white",
-                  today: "border border-blue-400"
-                }}
-                // Nếu Calendar hỗ trợ prop này, sẽ override style ngày được chọn
-              />
-              {dateRange?.from || dateRange?.to ? (
-                <div className="flex justify-end px-4 pb-2 pt-1">
-                  <Button variant="ghost" size="sm" onClick={() => setDateRange(undefined)}>
-                    Xóa ngày
-                  </Button>
-                </div>
-              ) : null}
-            </PopoverContent>
-          </Popover>
+        {/* Đặt UI chọn ngày trước bảng đánh giá */}
+        <div className="flex items-center gap-4 mb-4">
+          <DateRangePicker
+            className="w-[280px]"
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            open={open}
+            onOpenChange={setOpen}
+            useRedux={false}
+          />
         </div>
         {/* Header Section */}
         <div className="bg-white p-8 mb-4 rounded-xl shadow flex flex-col md:flex-row gap-8 items-stretch min-h-[180px]">
@@ -271,7 +261,7 @@ export default function ListingDetail() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CalendarCheck className="w-4 h-4 text-blue-400" />
+                  <Calendar className="w-4 h-4 text-blue-400" />
                   <span className="text-gray-600">Bình luận:</span>
                   <span className="font-semibold">{listing.reviews_count ?? 0}</span>
                 </div>
@@ -460,7 +450,7 @@ export default function ListingDetail() {
               <span className="text-2xl font-bold">{statistics.reviews.averageRating}</span>
             </div>
             <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
-              <span className="text-sm text-gray-500 flex items-center gap-2"><CalendarCheck className="w-4 h-4 text-purple-400" /> Tổng đánh giá</span>
+              <span className="text-sm text-gray-500 flex items-center gap-2"><Calendar className="w-4 h-4 text-purple-400" /> Tổng đánh giá</span>
               <span className="text-2xl font-bold">{statistics.reviews.totalReviews}</span>
             </div>
             <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
@@ -473,7 +463,12 @@ export default function ListingDetail() {
             </div>
             <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
               <span className="text-sm text-gray-500 flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-400" /> Tổng tiền giảm giá</span>
-              <span className="text-2xl font-bold">{statistics.voucherImpact.totalDiscountAmount?.toLocaleString()}₫</span>
+              <span className="text-2xl font-bold">
+                {calculateTotalDiscount().toLocaleString()}₫
+              </span>
+              {calculateTotalDiscount() === 0 ? (
+                <span className="text-xs text-gray-400">Chưa có voucher nào được áp dụng</span>
+              ) : null}
             </div>
           </div>
         )}
@@ -586,4 +581,6 @@ export default function ListingDetail() {
       </div>
     </div>
   );
-} 
+};
+
+export default ListingDetail; 
