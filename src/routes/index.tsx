@@ -67,10 +67,12 @@ import EditAmenities from "@/components/admin/amenities/EditAmenities";
 import RoleManagementPage from "@/pages/admin/roles/RoleManagementPage";
 import RoleCreatePage from "@/pages/admin/roles/RoleCreatePage";
 import VoucherListPage from "@/pages/admin/voucher/VoucherListPage";
+import VoucherUsagePage from "@/pages/admin/voucher/VoucherUsagePage";
 import ServiceListPage from "@/pages/admin/service/ServiceListPage";
 import SafetyFeatureListPage from "@/pages/admin/safety-feature/SafetyFeatureListPage";
 import HouseRuleListPage from "@/pages/admin/house-rule/HouseRuleListPage";
 import ReviewManagementPage from "@/pages/admin/reviews/ReviewManagementPage";
+import ServiceUsagePage from "@/pages/admin/service/ServiceUsagePage";
 
 //booking
 import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
@@ -275,6 +277,8 @@ const routes: RouteObject[] = [
       { path: "permissions-manager", element: <RoleManagementPage /> },
       { path: "permissions/create", element: <RoleCreatePage /> },
       { path: "vouchers", element: <VoucherListPage /> },
+      { path: "vouchers/:id/usage", element: <VoucherUsagePage /> },
+      { path: "services/:id/usage", element: <ServiceUsagePage /> },
       { path: "services", element: <ServiceListPage /> },
       { path: "safety-features", element: <SafetyFeatureListPage /> },
       { path: "house-rules", element: <HouseRuleListPage /> },

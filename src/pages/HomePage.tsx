@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/hooks/useRedux";
-import { fetchListings, fetchListingById } from "@/store/slices/listingSlice";
+import {
+  fetchListings,
+  fetchListingById,
+  fetchTopViewedListings,
+  fetchTopRatedListings,
+  fetchTopWishlistListings,
+} from "@/store/slices/listingSlice";
 import type { RootState } from "@/store";
 import { Listing } from "@/types/listing";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +35,22 @@ export default function HomePage() {
   const { listings, loading, error } = useSelector(
     (state: RootState) => state.listings
   );
+  const topViewedListings = useSelector(
+    (state: RootState) => state.listings.topViewedListings
+  );
+  const topRatedListings = useSelector(
+    (state: RootState) => state.listings.topRatedListings
+  );
+  const topWishlistListings = useSelector(
+    (state: RootState) => state.listings.topWishlistListings
+  );
+  const topListingsLoading = useSelector(
+    (state: RootState) => state.listings.topListingsLoading
+  );
+  const topListingsError = useSelector(
+    (state: RootState) => state.listings.topListingsError
+  );
+
   const [localListings, setLocalListings] = React.useState(listings);
 
   // Ref cho hàng đầu tiên để scroll ngang khi click nút trên cùng
@@ -36,6 +58,9 @@ export default function HomePage() {
 
   React.useEffect(() => {
     dispatch(fetchListings({ limit: 14 }));
+    dispatch(fetchTopViewedListings({ limit: 7 }));
+    dispatch(fetchTopRatedListings({ limit: 7 }));
+    dispatch(fetchTopWishlistListings({ limit: 7 }));
   }, [dispatch]);
 
   // Hiện toast khi có error
@@ -43,12 +68,20 @@ export default function HomePage() {
     if (error) {
       toast.error(error || "Đã xảy ra lỗi mạng. Vui lòng thử lại sau.");
     }
-  }, [error]);
+    if (topListingsError) {
+      toast.error(
+        topListingsError ||
+          "Đã xảy ra lỗi khi tải top listings. Vui lòng thử lại sau."
+      );
+    }
+  }, [error, topListingsError]);
 
   // Cập nhật localListings khi listings redux thay đổi
   React.useEffect(() => {
     // Chỉ hiển thị những phòng có trạng thái active
-    const activeListings = listings.filter(listing => listing.status === 'active');
+    const activeListings = listings.filter(
+      (listing) => listing.status === "active"
+    );
     setLocalListings(activeListings);
   }, [listings]);
 
@@ -75,17 +108,109 @@ export default function HomePage() {
   // Chia localListings thành các hàng, mỗi hàng tối đa 7 card
   const chunkedListings = chunkArray(localListings, 7);
 
+  // Component helper để render section top listings
+  const TopListingsSection = ({
+    title,
+    listings,
+    loading,
+    sectionIndex,
+  }: {
+    title: string;
+    listings: Listing[];
+    loading: boolean;
+    sectionIndex: number;
+  }) => {
+    const filteredListings = listings.filter(
+      (listing) => listing.status === "active"
+    );
+    const sectionRef = React.useRef<HTMLDivElement>(null);
+
+    const scrollSection = (direction: "left" | "right") => {
+      const section = sectionRef.current;
+      if (!section) return;
+
+      const scrollAmount = 340;
+      section.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    };
+
+    if (loading) {
+      return (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-card-foreground mb-4">
+            {title}
+          </h2>
+          <div className="flex gap-6 overflow-x-auto pb-2">
+            {Array.from({ length: 7 }).map((_, idx) => (
+              <div key={idx} className="min-w-[280px] max-w-[280px]">
+                <Skeleton className="h-[220px] w-full rounded-2xl mb-2" />
+                <div className="p-3 pb-2">
+                  <Skeleton className="h-5 w-2/3 mb-2" />
+                  <Skeleton className="h-4 w-1/3 mb-1" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (filteredListings.length === 0) return null;
+
+    return (
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-medium text-card-foreground">{title}</h2>
+          <div className="flex gap-2">
+            <Button
+              size="icon"
+              className="rounded-full bg-muted hover:bg-muted/70"
+              onClick={() => scrollSection("left")}
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="h-5 w-5 text-foreground" />
+            </Button>
+            <Button
+              size="icon"
+              className="rounded-full bg-muted hover:bg-muted/70"
+              onClick={() => scrollSection("right")}
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="h-5 w-5 text-foreground" />
+            </Button>
+          </div>
+        </div>
+        <div
+          ref={sectionRef}
+          className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {filteredListings.map((property: Listing) => (
+            <PropertyCard
+              key={property._id}
+              property={property}
+              onViewDetail={handleViewDetail}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Section title & scroll */}
       <div className="flex items-center justify-between mt-2">
-        <h2 className="text-xl font-bold text-card-foreground">
+        <h2 className="text-xl font-medium text-card-foreground">
           Khám phá tất cả phòng nghỉ tại Vinaside
         </h2>
       </div>
 
       {/* Nhiều hàng, mỗi hàng tối đa 7 card, scroll ngang từng hàng với nút */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 mb-8">
         {loading || error ? (
           // Hiển thị 2 hàng, mỗi hàng 7 skeleton card
           <>
@@ -150,6 +275,30 @@ export default function HomePage() {
           ))
         )}
       </div>
+
+      {/* Top Viewed Listings */}
+      <TopListingsSection
+        title="Phòng được xem nhiều nhất"
+        listings={topViewedListings}
+        loading={topListingsLoading}
+        sectionIndex={0}
+      />
+
+      {/* Top Rated Listings */}
+      <TopListingsSection
+        title="Phòng được đánh giá cao nhất"
+        listings={topRatedListings}
+        loading={topListingsLoading}
+        sectionIndex={1}
+      />
+
+      {/* Top Wishlist Listings */}
+      <TopListingsSection
+        title="Phòng được yêu thích nhất"
+        listings={topWishlistListings}
+        loading={topListingsLoading}
+        sectionIndex={2}
+      />
     </div>
   );
 }
@@ -168,7 +317,7 @@ function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
   return (
     <Card
       onClick={() => onViewDetail(property._id)}
-      className="min-w-[280px] max-w-[280px] rounded-2xl bg-card border-none hover:shadow-md transition-all duration-300 cursor-pointer"
+      className="min-w-[280px] max-w-[280px] rounded-xl bg-card border-none hover:shadow-md transition-all duration-300 cursor-pointer"
     >
       <div className="relative">
         <img
@@ -183,7 +332,7 @@ function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
       </div>
       <CardContent className="p-3 pb-2">
         <div className="flex justify-between items-center gap-2 mb-1">
-          <h3 className="font-semibold text-[17px] truncate text-card-foreground">
+          <h3 className="font-medium text-[15px] truncate text-card-foreground">
             {property.title}
           </h3>
           <div className="flex items-center gap-1 text-sm font-medium text-card-foreground">
@@ -192,12 +341,12 @@ function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
           </div>
         </div>
         {/* Hiển thị giá tiền */}
-        <div className="text-sm text-muted-foreground font-medium mb-1">
-          {property.price_per_night?.toLocaleString()}₫ / đêm
+        <div className="text-sm text-gray-500 text-muted-foreground font-medium mb-1">
+          {property.price_per_night?.toLocaleString()}₫ /đêm
         </div>
-        <div className="text-sm text-muted-foreground">
+        {/* <div className="text-sm text-muted-foreground">
           {property.guests ?? 2} khách
-        </div>
+        </div> */}
       </CardContent>
     </Card>
   );

@@ -43,7 +43,7 @@ export default function ClientHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm">
+    <header className="sticky top-0 z-50 w-full bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
       <div className="mx-auto flex container items-center justify-between px-4 py-4 md:px-6">
         {/* Logo SÁT TRÁI ngoài cùng */}
         <Link to="/" className="flex items-center gap-2 mr-6">
@@ -59,7 +59,7 @@ export default function ClientHeader() {
             </svg>
             {/* <img src="/logochu.png" alt="Vinaside Logo" className="h-20 w-20" /> */}
           </div>
-          <span className="hidden text-xl font-bold md:inline-block">
+          <span className="hidden text-xl font-bold text-[hsl(var(--muted-foreground))] md:inline-block">
             Vinaside
           </span>
         </Link>

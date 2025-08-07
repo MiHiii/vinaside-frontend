@@ -21,10 +21,12 @@ import {
 } from "lucide-react";
 import RevenueChart from "./RevenueChart";
 import { DateRangePicker } from "./DateRangePicker";
+import { useNavigate } from "react-router-dom";
 
 export default function DashboardContent() {
   const dispatch = useDispatch<AppDispatch>();
   const { isStaff, user } = useUserRole();
+  const navigate = useNavigate();
 
   const {
     statistics,
@@ -149,32 +151,19 @@ export default function DashboardContent() {
     dispatch(fetchRevenueChartData(refreshParams));
   };
 
-  // Debug log
-  console.log("Dashboard Statistics:", statistics);
-  console.log("Real Time Data:", realTimeData);
-  console.log("Current user role:", user?.role);
-  console.log("Is staff:", isStaff);
-  console.log("Selected propertyId:", selectedPropertyId);
-  console.log("Property ID being sent to API:", selectedPropertyId);
-  console.log("Real-time data for staff:", {
-    activeBookings: realTimeData?.activeBookings,
-    pendingBookings: realTimeData?.pendingBookings,
-    recentMessages: realTimeData?.recentMessages,
-    recentReviews: realTimeData?.recentReviews,
-  });
+  const handlePropertyClick = (propertyId: string) => {
+    navigate(`/admin/properties/${propertyId}`);
+  };
 
-  // Debug: Check if this is staff and what propertyId is being used
-  if (isStaff) {
-    console.log("Staff user - Property ID being used:", selectedPropertyId);
-    console.log("Expected: Only data for this property should be shown");
-    console.log(
-      "Real-time data should be filtered by property:",
-      selectedPropertyId
-    );
-    console.log(
-      "Expected: Data should be aggregated from all assigned properties"
-    );
-  }
+  const handleVoucherClick = (voucherId: string) => {
+    navigate(`/admin/vouchers/${voucherId}/usage`);
+  };
+
+  const handleServiceClick = (serviceId: string) => {
+    navigate(`/admin/services/${serviceId}/usage`);
+  };
+
+  // Debug log
 
   // Tính tổng doanh thu từ revenueChartData theo khoảng thời gian được chọn
   const totalRevenueFromChart = (() => {
@@ -399,7 +388,8 @@ export default function DashboardContent() {
                   .map((property, index) => (
                     <div
                       key={property.propertyId}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handlePropertyClick(property.propertyId)}
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -445,7 +435,8 @@ export default function DashboardContent() {
                   .map((property, index) => (
                     <div
                       key={property.propertyId}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handlePropertyClick(property.propertyId)}
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -485,7 +476,8 @@ export default function DashboardContent() {
                   .map((voucher, index) => (
                     <div
                       key={voucher.voucherId}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleVoucherClick(voucher.voucherId)}
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -529,7 +521,8 @@ export default function DashboardContent() {
                   .map((service, index) => (
                     <div
                       key={service.serviceId}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleServiceClick(service.serviceId)}
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
