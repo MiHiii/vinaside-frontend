@@ -265,36 +265,31 @@ const PastTrip = () => {
 
   const bookings: BookingWithStatus[] =
     (myBookingHistory as BookingWithStatus[]) || [];
-  const now = new Date();
 
-  // Phân loại booking
+  // Phân loại booking - Fixed filtering logic
   const upcomingBookings = bookings.filter((b) => {
     const checkInDate = new Date(b.checkInDate);
-    const result =
-      STATUS_UPCOMING.includes(b.status as BookingStatus) &&
-      checkInDate > now &&
-      (b.payment_status === PaymentStatus.PAID ||
-        b.payment_status === PaymentStatus.PENDING ||
-        b.payment_status === PaymentStatus.PARTIALLY_PAID);
-
-    return result;
+    const now = new Date(); // Local now for accurate comparison
+    return (
+      STATUS_UPCOMING.includes(b.status as BookingStatus) && checkInDate > now
+    );
   });
 
   const ongoingBookings = bookings.filter((b) => {
     const checkInDate = new Date(b.checkInDate);
     const checkOutDate = new Date(b.check_out_date);
+    const now = new Date(); // Local now for accurate comparison
     return (
       STATUS_UPCOMING.includes(b.status as BookingStatus) &&
       checkInDate <= now &&
-      checkOutDate >= now &&
-      (b.payment_status === PaymentStatus.PAID ||
-        b.payment_status === PaymentStatus.PARTIALLY_PAID)
+      checkOutDate >= now
     );
   });
 
   // Sửa: coi CONFIRMED hoặc PAID đã qua ngày checkout là completed (FE logic)
   const historyBookings = bookings.filter((b) => {
     const checkOutDate = new Date(b.check_out_date);
+    const now = new Date(); // Local now for accurate comparison
     const result =
       // Các booking đã hoàn thành (status completed hoặc đã checkout)
       b.status === BookingStatus.COMPLETED ||
@@ -669,7 +664,8 @@ const PastTrip = () => {
                     <div className="flex items-center gap-2">
                       <DollarSign size={16} className="text-red-600" />
                       <span className="text-red-600 font-medium">
-                        Chi phí phát sinh: {booking.additionalCost.toLocaleString()}₫
+                        Chi phí phát sinh:{" "}
+                        {booking.additionalCost.toLocaleString()}₫
                         {booking.additionalCostReason && (
                           <span className="text-red-500 text-sm ml-2">
                             ({booking.additionalCostReason})
@@ -902,6 +898,7 @@ const PastTrip = () => {
     paymentStatus?: string,
     checkOutDate?: Date
   ) => {
+    const now = new Date(); // Local now for accurate comparison
     // Nếu status là CONFIRMED hoặc PAID và đã qua ngày checkout, coi là hoàn thành
     if (
       (status === BookingStatus.CONFIRMED ||
