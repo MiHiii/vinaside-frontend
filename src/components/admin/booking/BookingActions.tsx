@@ -4,7 +4,15 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { updateAdminBookingStatus } from "@/store/slices/bookingSlice";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, RefreshCw, Eye } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  RefreshCw,
+  Eye,
+  FileText,
+  DollarSign,
+} from "lucide-react";
 import { BookingStatus, PaymentStatus } from "@/types/enum";
 import type { Booking } from "@/types/booking.interface";
 import { Link } from "react-router-dom";
@@ -168,7 +176,9 @@ const BookingActions: React.FC<BookingActionsProps> = ({
                   ? "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
-              title={canComplete ? "Hoàn thành booking" : "Chưa đến ngày checkout"}
+              title={
+                canComplete ? "Hoàn thành booking" : "Chưa đến ngày checkout"
+              }
             >
               <Clock size={14} />
             </Button>
@@ -202,6 +212,35 @@ const BookingActions: React.FC<BookingActionsProps> = ({
             <RefreshCw size={14} />
           </Button>
         )}
+
+      {/* Edit Cancellation Details - Chỉ hiển thị khi status là CANCELLED */}
+      {booking.status === BookingStatus.CANCELLED && (
+        <Link to={`/admin/bookings/${propertyId}/${booking._id}`}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 text-blue-600 border-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+            title="Chỉnh sửa thông tin hủy phòng"
+          >
+            <FileText size={14} />
+          </Button>
+        </Link>
+      )}
+
+      {/* Staff Payment - Chỉ hiển thị khi status là PENDING hoặc CONFIRMED */}
+      {(booking.status === BookingStatus.PENDING ||
+        booking.status === BookingStatus.CONFIRMED) && (
+        <Link to={`/admin/bookings/${propertyId}/${booking._id}`}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 text-green-600 border-green-600 hover:bg-green-50 hover:border-green-700 hover:text-green-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+            title="Thanh toán số tiền còn lại"
+          >
+            <DollarSign size={14} />
+          </Button>
+        </Link>
+      )}
     </div>
   );
 };

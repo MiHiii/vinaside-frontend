@@ -33,6 +33,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useNavigate, Link } from "react-router-dom";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -236,6 +237,10 @@ const PastTrip = () => {
     [key: string]: number;
   }>({});
   const [addServiceLoading, setAddServiceLoading] = useState(false);
+  const [showCancellationDetailsModal, setShowCancellationDetailsModal] =
+    useState(false);
+  const [selectedCancellationBooking, setSelectedCancellationBooking] =
+    useState<BookingWithStatus | null>(null);
 
   // Debug: Monitor selectedServices state changes
   useEffect(() => {
@@ -396,20 +401,40 @@ const PastTrip = () => {
 
     setAddServiceLoading(true);
     try {
-      const selectedServicesArray = Object.entries(selectedServices).map(
+      // Tạo danh sách dịch vụ mới được chọn
+      const newSelectedServicesArray = Object.entries(selectedServices).map(
         ([serviceId, quantity]) => ({
           serviceId,
           quantity,
         })
       );
 
-      console.log("Sending selected services:", selectedServicesArray);
+      // Lấy danh sách dịch vụ cũ từ booking
+      const existingServicesArray =
+        selectedBookingForService.selected_services?.map(
+          (service: {
+            service_id?: string;
+            _id?: string;
+            quantity?: number;
+          }) => ({
+            serviceId: service.service_id || service._id, // Thêm cả service_id và _id
+            quantity: service.quantity || 1,
+          })
+        ) || [];
+
+      // Kết hợp dịch vụ cũ và mới
+      const allServicesArray = [
+        ...existingServicesArray,
+        ...newSelectedServicesArray,
+      ];
+
+      console.log("Sending all services:", allServicesArray);
 
       // Sử dụng API dành cho guest
       const response = await api.patch(
         `/bookings/my-bookings/${selectedBookingForService._id}`,
         {
-          selected_services: selectedServicesArray,
+          selected_services: allServicesArray,
         }
       );
 
@@ -429,6 +454,11 @@ const PastTrip = () => {
     } finally {
       setAddServiceLoading(false);
     }
+  };
+
+  const handleShowCancellationDetails = (booking: BookingWithStatus) => {
+    setSelectedCancellationBooking(booking);
+    setShowCancellationDetailsModal(true);
   };
 
   const renderBooking = (booking: BookingWithStatus) => {
@@ -851,40 +881,11 @@ const PastTrip = () => {
             </div>
           </div>
         </div>
+
+        {/* Hiển thị thông tin hủy phòng nếu booking đã bị hủy */}
+        {renderCancellationInfo(booking)}
       </div>
     );
-  };
-
-  const confirmCancelBooking = async () => {
-    if (!selectedBookingForCancel) return;
-
-    try {
-      await api.patch(
-        `/bookings/my-bookings/${selectedBookingForCancel._id}/cancel`
-      );
-
-      // Refresh booking list
-      dispatch(getMyBookingHistory(undefined));
-
-      // Close modal
-      setShowCancelModal(false);
-
-      // Show success message
-      toast.success("Hủy đặt phòng thành công");
-    } catch (error: unknown) {
-      console.error("Error cancelling booking:", error);
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as {
-          response?: { data?: { message?: string } };
-        };
-        toast.error(
-          axiosError.response?.data?.message ||
-            "Có lỗi xảy ra khi hủy đặt phòng"
-        );
-      } else {
-        toast.error("Có lỗi xảy ra khi hủy đặt phòng");
-      }
-    }
   };
 
   // Hàm chuyển trạng thái sang tiếng Việt và màu sắc
@@ -937,6 +938,113 @@ const PastTrip = () => {
           color: "text-gray-600 bg-gray-50 border-gray-200",
         };
     }
+  };
+
+  // Hiển thị thông tin hủy phòng
+  const renderCancellationInfo = (booking: BookingWithStatus) => {
+    if (booking.status !== BookingStatus.CANCELLED) return null;
+
+    return (
+      <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <button
+          onClick={() => handleShowCancellationDetails(booking)}
+          className="w-full text-left"
+        >
+          <h4 className="font-semibold text-red-800 mb-3 flex items-center gap-2 cursor-pointer hover:text-red-700 transition-colors">
+            <XCircle size={18} className="text-red-600" />
+            Thông tin hủy phòng
+            <span className="text-sm text-red-600 ml-auto">
+              (Nhấn để xem chi tiết)
+            </span>
+          </h4>
+        </button>
+
+        <div className="space-y-3 text-sm">
+          {booking.cancellation_reason && (
+            <div>
+              <span className="font-medium text-gray-700">Lý do hủy:</span>
+              <p className="text-gray-600 mt-1">
+                {booking.cancellation_reason}
+              </p>
+            </div>
+          )}
+
+          {booking.cancelled_at && (
+            <div>
+              <span className="font-medium text-gray-700">Thời gian hủy:</span>
+              <p className="text-gray-600 mt-1">
+                {new Date(booking.cancelled_at).toLocaleString("vi-VN")}
+              </p>
+            </div>
+          )}
+
+          {booking.cancellationDetails && (
+            <div className="mt-3 p-3 bg-white rounded border">
+              <h5 className="font-medium text-gray-700 mb-2">
+                Thông tin hoàn tiền:
+              </h5>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {booking.cancellationDetails.accountName && (
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Tên chủ tài khoản:
+                    </span>
+                    <p className="text-gray-700">
+                      {booking.cancellationDetails.accountName}
+                    </p>
+                  </div>
+                )}
+                {booking.cancellationDetails.bankName && (
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Ngân hàng:
+                    </span>
+                    <p className="text-gray-700">
+                      {booking.cancellationDetails.bankName}
+                    </p>
+                  </div>
+                )}
+                {booking.cancellationDetails.accountNumber && (
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Số tài khoản:
+                    </span>
+                    <p className="text-gray-700">
+                      {booking.cancellationDetails.accountNumber}
+                    </p>
+                  </div>
+                )}
+                {booking.cancellationDetails.refundMethod && (
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Phương thức hoàn tiền:
+                    </span>
+                    <p className="text-gray-700">
+                      {booking.cancellationDetails.refundMethod ===
+                        "bank_transfer" && "Chuyển khoản ngân hàng"}
+                      {booking.cancellationDetails.refundMethod === "wallet" &&
+                        "Ví điện tử"}
+                      {booking.cancellationDetails.refundMethod ===
+                        "credit_card" && "Thẻ tín dụng"}
+                    </p>
+                  </div>
+                )}
+                {booking.cancellationDetails.refundNote && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-600">
+                      Ghi chú hoàn tiền:
+                    </span>
+                    <p className="text-gray-700">
+                      {booking.cancellationDetails.refundNote}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -1120,15 +1228,79 @@ const PastTrip = () => {
       )}
 
       {showCancelModal && selectedBookingForCancel && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Xác nhận hủy đặt phòng</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4 border-b pb-2">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <X size={20} className="text-red-500" />
+                Hủy đặt phòng
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCancelModal(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
 
-            <div className="space-y-4">
-              <p>Bạn có chắc chắn muốn hủy đặt phòng này?</p>
+            <div className="space-y-6">
+              {/* Thông tin booking */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Info size={18} className="text-blue-500" />
+                  Thông tin đặt phòng
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Ngày check-in:
+                    </span>
+                    <p className="font-medium">
+                      {new Date(
+                        selectedBookingForCancel.checkInDate
+                      ).toLocaleDateString("vi-VN")}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Ngày check-out:
+                    </span>
+                    <p className="font-medium">
+                      {new Date(
+                        selectedBookingForCancel.check_out_date
+                      ).toLocaleDateString("vi-VN")}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Tổng tiền:
+                    </span>
+                    <p className="font-medium">
+                      {(
+                        selectedBookingForCancel.final_amount || 0
+                      ).toLocaleString()}
+                      ₫
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Đã thanh toán:
+                    </span>
+                    <p className="font-medium">
+                      {(
+                        selectedBookingForCancel.deposit_paid_amount || 0
+                      ).toLocaleString()}
+                      ₫
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
+              {/* Chính sách hủy */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <Info size={18} className="text-blue-500" />
                   Chính sách hoàn tiền:
                 </h4>
@@ -1181,17 +1353,171 @@ const PastTrip = () => {
                 )}
               </div>
 
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCancelModal(false)}
-                >
-                  Hủy
-                </Button>
-                <Button variant="default" onClick={confirmCancelBooking}>
-                  Đồng ý
-                </Button>
-              </div>
+              {/* Form lý do hủy và thông tin hoàn tiền */}
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    const formData = new FormData(e.currentTarget);
+                    const cancellationData = {
+                      cancellationReason: formData.get(
+                        "cancellationReason"
+                      ) as string,
+                      accountName: formData.get("accountName") as string,
+                      bankName: formData.get("bankName") as string,
+                      accountNumber: formData.get("accountNumber") as string,
+                      refundMethod: formData.get("refundMethod") as string,
+                      refundNote: formData.get("refundNote") as string,
+                    };
+
+                    await api.patch(
+                      `/bookings/my-bookings/${selectedBookingForCancel._id}/cancel`,
+                      cancellationData
+                    );
+
+                    toast.success("Hủy đặt phòng thành công");
+                    dispatch(getMyBookingHistory(undefined));
+                    setShowCancelModal(false);
+                  } catch (error: unknown) {
+                    console.error("Error cancelling booking:", error);
+                    const errorMessage =
+                      error instanceof Error
+                        ? error.message
+                        : "Có lỗi xảy ra khi hủy đặt phòng";
+                    toast.error(errorMessage);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <Label
+                      htmlFor="cancellationReason"
+                      className="text-sm font-medium"
+                    >
+                      Lý do hủy (tùy chọn)
+                    </Label>
+                    <Textarea
+                      id="cancellationReason"
+                      name="cancellationReason"
+                      placeholder="Vui lòng cho chúng tôi biết lý do hủy phòng..."
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Thông tin hoàn tiền - chỉ hiển thị nếu có thể hoàn tiền */}
+                  {selectedBookingForCancel?.cancel_policy?.toLowerCase() !==
+                    "strict" && (
+                    <>
+                      <div className="border-t pt-4">
+                        <h5 className="font-medium mb-3 text-gray-700">
+                          Thông tin hoàn tiền
+                        </h5>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label
+                              htmlFor="accountName"
+                              className="text-sm font-medium"
+                            >
+                              Tên chủ tài khoản
+                            </Label>
+                            <Input
+                              id="accountName"
+                              name="accountName"
+                              placeholder="Nguyễn Văn A"
+                              className="mt-1"
+                            />
+                          </div>
+
+                          <div>
+                            <Label
+                              htmlFor="bankName"
+                              className="text-sm font-medium"
+                            >
+                              Tên ngân hàng
+                            </Label>
+                            <Input
+                              id="bankName"
+                              name="bankName"
+                              placeholder="Vietcombank"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <Label
+                            htmlFor="accountNumber"
+                            className="text-sm font-medium"
+                          >
+                            Số tài khoản
+                          </Label>
+                          <Input
+                            id="accountNumber"
+                            name="accountNumber"
+                            placeholder="1234567890"
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div className="mt-4">
+                          <Label
+                            htmlFor="refundMethod"
+                            className="text-sm font-medium"
+                          >
+                            Phương thức hoàn tiền
+                          </Label>
+                          <select
+                            id="refundMethod"
+                            name="refundMethod"
+                            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="bank_transfer">
+                              Chuyển khoản ngân hàng
+                            </option>
+                            <option value="wallet">Ví điện tử</option>
+                            <option value="credit_card">Thẻ tín dụng</option>
+                          </select>
+                        </div>
+
+                        <div className="mt-4">
+                          <Label
+                            htmlFor="refundNote"
+                            className="text-sm font-medium"
+                          >
+                            Ghi chú thêm (tùy chọn)
+                          </Label>
+                          <Textarea
+                            id="refundNote"
+                            name="refundNote"
+                            placeholder="Thông tin bổ sung về việc hoàn tiền..."
+                            className="mt-1"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCancelModal(false)}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Xác nhận hủy phòng
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1304,91 +1630,110 @@ const PastTrip = () => {
                 <p>Đang tải danh sách dịch vụ...</p>
               </div>
             ) : (
-              availableServices.map((service) => (
-                <div
-                  key={service._id}
-                  className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
-                    selectedServices[service._id]
-                      ? "bg-blue-50 border-blue-300"
-                      : ""
-                  }`}
-                  onClick={() => {
-                    console.log("Service item clicked:", service._id);
-                    const currentChecked = !!selectedServices[service._id];
-                    handleServiceSelection(service._id, !currentChecked);
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Checkbox
-                        id={service._id}
-                        checked={!!selectedServices[service._id]}
-                        onCheckedChange={(checked) => {
-                          console.log(
-                            "Checkbox clicked for service:",
-                            service._id,
-                            "checked:",
-                            checked
-                          );
-                          handleServiceSelection(
-                            service._id,
-                            checked as boolean
-                          );
-                        }}
-                        onClick={(e) => {
-                          console.log(
-                            "Checkbox clicked directly:",
-                            service._id
-                          );
-                          e.stopPropagation();
-                        }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                        }}
-                      />
-                      <div>
-                        <Label
-                          htmlFor={service._id}
-                          className="font-medium cursor-pointer"
-                        >
-                          {service.name}
-                        </Label>
-                        <p className="text-sm text-gray-600">
-                          {service.description}
-                        </p>
-                        <p className="text-sm font-medium text-blue-600">
-                          {service.default_price?.toLocaleString()}₫ /{" "}
-                          {service.unit}
-                        </p>
+              availableServices.map((service) => {
+                // Kiểm tra xem dịch vụ này đã được đăng ký trước đó chưa
+                const existingService =
+                  selectedBookingForService?.selected_services?.find(
+                    (registeredService: {
+                      service_id?: string;
+                      _id?: string;
+                      service_name?: string;
+                    }) =>
+                      registeredService.service_id === service._id ||
+                      registeredService._id === service._id ||
+                      registeredService.service_name === service.name
+                  );
+                const isAlreadyRegistered = !!existingService;
+
+                return (
+                  <div
+                    key={service._id}
+                    className={`border rounded-lg p-4 transition-all duration-200 ${
+                      selectedServices[service._id]
+                        ? "bg-blue-50 border-blue-300"
+                        : isAlreadyRegistered
+                        ? "bg-gray-100 border-gray-300 opacity-75"
+                        : "hover:bg-gray-50 cursor-pointer"
+                    }`}
+                    onClick={() => {
+                      if (!isAlreadyRegistered) {
+                        console.log("Service item clicked:", service._id);
+                        const currentChecked = !!selectedServices[service._id];
+                        handleServiceSelection(service._id, !currentChecked);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={service._id}
+                          checked={
+                            !!selectedServices[service._id] ||
+                            isAlreadyRegistered
+                          }
+                          disabled={isAlreadyRegistered}
+                          onCheckedChange={(checked) => {
+                            if (!isAlreadyRegistered) {
+                              console.log(
+                                "Checkbox clicked for service:",
+                                service._id,
+                                "checked:",
+                                checked
+                              );
+                              handleServiceSelection(
+                                service._id,
+                                checked as boolean
+                              );
+                            }
+                          }}
+                          onClick={(e) => {
+                            if (!isAlreadyRegistered) {
+                              console.log(
+                                "Checkbox clicked directly:",
+                                service._id
+                              );
+                              e.stopPropagation();
+                            }
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                        />
+                        <div>
+                          <Label
+                            htmlFor={service._id}
+                            className={`font-medium ${
+                              isAlreadyRegistered
+                                ? "cursor-not-allowed text-gray-500"
+                                : "cursor-pointer"
+                            }`}
+                          >
+                            {service.name}
+                            {isAlreadyRegistered && (
+                              <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                Đã đăng ký
+                              </span>
+                            )}
+                          </Label>
+                          <p
+                            className={`text-sm ${
+                              isAlreadyRegistered
+                                ? "text-gray-400"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {service.description}
+                          </p>
+                          <p className="text-sm font-medium text-blue-600">
+                            {service.default_price?.toLocaleString()}₫ /{" "}
+                            {service.unit}
+                          </p>
+                        </div>
                       </div>
                     </div>
-
-                    {/* {selectedServices[service._id] && (
-                      <div className="flex items-center gap-2">
-                        <Label
-                          htmlFor={`quantity-${service._id}`}
-                          className="text-sm"
-                        >
-                          Số lượng:
-                        </Label>
-                        <input
-                          id={`quantity-${service._id}`}
-                          type="number"
-                          min="1"
-                          value={selectedServices[service._id] || 1}
-                          onChange={(e) =>
-                            handleServiceQuantityChange(
-                              service._id,
-                              parseInt(e.target.value) || 1
-                            )
-                          }
-                          className="w-16 px-2 py-1 border rounded text-center"
-                        />
-                      </div>
-                    )} */}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
@@ -1416,6 +1761,204 @@ const PastTrip = () => {
               ) : (
                 "Thêm dịch vụ"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal hiển thị thông tin hủy phòng chi tiết */}
+      <Dialog
+        open={showCancellationDetailsModal}
+        onOpenChange={setShowCancellationDetailsModal}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-800">
+              <XCircle size={20} className="text-red-600" />
+              Chi tiết thông tin hủy phòng
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedCancellationBooking && (
+            <div className="space-y-6">
+              {/* Thông tin booking */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold text-gray-800 mb-3">
+                  Thông tin đặt phòng
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-600">Phòng:</span>
+                    <p className="text-gray-800">
+                      {typeof selectedCancellationBooking.listingId ===
+                        "object" && selectedCancellationBooking.listingId?.title
+                        ? selectedCancellationBooking.listingId.title
+                        : "Không có thông tin"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Ngày đặt:</span>
+                    <p className="text-gray-800">
+                      {new Date(
+                        selectedCancellationBooking.checkInDate
+                      ).toLocaleDateString("vi-VN")}{" "}
+                      -{" "}
+                      {new Date(
+                        selectedCancellationBooking.check_out_date
+                      ).toLocaleDateString("vi-VN")}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Tổng tiền:
+                    </span>
+                    <p className="text-gray-800 font-semibold">
+                      {selectedCancellationBooking.total_price?.toLocaleString()}
+                      ₫
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">
+                      Trạng thái:
+                    </span>
+                    <p className="text-red-600 font-semibold">Đã hủy</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông tin hủy phòng */}
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h4 className="font-semibold text-red-800 mb-4 flex items-center gap-2">
+                  <XCircle size={18} className="text-red-600" />
+                  Thông tin hủy phòng
+                </h4>
+
+                <div className="space-y-4">
+                  {selectedCancellationBooking.cancellation_reason && (
+                    <div>
+                      <span className="font-medium text-gray-700 block mb-1">
+                        Lý do hủy:
+                      </span>
+                      <p className="text-gray-800 bg-white p-3 rounded border">
+                        {selectedCancellationBooking.cancellation_reason}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedCancellationBooking.cancelled_at && (
+                    <div>
+                      <span className="font-medium text-gray-700 block mb-1">
+                        Thời gian hủy:
+                      </span>
+                      <p className="text-gray-800 bg-white p-3 rounded border">
+                        {new Date(
+                          selectedCancellationBooking.cancelled_at
+                        ).toLocaleString("vi-VN")}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedCancellationBooking.cancellationDetails && (
+                    <div className="p-4 bg-white rounded border">
+                      <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <Info size={16} className="text-blue-600" />
+                        Thông tin hoàn tiền
+                      </h5>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedCancellationBooking.cancellationDetails
+                          .accountName && (
+                          <div>
+                            <span className="font-medium text-gray-600 block mb-1">
+                              Tên chủ tài khoản:
+                            </span>
+                            <p className="text-gray-800 bg-gray-50 p-2 rounded">
+                              {
+                                selectedCancellationBooking.cancellationDetails
+                                  .accountName
+                              }
+                            </p>
+                          </div>
+                        )}
+
+                        {selectedCancellationBooking.cancellationDetails
+                          .bankName && (
+                          <div>
+                            <span className="font-medium text-gray-600 block mb-1">
+                              Ngân hàng:
+                            </span>
+                            <p className="text-gray-800 bg-gray-50 p-2 rounded">
+                              {
+                                selectedCancellationBooking.cancellationDetails
+                                  .bankName
+                              }
+                            </p>
+                          </div>
+                        )}
+
+                        {selectedCancellationBooking.cancellationDetails
+                          .accountNumber && (
+                          <div>
+                            <span className="font-medium text-gray-600 block mb-1">
+                              Số tài khoản:
+                            </span>
+                            <p className="text-gray-800 bg-gray-50 p-2 rounded font-mono">
+                              {
+                                selectedCancellationBooking.cancellationDetails
+                                  .accountNumber
+                              }
+                            </p>
+                          </div>
+                        )}
+
+                        {selectedCancellationBooking.cancellationDetails
+                          .refundMethod && (
+                          <div>
+                            <span className="font-medium text-gray-600 block mb-1">
+                              Phương thức hoàn tiền:
+                            </span>
+                            <p className="text-gray-800 bg-gray-50 p-2 rounded">
+                              {selectedCancellationBooking.cancellationDetails
+                                .refundMethod === "bank_transfer" &&
+                                "Chuyển khoản ngân hàng"}
+                              {selectedCancellationBooking.cancellationDetails
+                                .refundMethod === "wallet" && "Ví điện tử"}
+                              {selectedCancellationBooking.cancellationDetails
+                                .refundMethod === "credit_card" &&
+                                "Thẻ tín dụng"}
+                            </p>
+                          </div>
+                        )}
+
+                        {selectedCancellationBooking.cancellationDetails
+                          .refundNote && (
+                          <div className="md:col-span-2">
+                            <span className="font-medium text-gray-600 block mb-1">
+                              Ghi chú:
+                            </span>
+                            <p className="text-gray-800 bg-gray-50 p-3 rounded">
+                              {
+                                selectedCancellationBooking.cancellationDetails
+                                  .refundNote
+                              }
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowCancellationDetailsModal(false)}
+            >
+              Đóng
             </Button>
           </DialogFooter>
         </DialogContent>
