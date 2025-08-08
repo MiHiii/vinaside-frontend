@@ -282,7 +282,7 @@ const BookingManagementPage: React.FC = () => {
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
-                    >
+                    > 
                       <BarChart3 className="w-4 h-4" />
                       Thống kê
                     </Button>

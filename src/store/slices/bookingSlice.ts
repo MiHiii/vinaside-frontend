@@ -135,17 +135,20 @@ export const updateBooking = createAsyncThunk(
 // Async thunk để cập nhật chi phí phát sinh cho booking
 export const updateAdditionalCost = createAsyncThunk(
   "booking/updateAdditionalCost",
-  async ({
-    propertyId,
-    bookingId,
-    additionalCost,
-    additionalCostReason,
-  }: {
-    propertyId: string;
-    bookingId: string;
-    additionalCost: number;
-    additionalCostReason?: string;
-  }, { rejectWithValue }) => {
+  async (
+    {
+      propertyId,
+      bookingId,
+      additionalCost,
+      additionalCostReason,
+    }: {
+      propertyId: string;
+      bookingId: string;
+      additionalCost: number;
+      additionalCostReason?: string;
+    },
+    { rejectWithValue }
+  ) => {
     try {
       console.log("[DEBUG] updateAdditionalCost - Request:", {
         propertyId,
@@ -163,67 +166,107 @@ export const updateAdditionalCost = createAsyncThunk(
       );
 
       console.log("[DEBUG] updateAdditionalCost - Full response:", response);
-      console.log("[DEBUG] updateAdditionalCost - Response data:", response.data);
+      console.log(
+        "[DEBUG] updateAdditionalCost - Response data:",
+        response.data
+      );
 
       // Handle different possible response structures
       let responseData = response.data;
-      
+
       // If response has a data property, use it
-      if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      if (
+        response.data &&
+        typeof response.data === "object" &&
+        "data" in response.data
+      ) {
         responseData = response.data.data;
-        console.log("[DEBUG] updateAdditionalCost - Extracted data from response.data.data:", responseData);
+        console.log(
+          "[DEBUG] updateAdditionalCost - Extracted data from response.data.data:",
+          responseData
+        );
       }
-      
+
       // If responseData is still the full response object, try to extract the booking data
-      if (responseData && typeof responseData === 'object' && !responseData._id) {
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        !responseData._id
+      ) {
         // Look for booking data in the response
         if (responseData.booking) {
           responseData = responseData.booking;
-          console.log("[DEBUG] updateAdditionalCost - Extracted booking from responseData.booking:", responseData);
+          console.log(
+            "[DEBUG] updateAdditionalCost - Extracted booking from responseData.booking:",
+            responseData
+          );
         } else if (responseData.result) {
           responseData = responseData.result;
-          console.log("[DEBUG] updateAdditionalCost - Extracted result from responseData.result:", responseData);
+          console.log(
+            "[DEBUG] updateAdditionalCost - Extracted result from responseData.result:",
+            responseData
+          );
         } else if (responseData.data) {
           responseData = responseData.data;
-          console.log("[DEBUG] updateAdditionalCost - Extracted data from responseData.data:", responseData);
+          console.log(
+            "[DEBUG] updateAdditionalCost - Extracted data from responseData.data:",
+            responseData
+          );
         }
       }
 
-      console.log("[DEBUG] updateAdditionalCost - Final processed data:", responseData);
+      console.log(
+        "[DEBUG] updateAdditionalCost - Final processed data:",
+        responseData
+      );
 
       if (!responseData) {
-        console.error("[DEBUG] updateAdditionalCost - No valid data found in response");
+        console.error(
+          "[DEBUG] updateAdditionalCost - No valid data found in response"
+        );
         return rejectWithValue("Không có dữ liệu trả về từ server");
       }
 
       // Ensure we have the required fields
       if (!responseData._id) {
-        console.error("[DEBUG] updateAdditionalCost - Response data missing _id field");
-        console.error("[DEBUG] updateAdditionalCost - Response data keys:", Object.keys(responseData));
+        console.error(
+          "[DEBUG] updateAdditionalCost - Response data missing _id field"
+        );
+        console.error(
+          "[DEBUG] updateAdditionalCost - Response data keys:",
+          Object.keys(responseData)
+        );
         return rejectWithValue("Dữ liệu trả về không hợp lệ - thiếu _id");
       }
 
       // Ensure we have the additionalCost field
-      if (typeof responseData.additionalCost === 'undefined') {
-        console.warn("[DEBUG] updateAdditionalCost - Response data missing additionalCost field, adding it");
+      if (typeof responseData.additionalCost === "undefined") {
+        console.warn(
+          "[DEBUG] updateAdditionalCost - Response data missing additionalCost field, adding it"
+        );
         responseData.additionalCost = additionalCost;
       }
 
-      if (typeof responseData.additionalCostReason === 'undefined') {
-        console.warn("[DEBUG] updateAdditionalCost - Response data missing additionalCostReason field, adding it");
+      if (typeof responseData.additionalCostReason === "undefined") {
+        console.warn(
+          "[DEBUG] updateAdditionalCost - Response data missing additionalCostReason field, adding it"
+        );
         responseData.additionalCostReason = additionalCostReason;
       }
 
-      console.log("[DEBUG] updateAdditionalCost - Final response data with additionalCost:", responseData);
+      console.log(
+        "[DEBUG] updateAdditionalCost - Final response data with additionalCost:",
+        responseData
+      );
       return responseData;
     } catch (err: unknown) {
       console.error("[DEBUG] updateAdditionalCost - Error:", err);
       if (typeof err === "object" && err !== null && "response" in err) {
         const axiosErr = err as { response?: { data?: unknown } };
-        const errorMessage = axiosErr.response?.data 
-          ? (typeof axiosErr.response.data === 'string' 
-              ? axiosErr.response.data 
-              : JSON.stringify(axiosErr.response.data))
+        const errorMessage = axiosErr.response?.data
+          ? typeof axiosErr.response.data === "string"
+            ? axiosErr.response.data
+            : JSON.stringify(axiosErr.response.data)
           : "Unknown error";
         return rejectWithValue(errorMessage);
       }
@@ -239,6 +282,7 @@ export const getMyBookingHistory = createAsyncThunk<
 >("booking/getMyBookingHistory", async (params, { rejectWithValue }) => {
   try {
     const response = await api.get("/bookings/my-history", { params });
+    console.log("[DEBUG] getMyBookingHistory response:", response.data);
     const bookings = (
       Array.isArray(response.data?.data?.bookings)
         ? response.data.data.bookings
@@ -247,9 +291,10 @@ export const getMyBookingHistory = createAsyncThunk<
       ...b,
       check_out_date: b.check_out_date,
     }));
+    console.log("[DEBUG] Parsed bookings:", bookings);
     return bookings;
-  } catch {
-    // console.log(error);
+  } catch (error) {
+    console.error("[DEBUG] getMyBookingHistory error:", error);
     return rejectWithValue("Lỗi khi lấy lịch sử booking của tôi");
   }
 });
@@ -751,8 +796,11 @@ const bookingSlice = createSlice({
       })
       .addCase(updateAdditionalCost.fulfilled, (state, action) => {
         state.loading = false;
-        console.log("[DEBUG] updateAdditionalCost.fulfilled - Payload:", action.payload);
-        
+        console.log(
+          "[DEBUG] updateAdditionalCost.fulfilled - Payload:",
+          action.payload
+        );
+
         if (!action.payload) {
           console.error("[DEBUG] updateAdditionalCost.fulfilled - No payload");
           state.error = "Không có dữ liệu trả về từ server";
@@ -761,68 +809,117 @@ const bookingSlice = createSlice({
 
         // Ensure we have the required _id field
         if (!action.payload._id) {
-          console.error("[DEBUG] updateAdditionalCost.fulfilled - Payload missing _id");
-          console.error("[DEBUG] updateAdditionalCost.fulfilled - Payload keys:", Object.keys(action.payload));
+          console.error(
+            "[DEBUG] updateAdditionalCost.fulfilled - Payload missing _id"
+          );
+          console.error(
+            "[DEBUG] updateAdditionalCost.fulfilled - Payload keys:",
+            Object.keys(action.payload)
+          );
           state.error = "Dữ liệu trả về không hợp lệ";
           return;
         }
 
-        console.log("[DEBUG] updateAdditionalCost.fulfilled - Processing payload with _id:", action.payload._id);
+        console.log(
+          "[DEBUG] updateAdditionalCost.fulfilled - Processing payload with _id:",
+          action.payload._id
+        );
 
         // Cập nhật booking detail nếu đang xem chi tiết booking
-        if (state.adminBookingDetail && state.adminBookingDetail._id === action.payload._id) {
-          console.log("[DEBUG] Updating adminBookingDetail with:", action.payload);
-          const updatedBooking = { 
-            ...state.adminBookingDetail, 
+        if (
+          state.adminBookingDetail &&
+          state.adminBookingDetail._id === action.payload._id
+        ) {
+          console.log(
+            "[DEBUG] Updating adminBookingDetail with:",
+            action.payload
+          );
+          const updatedBooking = {
+            ...state.adminBookingDetail,
             ...action.payload,
-            additionalCost: action.payload.additionalCost !== undefined ? action.payload.additionalCost : state.adminBookingDetail.additionalCost,
-            additionalCostReason: action.payload.additionalCostReason !== undefined ? action.payload.additionalCostReason : state.adminBookingDetail.additionalCostReason,
-            final_amount: action.payload.final_amount || state.adminBookingDetail.final_amount
+            additionalCost:
+              action.payload.additionalCost !== undefined
+                ? action.payload.additionalCost
+                : state.adminBookingDetail.additionalCost,
+            additionalCostReason:
+              action.payload.additionalCostReason !== undefined
+                ? action.payload.additionalCostReason
+                : state.adminBookingDetail.additionalCostReason,
+            final_amount:
+              action.payload.final_amount ||
+              state.adminBookingDetail.final_amount,
           };
           console.log("[DEBUG] Updated adminBookingDetail:", updatedBooking);
           state.adminBookingDetail = updatedBooking;
         }
-        if (state.bookingDetail && state.bookingDetail._id === action.payload._id) {
+        if (
+          state.bookingDetail &&
+          state.bookingDetail._id === action.payload._id
+        ) {
           console.log("[DEBUG] Updating bookingDetail with:", action.payload);
-          const updatedBooking = { 
-            ...state.bookingDetail, 
+          const updatedBooking = {
+            ...state.bookingDetail,
             ...action.payload,
-            additionalCost: action.payload.additionalCost !== undefined ? action.payload.additionalCost : state.bookingDetail.additionalCost,
-            additionalCostReason: action.payload.additionalCostReason !== undefined ? action.payload.additionalCostReason : state.bookingDetail.additionalCostReason,
-            final_amount: action.payload.final_amount || state.bookingDetail.final_amount
+            additionalCost:
+              action.payload.additionalCost !== undefined
+                ? action.payload.additionalCost
+                : state.bookingDetail.additionalCost,
+            additionalCostReason:
+              action.payload.additionalCostReason !== undefined
+                ? action.payload.additionalCostReason
+                : state.bookingDetail.additionalCostReason,
+            final_amount:
+              action.payload.final_amount || state.bookingDetail.final_amount,
           };
           console.log("[DEBUG] Updated bookingDetail:", updatedBooking);
           state.bookingDetail = updatedBooking;
         }
         // Cập nhật trong danh sách bookings nếu có
         state.adminBookings = state.adminBookings.map((booking) =>
-          booking._id === action.payload._id 
-            ? { 
-                ...booking, 
+          booking._id === action.payload._id
+            ? {
+                ...booking,
                 ...action.payload,
-                additionalCost: action.payload.additionalCost !== undefined ? action.payload.additionalCost : booking.additionalCost,
-                additionalCostReason: action.payload.additionalCostReason !== undefined ? action.payload.additionalCostReason : booking.additionalCostReason,
-                final_amount: action.payload.final_amount || booking.final_amount
-              } 
+                additionalCost:
+                  action.payload.additionalCost !== undefined
+                    ? action.payload.additionalCost
+                    : booking.additionalCost,
+                additionalCostReason:
+                  action.payload.additionalCostReason !== undefined
+                    ? action.payload.additionalCostReason
+                    : booking.additionalCostReason,
+                final_amount:
+                  action.payload.final_amount || booking.final_amount,
+              }
             : booking
         );
         state.staffBookings = state.staffBookings.map((booking) =>
-          booking._id === action.payload._id 
-            ? { 
-                ...booking, 
+          booking._id === action.payload._id
+            ? {
+                ...booking,
                 ...action.payload,
-                additionalCost: action.payload.additionalCost !== undefined ? action.payload.additionalCost : booking.additionalCost,
-                additionalCostReason: action.payload.additionalCostReason !== undefined ? action.payload.additionalCostReason : booking.additionalCostReason,
-                final_amount: action.payload.final_amount || booking.final_amount
-              } 
+                additionalCost:
+                  action.payload.additionalCost !== undefined
+                    ? action.payload.additionalCost
+                    : booking.additionalCost,
+                additionalCostReason:
+                  action.payload.additionalCostReason !== undefined
+                    ? action.payload.additionalCostReason
+                    : booking.additionalCostReason,
+                final_amount:
+                  action.payload.final_amount || booking.final_amount,
+              }
             : booking
         );
-        
-        console.log("[DEBUG] updateAdditionalCost.fulfilled - State update completed");
+
+        console.log(
+          "[DEBUG] updateAdditionalCost.fulfilled - State update completed"
+        );
       })
       .addCase(updateAdditionalCost.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string || "Lỗi khi cập nhật chi phí phát sinh";
+        state.error =
+          (action.payload as string) || "Lỗi khi cập nhật chi phí phát sinh";
       })
       // Cập nhật booking (system)
 
@@ -941,12 +1038,16 @@ const bookingSlice = createSlice({
             ...state.adminBookingDetail,
             ...action.payload,
             // Giữ lại additionalCost nếu payload không có hoặc là null/undefined
-            additionalCost: action.payload.additionalCost !== null && action.payload.additionalCost !== undefined
-              ? action.payload.additionalCost 
-              : state.adminBookingDetail.additionalCost,
-            additionalCostReason: action.payload.additionalCostReason !== null && action.payload.additionalCostReason !== undefined
-              ? action.payload.additionalCostReason 
-              : state.adminBookingDetail.additionalCostReason,
+            additionalCost:
+              action.payload.additionalCost !== null &&
+              action.payload.additionalCost !== undefined
+                ? action.payload.additionalCost
+                : state.adminBookingDetail.additionalCost,
+            additionalCostReason:
+              action.payload.additionalCostReason !== null &&
+              action.payload.additionalCostReason !== undefined
+                ? action.payload.additionalCostReason
+                : state.adminBookingDetail.additionalCostReason,
           };
         } else {
           state.adminBookingDetail = action.payload;
@@ -976,12 +1077,16 @@ const bookingSlice = createSlice({
             ...state.adminBookingDetail,
             ...action.payload,
             // Giữ lại additionalCost nếu payload không có hoặc là null/undefined
-            additionalCost: action.payload.additionalCost !== null && action.payload.additionalCost !== undefined
-              ? action.payload.additionalCost 
-              : state.adminBookingDetail.additionalCost,
-            additionalCostReason: action.payload.additionalCostReason !== null && action.payload.additionalCostReason !== undefined
-              ? action.payload.additionalCostReason 
-              : state.adminBookingDetail.additionalCostReason,
+            additionalCost:
+              action.payload.additionalCost !== null &&
+              action.payload.additionalCost !== undefined
+                ? action.payload.additionalCost
+                : state.adminBookingDetail.additionalCost,
+            additionalCostReason:
+              action.payload.additionalCostReason !== null &&
+              action.payload.additionalCostReason !== undefined
+                ? action.payload.additionalCostReason
+                : state.adminBookingDetail.additionalCostReason,
           };
         } else {
           state.adminBookingDetail = action.payload;
@@ -1029,12 +1134,16 @@ const bookingSlice = createSlice({
             ...state.adminBookingDetail,
             ...action.payload,
             // Giữ lại additionalCost nếu payload không có hoặc là null/undefined
-            additionalCost: action.payload.additionalCost !== null && action.payload.additionalCost !== undefined
-              ? action.payload.additionalCost 
-              : state.adminBookingDetail.additionalCost,
-            additionalCostReason: action.payload.additionalCostReason !== null && action.payload.additionalCostReason !== undefined
-              ? action.payload.additionalCostReason 
-              : state.adminBookingDetail.additionalCostReason,
+            additionalCost:
+              action.payload.additionalCost !== null &&
+              action.payload.additionalCost !== undefined
+                ? action.payload.additionalCost
+                : state.adminBookingDetail.additionalCost,
+            additionalCostReason:
+              action.payload.additionalCostReason !== null &&
+              action.payload.additionalCostReason !== undefined
+                ? action.payload.additionalCostReason
+                : state.adminBookingDetail.additionalCostReason,
           };
         } else {
           state.adminBookingDetail = action.payload;
@@ -1059,12 +1168,16 @@ const bookingSlice = createSlice({
             ...state.adminBookingDetail,
             ...action.payload,
             // Giữ lại additionalCost nếu payload không có hoặc là null/undefined
-            additionalCost: action.payload.additionalCost !== null && action.payload.additionalCost !== undefined
-              ? action.payload.additionalCost 
-              : state.adminBookingDetail.additionalCost,
-            additionalCostReason: action.payload.additionalCostReason !== null && action.payload.additionalCostReason !== undefined
-              ? action.payload.additionalCostReason 
-              : state.adminBookingDetail.additionalCostReason,
+            additionalCost:
+              action.payload.additionalCost !== null &&
+              action.payload.additionalCost !== undefined
+                ? action.payload.additionalCost
+                : state.adminBookingDetail.additionalCost,
+            additionalCostReason:
+              action.payload.additionalCostReason !== null &&
+              action.payload.additionalCostReason !== undefined
+                ? action.payload.additionalCostReason
+                : state.adminBookingDetail.additionalCostReason,
           };
         } else {
           state.adminBookingDetail = action.payload;
