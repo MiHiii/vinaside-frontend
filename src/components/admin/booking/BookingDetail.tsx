@@ -936,16 +936,25 @@ const BookingDetail: React.FC<{
                     <div className="space-y-6">
                       {/* Cancellation Reason */}
                       {booking.cancellationDetails.cancellationReason && (
-                        <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                          <div className="flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-6 border-2 border-red-200 shadow-sm">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <AlertCircle className="w-6 h-6 text-red-600" />
+                              </div>
+                            </div>
                             <div className="flex-1">
-                              <h3 className="text-sm font-semibold text-red-900 mb-2">
+                              <h3 className="text-base font-semibold text-red-900 mb-3">
                                 Lý do hủy phòng
                               </h3>
-                              <p className="text-sm text-red-800 leading-relaxed">
-                                {booking.cancellationDetails.cancellationReason}
-                              </p>
+                              <div className="bg-white rounded-lg p-4 border border-red-100">
+                                <p className="text-sm text-red-800 leading-relaxed font-medium">
+                                  {
+                                    booking.cancellationDetails
+                                      .cancellationReason
+                                  }
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>

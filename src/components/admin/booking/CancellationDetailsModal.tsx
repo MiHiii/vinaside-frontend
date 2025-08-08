@@ -244,16 +244,22 @@ const CancellationDetailsModal: React.FC<CancellationDetailsModalProps> = ({
 
                   {/* Cancellation Reason */}
                   {cancellationDetails.cancellationReason && (
-                    <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-6 border-2 border-red-200 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <AlertCircle className="w-6 h-6 text-red-600" />
+                          </div>
+                        </div>
                         <div className="flex-1">
-                          <Label className="text-sm font-medium text-red-900">
+                          <Label className="text-base font-semibold text-red-900 mb-2 block">
                             Lý do hủy phòng
                           </Label>
-                          <p className="text-sm text-red-800 mt-1 leading-relaxed">
-                            {cancellationDetails.cancellationReason}
-                          </p>
+                          <div className="bg-white rounded-lg p-4 border border-red-100">
+                            <p className="text-sm text-red-800 leading-relaxed font-medium">
+                              {cancellationDetails.cancellationReason}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -379,26 +385,36 @@ const CancellationDetailsModal: React.FC<CancellationDetailsModalProps> = ({
                   </h3>
 
                   {/* Cancellation Reason */}
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="cancellationReason"
-                      className="text-sm font-medium"
-                    >
-                      Lý do hủy phòng <span className="text-red-500">*</span>
-                    </Label>
-                    <Textarea
-                      id="cancellationReason"
-                      placeholder="Vui lòng nhập chi tiết lý do hủy phòng để chúng tôi có thể cải thiện dịch vụ..."
-                      value={formData.cancellationReason || ""}
-                      onChange={(e) =>
-                        handleInputChange("cancellationReason", e.target.value)
-                      }
-                      className="min-h-[100px] resize-none"
-                    />
-                    <p className="text-xs text-gray-500">
-                      Thông tin này sẽ giúp chúng tôi cải thiện chất lượng dịch
-                      vụ
-                    </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      </div>
+                      <Label
+                        htmlFor="cancellationReason"
+                        className="text-base font-semibold text-red-900"
+                      >
+                        Lý do hủy phòng <span className="text-red-500">*</span>
+                      </Label>
+                    </div>
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 border border-red-200">
+                      <Textarea
+                        id="cancellationReason"
+                        placeholder="Vui lòng nhập chi tiết lý do hủy phòng để chúng tôi có thể cải thiện dịch vụ..."
+                        value={formData.cancellationReason || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "cancellationReason",
+                            e.target.value
+                          )
+                        }
+                        className="min-h-[120px] resize-none bg-white border-red-200 focus:border-red-400 focus:ring-red-400"
+                      />
+                      <p className="text-xs text-red-600 mt-2 font-medium">
+                        💡 Thông tin này sẽ giúp chúng tôi cải thiện chất lượng
+                        dịch vụ
+                      </p>
+                    </div>
                   </div>
                 </div>
 

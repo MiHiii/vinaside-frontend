@@ -22,6 +22,7 @@ import {
   Loader2,
   Plus,
   Package,
+  AlertCircle,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { postReview } from "@/store/slices/reviewSlice";
@@ -945,103 +946,91 @@ const PastTrip = () => {
     if (booking.status !== BookingStatus.CANCELLED) return null;
 
     return (
-      <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <button
-          onClick={() => handleShowCancellationDetails(booking)}
-          className="w-full text-left"
-        >
-          <h4 className="font-semibold text-red-800 mb-3 flex items-center gap-2 cursor-pointer hover:text-red-700 transition-colors">
-            <XCircle size={18} className="text-red-600" />
-            Thông tin hủy phòng
-            <span className="text-sm text-red-600 ml-auto">
-              (Nhấn để xem chi tiết)
-            </span>
-          </h4>
-        </button>
-
-        <div className="space-y-3 text-sm">
-          {booking.cancellation_reason && (
-            <div>
-              <span className="font-medium text-gray-700">Lý do hủy:</span>
-              <p className="text-gray-600 mt-1">
-                {booking.cancellation_reason}
-              </p>
-            </div>
-          )}
-
-          {booking.cancelled_at && (
-            <div>
-              <span className="font-medium text-gray-700">Thời gian hủy:</span>
-              <p className="text-gray-600 mt-1">
-                {new Date(booking.cancelled_at).toLocaleString("vi-VN")}
-              </p>
-            </div>
-          )}
-
-          {booking.cancellationDetails && (
-            <div className="mt-3 p-3 bg-white rounded border">
-              <h5 className="font-medium text-gray-700 mb-2">
-                Thông tin hoàn tiền:
-              </h5>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {booking.cancellationDetails.accountName && (
-                  <div>
-                    <span className="font-medium text-gray-600">
-                      Tên chủ tài khoản:
-                    </span>
-                    <p className="text-gray-700">
-                      {booking.cancellationDetails.accountName}
-                    </p>
-                  </div>
-                )}
-                {booking.cancellationDetails.bankName && (
-                  <div>
-                    <span className="font-medium text-gray-600">
-                      Ngân hàng:
-                    </span>
-                    <p className="text-gray-700">
-                      {booking.cancellationDetails.bankName}
-                    </p>
-                  </div>
-                )}
-                {booking.cancellationDetails.accountNumber && (
-                  <div>
-                    <span className="font-medium text-gray-600">
-                      Số tài khoản:
-                    </span>
-                    <p className="text-gray-700">
-                      {booking.cancellationDetails.accountNumber}
-                    </p>
-                  </div>
-                )}
-                {booking.cancellationDetails.refundMethod && (
-                  <div>
-                    <span className="font-medium text-gray-600">
-                      Phương thức hoàn tiền:
-                    </span>
-                    <p className="text-gray-700">
-                      {booking.cancellationDetails.refundMethod ===
-                        "bank_transfer" && "Chuyển khoản ngân hàng"}
-                      {booking.cancellationDetails.refundMethod === "wallet" &&
-                        "Ví điện tử"}
-                      {booking.cancellationDetails.refundMethod ===
-                        "credit_card" && "Thẻ tín dụng"}
-                    </p>
-                  </div>
-                )}
-                {booking.cancellationDetails.refundNote && (
-                  <div className="col-span-2">
-                    <span className="font-medium text-gray-600">
-                      Ghi chú hoàn tiền:
-                    </span>
-                    <p className="text-gray-700">
-                      {booking.cancellationDetails.refundNote}
-                    </p>
-                  </div>
-                )}
+      <div className="mt-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border-2 border-red-200 shadow-sm overflow-hidden">
+        <div className="p-6">
+          <button
+            onClick={() => handleShowCancellationDetails(booking)}
+            className="w-full text-left group"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                  <XCircle size={20} className="text-red-600" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-red-900 group-hover:text-red-800 transition-colors">
+                    Thông tin hủy phòng
+                  </h4>
+                  <p className="text-sm text-red-600 font-medium">
+                    Nhấn để xem chi tiết
+                  </p>
+                </div>
+              </div>
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                <Info size={16} className="text-red-600" />
               </div>
             </div>
-          )}
+          </button>
+
+          <div className="space-y-4">
+            {booking.cancellation_reason && (
+              <div className="bg-white rounded-lg p-4 border border-red-100 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <AlertCircle size={14} className="text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h5 className="font-semibold text-red-900 mb-2">
+                      Lý do hủy phòng
+                    </h5>
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-3 border border-red-100">
+                      <p className="text-sm text-red-800 leading-relaxed font-medium">
+                        {booking.cancellation_reason}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {booking.cancelled_at && (
+              <div className="bg-white rounded-lg p-4 border border-red-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                    <Calendar size={14} className="text-red-600" />
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-red-900 mb-1">
+                      Thời gian hủy
+                    </h5>
+                    <p className="text-sm text-red-700 font-medium">
+                      {new Date(booking.cancelled_at).toLocaleString("vi-VN")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {booking.cancellationDetails?.cancellationReason && (
+              <div className="bg-white rounded-lg p-4 border border-red-100 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <AlertCircle size={14} className="text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h5 className="font-semibold text-red-900 mb-2">
+                      Chi tiết lý do hủy
+                    </h5>
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-3 border border-red-100">
+                      <p className="text-sm text-red-800 leading-relaxed font-medium">
+                        {booking.cancellationDetails.cancellationReason}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1390,20 +1379,34 @@ const PastTrip = () => {
                 className="space-y-4"
               >
                 <div className="space-y-4">
-                  <div>
-                    <Label
-                      htmlFor="cancellationReason"
-                      className="text-sm font-medium"
-                    >
-                      Lý do hủy (tùy chọn)
-                    </Label>
-                    <Textarea
-                      id="cancellationReason"
-                      name="cancellationReason"
-                      placeholder="Vui lòng cho chúng tôi biết lý do hủy phòng..."
-                      className="mt-1"
-                      rows={3}
-                    />
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      </div>
+                      <Label
+                        htmlFor="cancellationReason"
+                        className="text-base font-semibold text-red-900"
+                      >
+                        Lý do hủy phòng{" "}
+                        <span className="text-gray-500 text-sm">
+                          (tùy chọn)
+                        </span>
+                      </Label>
+                    </div>
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 border border-red-200">
+                      <Textarea
+                        id="cancellationReason"
+                        name="cancellationReason"
+                        placeholder="Vui lòng cho chúng tôi biết lý do hủy phòng để chúng tôi có thể cải thiện dịch vụ..."
+                        className="bg-white border-red-200 focus:border-red-400 focus:ring-red-400 resize-none"
+                        rows={4}
+                      />
+                      <p className="text-xs text-red-600 mt-2 font-medium">
+                        💡 Thông tin này sẽ giúp chúng tôi cải thiện chất lượng
+                        dịch vụ
+                      </p>
+                    </div>
                   </div>
 
                   {/* Thông tin hoàn tiền - chỉ hiển thị nếu có thể hoàn tiền */}

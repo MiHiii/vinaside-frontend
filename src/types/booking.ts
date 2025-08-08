@@ -41,6 +41,7 @@ export interface BookingData {
     accountNumber?: string;
     refundMethod?: string;
     refundNote?: string;
+    cancellationReason?: string;
   };
 }
 

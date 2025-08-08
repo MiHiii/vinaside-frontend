@@ -116,18 +116,34 @@ const EditCancellationModal: React.FC<EditCancellationModalProps> = ({
               Lý do hủy phòng
             </h3>
 
-            <div>
-              <Label htmlFor="cancellationReason">Lý do hủy</Label>
-              <Textarea
-                id="cancellationReason"
-                value={formData.cancellationReason}
-                onChange={(e) =>
-                  handleInputChange("cancellationReason", e.target.value)
-                }
-                placeholder="Nhập lý do hủy phòng..."
-                rows={3}
-                className="mt-1"
-              />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                </div>
+                <Label
+                  htmlFor="cancellationReason"
+                  className="text-base font-semibold text-red-900"
+                >
+                  Lý do hủy phòng <span className="text-red-500">*</span>
+                </Label>
+              </div>
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 border border-red-200">
+                <Textarea
+                  id="cancellationReason"
+                  value={formData.cancellationReason}
+                  onChange={(e) =>
+                    handleInputChange("cancellationReason", e.target.value)
+                  }
+                  placeholder="Vui lòng nhập chi tiết lý do hủy phòng để chúng tôi có thể cải thiện dịch vụ..."
+                  rows={4}
+                  className="bg-white border-red-200 focus:border-red-400 focus:ring-red-400 resize-none"
+                />
+                <p className="text-xs text-red-600 mt-2 font-medium">
+                  💡 Thông tin này sẽ giúp chúng tôi cải thiện chất lượng dịch
+                  vụ
+                </p>
+              </div>
             </div>
           </div>
 
