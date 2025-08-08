@@ -218,7 +218,7 @@ export default function ClientSearch() {
                 numberOfMonths={2}
                 locale={vi}
                 disabled={(date) => date < new Date()}
-                className="p-0"
+                className="rounded-md"
                 showOutsideDays={false}
                 fixedWeeks
                 classNames={{
@@ -229,7 +229,7 @@ export default function ClientSearch() {
                   caption_label: "text-sm font-medium",
                   nav: "space-x-1 flex items-center",
                   nav_button:
-                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-gray-100 rounded-md transition-colors",
                   nav_button_previous: "absolute left-1",
                   nav_button_next: "absolute right-1",
                   table: "w-full border-collapse",
@@ -237,27 +237,15 @@ export default function ClientSearch() {
                   head_cell:
                     "text-muted-foreground rounded-md w-10 font-normal text-[0.8rem] text-center",
                   row: "flex w-full mt-1 justify-between",
-                  cell:
-                    "h-10 w-10 mx-0.5 my-0.5 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20 " +
-                    "[&:has([aria-selected].day-range-end)]:rounded-r-md " +
-                    "[&:has([aria-selected].day-outside)]:bg-muted/50 " +
-                    "[&:has([aria-selected])]:bg-muted " +
-                    "first:[&:has([aria-selected])]:rounded-l-md " +
-                    "last:[&:has([aria-selected])]:rounded-r-md",
-                  day:
-                    "h-10 w-10 p-0 font-normal rounded-md transition-colors " +
-                    "aria-selected:opacity-100 " +
-                    "hover:bg-muted hover:text-foreground " +
-                    "focus:bg-accent focus:text-accent-foreground",
-                  day_range_end: "day-range-end",
+                  cell: "h-10 w-10 mx-0.5 my-0.5 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20",
+                  day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors",
                   day_selected:
-                    "bg-primary text-primary-foreground hover:bg-primary focus:bg-primary",
-                  day_today: "bg-muted text-foreground",
-                  day_outside:
-                    "text-muted-foreground opacity-50 aria-selected:bg-muted/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+                    "bg-gray-900 text-white hover:bg-gray-800 hover:text-white focus:bg-gray-900 focus:text-white",
+                  day_today: "bg-gray-100 text-gray-900 font-medium",
+                  day_outside: "text-muted-foreground opacity-50",
                   day_disabled: "text-muted-foreground opacity-50",
                   day_range_middle:
-                    "aria-selected:bg-muted aria-selected:text-foreground",
+                    "aria-selected:bg-gray-300 aria-selected:text-gray-900",
                   day_hidden: "invisible",
                 }}
               />
@@ -308,7 +296,7 @@ export default function ClientSearch() {
                 numberOfMonths={2}
                 locale={vi}
                 disabled={(date) => date < new Date()}
-                className="p-0"
+                className="rounded-md"
                 showOutsideDays={false}
                 fixedWeeks
                 classNames={{
@@ -319,7 +307,7 @@ export default function ClientSearch() {
                   caption_label: "text-sm font-medium",
                   nav: "space-x-1 flex items-center",
                   nav_button:
-                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-gray-100 rounded-md transition-colors",
                   nav_button_previous: "absolute left-1",
                   nav_button_next: "absolute right-1",
                   table: "w-full border-collapse",
@@ -327,27 +315,15 @@ export default function ClientSearch() {
                   head_cell:
                     "text-muted-foreground rounded-md w-10 font-normal text-[0.8rem] text-center",
                   row: "flex w-full mt-1 justify-between",
-                  cell:
-                    "h-10 w-10 mx-0.5 my-0.5 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20 " +
-                    "[&:has([aria-selected].day-range-end)]:rounded-r-md " +
-                    "[&:has([aria-selected].day-outside)]:bg-muted/50 " +
-                    "[&:has([aria-selected])]:bg-muted " +
-                    "first:[&:has([aria-selected])]:rounded-l-md " +
-                    "last:[&:has([aria-selected])]:rounded-r-md",
-                  day:
-                    "h-10 w-10 p-0 font-normal rounded-md transition-colors " +
-                    "aria-selected:opacity-100 " +
-                    "hover:bg-muted hover:text-foreground " +
-                    "focus:bg-accent focus:text-accent-foreground",
-                  day_range_end: "day-range-end",
+                  cell: "h-10 w-10 mx-0.5 my-0.5 text-center text-sm p-0 relative rounded-md focus-within:relative focus-within:z-20",
+                  day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors",
                   day_selected:
-                    "bg-primary text-primary-foreground hover:bg-primary focus:bg-primary",
-                  day_today: "bg-muted text-foreground",
-                  day_outside:
-                    "text-muted-foreground opacity-50 aria-selected:bg-muted/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+                    "bg-gray-900 text-white hover:bg-gray-800 hover:text-white focus:bg-gray-900 focus:text-white",
+                  day_today: "bg-gray-100 text-gray-900 font-medium",
+                  day_outside: "text-muted-foreground opacity-50",
                   day_disabled: "text-muted-foreground opacity-50",
                   day_range_middle:
-                    "aria-selected:bg-muted aria-selected:text-foreground",
+                    "aria-selected:bg-gray-300 aria-selected:text-gray-900",
                   day_hidden: "invisible",
                 }}
               />

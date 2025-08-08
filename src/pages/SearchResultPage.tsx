@@ -137,8 +137,8 @@ export default function SearchResultPage() {
       {/* Cột bên trái - Danh sách phòng dạng grid */}
       <div className="flex-1 order-2 lg:order-1">
         {/* Header với thông tin tìm kiếm */}
-        <div className="mb-6 lg:mb-8">
-          <div className="text-sm font-semibold text-muted-foreground">
+        <div className="mb-4">
+          <div className="text-sm  font-semibold text-muted-foreground">
             {(() => {
               // Ưu tiên lấy vị trí từ URL params trước
               let location = locationKeyword;
@@ -189,7 +189,7 @@ export default function SearchResultPage() {
             })()}
           </div>
           {hasSearchCriteria && (
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-xs">
               {getSearchDescription()}
             </p>
           )}

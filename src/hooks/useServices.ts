@@ -123,11 +123,18 @@ export const useServices = () => {
     error,
     getServices,
     getServiceDetail,
+    // Preferred names
     createService: addService,
     updateService: editService,
     removeService: deleteService,
     restoreService: restore,
     toggleStatus: toggleStatus,
+
+    // Backwards-compatible aliases expected by ServiceListPage
+    addService,
+    editService,
+    deleteService,
+    restore,
     clearError,
     clearDetail,
     getServiceUsage,
