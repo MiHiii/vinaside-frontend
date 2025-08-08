@@ -17,18 +17,11 @@ import {
   TrendingUp,
   MapPin,
   UserCheck,
-  CalendarCheck,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PropertyStatistics } from "@/types/property";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { DateRangePicker } from "@/components/admin/dasboard/DateRangePicker";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 
@@ -133,51 +126,14 @@ export default function PropertyDetailView() {
     <div className="px-4 py-8 m-auto max-w-7xl">
       {/* UI chọn ngày giống bên listing detail */}
       <div className="flex items-center gap-4 mb-8">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={"w-[280px] justify-start text-left font-normal"}
-            >
-              <CalendarCheck className="mr-2 h-4 w-4" />
-              {dateRange?.from && dateRange?.to
-                ? `${format(dateRange.from, "PPP")} - ${format(
-                    dateRange.to,
-                    "PPP"
-                  )}`
-                : "Chọn khoảng ngày"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-auto p-0 bg-white rounded-xl shadow-lg border border-gray-200"
-            align="start"
-          >
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={setDateRange}
-              numberOfMonths={2}
-              initialFocus
-              className="!bg-white rounded-xl p-2"
-              modifiersClassNames={{
-                range_start: "!bg-black !text-white",
-                range_end: "!bg-black !text-white",
-                today: "border border-blue-400",
-              }}
-            />
-            {dateRange?.from || dateRange?.to ? (
-              <div className="flex justify-end px-4 pb-2 pt-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDateRange(undefined)}
-                >
-                  Xóa ngày
-                </Button>
-              </div>
-            ) : null}
-          </PopoverContent>
-        </Popover>
+        <DateRangePicker
+          className="w-[280px]"
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          open={open}
+          onOpenChange={setOpen}
+          useRedux={false}
+        />
       </div>
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-8 items-center mb-8">

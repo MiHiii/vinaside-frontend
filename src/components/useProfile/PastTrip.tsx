@@ -633,13 +633,20 @@ const PastTrip = () => {
                       {(booking.deposit_paid_amount || 0).toLocaleString()}₫
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-orange-600" />
-                    <span className="text-orange-600 font-medium">
-                      Còn lại cần thanh toán:{" "}
-                      {outstandingAmount.toLocaleString()}₫
-                    </span>
-                  </div>
+                  {/* Hiển thị chi phí phát sinh nếu có */}
+                  {booking.additionalCost && booking.additionalCost > 0 && (
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={16} className="text-red-600" />
+                      <span className="text-red-600 font-medium">
+                        Chi phí phát sinh: {booking.additionalCost.toLocaleString()}₫
+                        {booking.additionalCostReason && (
+                          <span className="text-red-500 text-sm ml-2">
+                            ({booking.additionalCostReason})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )}
                   {/* Thông tin bổ sung cho từng trường hợp */}
                   {booking.payment_status === PaymentStatus.PARTIALLY_PAID &&
                     booking.selected_services &&
@@ -740,7 +747,7 @@ const PastTrip = () => {
                   }}
                 >
                   <DollarSign size={16} />
-                  Thanh toán thêm {outstandingAmount.toLocaleString()}₫
+                  Thanh toán {outstandingAmount.toLocaleString()}₫
                 </Button>
               )}
               {showPayRemainderButton && (

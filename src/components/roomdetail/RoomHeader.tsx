@@ -14,9 +14,7 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ listing }) => {
     typeof listing.propertyId !== "string" &&
     listing.propertyId.location
       ? [
-          listing.propertyId.location.ward,
-          listing.propertyId.location.district,
-          listing.propertyId.location.city,
+          listing.propertyId.location.address,
         ]
           .filter(Boolean)
           .join(", ")

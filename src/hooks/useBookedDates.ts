@@ -3,9 +3,14 @@ import { api } from '@/services/api';
 
 export const useBookedDates = (listingId: string) => {
   const [bookedDates, setBookedDates] = useState<Date[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchBookedDates = useCallback(async () => {
+    if (!listingId || isLoading) return;
+    
     try {
+      console.log("🔄 useBookedDates: Fetching booked dates for listingId:", listingId);
+      setIsLoading(true);
       const res = await api.get(`/bookings/booked-dates/${listingId}`);
       console.log('Full response:', res.data);
 
@@ -21,14 +26,17 @@ export const useBookedDates = (listingId: string) => {
       setBookedDates(converted);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách ngày đã đặt:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [listingId]);
+  }, [listingId, isLoading]);
 
   useEffect(() => {
     if (listingId) {
+      console.log("🔄 useBookedDates: useEffect triggered for listingId:", listingId);
       fetchBookedDates();
     }
-  }, [listingId, fetchBookedDates]);
+  }, [listingId]); // Chỉ phụ thuộc vào listingId, không phụ thuộc vào fetchBookedDates
 
-  return { bookedDates, refetch: fetchBookedDates };
+  return { bookedDates, refetch: fetchBookedDates, isLoading };
 };
