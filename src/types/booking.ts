@@ -32,6 +32,17 @@ export interface BookingData {
     total_price?: number;
   }>;
   services_total_amount?: number;
+  // Thông tin hủy phòng
+  cancellation_reason?: string;
+  cancelled_at?: string;
+  cancellationDetails?: {
+    accountName?: string;
+    bankName?: string;
+    accountNumber?: string;
+    refundMethod?: string;
+    refundNote?: string;
+    cancellationReason?: string;
+  };
   // Additional cost fields
   additionalCost?: number;
   additionalCostReason?: string;

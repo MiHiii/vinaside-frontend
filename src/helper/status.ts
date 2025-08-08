@@ -28,6 +28,11 @@ export function getPaymentStatusVN(status: string): PaymentStatusVM {
         label: "Chờ thanh toán",
         color: "text-yellow-600 bg-yellow-50 border-yellow-200",
       };
+    case "unpaid":
+      return {
+        label: "Chưa trả",
+        color: "text-red-600 bg-red-50 border-red-200",
+      };
     case "paid":
       return {
         label: "Đã thanh toán",

@@ -248,8 +248,8 @@ export const getMyBookingHistory = createAsyncThunk<
       check_out_date: b.check_out_date,
     }));
     return bookings;
-  } catch  {
-          // console.log(error);
+  } catch {
+    // console.log(error);
     return rejectWithValue("Lỗi khi lấy lịch sử booking của tôi");
   }
 });
@@ -410,16 +410,16 @@ export const fetchStaffBookings = createAsyncThunk<
     }
 
     // Gọi API lấy tất cả bookings
-    const response = await api.get('/bookings/my-bookings-as-staff', {
+    const response = await api.get("/bookings/my-bookings-as-staff", {
       params: queryParams,
     });
 
-    console.log('🔍 Staff API response:', response.data);
+    console.log("🔍 Staff API response:", response.data);
 
     if (response.data.success) {
       const allBookings = response.data.data.bookings || [];
-      
-      console.log('🔍 Total staff bookings found:', allBookings.length);
+
+      console.log("🔍 Total staff bookings found:", allBookings.length);
 
       return {
         data: allBookings,
@@ -656,6 +656,46 @@ export const fetchPaymentStatus = createAsyncThunk<
     return rejectWithValue("Lỗi khi kiểm tra trạng thái thanh toán");
   }
 });
+
+// Thêm interface cho payment data
+interface CreatePaymentDto {
+  paymentMethod: string;
+  amount?: number;
+  note?: string;
+  returnUrl?: string;
+  cancelUrl?: string;
+}
+
+interface PaymentResponseDto {
+  success: boolean;
+  paymentMethod: string;
+  paymentUrl?: string;
+  orderId: string;
+  amount: number;
+  message: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+// Thêm async thunk cho staff remaining payment
+export const createStaffRemainingPayment = createAsyncThunk(
+  "booking/createStaffRemainingPayment",
+  async ({
+    propertyId,
+    bookingId,
+    paymentData,
+  }: {
+    propertyId: string;
+    bookingId: string;
+    paymentData: CreatePaymentDto;
+  }) => {
+    const response = await api.post<PaymentResponseDto>(
+      `/bookings/${propertyId}/${bookingId}/payment/remaining/staff`,
+      paymentData
+    );
+    return response.data;
+  }
+);
 
 const bookingSlice = createSlice({
   name: "booking",
@@ -1044,6 +1084,19 @@ const bookingSlice = createSlice({
       // Lấy danh sách booking của một listing cụ thể
       .addCase(fetchBookingsByListing.fulfilled, (state, action) => {
         state.bookingsByListing = action.payload;
+      })
+      // Staff remaining payment
+      .addCase(createStaffRemainingPayment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createStaffRemainingPayment.fulfilled, (state) => {
+        state.loading = false;
+        // Có thể cập nhật booking data nếu cần
+      })
+      .addCase(createStaffRemainingPayment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Thanh toán thất bại";
       });
   },
 });
