@@ -77,6 +77,7 @@ import ServiceUsagePage from "@/pages/admin/service/ServiceUsagePage";
 //booking
 import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
 import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
+import { BookingCalendarPage } from "@/pages/admin/booking/BookingCalendarPage";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import StaffManagementPage from "@/pages/admin/user/StaffManagementPage";
 import AdminWishlistPage from "@/pages/admin/wishlist/AdminWishlistPage";
@@ -254,6 +255,7 @@ const routes: RouteObject[] = [
 
       // booking
       { path: "bookings", element: <BookingManagementPage /> },
+      { path: "bookings/calendar", element: <BookingCalendarPage /> },
       {
         path: "bookings/:propertyId/:bookingId",
         element: <BookingDetailPage />,
@@ -273,12 +275,21 @@ const routes: RouteObject[] = [
       { path: "amenities/edit/:id", element: <EditAmenities /> },
 
       { path: "messages", element: <Messages /> },
-
       { path: "permissions-manager", element: <RoleManagementPage /> },
       { path: "permissions/create", element: <RoleCreatePage /> },
       { path: "vouchers", element: <VoucherListPage /> },
       { path: "vouchers/:id/usage", element: <VoucherUsagePage /> },
       { path: "services/:id/usage", element: <ServiceUsagePage /> },
+      { path: "services", element: <ServiceListPage /> },
+      { path: "safety-features", element: <SafetyFeatureListPage /> },
+      { path: "house-rules", element: <HouseRuleListPage /> },
+      { path: "reviews", element: <ReviewManagementPage /> },
+      { path: "users", element: <AdminUserPage /> },
+      { path: "staff", element: <StaffManagementPage /> },
+      { path: "wishlists", element: <AdminWishlistPage /> },
+      { path: "permissions-manager", element: <RoleManagementPage /> },
+      { path: "permissions/create", element: <RoleCreatePage /> },
+      { path: "vouchers", element: <VoucherListPage /> },
       { path: "services", element: <ServiceListPage /> },
       { path: "safety-features", element: <SafetyFeatureListPage /> },
       { path: "house-rules", element: <HouseRuleListPage /> },
