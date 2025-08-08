@@ -40,6 +40,9 @@ export interface BookingDetail {
   updatedBy: string;
   created_at: string;
   updated_at: string;
+  // Additional cost fields
+  additionalCost?: number;
+  additionalCostReason?: string;
   [key: string]: unknown; // fallback cho các trường động
 }
 

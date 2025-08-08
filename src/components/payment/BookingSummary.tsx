@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import React from "react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
@@ -10,11 +10,11 @@ import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import { createBooking, createPayment } from "@/store/slices/bookingSlice";
 import type { DateRange } from "react-day-picker";
 import BookingInfoModal from "./BookingInfoModal";
-
 import CancelPolicyDetail from "./CancelPolicyDetail";
 import type { Voucher } from "@/types/voucher";
-import { cn } from "@/lib/utils"; // Assuming cn utility is available
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { calculateWeekendSurcharge } from "@/utils/priceCalculation";
 
 interface BookingSummaryProps {
   listing: IListing;
@@ -42,6 +42,13 @@ interface BookingSummaryProps {
   }>;
   paymentType?: "full" | "deposit";
   setPaymentType?: (type: "full" | "deposit") => void;
+}
+
+interface LocationInfo {
+  address?: string;
+  ward?: string;
+  district?: string;
+  city?: string;
 }
 
 const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -178,11 +185,26 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     setAdults(guests.adults); // Lưu số người lớn nếu muốn đồng bộ
   };
 
-  // Tính toán giá dựa trên loại thanh toán
-  const base = listing.price_per_night * nights;
+  // Tính giá cơ bản
+  const base = nights * listing.price_per_night;
+
+  // Tính weekend surcharge nếu có
+  let weekendSurcharge = 0;
+  if (listing.has_weekend_surcharge && listing.weekend_surcharge_percent && tripStart && tripEnd) {
+    const startDate = new Date(tripStart);
+    const endDate = new Date(tripEnd);
+    
+    // Sử dụng utility function giống Backend
+    weekendSurcharge = calculateWeekendSurcharge(listing, startDate, endDate);
+  }
+
+  // Tổng tiền phòng bao gồm weekend surcharge
+  const totalRoomPrice = base + weekendSurcharge;
+
+  // Tính tổng tiền trước khi áp dụng voucher
+  const totalAmount = totalRoomPrice + selectedServiceTotal;
 
   // Tính discount trên tổng tiền (phòng + dịch vụ) để nhất quán với backend
-  const totalAmount = base + selectedServiceTotal;
   const discount = selectedVoucher
     ? Math.round((totalAmount * selectedVoucher.discount_percent) / 100)
     : 0;
@@ -213,6 +235,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     price_per_night: listing.price_per_night,
     nights,
     base,
+    weekendSurcharge,
+    totalRoomPrice,
     selectedServiceTotal,
     discount,
     amountAfterDiscount,
@@ -220,7 +244,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     tax,
     paymentType,
     finalTotal,
-    originalTotal: base + selectedServiceTotal,
+    originalTotal: totalRoomPrice + selectedServiceTotal,
     voucherCode: selectedVoucher?.code,
     voucherDiscount: selectedVoucher?.discount_percent,
   });
@@ -228,10 +252,10 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   // Lấy vị trí từ property/location
   const location = listing.propertyId?.location || listing.location || {};
   const locationText = [
-    location.address,
-    location.ward,
-    location.district,
-    location.city,
+    (location as LocationInfo).address,
+    (location as LocationInfo).ward,
+    (location as LocationInfo).district,
+    (location as LocationInfo).city,
   ]
     .filter(Boolean)
     .join(", ");
@@ -415,6 +439,17 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
                 : base.toLocaleString()}
             </span>
           </div>
+          {weekendSurcharge > 0 && (
+            <div className="flex justify-between text-base text-yellow-600">
+              <span>Phụ phí cuối tuần (+{listing.weekend_surcharge_percent}%)</span>
+              <span>
+                +₫
+                {paymentType === "deposit"
+                  ? Math.round(weekendSurcharge * 0.5).toLocaleString()
+                  : weekendSurcharge.toLocaleString()}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between text-base text-gray-700">
             <span>Dịch vụ kèm theo</span>
             <span>
@@ -431,9 +466,9 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
                 ₫
                 {paymentType === "deposit"
                   ? Math.round(
-                      (base + selectedServiceTotal) * 0.5
+                      (totalRoomPrice + selectedServiceTotal) * 0.5
                     ).toLocaleString()
-                  : (base + selectedServiceTotal).toLocaleString()}
+                  : (totalRoomPrice + selectedServiceTotal).toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between text-base text-gray-700">

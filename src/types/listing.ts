@@ -23,6 +23,9 @@ export interface Listing {
   other_rules: string[];
   cancel_policy: string;
   allow_pets: boolean;
+  // Weekend surcharge fields
+  has_weekend_surcharge?: boolean;
+  weekend_surcharge_percent?: number;
   is_verified: boolean;
   status: string;
   isDeleted: boolean;
@@ -112,6 +115,9 @@ export interface IListing {
   // Chính sách
   cancel_policy?: CancelPolicy;
   allow_pets?: boolean;
+  // Weekend surcharge fields
+  has_weekend_surcharge?: boolean;
+  weekend_surcharge_percent?: number;
 
   // Trạng thái
   status: ListingStatus;
@@ -134,7 +140,10 @@ export interface IListing {
   address?: string;
   city?: string;
   province?: string;
-  location?: any;
+  location?: {
+    type: string;
+    coordinates: number[];
+  };
 }
 
 export interface IQueryListing {
@@ -174,6 +183,9 @@ export interface IUpdateListing {
   status?: ListingStatus;
   is_verified?: boolean;
   voucher_ids?: string[];
+  // Weekend surcharge fields
+  has_weekend_surcharge?: boolean;
+  weekend_surcharge_percent?: number;
 }
 
 export interface ICreateListing {
@@ -192,6 +204,9 @@ export interface ICreateListing {
   safety_features?: string[];
   cancel_policy?: CancelPolicy;
   voucher_ids?: string[];
+  // Weekend surcharge fields
+  has_weekend_surcharge?: boolean;
+  weekend_surcharge_percent?: number;
 }
 
 export interface PaginationMeta {

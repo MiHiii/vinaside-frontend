@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
@@ -24,6 +25,8 @@ import {
   Plus,
 } from "lucide-react";
 import { BookingStatus, PaymentStatus } from "@/types/enum";
+import { BookingHeader } from '@/components/admin/booking/BookingHeader';
+
 
 const BookingManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -256,6 +259,20 @@ const BookingManagementPage: React.FC = () => {
                   Quay lại danh sách
                 </Button>
               </div>
+    <div className='min-h-screen py-4 px-2 md:px-2'>
+      <div className='max-w-full'>
+        {/* Page Header with Tabs */}
+        <BookingHeader />
+        {/* Nếu muốn dùng BookingDashboard, bỏ comment dòng dưới */}
+        {/* <section>
+          <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-center">
+            <BookingDashboard />
+          </div>
+        </section> */}
+
+        <section>
+          <div className=''>
+            {selectedBooking ? (
               <BookingDetail
                 propertyId={selectedBooking.propertyId}
                 bookingId={selectedBooking.id}
@@ -294,10 +311,11 @@ const BookingManagementPage: React.FC = () => {
           )}
         </div>
 
-        {/* Statistics Section */}
-        <div className="mt-6">
-          <BookingStatistics />
-        </div>
+        <section>
+          <div className='p-6 flex flex-col justify-center'>
+            <BookingStatistics />
+          </div>
+        </section>
       </div>
 
       <StaffBookingModal

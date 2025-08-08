@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
   fetchListingById,
-  incrementViewCount,
 } from "@/store/slices/listingSlice";
 import { IListing } from "@/types/listing";
 import { fetchAmenities, selectAmenities } from "@/store/slices/amenitySlice";
@@ -34,8 +33,8 @@ export default function RoomDetailPage() {
   const [nights, setNights] = useState<number>(0);
   const [dateOpen, setDateOpen] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
-  // listingId fallback for hook
-  const listingId = listing?._id || "";
+  // listingId fallback for hook - chỉ sử dụng id từ URL, không phụ thuộc vào listing từ Redux
+  const listingId = id || "";
   const { bookedDates } = useBookedDates(listingId);
   // guests fallback for state
   const [guests, setGuests] = useState({
@@ -60,9 +59,6 @@ export default function RoomDetailPage() {
     (state) => state.safetyFeature.safetyFeatures
   );
 
-  // Hàm xử lý chọn dịch vụ (có thể truyền xuống RoomInfo)
-
-
   // Debug: Log selectedServices khi thay đổi
   useEffect(() => {
     console.log("RoomDetail selectedServices changed:", selectedServices);
@@ -71,9 +67,10 @@ export default function RoomDetailPage() {
   // Gọi API lấy thông tin phòng và tiện ích
   useEffect(() => {
     if (id) {
-      dispatch(incrementViewCount(id));
+      // Chỉ gọi fetchListingById một lần duy nhất để tránh tăng lượt xem nhiều lần
+      console.log("🔄 Calling fetchListingById for id:", id);
+      dispatch(fetchListingById(id));
     }
-    if (id) dispatch(fetchListingById(id));
     dispatch(fetchAmenities({}));
     dispatch(fetchServices({}));
     dispatch(fetchSafetyFeatures({}));

@@ -36,7 +36,7 @@ import Messages from "@/pages/messages/Messages";
 import AllNotificationsPage from "@/pages/notifications/AllNotificationsPage";
 // Admin Pages
 import AdminLayout from "@/components/layouts/admin/AdminLayout";
-import DashboardContent from "@/components/admin/DashboardContent";
+import DashboardContent from "@/components/admin/dasboard/DashboardContent";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import ProtectedAdminRoute from "@/components/common/ProtectedAdminRoute";
 import AdminLoginPage from "@/pages/auth/AdminLoginPage";
@@ -67,14 +67,17 @@ import EditAmenities from "@/components/admin/amenities/EditAmenities";
 import RoleManagementPage from "@/pages/admin/roles/RoleManagementPage";
 import RoleCreatePage from "@/pages/admin/roles/RoleCreatePage";
 import VoucherListPage from "@/pages/admin/voucher/VoucherListPage";
+import VoucherUsagePage from "@/pages/admin/voucher/VoucherUsagePage";
 import ServiceListPage from "@/pages/admin/service/ServiceListPage";
 import SafetyFeatureListPage from "@/pages/admin/safety-feature/SafetyFeatureListPage";
 import HouseRuleListPage from "@/pages/admin/house-rule/HouseRuleListPage";
 import ReviewManagementPage from "@/pages/admin/reviews/ReviewManagementPage";
+import ServiceUsagePage from "@/pages/admin/service/ServiceUsagePage";
 
 //booking
 import BookingManagementPage from "@/pages/admin/booking/BookingManagementPage";
 import BookingDetailPage from "@/pages/admin/booking/BookingDetailPage";
+import { BookingCalendarPage } from "@/pages/admin/booking/BookingCalendarPage";
 import AdminUserPage from "@/pages/admin/user/AdminUserPage";
 import StaffManagementPage from "@/pages/admin/user/StaffManagementPage";
 import AdminWishlistPage from "@/pages/admin/wishlist/AdminWishlistPage";
@@ -144,6 +147,14 @@ const routes: RouteObject[] = [
           </ProtectedRoute>
         ),
       },
+      {
+        path: "messages",
+        element: (
+          <ProtectedRoute>
+            <Messages />
+          </ProtectedRoute>
+        ),
+      },
       { path: "list/:id", element: <RoomDeatil /> },
       { path: "room-detail/:id", element: <RoomDeatil /> },
       { path: "search", element: <SearchResultPage /> },
@@ -165,14 +176,6 @@ const routes: RouteObject[] = [
   {
     path: "/payment/failed",
     element: <PaymentFailedPage />,
-  },
-  {
-    path: "messages",
-    element: (
-      <ProtectedRoute>
-        <Messages />
-      </ProtectedRoute>
-    ),
   },
 
   // Các route trở thành host, có thể cho phép tất cả user đăng nhập, hoặc chỉ một số role, nếu cần thì wrap bằng ProtectedRoute luôn
@@ -252,6 +255,7 @@ const routes: RouteObject[] = [
 
       // booking
       { path: "bookings", element: <BookingManagementPage /> },
+      { path: "bookings/calendar", element: <BookingCalendarPage /> },
       {
         path: "bookings/:propertyId/:bookingId",
         element: <BookingDetailPage />,
@@ -271,7 +275,18 @@ const routes: RouteObject[] = [
       { path: "amenities/edit/:id", element: <EditAmenities /> },
 
       { path: "messages", element: <Messages /> },
-
+      { path: "permissions-manager", element: <RoleManagementPage /> },
+      { path: "permissions/create", element: <RoleCreatePage /> },
+      { path: "vouchers", element: <VoucherListPage /> },
+      { path: "vouchers/:id/usage", element: <VoucherUsagePage /> },
+      { path: "services/:id/usage", element: <ServiceUsagePage /> },
+      { path: "services", element: <ServiceListPage /> },
+      { path: "safety-features", element: <SafetyFeatureListPage /> },
+      { path: "house-rules", element: <HouseRuleListPage /> },
+      { path: "reviews", element: <ReviewManagementPage /> },
+      { path: "users", element: <AdminUserPage /> },
+      { path: "staff", element: <StaffManagementPage /> },
+      { path: "wishlists", element: <AdminWishlistPage /> },
       { path: "permissions-manager", element: <RoleManagementPage /> },
       { path: "permissions/create", element: <RoleCreatePage /> },
       { path: "vouchers", element: <VoucherListPage /> },

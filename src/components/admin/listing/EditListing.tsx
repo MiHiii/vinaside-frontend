@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "react-hot-toast";
 import { Listing } from "@/types/listing";
 import { DropzoneUpload } from "@/components/become-a-host/DropzoneUpload";
@@ -31,6 +32,12 @@ const listingSchema = z.object({
   ),
   status: z.string().min(1, "Trạng thái là bắt buộc"),
   cancel_policy: z.string().min(1, "Chính sách hủy là bắt buộc"),
+  // Weekend surcharge validation
+  has_weekend_surcharge: z.boolean().optional(),
+  weekend_surcharge_percent: z.preprocess(
+    (val) => Number(val),
+    z.number().min(0, "Phần trăm phụ phí phải lớn hơn hoặc bằng 0").max(100, "Phần trăm phụ phí không được vượt quá 100%")
+  ).optional(),
 });
 
 export default function EditListing() {
@@ -353,6 +360,57 @@ export default function EditListing() {
           <option value="strict">Nghiêm ngặt</option>
         </select>
               {errors.cancel_policy && <span className="text-red-500 text-sm font-medium">{errors.cancel_policy}</span>}
+            </div>
+          </div>
+
+          {/* Weekend Surcharge */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+              <Label className="text-base text-gray-800 dark:text-gray-200">Phụ phí cuối tuần</Label>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                <input
+                  type="checkbox"
+                  name="has_weekend_surcharge"
+                  checked={form.has_weekend_surcharge || false}
+                  onChange={handleChange}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Áp dụng phụ phí cuối tuần</span>
+              </label>
+              
+              {form.has_weekend_surcharge && (
+                <div className="space-y-2 pl-7">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="weekend_surcharge_percent" className="text-sm text-gray-700 dark:text-gray-300">
+                      Phần trăm phụ phí (%)
+                    </Label>
+                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                      {form.weekend_surcharge_percent || 0}%
+                    </span>
+                  </div>
+                  <Slider
+                    value={[form.weekend_surcharge_percent || 0]}
+                    onValueChange={(val: number[]) => {
+                      setForm((prev) => prev ? { ...prev, weekend_surcharge_percent: val[0] } : prev);
+                    }}
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Phụ phí sẽ được tính thêm vào giá gốc mỗi đêm vào cuối tuần (Thứ 6, Thứ 7, Chủ nhật)
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
