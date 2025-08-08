@@ -220,7 +220,12 @@ export default function DashboardContent() {
       <div className="flex items-center justify-between">
         <DateRangePicker />
         <div className="flex items-center gap-4">
-          <Button onClick={handleRefresh} variant="outline" size="sm">
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="bg-white border-gray-200 hover:bg-gray-200 cursor-pointer"
+          >
             <RefreshCw className="w-2 h-2 mr-2" />
             Làm mới
           </Button>

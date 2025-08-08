@@ -17,4 +17,5 @@ export const voucherApi = {
   useVoucher: (id: string) => api.post(`/vouchers/${id}/use`),
   getUsageStats: (id: string) => api.get(`/vouchers/${id}/usage-stats`),
   getBookings: (id: string) => api.get(`/vouchers/${id}/bookings`),
+  getDetailedStats: (id: string) => api.get(`/vouchers/stats/detailed/${id}`),
 };

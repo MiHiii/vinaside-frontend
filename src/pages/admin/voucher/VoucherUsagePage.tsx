@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useVouchers } from "@/hooks/useVouchers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,21 +12,28 @@ import {
   Tag,
   TrendingUp,
   Clock,
+  List,
+  Building2,
 } from "lucide-react";
+import { TableCell } from "@/components/ui/table";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function VoucherUsagePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isStaff } = useUserRole();
 
   const {
     vouchers,
     voucherUsage,
     voucherBookings,
+    voucherDetailedStats,
     loading,
     error,
     getVouchers,
     getVoucherUsage,
     getVoucherBookings,
+    getVoucherDetailedStats,
     clearUsage,
   } = useVouchers();
 
@@ -70,6 +77,7 @@ export default function VoucherUsagePage() {
       console.log("Fetching voucher data for ID:", id);
       getVoucherUsage(id);
       getVoucherBookings(id);
+      getVoucherDetailedStats(id);
     }
 
     // Cleanup when component unmounts
@@ -94,10 +102,13 @@ export default function VoucherUsagePage() {
   };
 
   const formatCurrency = (amount: number) => {
+    const safe = Number.isFinite(amount) ? amount : 0;
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(amount);
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+    }).format(Math.round(safe));
   };
 
   const getStatusBadge = (status: string) => {
@@ -220,14 +231,27 @@ export default function VoucherUsagePage() {
     );
   }
 
-  const totalDiscount = safeVoucherBookings.reduce(
+  const computedTotalDiscount = safeVoucherBookings.reduce(
     (sum, booking) => sum + booking.voucher_discount_amount,
     0
   );
-  const totalRevenue = safeVoucherBookings.reduce(
+  const computedRevenueAfter = safeVoucherBookings.reduce(
     (sum, booking) => sum + (booking.final_price || 0),
     0
   );
+  const computedAverageDiscount =
+    safeVoucherBookings.length > 0
+      ? computedTotalDiscount / safeVoucherBookings.length
+      : 0;
+
+  const displayTotalBookings =
+    voucherDetailedStats?.total_bookings ?? safeVoucherBookings.length;
+  const displayTotalDiscount =
+    voucherDetailedStats?.total_discount ?? computedTotalDiscount;
+  const displayRevenueAfter =
+    voucherDetailedStats?.revenue_after_discount ?? computedRevenueAfter;
+  const displayAverageDiscount =
+    voucherDetailedStats?.average_discount ?? computedAverageDiscount;
 
   return (
     <div className="space-y-6 p-6">
@@ -238,17 +262,28 @@ export default function VoucherUsagePage() {
             variant="outline"
             size="sm"
             onClick={() => navigate("/admin")}
-            className="bg-white border-gray-200 hover:bg-gray-300"
+            className="bg-white border-gray-200 hover:bg-gray-200 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Quay về Dashboard
           </Button>
+          {!isStaff && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/admin/vouchers")}
+              className="bg-white border-gray-200 hover:bg-gray-200 cursor-pointer"
+            >
+              <List className="w-4 h-4 mr-2" />
+              Danh sách
+            </Button>
+          )}
         </div>
         <Button
           onClick={handleRefresh}
           variant="outline"
           size="sm"
-          className="text-sm bg-white border-gray-300"
+          className="text-sm bg-white border-gray-200 hover:bg-gray-200 cursor-pointer"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
           Làm mới
@@ -377,27 +412,25 @@ export default function VoucherUsagePage() {
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium">Tổng booking:</span>
                 <span className="text-lg font-bold text-blue-600">
-                  {safeVoucherBookings.length}
+                  {displayTotalBookings}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium">Tổng giảm giá:</span>
                 <span className="text-lg font-bold text-green-600">
-                  {formatCurrency(totalDiscount)}
+                  {formatCurrency(displayTotalDiscount)}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium">Doanh thu sau giảm:</span>
                 <span className="text-lg font-bold text-purple-600">
-                  {formatCurrency(totalRevenue)}
+                  {formatCurrency(displayRevenueAfter)}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium">Giảm giá trung bình:</span>
                 <span className="text-lg font-bold text-orange-600">
-                  {safeVoucherBookings.length > 0
-                    ? formatCurrency(totalDiscount / safeVoucherBookings.length)
-                    : formatCurrency(0)}
+                  {formatCurrency(displayAverageDiscount)}
                 </span>
               </div>
             </div>
@@ -459,23 +492,107 @@ export default function VoucherUsagePage() {
                         )
                       }
                     >
-                      <td className="py-3 px-4 font-medium">
-                        {booking.guest_name}
-                      </td>
-                      <td className="py-3 px-4">{booking.property_name}</td>
-                      <td className="py-3 px-4">{booking.listing_title}</td>
-                      <td className="py-3 px-4">
-                        {formatDate(booking.checkInDate)}
-                      </td>
-                      <td className="py-3 px-4 font-medium">
-                        {booking.nights}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-green-600">
-                        {formatCurrency(booking.voucher_discount_amount)}
-                      </td>
-                      <td className="py-3 px-4">
-                        {getStatusBadge(booking.booking_status)}
-                      </td>
+                      <TableCell className="py-4">
+                        <Link
+                          to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
+                          className="block group"
+                        >
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-none group-hover:border-blue-300 transition-all duration-300">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <Users className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <div className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition-colors">
+                                  {booking.guest_name}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {booking.guest_email}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Link
+                          to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
+                          className="block group"
+                        >
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border-none group-hover:border-purple-300 transition-all duration-300">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-4 h-4 text-purple-600" />
+                              <span className="font-medium text-sm text-gray-900 group-hover:text-purple-600 transition-colors">
+                                {booking.property_name}
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Link
+                          to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
+                          className="block group"
+                        >
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border-none group-hover:border-green-300 transition-all duration-300">
+                            <div className="font-medium text-sm text-gray-900 group-hover:text-green-600 transition-colors">
+                              {booking.listing_title}
+                            </div>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Link
+                          to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
+                          className="block group"
+                        >
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border-none group-hover:border-blue-300 transition-all duration-300">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-blue-600" />
+                              <span className="font-medium text-sm text-gray-900">
+                                {formatDate(booking.checkInDate)}
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Link
+                          to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
+                          className="block group"
+                        >
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border-none group-hover:border-indigo-300 transition-all duration-300">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-indigo-600" />
+                              <span className="font-medium text-sm text-gray-900">
+                                {booking.nights} đêm
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Link
+                          to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
+                          className="block group"
+                        >
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border-none group-hover:border-green-300 transition-all duration-300">
+                            <div className="font-bold text-green-600 text-sm">
+                              {formatCurrency(booking.voucher_discount_amount)}
+                            </div>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <Link
+                          to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
+                          className="block group"
+                        >
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border-none group-hover:border-yellow-300 transition-all duration-300">
+                            {getStatusBadge(booking.booking_status)}
+                          </div>
+                        </Link>
+                      </TableCell>
                     </tr>
                   ))}
                 </tbody>

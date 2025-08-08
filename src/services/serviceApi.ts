@@ -13,4 +13,5 @@ export const serviceApi = {
   restore: (id: string) => api.put(`/services/${id}/restore`),
   toggleStatus: (id: string) => api.put(`/services/${id}/toggle-status`),
   getBookings: (id: string) => api.get(`/services/${id}/bookings`),
+  getDetailedStats: (id: string) => api.get(`/services/stats/detailed/${id}`),
 };

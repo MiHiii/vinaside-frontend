@@ -39,6 +39,7 @@ interface VoucherState {
   voucherDetail: Voucher | null;
   voucherUsage: VoucherUsageData | null;
   voucherBookings: VoucherBookingData[];
+  voucherDetailedStats?: VoucherDetailedStats | null;
   loading: boolean;
   error: string | null;
 }
@@ -48,9 +49,21 @@ const initialState: VoucherState = {
   voucherDetail: null,
   voucherUsage: null,
   voucherBookings: [],
+  voucherDetailedStats: null,
   loading: false,
   error: null,
 };
+
+// Detailed stats interface for voucher
+interface VoucherDetailedStats {
+  _id: string;
+  voucher_code: string;
+  voucher_discount_percent: number;
+  total_bookings: number;
+  total_discount: number;
+  revenue_after_discount: number;
+  average_discount: number;
+}
 
 // Async thunks
 export const fetchVouchers = createAsyncThunk(
@@ -199,6 +212,23 @@ export const fetchVoucherBookings = createAsyncThunk(
   }
 );
 
+export const fetchVoucherDetailedStats = createAsyncThunk(
+  "voucher/fetchVoucherDetailedStats",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const { data } = await voucherApi.getDetailedStats(id);
+      // API wraps inside data.data.data
+      const stats = data?.data?.data || data?.data || data;
+      return stats as VoucherDetailedStats;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      return rejectWithValue(
+        error.response?.data?.message || "Lỗi lấy thống kê chi tiết voucher"
+      );
+    }
+  }
+);
+
 // Slice
 const voucherSlice = createSlice({
   name: "voucher",
@@ -323,6 +353,22 @@ const voucherSlice = createSlice({
       .addCase(fetchVoucherBookings.rejected, (state, action) => {
         state.loading = false;
         state.voucherBookings = [];
+        state.error = action.payload as string;
+      })
+      // fetchVoucherDetailedStats
+      .addCase(fetchVoucherDetailedStats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchVoucherDetailedStats.fulfilled,
+        (state, action: PayloadAction<VoucherDetailedStats>) => {
+          state.loading = false;
+          state.voucherDetailedStats = action.payload;
+        }
+      )
+      .addCase(fetchVoucherDetailedStats.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload as string;
       });
   },

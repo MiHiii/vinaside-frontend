@@ -12,6 +12,7 @@ import {
   fetchVoucherUsage,
   fetchVoucherBookings,
   clearVoucherUsage,
+  fetchVoucherDetailedStats,
 } from "@/store/slices/voucherSlice";
 import { useCallback } from "react";
 import { CreateVoucherDto, UpdateVoucherDto } from "@/types/voucher";
@@ -23,6 +24,7 @@ export const useVouchers = () => {
     voucherDetail,
     voucherUsage,
     voucherBookings,
+    voucherDetailedStats,
     loading,
     error,
   } = useAppSelector((state) => state.voucher);
@@ -52,6 +54,13 @@ export const useVouchers = () => {
   const getVoucherBookings = useCallback(
     (id: string) => {
       dispatch(fetchVoucherBookings(id));
+    },
+    [dispatch]
+  );
+
+  const getVoucherDetailedStats = useCallback(
+    (id: string) => {
+      dispatch(fetchVoucherDetailedStats(id));
     },
     [dispatch]
   );
@@ -108,12 +117,14 @@ export const useVouchers = () => {
     voucherDetail,
     voucherUsage,
     voucherBookings,
+    voucherDetailedStats,
     loading,
     error,
     getVouchers,
     getVoucherDetail,
     getVoucherUsage,
     getVoucherBookings,
+    getVoucherDetailedStats,
     clearUsage,
     addVoucher,
     editVoucher,

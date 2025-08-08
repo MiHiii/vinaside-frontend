@@ -12,6 +12,7 @@ import {
   clearServiceUsage,
   clearServiceError,
   clearServiceDetail,
+  fetchServiceDetailedStats,
 } from "@/store/slices/serviceSlice";
 import { useCallback } from "react";
 import { CreateServiceDto, UpdateServiceDto } from "@/types/services";
@@ -25,6 +26,7 @@ export const useServices = () => {
     serviceDetail,
     serviceUsage,
     serviceBookings,
+    serviceDetailedStats,
     loading,
     error,
   } = useSelector((state: RootState) => state.service);
@@ -100,6 +102,13 @@ export const useServices = () => {
     [dispatch]
   );
 
+  const getServiceDetailedStats = useCallback(
+    (id: string) => {
+      dispatch(fetchServiceDetailedStats(id));
+    },
+    [dispatch]
+  );
+
   const clearUsage = useCallback(() => {
     dispatch(clearServiceUsage());
   }, [dispatch]);
@@ -109,6 +118,7 @@ export const useServices = () => {
     serviceDetail,
     serviceUsage,
     serviceBookings,
+    serviceDetailedStats,
     loading,
     error,
     getServices,
@@ -122,6 +132,7 @@ export const useServices = () => {
     clearDetail,
     getServiceUsage,
     getServiceBookings,
+    getServiceDetailedStats,
     clearUsage,
   };
 };

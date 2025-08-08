@@ -38,6 +38,7 @@ interface ServiceState {
   serviceDetail: Service | null;
   serviceUsage: ServiceUsageData | null;
   serviceBookings: ServiceBookingData[];
+  serviceDetailedStats?: ServiceDetailedStats | null;
   loading: boolean;
   error: string | null;
 }
@@ -47,6 +48,7 @@ const initialState: ServiceState = {
   serviceDetail: null,
   serviceUsage: null,
   serviceBookings: [],
+  serviceDetailedStats: null,
   loading: false,
   error: null,
 };
@@ -207,6 +209,33 @@ export const fetchServiceBookings = createAsyncThunk(
   }
 );
 
+export const fetchServiceDetailedStats = createAsyncThunk(
+  "service/fetchServiceDetailedStats",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const { data } = await serviceApi.getDetailedStats(id);
+      // API wraps inside data.data.data
+      const stats = data?.data?.data || data?.data || data;
+      return stats as ServiceDetailedStats;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      return rejectWithValue(
+        error.response?.data?.message || "Lỗi lấy thống kê chi tiết dịch vụ"
+      );
+    }
+  }
+);
+
+// Detailed stats interface for service
+interface ServiceDetailedStats {
+  _id: string;
+  service_name: string;
+  service_price: number;
+  total_bookings: number;
+  total_revenue: number;
+  average_price: number;
+}
+
 const serviceSlice = createSlice({
   name: "service",
   initialState,
@@ -334,6 +363,22 @@ const serviceSlice = createSlice({
       .addCase(fetchServiceBookings.rejected, (state, action) => {
         state.loading = false;
         state.serviceBookings = [];
+        state.error = action.payload as string;
+      })
+      // fetchServiceDetailedStats
+      .addCase(fetchServiceDetailedStats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchServiceDetailedStats.fulfilled,
+        (state, action: PayloadAction<ServiceDetailedStats>) => {
+          state.loading = false;
+          state.serviceDetailedStats = action.payload;
+        }
+      )
+      .addCase(fetchServiceDetailedStats.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload as string;
       });
   },
