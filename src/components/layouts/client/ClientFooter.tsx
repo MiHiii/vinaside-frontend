@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export default function ClientFooter() {
   return (
-    <footer className="w-full border-t border-gray-200 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] text-sm">
+    <footer className="w-full border-t border-gray-200 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] text-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Support */}

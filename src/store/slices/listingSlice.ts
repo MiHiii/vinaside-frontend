@@ -52,6 +52,12 @@ interface ListingState {
   listingStatistics?: ListingStatistics;
   listingStatisticsLoading?: boolean;
   listingStatisticsError?: string | null;
+  // Thêm state cho top listings
+  topViewedListings: Listing[];
+  topRatedListings: Listing[];
+  topWishlistListings: Listing[];
+  topListingsLoading: boolean;
+  topListingsError: string | null;
 }
 
 const initialState: ListingState = {
@@ -69,6 +75,12 @@ const initialState: ListingState = {
   listingStatistics: undefined,
   listingStatisticsLoading: false,
   listingStatisticsError: null,
+  // Thêm state cho top listings
+  topViewedListings: [],
+  topRatedListings: [],
+  topWishlistListings: [],
+  topListingsLoading: false,
+  topListingsError: null,
 };
 
 // Async thunks
@@ -117,7 +129,8 @@ export const fetchListings = createAsyncThunk<
     }
     // Nếu có place_id thì gọi /listings?place_id=...
     if (params.place_id) {
-      if (params.fuzzy_place_search === undefined) params.fuzzy_place_search = true;
+      if (params.fuzzy_place_search === undefined)
+        params.fuzzy_place_search = true;
       const res = await api.get("/listings", { params });
       const data = res.data.data || res.data;
       const listings =
@@ -281,12 +294,97 @@ export const incrementViewCount = createAsyncThunk<
   Listing,
   string,
   { rejectValue: string }
+>("listings/incrementViewCount", async (id, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/listings/${id}/view`);
+    return res.data.data;
+  } catch (err) {
+    return rejectWithValue(getErrorMessage(err));
+  }
+});
+
+// Thunk lấy top listings theo view
+export const fetchTopViewedListings = createAsyncThunk<
+  Listing[],
+  { limit?: number },
+  { rejectValue: string }
 >(
-  "listings/incrementViewCount",
-  async (id, { rejectWithValue }) => {
+  "listings/fetchTopViewedListings",
+  async ({ limit = 7 }, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/listings/${id}/view`);
-      return res.data.data;
+      const res = await api.get("/listings/top/viewed", { params: { limit } });
+      const data = res.data.data || res.data;
+      return Array.isArray(data) ? data : data.listings || [];
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err));
+    }
+  }
+);
+
+// Thunk lấy top listings theo rating
+export const fetchTopRatedListings = createAsyncThunk<
+  Listing[],
+  { limit?: number },
+  { rejectValue: string }
+>(
+  "listings/fetchTopRatedListings",
+  async ({ limit = 7 }, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/listings/top/rated", { params: { limit } });
+      const data = res.data.data || res.data;
+      return Array.isArray(data) ? data : data.listings || [];
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err));
+    }
+  }
+);
+
+// Thunk lấy top listings theo wishlist
+export const fetchTopWishlistListings = createAsyncThunk<
+  Listing[],
+  { limit?: number },
+  { rejectValue: string }
+>(
+  "listings/fetchTopWishlistListings",
+  async ({ limit = 7 }, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/listings/top/wishlist", {
+        params: { limit },
+      });
+      const data = res.data.data || res.data;
+      return Array.isArray(data) ? data : data.listings || [];
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err));
+    }
+  }
+);
+
+// Thunk tìm kiếm theo availability
+export const fetchListingsByAvailability = createAsyncThunk<
+  { listings: Listing[]; total: number },
+  {
+    checkInDate: string;
+    checkOutDate: string;
+    guests: number;
+    min_beds?: number;
+    min_bathrooms?: number;
+    locationKeyword?: string;
+    place_id?: string;
+    lat?: number;
+    lng?: number;
+    [key: string]: unknown;
+  },
+  { rejectValue: string }
+>(
+  "listings/fetchListingsByAvailability",
+  async (params, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/listings/search/availability", { params });
+      const data = res.data.data || res.data;
+      const listings =
+        data.listings || data.data || (Array.isArray(data) ? data : []);
+      const total = data.meta?.total || data.total || listings.length;
+      return { listings, total };
     } catch (err) {
       return rejectWithValue(getErrorMessage(err));
     }
@@ -536,9 +634,88 @@ const listingSlice = createSlice({
       })
       // incrementViewCount
       .addCase(incrementViewCount.fulfilled, (state, action) => {
-        if (action.payload && state.listing && state.listing._id === action.payload._id) {
+        if (
+          action.payload &&
+          state.listing &&
+          state.listing._id === action.payload._id
+        ) {
           state.listing = action.payload;
         }
+      })
+
+      // fetchTopViewedListings
+      .addCase(fetchTopViewedListings.pending, (state) => {
+        state.topListingsLoading = true;
+        state.topListingsError = null;
+      })
+      .addCase(fetchTopViewedListings.fulfilled, (state, action) => {
+        state.topListingsLoading = false;
+        state.topViewedListings = action.payload;
+      })
+      .addCase(fetchTopViewedListings.rejected, (state, action) => {
+        state.topListingsLoading = false;
+        state.topListingsError =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi tải top viewed listings!";
+      })
+
+      // fetchTopRatedListings
+      .addCase(fetchTopRatedListings.pending, (state) => {
+        state.topListingsLoading = true;
+        state.topListingsError = null;
+      })
+      .addCase(fetchTopRatedListings.fulfilled, (state, action) => {
+        state.topListingsLoading = false;
+        state.topRatedListings = action.payload;
+      })
+      .addCase(fetchTopRatedListings.rejected, (state, action) => {
+        state.topListingsLoading = false;
+        state.topListingsError =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi tải top rated listings!";
+      })
+
+      // fetchTopWishlistListings
+      .addCase(fetchTopWishlistListings.pending, (state) => {
+        state.topListingsLoading = true;
+        state.topListingsError = null;
+      })
+      .addCase(fetchTopWishlistListings.fulfilled, (state, action) => {
+        state.topListingsLoading = false;
+        state.topWishlistListings = action.payload;
+      })
+      .addCase(fetchTopWishlistListings.rejected, (state, action) => {
+        state.topListingsLoading = false;
+        state.topListingsError =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi tải top wishlist listings!";
+      })
+
+      // fetchListingsByAvailability
+      .addCase(fetchListingsByAvailability.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchListingsByAvailability.fulfilled,
+        (
+          state,
+          action: PayloadAction<{ listings: Listing[]; total: number }>
+        ) => {
+          state.loading = false;
+          state.listings = action.payload.listings;
+          state.total = action.payload.total;
+        }
+      )
+      .addCase(fetchListingsByAvailability.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi tìm kiếm chỗ ở theo điều kiện!";
       });
   },
 });
@@ -568,5 +745,17 @@ export const selectListingStatisticsLoading = (state: RootState) =>
   state.listings.listingStatisticsLoading;
 export const selectListingStatisticsError = (state: RootState) =>
   state.listings.listingStatisticsError;
+
+// Selectors cho top listings
+export const selectTopViewedListings = (state: RootState) =>
+  state.listings.topViewedListings;
+export const selectTopRatedListings = (state: RootState) =>
+  state.listings.topRatedListings;
+export const selectTopWishlistListings = (state: RootState) =>
+  state.listings.topWishlistListings;
+export const selectTopListingsLoading = (state: RootState) =>
+  state.listings.topListingsLoading;
+export const selectTopListingsError = (state: RootState) =>
+  state.listings.topListingsError;
 
 export default listingSlice.reducer;
