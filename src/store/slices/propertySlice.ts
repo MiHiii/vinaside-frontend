@@ -266,11 +266,18 @@ export const restoreProperty = createAsyncThunk<
 
 export const assignStaffToProperty = createAsyncThunk(
   "properties/assignStaff",
-  async ({ id, staffIds, role }: { id: string; staffIds: string[]; role?: string }, { rejectWithValue }) => {
+  async (
+    { id, staffIds, role }: { id: string; staffIds: string[]; role?: string },
+    { rejectWithValue }
+  ) => {
     try {
       // Gửi từng staffId một với role
-      const promises = staffIds.map(staffId => 
-        propertyStaffAssignmentApi.assignStaff({ propertyId: id, staffId, role })
+      const promises = staffIds.map((staffId) =>
+        propertyStaffAssignmentApi.assignStaff({
+          propertyId: id,
+          staffId,
+          role,
+        })
       );
       const results = await Promise.all(promises);
       return results[0]; // Trả về kết quả đầu tiên
@@ -296,23 +303,31 @@ export const assignStaffToProperty = createAsyncThunk(
 
 export const unassignStaffFromProperty = createAsyncThunk(
   "properties/unassignStaff",
-  async ({ id, staffIds }: { id: string; staffIds: string[] }, { rejectWithValue }) => {
+  async (
+    { id, staffIds }: { id: string; staffIds: string[] },
+    { rejectWithValue }
+  ) => {
     try {
       // Gửi từng staffId một
-      const promises = staffIds.map(staffId => 
+      const promises = staffIds.map((staffId) =>
         propertyStaffAssignmentApi.unassignStaff({ propertyId: id, staffId })
       );
       const results = await Promise.all(promises);
       return results[0]; // Trả về kết quả đầu tiên
     } catch (err: unknown) {
       if (
-        typeof err === 'object' &&
+        typeof err === "object" &&
         err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: { message?: string } } }).response === 'object' &&
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message
+        "response" in err &&
+        typeof (err as { response?: { data?: { message?: string } } })
+          .response === "object" &&
+        (err as { response?: { data?: { message?: string } } }).response?.data
+          ?.message
       ) {
-        return rejectWithValue((err as { response: { data: { message: string } } }).response.data.message);
+        return rejectWithValue(
+          (err as { response: { data: { message: string } } }).response.data
+            .message
+        );
       }
       return rejectWithValue("Lỗi bỏ gán nhân viên");
     }
@@ -323,7 +338,9 @@ export const getStaffByProperty = createAsyncThunk(
   "properties/getStaffByProperty",
   async (propertyId: string, { rejectWithValue }) => {
     try {
-      const res = await propertyStaffAssignmentApi.getStaffByProperty(propertyId);
+      const res = await propertyStaffAssignmentApi.getStaffByProperty(
+        propertyId
+      );
       return res;
     } catch (err: unknown) {
       return rejectWithValue(getErrorMessage(err));
@@ -335,7 +352,9 @@ export const getPropertiesByStaff = createAsyncThunk(
   "properties/getPropertiesByStaff",
   async (staffId: string, { rejectWithValue }) => {
     try {
-      const res = await propertyStaffAssignmentApi.getPropertiesByStaff(staffId);
+      const res = await propertyStaffAssignmentApi.getPropertiesByStaff(
+        staffId
+      );
       return res;
     } catch (err: unknown) {
       return rejectWithValue(getErrorMessage(err));
@@ -345,9 +364,15 @@ export const getPropertiesByStaff = createAsyncThunk(
 
 export const checkStaffAssignment = createAsyncThunk(
   "properties/checkStaffAssignment",
-  async ({ staffId, propertyId }: { staffId: string; propertyId: string }, { rejectWithValue }) => {
+  async (
+    { staffId, propertyId }: { staffId: string; propertyId: string },
+    { rejectWithValue }
+  ) => {
     try {
-      const res = await propertyStaffAssignmentApi.checkStaffAssignment(staffId, propertyId);
+      const res = await propertyStaffAssignmentApi.checkStaffAssignment(
+        staffId,
+        propertyId
+      );
       return res;
     } catch (err: unknown) {
       return rejectWithValue(getErrorMessage(err));
@@ -358,18 +383,42 @@ export const checkStaffAssignment = createAsyncThunk(
 export const fetchPropertyStatistics = createAsyncThunk(
   "properties/fetchStatistics",
   async (
-    { id, dateRange }: { id: string; dateRange?: DateRange },
+    {
+      id,
+      dateRange,
+      startDate,
+      endDate,
+    }: {
+      id: string;
+      dateRange?:
+        | "today"
+        | "last_7_days"
+        | "last_15_days"
+        | "last_30_days"
+        | "custom";
+      startDate?: string;
+      endDate?: string;
+    },
     { rejectWithValue }
   ) => {
     try {
-      // Chuẩn bị query string nếu có dateRange
-      let query = "";
-      if (dateRange?.from && dateRange?.to) {
-        const from = dateRange.from.toISOString().split("T")[0];
-        const to = dateRange.to.toISOString().split("T")[0];
-        query = `?from=${from}&to=${to}`;
+      // Chuẩn bị query parameters
+      const params = new URLSearchParams();
+
+      if (dateRange && dateRange !== "custom") {
+        params.append("dateRange", dateRange);
+      } else if (dateRange === "custom" && startDate && endDate) {
+        params.append("dateRange", "custom");
+        params.append("startDate", startDate);
+        params.append("endDate", endDate);
       }
-      const res = await api.get(`/properties/${id}/statistics${query}`);
+
+      const queryString = params.toString();
+      const url = `/properties/${id}/statistics${
+        queryString ? `?${queryString}` : ""
+      }`;
+
+      const res = await api.get(url);
       return res.data.data;
     } catch (err: unknown) {
       if (
@@ -423,9 +472,9 @@ export const fetchPropertyRooms = createAsyncThunk<
   { rejectValue: string }
 >("properties/fetchPropertyRooms", async (propertyId, { rejectWithValue }) => {
   try {
-    const res = await api.get(`/properties/${propertyId}/rooms`);
-    // Lấy res.data.data.rooms từ response
-    const rooms = res.data.data?.rooms || [];
+    // New API returns full room data with status and listingStatus
+    const res = await api.get(`/properties/${propertyId}/room-status`);
+    const rooms = res.data?.data || [];
     return rooms;
   } catch (err) {
     return rejectWithValue(getErrorMessage(err));
@@ -650,13 +699,18 @@ const propertySlice = createSlice({
       .addCase(unassignStaffFromProperty.fulfilled, (state, action) => {
         state.property = action.payload;
         // Update in properties array
-        const index = state.properties.findIndex(property => property.id === action.payload.id);
+        const index = state.properties.findIndex(
+          (property) => property.id === action.payload.id
+        );
         if (index !== -1) {
           state.properties[index] = action.payload;
         }
       })
       .addCase(unassignStaffFromProperty.rejected, (state, action) => {
-        state.error = (action.payload as string) || action.error.message || "Lỗi bỏ gán nhân viên";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi bỏ gán nhân viên";
       })
 
       // getStaffByProperty
@@ -776,15 +830,24 @@ export const selectPropertyRoomStatus = (
 ) => state.properties.propertyRoomStatus[propertyId];
 
 // Property staff assignment selectors
-export const selectStaffByProperty = (state: RootState) => state.properties.staffByProperty;
-export const selectStaffByPropertyLoading = (state: RootState) => state.properties.staffByPropertyLoading;
-export const selectStaffByPropertyError = (state: RootState) => state.properties.staffByPropertyError;
-export const selectPropertiesByStaff = (state: RootState) => state.properties.propertiesByStaff;
-export const selectPropertiesByStaffLoading = (state: RootState) => state.properties.propertiesByStaffLoading;
-export const selectPropertiesByStaffError = (state: RootState) => state.properties.propertiesByStaffError;
-export const selectStaffAssignmentCheck = (state: RootState) => state.properties.staffAssignmentCheck;
-export const selectStaffAssignmentCheckLoading = (state: RootState) => state.properties.staffAssignmentCheckLoading;
-export const selectStaffAssignmentCheckError = (state: RootState) => state.properties.staffAssignmentCheckError;
+export const selectStaffByProperty = (state: RootState) =>
+  state.properties.staffByProperty;
+export const selectStaffByPropertyLoading = (state: RootState) =>
+  state.properties.staffByPropertyLoading;
+export const selectStaffByPropertyError = (state: RootState) =>
+  state.properties.staffByPropertyError;
+export const selectPropertiesByStaff = (state: RootState) =>
+  state.properties.propertiesByStaff;
+export const selectPropertiesByStaffLoading = (state: RootState) =>
+  state.properties.propertiesByStaffLoading;
+export const selectPropertiesByStaffError = (state: RootState) =>
+  state.properties.propertiesByStaffError;
+export const selectStaffAssignmentCheck = (state: RootState) =>
+  state.properties.staffAssignmentCheck;
+export const selectStaffAssignmentCheckLoading = (state: RootState) =>
+  state.properties.staffAssignmentCheckLoading;
+export const selectStaffAssignmentCheckError = (state: RootState) =>
+  state.properties.staffAssignmentCheckError;
 
 export const selectPropertyRooms = (state: RootState) =>
   state.properties.propertyRooms;
