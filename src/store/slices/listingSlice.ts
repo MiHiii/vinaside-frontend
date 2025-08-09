@@ -9,32 +9,43 @@ import {
   QueryListingDto,
 } from "@/types/listing";
 
-// Thêm type cho thống kê listing
+// Type cho thống kê listing mới theo API /listings/statistics/:id
 export interface ListingStatistics {
   listingId: string;
   listingTitle: string;
-  businessPerformance: {
-    totalBookings: number;
-    occupancyRate: number;
-    monthlyRevenue: number;
-    cancellationRate: number;
-    returningGuests: number;
+  totalBookings: number;
+  totalRevenue: number;
+  occupancyRate: number;
+  totalViews: number;
+  totalReviews: number;
+  averageRating: number;
+  wishlistCount: number;
+  totalVoucherDiscount: number;
+  totalVouchersUsed: number;
+  voucherDetails: {
+    voucherId: string;
+    voucherCode: string;
+    usageCount: number;
+    totalDiscount: number;
+    averageDiscount: number;
+  }[];
+  totalServiceRevenue: number;
+  totalServicesUsed: number;
+  serviceDetails: {
+    serviceId: string;
+    serviceName: string;
+    usageCount: number;
+    totalRevenue: number;
+    averagePrice: number;
+  }[];
+  chartData: {
+    date: string;
+    totalRevenue: number;
+  }[];
+  dateRange: {
+    startDate: string;
+    endDate: string;
   };
-  reviews: {
-    averageRating: number;
-    totalReviews: number;
-    recentComment: string;
-  };
-  engagement: {
-    viewCount: number;
-    wishlistCount: number;
-  };
-  voucherImpact: {
-    totalDiscountAmount: number;
-    mostPopularVoucher: string;
-  };
-  // Thêm trường doanh thu theo ngày cho biểu đồ
-  revenueByDate?: { date: string; revenue: number }[];
 }
 
 interface ListingState {
@@ -188,7 +199,7 @@ export const fetchListingByIdForAdmin = createAsyncThunk<
   { rejectValue: string }
 >("listings/fetchListingByIdForAdmin", async (id, { rejectWithValue }) => {
   try {
-    const res = await api.get(`/listings/${id}`);
+    const res = await api.get(`/listings/admin/${id}`);
     return res.data.data;
   } catch (err) {
     return rejectWithValue(getErrorMessage(err));
@@ -270,18 +281,39 @@ export const restoreListing = createAsyncThunk<
   }
 });
 
-// Thunk lấy thống kê listing
+// Thunk lấy thống kê listing với dateRange support
 export const fetchListingStatistics = createAsyncThunk<
   ListingStatistics,
-  { id: string; startDate?: string; endDate?: string },
+  {
+    id: string;
+    dateRange?:
+      | "today"
+      | "last_7_days"
+      | "last_15_days"
+      | "last_30_days"
+      | "custom";
+    startDate?: string;
+    endDate?: string;
+  },
   { rejectValue: string }
 >(
   "listings/fetchListingStatistics",
-  async ({ id, startDate, endDate }, { rejectWithValue }) => {
+  async ({ id, dateRange, startDate, endDate }, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/listings/statistics/${id}`, {
-        params: { startDate, endDate },
-      });
+      const params: Record<string, string> = {};
+
+      if (dateRange && dateRange !== "custom") {
+        params.dateRange = dateRange;
+      } else if (dateRange === "custom" && startDate && endDate) {
+        params.dateRange = "custom";
+        params.startDate = startDate;
+        params.endDate = endDate;
+      } else if (startDate && endDate) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+      }
+
+      const res = await api.get(`/listings/statistics/${id}`, { params });
       return res.data.data;
     } catch (err) {
       return rejectWithValue(getErrorMessage(err));
@@ -401,6 +433,10 @@ const listingSlice = createSlice({
     },
     clearCreateError: (state) => {
       state.createError = null;
+    },
+    clearListings: (state) => {
+      state.listings = [];
+      state.total = 0;
     },
   },
   extraReducers: (builder) => {
@@ -720,7 +756,8 @@ const listingSlice = createSlice({
   },
 });
 
-export const { clearListing, clearCreateError } = listingSlice.actions;
+export const { clearListing, clearCreateError, clearListings } =
+  listingSlice.actions;
 
 // Selectors
 export const selectListings = (state: RootState) => state.listings.listings;
