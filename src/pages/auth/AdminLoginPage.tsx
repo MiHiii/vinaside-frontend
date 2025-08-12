@@ -38,29 +38,32 @@ export default function AdminLoginPage() {
     try {
       const actionResult = await dispatch(login(data));
       const result = unwrapResult(actionResult);
-      
+
       // Lấy thông tin user từ response
       const userData = result.data.user;
-      
+
       // Kiểm tra role - chỉ cho phép admin, staff, không cho phép guest
       if (userData.role === "guest") {
         toast.error("Tài khoản Guest không có quyền truy cập vào trang Admin!");
         return;
       }
-      
+
       // Hiển thị thông báo thành công với role
       const roleDisplayName = getRoleDisplayName(userData.role);
-      toast.success(`Đăng nhập thành công! Chào mừng ${roleDisplayName} ${userData.name}`, {
-        duration: 3000,
-      });
-      
+      toast.success(
+        `Đăng nhập thành công! Chào mừng ${roleDisplayName} ${userData.name}`,
+        {
+          duration: 3000,
+        }
+      );
+
       // Xác định route để chuyển hướng
       const targetRoute = getDefaultRouteByRole(userData.role);
-      
+
       // Kiểm tra nếu có redirect URL từ state (ví dụ: từ ProtectedRoute)
       const from = location.state?.from?.pathname;
       const finalRoute = from && from !== "/admin/login" ? from : targetRoute;
-      
+
       navigate(finalRoute, { replace: true });
     } catch (error) {
       toast.error(
@@ -80,7 +83,9 @@ export default function AdminLoginPage() {
         "
       >
         <CardHeader>
-          <CardTitle className="text-center">Đăng nhập trang Quản Trị</CardTitle>
+          <CardTitle className="text-center">
+            Đăng nhập trang Quản Trị
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <FormProvider {...methods}>
@@ -119,4 +124,4 @@ export default function AdminLoginPage() {
       </Card>
     </div>
   );
-} 
+}

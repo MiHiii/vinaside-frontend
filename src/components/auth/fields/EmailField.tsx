@@ -17,20 +17,24 @@ export default function EmailField() {
       name="email"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Email</FormLabel>
+          <FormLabel className="text-[hsl(var(--foreground))] font-medium">
+            Email
+          </FormLabel>
           <FormControl>
             <Input
               type="email"
               className="
-              bg-[hsl(var(--card))]
-              border border-[hsl(var(--border))]
-              text-[hsl(var(--card-foreground))]
+              bg-[hsl(var(--background))]
+              border-2 border-[hsl(var(--border))]
+              text-[hsl(var(--foreground))]
               placeholder:text-[hsl(var(--muted-foreground))]
-              rounded-md w-full py-2 px-4
-              focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]
-              transition
+              rounded-lg w-full py-3 px-4
+              focus:outline-none focus:border-gray-400 focus:!ring-0 focus:!shadow-none
+              hover:border-gray-300
+              transition-colors duration-200
+              !ring-0 !shadow-none !box-shadow-none
             "
-              placeholder="Email"
+              placeholder="Nhập email của bạn"
               {...field}
             />
           </FormControl>

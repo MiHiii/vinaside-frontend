@@ -25,6 +25,11 @@ import {
 } from "react-icons/fa";
 import { logout } from "@/store/slices/authSlice";
 import { useState } from "react";
+import { useLoginModal } from "@/hooks/useLoginModal";
+import { useAuthModals } from "@/hooks/useAuthModals";
+import LoginModal from "@/components/auth/LoginModal";
+import RegisterModal from "@/components/auth/RegisterModal";
+import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal";
 
 export default function ClientHeader() {
   const dispatch = useAppDispatch();
@@ -37,9 +42,27 @@ export default function ClientHeader() {
 
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
+  // Login modal
+  const { isOpen, openModal, closeModal } = useLoginModal();
+
+  // Auth modals
+  const {
+    isRegisterOpen,
+    openRegisterModal,
+    closeRegisterModal,
+    isForgotPasswordOpen,
+    openForgotPasswordModal,
+    closeForgotPasswordModal,
+  } = useAuthModals();
+
   const handleLogout = () => {
     dispatch(logout());
-    navigate("/login");
+    navigate("/");
+  };
+
+  const handleLoginSuccess = () => {
+    closeModal();
+    // User sẽ được navigate tự động trong LoginForm
   };
 
   return (
@@ -120,23 +143,23 @@ export default function ClientHeader() {
             >
               {!token ? (
                 <>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-                    <Link
-                      to="/register"
-                      className="w-full flex items-center gap-2"
-                    >
+                  <DropdownMenuItem
+                    onClick={openRegisterModal}
+                    className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <div className="w-full flex items-center gap-2">
                       <FaUserPlus className="inline-block" />
                       Đăng ký
-                    </Link>
+                    </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-                    <Link
-                      to="/login"
-                      className="w-full flex items-center gap-2"
-                    >
+                  <DropdownMenuItem
+                    onClick={openModal}
+                    className="m-2 font-medium hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <div className="w-full flex items-center gap-2">
                       <FaSignInAlt className="inline-block" />
                       Đăng nhập
-                    </Link>
+                    </div>
                   </DropdownMenuItem>
                 </>
               ) : (
@@ -253,15 +276,17 @@ export default function ClientHeader() {
               {/* Các mục menu người dùng như trên, có thể tái sử dụng code */}
               {!token ? (
                 <>
-                  <DropdownMenuItem asChild>
-                    <Link to="/register" className="flex items-center gap-2">
-                      <FaUserPlus /> Đăng ký
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={openRegisterModal}
+                    className="flex items-center gap-2"
+                  >
+                    <FaUserPlus /> Đăng ký
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/login" className="flex items-center gap-2">
-                      <FaSignInAlt /> Đăng nhập
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={openModal}
+                    className="flex items-center gap-2"
+                  >
+                    <FaSignInAlt /> Đăng nhập
                   </DropdownMenuItem>
                 </>
               ) : (
@@ -338,6 +363,27 @@ export default function ClientHeader() {
           </div>
         </div>
       )}
+
+      {/* Auth Modals */}
+      <LoginModal
+        isOpen={isOpen}
+        onClose={closeModal}
+        onSuccess={handleLoginSuccess}
+        onSwitchToRegister={openRegisterModal}
+        onSwitchToForgotPassword={openForgotPasswordModal}
+      />
+
+      <RegisterModal
+        isOpen={isRegisterOpen}
+        onClose={closeRegisterModal}
+        onSwitchToLogin={openModal}
+      />
+
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={closeForgotPasswordModal}
+        onSwitchToLogin={openModal}
+      />
     </header>
   );
 }

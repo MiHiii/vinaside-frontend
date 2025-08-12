@@ -22,27 +22,31 @@ export default function ConfirmPasswordField() {
       name="confirmPassword" // ✅ đúng tên
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Nhập lại mật khẩu</FormLabel>
+          <FormLabel className="text-[hsl(var(--foreground))] font-medium">
+            Xác nhận mật khẩu
+          </FormLabel>
           <FormControl>
             <div className="relative">
               <Input
                 className="
-              bg-[hsl(var(--card))]
-              border border-[hsl(var(--border))]
-              text-[hsl(var(--card-foreground))]
-              placeholder:text-[hsl(var(--muted-foreground))]
-              rounded-md w-full py-2 px-4
-              focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]
-              transition
-            "
+                bg-[hsl(var(--background))]
+                border-2 border-[hsl(var(--border))]
+                text-[hsl(var(--foreground))]
+                placeholder:text-[hsl(var(--muted-foreground))]
+                rounded-lg w-full py-3 px-4 pr-12
+                focus:outline-none focus:border-gray-400 focus:!ring-0 focus:!shadow-none
+                hover:border-gray-300
+                transition-colors duration-200
+                !ring-0 !shadow-none !box-shadow-none
+              "
                 type={showPassword ? "text" : "password"}
-                placeholder="********"
+                placeholder="Nhập lại mật khẩu của bạn"
                 {...field}
               />
               <button
                 type="button"
                 onClick={toggleVisibility}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-black"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors duration-200"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
