@@ -7,10 +7,11 @@ import GuestSelector from "./GuestSelector";
 import { IListing } from "@/types/listing";
 import { toast } from "sonner";
 import { Service } from "@/types/services";
-import { useAppDispatch } from "@/hooks/useRedux";
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { setSelectedServices } from "@/store/slices/bookingSlice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { calculateWeekendSurcharge } from "@/utils/priceCalculation";
+import LoginForm from "@/components/auth/LoginForm";
 
 interface BookingFormProps {
   listing: IListing;
@@ -70,6 +71,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
 }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { token, user } = useAppSelector((state) => state.auth);
+
+  // State để quản lý modal login
+  const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
 
   const pricePerNight = listing.price_per_night || 0;
 
@@ -84,10 +89,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const calculatePrice = () => {
     // Tính weekend surcharge nếu có
     let weekendSurcharge = 0;
-    if (listing.has_weekend_surcharge && listing.weekend_surcharge_percent && checkIn && checkOut) {
+    if (
+      listing.has_weekend_surcharge &&
+      listing.weekend_surcharge_percent &&
+      checkIn &&
+      checkOut
+    ) {
       const startDate = new Date(checkIn);
       const endDate = new Date(checkOut);
-      
+
       // Sử dụng utility function giống Backend
       weekendSurcharge = calculateWeekendSurcharge(listing, startDate, endDate);
     }
@@ -137,11 +147,21 @@ const BookingForm: React.FC<BookingFormProps> = ({
       toast.error(
         "Vui lòng chọn ngày nhận phòng, trả phòng và số khách trước khi tiếp tục.",
         {
-          style: { color: "#dc2626" },
+          style: { color: "#ffffff" },
         }
       );
       return;
     }
+
+    // Kiểm tra authentication trước khi đặt phòng
+    if (!token || !user) {
+      toast.error("Vui lòng đăng nhập để đặt phòng.", {
+        style: { color: "#ffffff" },
+      });
+      setIsLoginModalOpen(true);
+      return;
+    }
+
     // Lưu selectedServices vào Redux trước khi chuyển trang
     dispatch(setSelectedServices(selectedServices));
     // Lưu selectedServices vào localStorage để giữ lại khi reload
@@ -169,6 +189,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }).toString();
 
     navigate(`/payment?${params}`);
+  };
+
+  const handleLoginSuccess = () => {
+    setIsLoginModalOpen(false);
+    // Sau khi đăng nhập thành công, tự động tiếp tục đặt phòng
+    handlePayment();
   };
 
   if (loading) {
@@ -258,8 +284,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
             </div>
             {calculatePrice().weekendSurcharge > 0 && (
               <div className="flex justify-between text-yellow-600">
-                <span>Phụ phí cuối tuần (+{listing.weekend_surcharge_percent}%)</span>
-                <span>+{calculatePrice().weekendSurcharge.toLocaleString()}₫</span>
+                <span>
+                  Phụ phí cuối tuần (+{listing.weekend_surcharge_percent}%)
+                </span>
+                <span>
+                  +{calculatePrice().weekendSurcharge.toLocaleString()}₫
+                </span>
               </div>
             )}
             <div className="flex justify-between">
@@ -285,6 +315,13 @@ const BookingForm: React.FC<BookingFormProps> = ({
           </div>
         )}
       </div>
+
+      {/* Login Modal */}
+      <LoginForm
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
     </>
   );
 };
