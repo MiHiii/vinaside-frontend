@@ -1,17 +1,23 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import OtpForm from "@/components/auth/OtpForm";
+import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { resendOtp, verifyOtp } from "@/store/slices/authSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuthModals } from "@/hooks/useAuthModals";
+import OtpModal from "@/components/auth/OtpModal";
 
 export default function OtpPage() {
   const [isResending, setIsResending] = useState(false);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { isOtpOpen, openOtpModal, closeOtpModal } = useAuthModals();
 
   const email = useAppSelector((state) => state.auth.verifyEmail);
+
+  useEffect(() => {
+    // Auto open modal when page loads
+    openOtpModal();
+  }, [openOtpModal]);
 
   const handleVerifyOtp = async (otp: string) => {
     if (!email) {
@@ -58,12 +64,9 @@ export default function OtpPage() {
 
   const handleResend = async () => {
     if (!email) {
-      toast("Không tìm thấy email. Vui lòng đăng nhập lại.", {
-        description: undefined,
-        style: {
-          background: "#ccccc",
-          color: "#00000",
-        },
+      toast.error("Không tìm thấy email. Vui lòng đăng nhập lại.", {
+        duration: 4000,
+        className: "text-base py-4 px-6",
       });
       return;
     }
@@ -71,57 +74,43 @@ export default function OtpPage() {
     try {
       const response = await dispatch(resendOtp({ email }));
       if (response.meta.requestStatus === "fulfilled") {
-        toast("OTP đã được gửi lại.", {
-          description: undefined,
-          style: {
-            background: "#ccccc",
-            color: "#00000",
-          },
+        toast.success("OTP đã được gửi lại.", {
+          duration: 4000,
+          className: "text-base py-4 px-6",
         });
       } else {
-        toast("Gửi lại OTP thất bại.", {
-          description: undefined,
-          style: {
-            background: "#ccccc",
-            color: "#00000",
-          },
+        toast.error("Gửi lại OTP thất bại.", {
+          duration: 4000,
+          className: "text-base py-4 px-6",
         });
       }
     } catch (error) {
       console.log(error);
-      toast("Có lỗi khi gửi lại OTP.", {
-        description: undefined,
-        style: {
-          background: "#ccccc",
-          color: "#00000",
-        },
+      toast.error("Có lỗi khi gửi lại OTP.", {
+        duration: 4000,
+        className: "text-base py-4 px-6",
       });
     } finally {
       setIsResending(false);
     }
   };
 
+  const handleClose = () => {
+    closeOtpModal();
+    navigate("/"); // Redirect to home when modal closes
+  };
+
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-[hsl(var(--background))]">
-      <Card
-        className="
-        w-full max-w-lg p-8 rounded-xl shadow-xl
-         text-[hsl(var(--card-foreground))]
-        border border-[hsl(var(--border))]
-        flex flex-col items-center
-      "
-      >
-        <CardContent className="w-full flex flex-col items-center px-0 py-8 gap-6">
-          <h2 className="text-2xl font-bold text-center text-[hsl(var(--card-foreground))] mb-2">
-            Xác minh OTP
-          </h2>
-          <OtpForm
-            onSubmitOtp={handleVerifyOtp}
-            onResendOtp={handleResend}
-            isResending={isResending}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <OtpModal
+      isOpen={isOtpOpen}
+      onClose={handleClose}
+      onSubmitOtp={handleVerifyOtp}
+      onResendOtp={handleResend}
+      isResending={isResending}
+      onSwitchToLogin={() => {
+        closeOtpModal();
+        navigate("/login");
+      }}
+    />
   );
 }

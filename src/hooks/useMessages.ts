@@ -952,8 +952,8 @@ export const usePropertyStaff = (propertyId?: string) => {
       }
     } catch (error) {
       console.error("Error loading staff:", error);
-      setError("Không thể tải danh sách nhân viên");
-      toast.error("Không thể tải danh sách nhân viên");
+      // setError("Không thể tải danh sách nhân viên");
+      // toast.error("Không thể tải danh sách nhân viên");
     } finally {
       setLoading(false);
     }
