@@ -49,6 +49,28 @@ interface PropertyState {
   propertyRooms: unknown[];
   propertyRoomsLoading: boolean;
   propertyRoomsError: string | null;
+  // Property rooms list state
+  propertyRoomsList: unknown[];
+  propertyRoomsListLoading: boolean;
+  propertyRoomsListError: string | null;
+  // Property locations state
+  propertyLocations: Array<{
+    id: string;
+    name: string;
+    type: string;
+    location: {
+      place_id: string;
+      lat: number;
+      lng: number;
+      address: string;
+      city: string;
+      district: string;
+      ward: string;
+      coordinates: [number, number];
+    };
+  }>;
+  propertyLocationsLoading: boolean;
+  propertyLocationsError: string | null;
 }
 
 const initialState: PropertyState = {
@@ -82,6 +104,14 @@ const initialState: PropertyState = {
   propertyRooms: [],
   propertyRoomsLoading: false,
   propertyRoomsError: null,
+  // Property rooms list state
+  propertyRoomsList: [],
+  propertyRoomsListLoading: false,
+  propertyRoomsListError: null,
+  // Property locations state
+  propertyLocations: [],
+  propertyLocationsLoading: false,
+  propertyLocationsError: null,
 };
 
 // Async thunks
@@ -481,6 +511,58 @@ export const fetchPropertyRooms = createAsyncThunk<
   }
 });
 
+// Thunk lấy danh sách phòng trong property
+export const fetchPropertyRoomsList = createAsyncThunk<
+  unknown[],
+  string,
+  { rejectValue: string }
+>(
+  "properties/fetchPropertyRoomsList",
+  async (propertyId, { rejectWithValue }) => {
+    try {
+      console.log(
+        "Calling API for property rooms:",
+        `/properties/${propertyId}/rooms`
+      );
+      const res = await api.get(`/properties/${propertyId}/rooms`);
+      console.log("API response for rooms:", res.data);
+      // Fix: Extract rooms array from the correct path in response
+      return res.data?.data?.rooms || [];
+    } catch (err) {
+      console.error("Error fetching property rooms:", err);
+      return rejectWithValue(getErrorMessage(err));
+    }
+  }
+);
+
+// Thunk lấy danh sách địa điểm properties
+export const fetchPropertyLocations = createAsyncThunk<
+  Array<{
+    id: string;
+    name: string;
+    type: string;
+    location: {
+      place_id: string;
+      lat: number;
+      lng: number;
+      address: string;
+      city: string;
+      district: string;
+      ward: string;
+      coordinates: [number, number];
+    };
+  }>,
+  void,
+  { rejectValue: string }
+>("properties/fetchPropertyLocations", async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get("/properties/nearby");
+    return res.data?.data || [];
+  } catch (err) {
+    return rejectWithValue(getErrorMessage(err));
+  }
+});
+
 // Slice
 const propertySlice = createSlice({
   name: "properties",
@@ -790,6 +872,37 @@ const propertySlice = createSlice({
           (action.payload as string) ||
           action.error.message ||
           "Lỗi tải danh sách phòng!";
+      })
+
+      // fetchPropertyRoomsList
+      .addCase(fetchPropertyRoomsList.pending, (state) => {
+        state.propertyRoomsListLoading = true;
+        state.propertyRoomsListError = null;
+      })
+      .addCase(fetchPropertyRoomsList.fulfilled, (state, action) => {
+        state.propertyRoomsListLoading = false;
+        state.propertyRoomsList = action.payload;
+      })
+      .addCase(fetchPropertyRoomsList.rejected, (state, action) => {
+        state.propertyRoomsListLoading = false;
+        state.propertyRoomsListError =
+          (action.payload as string) ||
+          action.error.message ||
+          "Lỗi tải danh sách phòng!";
+      })
+
+      // fetchPropertyLocations
+      .addCase(fetchPropertyLocations.pending, (state) => {
+        state.propertyLocationsLoading = true;
+        state.propertyLocationsError = null;
+      })
+      .addCase(fetchPropertyLocations.fulfilled, (state, action) => {
+        state.propertyLocationsLoading = false;
+        state.propertyLocations = action.payload;
+      })
+      .addCase(fetchPropertyLocations.rejected, (state, action) => {
+        state.propertyLocationsLoading = false;
+        state.propertyLocationsError = action.payload as string;
       });
   },
 });
@@ -855,5 +968,19 @@ export const selectPropertyRoomsLoading = (state: RootState) =>
   state.properties.propertyRoomsLoading;
 export const selectPropertyRoomsError = (state: RootState) =>
   state.properties.propertyRoomsError;
+
+export const selectPropertyRoomsList = (state: RootState) =>
+  state.properties.propertyRoomsList;
+export const selectPropertyRoomsListLoading = (state: RootState) =>
+  state.properties.propertyRoomsListLoading;
+export const selectPropertyRoomsListError = (state: RootState) =>
+  state.properties.propertyRoomsListError;
+
+export const selectPropertyLocations = (state: RootState) =>
+  state.properties.propertyLocations;
+export const selectPropertyLocationsLoading = (state: RootState) =>
+  state.properties.propertyLocationsLoading;
+export const selectPropertyLocationsError = (state: RootState) =>
+  state.properties.propertyLocationsError;
 
 export default propertySlice.reducer;

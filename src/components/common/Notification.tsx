@@ -237,7 +237,7 @@ export default function Notification({
         if (userRole === "admin" || userRole === "staff") {
           navigate("/admin/bookings");
         } else {
-          navigate("/profilepage");
+          navigate("/past-trip");
         }
       } else if (notification.type === "review") {
         navigate("/profilepage");

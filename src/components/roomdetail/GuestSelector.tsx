@@ -72,12 +72,18 @@ const GuestSelector: React.FC<GuestSelectorProps> = ({
       <button
         ref={buttonRef}
         onClick={() => setGuestOpen(!guestOpen)}
-        className={`w-full rounded-xl border border-gray-300 px-4 py-2 text-left bg-white flex flex-col items-start justify-between relative focus-visible:ring-2 focus-visible:ring-black focus-visible:border-black transition-all ${guestOpen ? 'border-black ring-2 ring-black' : ''}`}
+        className={`w-full rounded-xl border border-gray-300 px-4 py-2 text-left bg-white flex flex-col items-start justify-between relative focus-visible:ring-2 focus-visible:ring-black focus-visible:border-black transition-all ${
+          guestOpen ? "border-black ring-2 ring-black" : ""
+        }`}
       >
         <div className="flex w-full items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-xs font-bold tracking-wide text-gray-800">KHÁCH</span>
-            <span className="text-base font-normal text-gray-900">{guestLabel || "1 khách"}</span>
+            <span className="text-xs font-bold tracking-wide text-gray-800">
+              KHÁCH
+            </span>
+            <span className="text-base font-normal text-gray-900">
+              {guestLabel || "1 khách"}
+            </span>
           </div>
           <ChevronDown className="h-5 w-5 text-gray-500 ml-2" />
         </div>
@@ -90,19 +96,36 @@ const GuestSelector: React.FC<GuestSelectorProps> = ({
           {/* Người lớn */}
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="font-semibold text-base text-gray-900">Người lớn</p>
-              <p className="text-xs text-gray-500">Từ 13 tuổi trở lên</p>
+              <p className="font-semibold text-base text-gray-900">Số khách</p>
+              <p className="text-xs text-gray-500">
+                Bao gồm người lớn & trẻ em
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon" className="rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold" onClick={() => handleChange('adults', -1)} disabled={guests.adults <= 1}
-              >-</Button>
-              <span className="font-bold text-lg w-6 text-center">{guests.adults}</span>
-              <Button variant="outline" size="icon" className="rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold" onClick={() => handleChange('adults', 1)}
-              >+</Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold"
+                onClick={() => handleChange("adults", -1)}
+                disabled={guests.adults <= 1}
+              >
+                -
+              </Button>
+              <span className="font-bold text-lg w-6 text-center">
+                {guests.adults}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold"
+                onClick={() => handleChange("adults", 1)}
+              >
+                +
+              </Button>
             </div>
           </div>
           {/* Em bé */}
-          <div className="flex items-center justify-between py-3">
+          {/* <div className="flex items-center justify-between py-3">
             <div>
               <p className="font-semibold text-base text-gray-900">Em bé</p>
               <p className="text-xs text-gray-500">Dưới 2 tuổi</p>
@@ -115,7 +138,6 @@ const GuestSelector: React.FC<GuestSelectorProps> = ({
               >+</Button>
             </div>
           </div>
-          {/* Thú cưng */}
           <div className="flex items-center justify-between py-3">
             <div>
               <p className="font-semibold text-base text-gray-900">Thú cưng</p>
@@ -129,13 +151,16 @@ const GuestSelector: React.FC<GuestSelectorProps> = ({
               >+</Button>
             </div>
           </div>
-          {/* Ghi chú dưới cùng */}
           <div className="mt-4 text-xs text-gray-500">
             Chỗ ở này cho phép tối đa 2 khách, không tính em bé. Không được phép mang theo thú cưng.
-          </div>
-          {/* Nút đóng */}
+          </div> */}
           <div className="flex justify-end mt-2">
-            <button className="text-base font-semibold underline text-gray-900 px-2 py-1" onClick={() => setGuestOpen(false)}>Đóng</button>
+            <button
+              className="text-base font-semibold underline text-gray-900 px-2 py-1"
+              onClick={() => setGuestOpen(false)}
+            >
+              Đóng
+            </button>
           </div>
         </div>
       )}

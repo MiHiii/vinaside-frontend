@@ -63,7 +63,6 @@ export default function MessageHostDialog({
       await sendMessageToStaff(staffIdToUse, message.trim());
       setMessage("");
       setIsMessageOpen(false);
-      toast.success("Tin nhắn đã được gửi thành công!");
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Có lỗi xảy ra khi gửi tin nhắn");

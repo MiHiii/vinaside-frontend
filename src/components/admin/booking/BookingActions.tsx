@@ -1,5 +1,12 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { updateAdminBookingStatus } from "@/store/slices/bookingSlice";
@@ -12,6 +19,7 @@ import {
   Eye,
   FileText,
   DollarSign,
+  MoreHorizontal,
 } from "lucide-react";
 import { BookingStatus, PaymentStatus } from "@/types/enum";
 import type { Booking } from "@/types/booking.interface";
@@ -126,122 +134,123 @@ const BookingActions: React.FC<BookingActionsProps> = ({
     }
   };
 
+  // Kiểm tra có thể hoàn thành booking không
+  const canComplete = (() => {
+    const today = new Date();
+    const checkoutDate = new Date(booking.check_out_date);
+    today.setHours(0, 0, 0, 0);
+    checkoutDate.setHours(0, 0, 0, 0);
+    return today >= checkoutDate;
+  })();
+
   return (
-    <div className="flex items-center gap-1">
-      {/* View Details - Hiển thị cho tất cả booking */}
-      <Link to={`/admin/bookings/${propertyId}/${booking._id}`}>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 text-blue-600 border-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
-          title="Xem chi tiết"
+          className="h-8 w-8 text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
         >
-          <Eye size={14} />
+          <MoreHorizontal size={14} />
         </Button>
-      </Link>
-
-      {/* Confirm Booking - Chỉ hiển thị khi status là PENDING */}
-      {booking.status === BookingStatus.PENDING && (
-        <Button
-          variant="default"
-          size="icon"
-          onClick={handleConfirmBooking}
-          className="h-8 w-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white transition-all duration-200 rounded-lg shadow-sm hover:shadow-md transform hover:scale-105"
-          title="Xác nhận booking"
-        >
-          <CheckCircle size={14} />
-        </Button>
-      )}
-
-      {/* Complete Booking - Chỉ hiển thị khi status là CONFIRMED */}
-      {booking.status === BookingStatus.CONFIRMED &&
-        (() => {
-          const today = new Date();
-          const checkoutDate = new Date(booking.check_out_date);
-
-          // Reset thời gian về 00:00:00 để so sánh chỉ ngày
-          today.setHours(0, 0, 0, 0);
-          checkoutDate.setHours(0, 0, 0, 0);
-
-          const canComplete = today >= checkoutDate;
-
-          return (
-            <Button
-              variant="default"
-              size="icon"
-              onClick={handleCompleteBooking}
-              disabled={!canComplete}
-              className={`h-8 w-8 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md transform hover:scale-105 ${
-                canComplete
-                  ? "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              title={
-                canComplete ? "Hoàn thành booking" : "Chưa đến ngày checkout"
-              }
-            >
-              <Clock size={14} />
-            </Button>
-          );
-        })()}
-
-      {/* Cancel Booking - Chỉ hiển thị khi status là PENDING hoặc CONFIRMED */}
-      {(booking.status === BookingStatus.PENDING ||
-        booking.status === BookingStatus.CONFIRMED) && (
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleCancelBooking}
-          className="h-8 w-8 text-orange-600 border-orange-600 hover:bg-orange-50 hover:border-orange-700 hover:text-orange-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
-          title="Hủy booking"
-        >
-          <XCircle size={14} />
-        </Button>
-      )}
-
-      {/* Refund Booking - Chỉ hiển thị khi status là CANCELLED và payment_status là REFUNDING */}
-      {booking.status === BookingStatus.CANCELLED &&
-        booking.payment_status === PaymentStatus.REFUNDING && (
-          <Button
-            variant="default"
-            size="icon"
-            onClick={handleRefundBooking}
-            className="h-8 w-8 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white transition-all duration-200 rounded-lg shadow-sm hover:shadow-md transform hover:scale-105"
-            title="Hoàn tiền booking"
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-62 bg-white border border-gray-200 shadow-md rounded-lg p-2"
+      >
+        {/* View Details - Hiển thị cho tất cả booking */}
+        <DropdownMenuItem asChild>
+          <Link
+            to={`/admin/bookings/${propertyId}/${booking._id}`}
+            className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700 rounded-md px-2 py-1.5 transition-colors duration-200"
           >
-            <RefreshCw size={14} />
-          </Button>
+            <Eye size={14} />
+            Xem chi tiết
+          </Link>
+        </DropdownMenuItem>
+
+        {/* Confirm Booking - Chỉ hiển thị khi status là PENDING */}
+        {booking.status === BookingStatus.PENDING && (
+          <DropdownMenuItem
+            onClick={handleConfirmBooking}
+            className="flex items-center gap-2 text-green-600 hover:bg-green-50 hover:text-green-700 rounded-md px-2 py-1.5 transition-colors duration-200"
+          >
+            <CheckCircle size={14} />
+            Xác nhận booking
+          </DropdownMenuItem>
         )}
 
-      {/* Edit Cancellation Details - Chỉ hiển thị khi status là CANCELLED */}
-      {booking.status === BookingStatus.CANCELLED && (
-        <Link to={`/admin/bookings/${propertyId}/${booking._id}`}>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 text-blue-600 border-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
-            title="Chỉnh sửa thông tin hủy phòng"
+        {/* Complete Booking - Chỉ hiển thị khi status là CONFIRMED */}
+        {booking.status === BookingStatus.CONFIRMED && (
+          <DropdownMenuItem
+            onClick={handleCompleteBooking}
+            disabled={!canComplete}
+            className={`flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors duration-200 ${
+              canComplete
+                ? "text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                : "text-gray-400 cursor-not-allowed"
+            }`}
           >
-            <FileText size={14} />
-          </Button>
-        </Link>
-      )}
+            <Clock size={14} />
+            {canComplete ? "Hoàn thành booking" : "Chưa đến ngày checkout"}
+          </DropdownMenuItem>
+        )}
 
-      {/* Staff Payment - Chỉ hiển thị khi status là PENDING hoặc CONFIRMED */}
-      {(booking.status === BookingStatus.PENDING ||
-        booking.status === BookingStatus.CONFIRMED) && (
-        <Link to={`/admin/bookings/${propertyId}/${booking._id}`}>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 text-green-600 border-green-600 hover:bg-green-50 hover:border-green-700 hover:text-green-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
-            title="Thanh toán số tiền còn lại"
-          >
-            <DollarSign size={14} />
-          </Button>
-        </Link>
-      )}
-    </div>
+        {/* Cancel Booking - Chỉ hiển thị khi status là PENDING hoặc CONFIRMED */}
+        {(booking.status === BookingStatus.PENDING ||
+          booking.status === BookingStatus.CONFIRMED) && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleCancelBooking}
+              className="flex items-center gap-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-md px-2 py-1.5 transition-colors duration-200"
+            >
+              <XCircle size={14} />
+              Hủy booking
+            </DropdownMenuItem>
+          </>
+        )}
+
+        {/* Refund Booking - Chỉ hiển thị khi status là CANCELLED và payment_status là REFUNDING */}
+        {booking.status === BookingStatus.CANCELLED &&
+          booking.payment_status === PaymentStatus.REFUNDING && (
+            <DropdownMenuItem
+              onClick={handleRefundBooking}
+              className="flex items-center gap-2 text-purple-600 hover:bg-purple-50 hover:text-purple-700 rounded-md px-2 py-1.5 transition-colors duration-200"
+            >
+              <RefreshCw size={14} />
+              Hoàn tiền booking
+            </DropdownMenuItem>
+          )}
+
+        {/* Edit Cancellation Details - Chỉ hiển thị khi status là CANCELLED */}
+        {booking.status === BookingStatus.CANCELLED && (
+          <DropdownMenuItem asChild>
+            <Link
+              to={`/admin/bookings/${propertyId}/${booking._id}`}
+              className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700 rounded-md px-2 py-1.5 transition-colors duration-200"
+            >
+              <FileText size={14} />
+              Chỉnh sửa thông tin hủy phòng
+            </Link>
+          </DropdownMenuItem>
+        )}
+
+        {/* Staff Payment - Chỉ hiển thị khi status là PENDING hoặc CONFIRMED */}
+        {(booking.status === BookingStatus.PENDING ||
+          booking.status === BookingStatus.CONFIRMED) && (
+          <DropdownMenuItem asChild>
+            <Link
+              to={`/admin/bookings/${propertyId}/${booking._id}`}
+              className="flex items-center gap-2 text-green-600 hover:bg-green-50 hover:text-green-700 rounded-md px-2 py-1.5 transition-colors duration-200"
+            >
+              <DollarSign size={14} />
+              Thanh toán số tiền còn lại
+            </Link>
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

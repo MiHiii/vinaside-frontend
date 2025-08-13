@@ -15,6 +15,7 @@ import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 import { useClientSearchLogic } from "./useClientSearchLogic";
+import { motion, AnimatePresence } from "framer-motion";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 const libraries: Array<"places"> = ["places"];
@@ -29,6 +30,8 @@ export default function ClientSearch() {
     setSelectedPlace,
     autocomplete,
     setAutocomplete,
+    googleSuggestions,
+    setGoogleSuggestions,
     date,
     setDate,
     adults,
@@ -40,6 +43,7 @@ export default function ClientSearch() {
     totalGuests,
     onPlaceChanged,
     getGoogleSuggestions,
+    triggerGoogleSuggestions,
     allSuggestions,
     handleSearch,
     minBeds,
@@ -53,6 +57,15 @@ export default function ClientSearch() {
     libraries,
   });
 
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    if (activeSection === "location") {
+      // Delay to ensure popover/content mounted before focusing
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [activeSection]);
+
   return (
     <>
       <style>
@@ -60,6 +73,15 @@ export default function ClientSearch() {
           .pac-container {
             display: none !important;
           }
+          
+          /* Hide default scrollbar completely */
+          .suggestions-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+          }
+        
         `}
       </style>
       <div className="relative p-3 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] flex justify-center items-center">
@@ -79,7 +101,11 @@ export default function ClientSearch() {
                     : "bg-transparent",
                   "hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))]"
                 )}
-                onClick={() => setActiveSection("location")}
+                onClick={() => {
+                  setActiveSection("location");
+                  // Focus input immediately on first click
+                  setTimeout(() => inputRef.current?.focus(), 0);
+                }}
               >
                 <span className="text-sm font-semibold text-foreground">
                   Địa điểm
@@ -90,6 +116,7 @@ export default function ClientSearch() {
                     onPlaceChanged={onPlaceChanged}
                   >
                     <input
+                      ref={inputRef}
                       type="text"
                       placeholder="Tìm kiếm điểm đến"
                       className="bg-transparent border-none outline-none text-sm text-muted-foreground p-0 m-0 w-full"
@@ -98,9 +125,12 @@ export default function ClientSearch() {
                         const value = e.target.value;
                         setLocation(value);
                         setSelectedPlace(null);
-                        if (value.trim().length > 2) {
-                          getGoogleSuggestions(value);
-                        }
+                        // Always get Google suggestions, even for short input
+                        getGoogleSuggestions(value);
+                      }}
+                      onFocus={() => {
+                        // Show suggestions immediately when input is focused
+                        triggerGoogleSuggestions();
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === "Tab") {
@@ -121,6 +151,7 @@ export default function ClientSearch() {
                   </Autocomplete>
                 ) : (
                   <input
+                    ref={inputRef}
                     type="text"
                     placeholder="Tìm kiếm điểm đến"
                     className="bg-transparent border-none outline-none text-sm text-muted-foreground p-0 m-0 w-full"
@@ -132,43 +163,85 @@ export default function ClientSearch() {
               </div>
             </PopoverTrigger>
             <PopoverContent
-              className="z-50 mt-2 min-w-[350px] bg-white rounded-xl shadow-lg border border-gray-200 p-0"
+              className="z-50 mt-2 min-w-[400px] max-h-[600px] overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-200 p-0"
               align="start"
             >
-              {allSuggestions.length > 0 && (
-                <div className="p-2">
-                  {allSuggestions.map((loc, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 cursor-pointer hover:bg-muted py-2 px-3 rounded-md transition"
-                      onMouseDown={() => {
-                        setLocation(loc.name);
-                        if ((loc as any).isGoogle && (loc as any).placeId) {
-                          const placeResult: google.maps.places.PlaceResult = {
-                            place_id: (loc as any).placeId,
-                            formatted_address: loc.name,
-                            name: loc.name,
-                          };
-                          setSelectedPlace(placeResult);
-                        } else {
-                          setSelectedPlace(null);
-                        }
-                        setActiveSection(null);
-                      }}
-                    >
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-lg ${loc.color}`}
-                      >
-                        <span className="text-lg">{loc.icon}</span>
-                      </div>
-                      <div>
-                        <div className="font-medium">{loc.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {loc.description}
-                        </div>
-                      </div>
+              <AnimatePresence>
+                {allSuggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="p-2"
+                  >
+                    <div className="text-xs text-gray-500 px-3 py-2 border-b border-gray-100">
+                      {location.trim().length > 2
+                        ? "Kết quả tìm kiếm"
+                        : "Các địa điểm nổi bật"}
                     </div>
-                  ))}
+                    <div className="suggestions-scroll">
+                      {allSuggestions.map((loc, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="flex items-center gap-2 cursor-pointer hover:bg-muted py-2 px-3 rounded-md transition"
+                          onMouseDown={() => {
+                            setLocation(loc.name);
+                            if ((loc as any).isGoogle && (loc as any).placeId) {
+                              const placeResult: google.maps.places.PlaceResult =
+                                {
+                                  place_id: (loc as any).placeId,
+                                  formatted_address: loc.name,
+                                  name: loc.name,
+                                };
+                              setSelectedPlace(placeResult);
+                            } else if ((loc as any).lat && (loc as any).lng) {
+                              // Handle property location with lat/lng
+                              const placeResult: google.maps.places.PlaceResult =
+                                {
+                                  formatted_address: loc.name,
+                                  name: loc.name,
+                                  geometry: {
+                                    location: {
+                                      lat: () => (loc as any).lat,
+                                      lng: () => (loc as any).lng,
+                                    } as any,
+                                  } as any,
+                                };
+                              setSelectedPlace(placeResult);
+                            } else {
+                              setSelectedPlace(null);
+                            }
+                            setActiveSection(null);
+                          }}
+                        >
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg ${loc.color}`}
+                          >
+                            <span className="text-lg">{loc.icon}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">
+                              {loc.name}
+                            </div>
+                            <div className="text-sm text-muted-foreground truncate">
+                              {loc.description}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {allSuggestions.length === 0 && (
+                <div className="p-4 text-center text-gray-500">
+                  {location.trim().length > 2
+                    ? "Không tìm thấy địa điểm phù hợp"
+                    : "Đang tải gợi ý địa điểm..."}
                 </div>
               )}
             </PopoverContent>

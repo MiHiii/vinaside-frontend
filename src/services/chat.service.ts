@@ -335,34 +335,24 @@ class ChatService {
 
       // Fallback for backward compatibility
       if (Array.isArray(data)) return data;
-      if (Array.isArray(data.messages)) return data.messages;
+      if (data?.data && Array.isArray(data.data)) return data.data;
 
-      if (data && typeof data.data === "object") {
-        return Object.values(data.data).map((msg: unknown) => {
-          const message = msg as ApiUser;
-          return {
-            id: message._id,
-            content: message.content as string,
-            senderId:
-              typeof message.sender_id === "object"
-                ? (message.sender_id as { _id: string })._id
-                : (message.sender_id as string),
-            receiverId:
-              typeof message.receiver_id === "object"
-                ? (message.receiver_id as { _id: string })._id
-                : (message.receiver_id as string),
-            conversationId: (message.conversation_id as string) || "",
-            createdAt:
-              (message.createdAt as string) || (message.sent_at as string),
-            isRead: message.is_read === "read" || message.is_read === true,
-            ...message,
-          };
-        });
-      }
       return [];
     } catch (error) {
       console.error("❌ Error fetching conversation:", error);
       throw error;
+    }
+  }
+
+  // Lấy tin nhắn cuối cùng cho một cuộc hội thoại
+  async getLastMessage(otherUserId: string): Promise<Message | null> {
+    try {
+      // Fetch only the last message by using limit=1 and getting the last item
+      const messages = await this.getConversation(otherUserId, 1, 0);
+      return messages.length > 0 ? messages[messages.length - 1] : null;
+    } catch (error) {
+      console.error("❌ Error fetching last message:", error);
+      return null;
     }
   }
 

@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { useAppDispatch } from "@/hooks/useRedux";
-import { fetchAdminBookings } from "@/store/slices/bookingSlice";
+import { useNavigate } from "react-router-dom";
+import {
+  fetchAdminBookings,
+  fetchBookingStatisticsOverview,
+} from "@/store/slices/bookingSlice";
 import BookingStatistics from "@/components/admin/booking/BookingStatistics";
 import BookingList from "@/components/admin/booking/BookingList";
 import BookingDetail from "@/components/admin/booking/BookingDetail";
@@ -27,9 +31,9 @@ import { BookingStatus, PaymentStatus } from "@/types/enum";
 
 const BookingManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { adminBookings, loading } = useSelector(
-    (state: RootState) => state.booking
-  );
+  const navigate = useNavigate();
+  const { adminBookings, adminTotal, loading, statisticsOverview } =
+    useSelector((state: RootState) => state.booking);
   const [selectedBooking, setSelectedBooking] = useState<{
     propertyId: string;
     id: string;
@@ -38,12 +42,14 @@ const BookingManagementPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<"list" | "detail">("list");
   const [showStaffBookingModal, setShowStaffBookingModal] = useState(false);
 
+  // Fetch statistics on component mount
   useEffect(() => {
-    dispatch(fetchAdminBookings({}));
+    dispatch(fetchBookingStatisticsOverview());
   }, [dispatch]);
 
-  // Calculate statistics
-  const totalBookings = adminBookings?.length || 0;
+  // Use statistics from API or fallback to calculated values
+  const totalBookings =
+    statisticsOverview?.total || adminTotal || adminBookings?.length || 0;
   const pendingBookings =
     adminBookings?.filter((b) => b.status === BookingStatus.PENDING).length ||
     0;
@@ -61,6 +67,7 @@ const BookingManagementPage: React.FC = () => {
     ).length || 0;
 
   const totalRevenue =
+    statisticsOverview?.revenue ||
     adminBookings?.reduce((sum, booking) => {
       if (
         booking.status === BookingStatus.COMPLETED ||
@@ -69,7 +76,8 @@ const BookingManagementPage: React.FC = () => {
         return sum + (booking.final_amount || 0);
       }
       return sum;
-    }, 0) || 0;
+    }, 0) ||
+    0;
 
   const handleBackToList = () => {
     setSelectedBooking(null);
@@ -77,45 +85,45 @@ const BookingManagementPage: React.FC = () => {
   };
 
   const handleStaffBookingSuccess = () => {
-    // Refresh booking list after successful creation
+    // Refresh booking list and statistics after successful creation
+    dispatch(fetchBookingStatisticsOverview());
     dispatch(fetchAdminBookings({}));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full overflow-x-hidden bg-gray-50">
+      {/* Header (đồng bộ chiều rộng với nội dung) */}
+      <div className="">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 min-w-0">
               <div className="flex items-center space-x-2">
                 <Calendar className="w-6 h-6 text-blue-600" />
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-gray-900 truncate">
                   Quản lý Booking
                 </h1>
               </div>
-              <Badge variant="outline" className="text-sm">
-                {totalBookings} booking
-              </Badge>
             </div>
 
             <div className="flex items-center space-x-3">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2"
+                onClick={() => navigate("/admin/bookings/calendar")}
+                className="flex items-center gap-2 bg-white text-gray-900 border border-gray-200 hover:bg-gray-100 cursor-pointer rounded-md"
               >
-                <Filter className="w-4 h-4" />
-                Bộ lọc
+                <Calendar className="w-4 h-4" />
+                Lịch booking
               </Button>
-
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => dispatch(fetchAdminBookings({}))}
+                onClick={() => {
+                  dispatch(fetchBookingStatisticsOverview());
+                  dispatch(fetchAdminBookings({}));
+                }}
                 disabled={loading}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-white text-gray-900 border border-gray-200 hover:bg-gray-100 cursor-pointer rounded-md"
               >
                 <RefreshCw
                   className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -125,7 +133,7 @@ const BookingManagementPage: React.FC = () => {
 
               <Button
                 onClick={() => setShowStaffBookingModal(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 Tạo Booking (Staff)
@@ -135,15 +143,16 @@ const BookingManagementPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Main Wrapper (đồng bộ chiều rộng, tránh max-w khác nhau) */}
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 min-w-0">
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
+              <div className="p-2 bg-blue-100 rounded-lg shrink-0">
                 <Calendar className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-3 min-w-0">
                 <p className="text-sm font-medium text-gray-500">
                   Tổng booking
                 </p>
@@ -154,12 +163,12 @@ const BookingManagementPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 min-w-0">
             <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
+              <div className="p-2 bg-yellow-100 rounded-lg shrink-0">
                 <Clock className="w-5 h-5 text-yellow-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-3 min-w-0">
                 <p className="text-sm font-medium text-gray-500">
                   Chờ xác nhận
                 </p>
@@ -170,12 +179,12 @@ const BookingManagementPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 min-w-0">
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
+              <div className="p-2 bg-green-100 rounded-lg shrink-0">
                 <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-3 min-w-0">
                 <p className="text-sm font-medium text-gray-500">Đã xác nhận</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {confirmedBookings}
@@ -184,12 +193,12 @@ const BookingManagementPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 min-w-0">
             <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
+              <div className="p-2 bg-red-100 rounded-lg shrink-0">
                 <XCircle className="w-5 h-5 text-red-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-3 min-w-0">
                 <p className="text-sm font-medium text-gray-500">Đã hủy</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {cancelledBookings}
@@ -198,12 +207,12 @@ const BookingManagementPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 min-w-0">
             <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
+              <div className="p-2 bg-purple-100 rounded-lg shrink-0">
                 <RefreshCw className="w-5 h-5 text-purple-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-3 min-w-0">
                 <p className="text-sm font-medium text-gray-500">
                   Đang hoàn tiền
                 </p>
@@ -214,12 +223,12 @@ const BookingManagementPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 min-w-0">
             <div className="flex items-center">
-              <div className="p-2 bg-emerald-100 rounded-lg">
+              <div className="p-2 bg-emerald-100 rounded-lg shrink-0">
                 <TrendingUp className="w-5 h-5 text-emerald-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-3 min-w-0">
                 <p className="text-sm font-medium text-gray-500">Doanh thu</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {(totalRevenue / 1000000).toFixed(1)}M
@@ -256,15 +265,17 @@ const BookingManagementPage: React.FC = () => {
                   Quay lại danh sách
                 </Button>
               </div>
-              <BookingDetail
-                propertyId={selectedBooking.propertyId}
-                bookingId={selectedBooking.id}
-                onBack={handleBackToList}
-              />
+              <div className="min-w-0">
+                <BookingDetail
+                  propertyId={selectedBooking.propertyId}
+                  bookingId={selectedBooking.id}
+                  onBack={handleBackToList}
+                />
+              </div>
             </div>
           ) : (
-            <div>
-              <div className="px-6 py-4 border-b border-gray-200">
+            <div className="min-w-0">
+              {/* <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">
                     Danh sách Booking
@@ -282,22 +293,25 @@ const BookingManagementPage: React.FC = () => {
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
-                    > 
+                    >
                       <BarChart3 className="w-4 h-4" />
                       Thống kê
                     </Button>
                   </div>
                 </div>
+              </div> */}
+              {/* Giữ scroll ngang bên trong list nếu table rộng, tránh scroll ngang toàn trang */}
+              <div className="overflow-x-auto">
+                <BookingList />
               </div>
-              <BookingList />
             </div>
           )}
         </div>
 
         {/* Statistics Section */}
-        <div className="mt-6">
+        {/* <div className="mt-6 min-w-0">
           <BookingStatistics />
-        </div>
+        </div> */}
       </div>
 
       <StaffBookingModal
