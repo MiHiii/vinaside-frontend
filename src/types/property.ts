@@ -19,6 +19,11 @@ export interface Property {
   checkOutTime?: string;
   contactPhone?: string;
   contactEmail?: string;
+  contactWebsite?: string;
+  contactFacebook?: string;
+  contactInstagram?: string;
+  contactZalo?: string;
+  contactWhatsapp?: string;
   status: string;
   isVerified: boolean;
   isDeleted: boolean;
@@ -51,6 +56,11 @@ export interface CreatePropertyDto {
   checkOutTime?: string;
   contactPhone?: string;
   contactEmail?: string;
+  contactWebsite?: string;
+  contactFacebook?: string;
+  contactInstagram?: string;
+  contactZalo?: string;
+  contactWhatsapp?: string;
   allowPets?: boolean;
 }
 

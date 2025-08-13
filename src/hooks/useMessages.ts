@@ -74,6 +74,7 @@ export const useMessages = () => {
   const [currentPropertyId, setCurrentPropertyId] = useState<
     string | undefined
   >(undefined);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
 
   const myId = user?._id;
 
@@ -420,6 +421,7 @@ export const useMessages = () => {
 
     const fetchInitialData = async () => {
       try {
+        setIsLoadingConversations(true);
         const [usersRes, conversationsRes] = await Promise.all([
           chatService.getUsers(),
           chatService.getConversations(),
@@ -444,7 +446,7 @@ export const useMessages = () => {
           processedUsers = Array.isArray(fallbackUsers) ? fallbackUsers : [];
         }
 
-        // Handle conversations data
+        // Handle conversations data and fetch last messages
         let processedConversations: Conversation[] = [];
         const conversationsData = conversationsRes as unknown as {
           success?: boolean;
@@ -461,7 +463,8 @@ export const useMessages = () => {
             (key) => !isNaN(Number(key))
           );
 
-          processedConversations = numericKeys.map((key) => {
+          // Fetch last messages for each conversation
+          const conversationPromises = numericKeys.map(async (key) => {
             const conv = conversationsObject[key] as {
               _id: string;
               lastMessage?: {
@@ -475,30 +478,54 @@ export const useMessages = () => {
               };
               unreadCount?: number;
             };
-            return {
-              participants: conv.lastMessage
-                ? [
-                    conv.lastMessage.sender_id,
-                    conv.lastMessage.receiver_id,
-                  ].filter(Boolean)
-                : [myId, conv._id].filter(Boolean),
-              lastMessage: conv.lastMessage
-                ? {
-                    id: conv.lastMessage._id,
-                    content: conv.lastMessage.content,
-                    senderId: conv.lastMessage.sender_id,
-                    receiverId: conv.lastMessage.receiver_id,
-                    conversationId: "",
-                    createdAt:
-                      conv.lastMessage.sent_at ||
-                      conv.lastMessage.createdAt ||
-                      new Date().toISOString(),
-                    isRead: conv.lastMessage.is_read === "read",
-                  }
-                : undefined,
-              unreadCount: conv.unreadCount || 0,
-            };
+
+            try {
+              // Fetch the last message for this conversation using the conversation API
+              const lastMessage = await chatService.getLastMessage(conv._id);
+
+              return {
+                participants: lastMessage
+                  ? [lastMessage.senderId, lastMessage.receiverId].filter(
+                      Boolean
+                    )
+                  : [myId, conv._id].filter(Boolean),
+                lastMessage: lastMessage || undefined,
+                unreadCount: conv.unreadCount || 0,
+              };
+            } catch (error) {
+              console.error(
+                `Error fetching last message for conversation ${conv._id}:`,
+                error
+              );
+              // Fallback to original data if API call fails
+              return {
+                participants: conv.lastMessage
+                  ? [
+                      conv.lastMessage.sender_id,
+                      conv.lastMessage.receiver_id,
+                    ].filter(Boolean)
+                  : [myId, conv._id].filter(Boolean),
+                lastMessage: conv.lastMessage
+                  ? {
+                      id: conv.lastMessage._id,
+                      content: conv.lastMessage.content,
+                      senderId: conv.lastMessage.sender_id,
+                      receiverId: conv.lastMessage.receiver_id,
+                      conversationId: "",
+                      createdAt:
+                        conv.lastMessage.sent_at ||
+                        conv.lastMessage.createdAt ||
+                        new Date().toISOString(),
+                      isRead: conv.lastMessage.is_read === "read",
+                    }
+                  : undefined,
+                unreadCount: conv.unreadCount || 0,
+              };
+            }
           });
+
+          // Wait for all conversation data to be fetched
+          processedConversations = await Promise.all(conversationPromises);
         } else {
           const conversations = Array.isArray(conversationsRes)
             ? conversationsRes
@@ -518,6 +545,8 @@ export const useMessages = () => {
           response: error?.response?.data,
           status: error?.response?.status,
         });
+      } finally {
+        setIsLoadingConversations(false);
       }
     };
 
@@ -904,6 +933,7 @@ export const useMessages = () => {
     user,
     token,
     currentPropertyId,
+    isLoadingConversations,
 
     // State setters
     setMessageInput,
@@ -979,8 +1009,8 @@ export const usePropertyStaff = (propertyId?: string) => {
       if (response.success) {
         toast.success("Đã gửi tin nhắn thành công!", {
           style: {
-            background: "#00000",
-            color: "#fffff",
+            background: "#000000",
+            color: "#ffffff",
           },
           className: "bg-white text-black border-gray-200",
           action: {

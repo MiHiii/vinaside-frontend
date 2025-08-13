@@ -12,6 +12,10 @@ import {
   selectTopRatedListings,
   selectTopWishlistListings,
 } from "@/store/slices/listingSlice";
+import {
+  fetchPropertyLocations,
+  selectPropertyLocations,
+} from "@/store/slices/propertySlice";
 import type { DateRange } from "react-day-picker";
 import type { ListingSearchParams } from "@/services/api";
 import { useNavigate } from "react-router-dom";
@@ -47,100 +51,36 @@ export function useClientSearchLogic() {
   const topRatedListings = useSelector(selectTopRatedListings);
   const topWishlistListings = useSelector(selectTopWishlistListings);
 
-  // Fetch listings data on component mount to ensure we have location data
+  // Get property locations from Redux store
+  const propertyLocations = useSelector(selectPropertyLocations);
+
+  // Fetch listings and property locations data on component mount
   React.useEffect(() => {
     if (listings.length === 0) {
-      dispatch(fetchListings({ limit: 50 }));
+      dispatch(fetchListings({ limit: 100 }));
     }
-  }, [dispatch, listings.length]);
-
-  // Extract unique locations from all listings
-  const propertyLocations = useMemo(() => {
-    const allListings = [
-      ...listings,
-      ...topViewedListings,
-      ...topRatedListings,
-      ...topWishlistListings,
-    ];
-
-    const locationMap = new Map<
-      string,
-      {
-        name: string;
-        description: string;
-        icon: string;
-        color: string;
-        isGoogle?: boolean;
-        placeId?: string;
-      }
-    >();
-
-    allListings.forEach((listing) => {
-      // Handle propertyId which can be string or object
-      if (
-        typeof listing.propertyId === "object" &&
-        listing.propertyId &&
-        "location" in listing.propertyId
-      ) {
-        const location = (listing.propertyId as any).location;
-        if (location) {
-          const locationKey = `${location.city || location.address}`;
-
-          if (!locationMap.has(locationKey)) {
-            locationMap.set(locationKey, {
-              name: location.city || location.address || "Unknown Location",
-              description:
-                `${location.district || ""} ${location.ward || ""}`.trim() ||
-                "Địa điểm nổi bật",
-              icon: "🏠",
-              color: "bg-blue-100 dark:bg-blue-900",
-            });
-          }
-        }
-      } else if (listing.address) {
-        // Fallback to listing address if propertyId is string
-        const addressParts = listing.address
-          .split(",")
-          .map((part) => part.trim());
-        const city = addressParts[addressParts.length - 1] || addressParts[0];
-
-        if (!locationMap.has(city)) {
-          locationMap.set(city, {
-            name: city,
-            description: "Địa điểm nổi bật",
-            icon: "🏠",
-            color: "bg-blue-100 dark:bg-blue-900",
-          });
-        }
-      }
-    });
-
-    return Array.from(locationMap.values());
-  }, [listings, topViewedListings, topRatedListings, topWishlistListings]);
+    if (propertyLocations.length === 0) {
+      dispatch(fetchPropertyLocations());
+    }
+  }, [dispatch, listings.length, propertyLocations.length]);
 
   // Combine property locations with existing suggested locations
   const suggestedLocations = useMemo(() => {
-    const existingSuggestions = [
-      {
-        name: "Đà Nẵng, Đà Nẵng",
-        description: "Thích hợp cho kỳ nghỉ hè",
-        icon: "🏝️",
-        color: "bg-green-100 dark:bg-green-900",
-      },
-    ];
+    // Convert property locations to the format expected by the UI
+    const formattedLocations = propertyLocations.map((prop) => ({
+      name: prop.location.city || prop.location.address || prop.name,
+      description:
+        `${prop.location.district || ""} ${prop.location.ward || ""}`.trim() ||
+        `${prop.name} - Địa điểm nổi bật`,
+      icon: "🏠",
+      color: "bg-blue-100 dark:bg-blue-900",
+      lat: prop.location.lat,
+      lng: prop.location.lng,
+      placeId: prop.location.place_id,
+    }));
 
-    // Filter out property locations that already exist in existing suggestions
-    const uniquePropertyLocations = propertyLocations.filter(
-      (propLoc) =>
-        !existingSuggestions.some(
-          (existing) =>
-            existing.name.toLowerCase().includes(propLoc.name.toLowerCase()) ||
-            propLoc.name.toLowerCase().includes(existing.name.toLowerCase())
-        )
-    );
-
-    // Combine and limit to reasonable number
-    return [...existingSuggestions, ...uniquePropertyLocations.slice(0, 10)];
+    // Return only property locations - increased limit to show more
+    return formattedLocations.slice(0, 50);
   }, [propertyLocations]);
 
   // Xử lý khi chọn địa điểm từ Google Places
@@ -155,12 +95,19 @@ export function useClientSearchLogic() {
 
   // Lấy gợi ý từ Google Places API
   const getGoogleSuggestions = useCallback(async (input: string) => {
-    if (!input.trim() || !window.google) return;
+    if (!window.google) return;
+
+    // Only show Google suggestions when there's actual input
+    const searchInput = input.trim();
+    if (!searchInput) {
+      setGoogleSuggestions([]);
+      return;
+    }
 
     try {
       const service = new window.google.maps.places.AutocompleteService();
       const request = {
-        input: input,
+        input: searchInput,
         componentRestrictions: { country: "vn" }, // Giới hạn cho Việt Nam
         types: ["geocode", "establishment"],
       };
@@ -170,7 +117,7 @@ export function useClientSearchLogic() {
           status === window.google.maps.places.PlacesServiceStatus.OK &&
           predictions
         ) {
-          setGoogleSuggestions(predictions);
+          setGoogleSuggestions(predictions.slice(0, 10)); // Limit to 10 Google suggestions
         } else {
           setGoogleSuggestions([]);
         }
@@ -194,6 +141,15 @@ export function useClientSearchLogic() {
         loc.description.toLowerCase().includes(searchTerm)
     );
   }, [suggestedLocations, location]);
+
+  // Function to trigger Google suggestions when input is focused - only if there's input
+  const triggerGoogleSuggestions = useCallback(() => {
+    if (window.google && location.trim()) {
+      getGoogleSuggestions(location);
+    } else {
+      setGoogleSuggestions([]);
+    }
+  }, [location, getGoogleSuggestions]);
 
   // Kết hợp gợi ý từ database và Google
   const allSuggestions = useMemo(() => {
@@ -311,6 +267,7 @@ export function useClientSearchLogic() {
     totalGuests,
     onPlaceChanged,
     getGoogleSuggestions,
+    triggerGoogleSuggestions,
     allSuggestions,
     handleSearch,
     minBeds,

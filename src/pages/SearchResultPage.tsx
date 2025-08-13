@@ -7,10 +7,10 @@ import {
   selectListingsLoading,
   selectListingsError,
 } from "@/store/slices/listingSlice"; // Assuming these Redux selectors exist
+import { selectPropertyLocations } from "@/store/slices/propertySlice";
 import ButtonWishlist from "@/components/common/ButtonWishlist"; // Assuming this component exists
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button"; // Ensure Button is imported
-import { MapPin, Calendar, Users, Bed, Bath } from "lucide-react";
 
 export default function SearchResultPage() {
   const navigate = useNavigate();
@@ -20,6 +20,7 @@ export default function SearchResultPage() {
   const listings = useAppSelector(selectListings);
   const loading = useAppSelector(selectListingsLoading);
   const error = useAppSelector(selectListingsError);
+  const propertyLocations = useAppSelector(selectPropertyLocations);
 
   // Lấy thông tin tìm kiếm từ URL params
   const searchParams = new URLSearchParams(location.search);
@@ -79,50 +80,48 @@ export default function SearchResultPage() {
       return { lat: parseFloat(lat), lng: parseFloat(lng) };
     }
 
-    // Nếu có locationKeyword, thử lấy từ property đầu tiên có địa chỉ
-    if (locationKeyword && listings.length > 0) {
-      const firstProperty = listings[0];
-      if (
-        firstProperty.propertyId &&
-        typeof firstProperty.propertyId === "object" &&
-        "location" in firstProperty.propertyId
-      ) {
-        const propLocation = (firstProperty.propertyId as any).location;
-        if (propLocation && propLocation.lat && propLocation.lng) {
-          return { lat: propLocation.lat, lng: propLocation.lng };
-        }
+    // Nếu có locationKeyword, thử tìm trong property locations
+    if (locationKeyword && propertyLocations.length > 0) {
+      const matchingLocation = propertyLocations.find(
+        (prop) =>
+          prop.location.city
+            ?.toLowerCase()
+            .includes(locationKeyword.toLowerCase()) ||
+          prop.location.address
+            ?.toLowerCase()
+            .includes(locationKeyword.toLowerCase()) ||
+          prop.location.district
+            ?.toLowerCase()
+            .includes(locationKeyword.toLowerCase())
+      );
+      if (matchingLocation) {
+        return {
+          lat: matchingLocation.location.lat,
+          lng: matchingLocation.location.lng,
+        };
       }
     }
 
-    // Nếu có place_id, thử lấy từ property data
-    if (place_id && listings.length > 0) {
-      const firstProperty = listings[0];
-      if (
-        firstProperty.propertyId &&
-        typeof firstProperty.propertyId === "object" &&
-        "location" in firstProperty.propertyId
-      ) {
-        const propLocation = (firstProperty.propertyId as any).location;
-        if (propLocation && propLocation.lat && propLocation.lng) {
-          return { lat: propLocation.lat, lng: propLocation.lng };
-        }
+    // Nếu có place_id, thử tìm trong property locations
+    if (place_id && propertyLocations.length > 0) {
+      const matchingLocation = propertyLocations.find(
+        (prop) => prop.location.place_id === place_id
+      );
+      if (matchingLocation) {
+        return {
+          lat: matchingLocation.location.lat,
+          lng: matchingLocation.location.lng,
+        };
       }
     }
 
-    // Nếu vẫn không có, thử lấy từ bất kỳ property nào có tọa độ
-    if (listings.length > 0) {
-      for (const listing of listings) {
-        if (
-          listing.propertyId &&
-          typeof listing.propertyId === "object" &&
-          "location" in listing.propertyId
-        ) {
-          const propLocation = (listing.propertyId as any).location;
-          if (propLocation && propLocation.lat && propLocation.lng) {
-            return { lat: propLocation.lat, lng: propLocation.lng };
-          }
-        }
-      }
+    // Nếu vẫn không có, thử lấy từ property locations đầu tiên
+    if (propertyLocations.length > 0) {
+      const firstLocation = propertyLocations[0];
+      return {
+        lat: firstLocation.location.lat,
+        lng: firstLocation.location.lng,
+      };
     }
 
     // Fallback về tọa độ mặc định của Việt Nam (Hà Nội)

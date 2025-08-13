@@ -16,15 +16,16 @@ import {
   MessageCircle,
   Share,
   Bookmark,
+  ExternalLink,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
   fetchPropertyById,
-  fetchPropertyRooms,
+  fetchPropertyRoomsList,
   selectPropertyDetail,
-  selectPropertyRooms,
-  selectPropertyRoomsLoading,
+  selectPropertyRoomsList,
+  selectPropertyRoomsListLoading,
 } from "@/store/slices/propertySlice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useParams, useNavigate } from "react-router-dom";
@@ -37,16 +38,16 @@ export default function PropertyInfo() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const property = useAppSelector(selectPropertyDetail);
-  const propertyRooms = useAppSelector(selectPropertyRooms) as any[];
+  const propertyRooms = useAppSelector(selectPropertyRoomsList) as any[];
   const loading = useAppSelector(
     (state) => state.properties.propertyDetailLoading
   );
-  const roomsLoading = useAppSelector(selectPropertyRoomsLoading);
+  const roomsLoading = useAppSelector(selectPropertyRoomsListLoading);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchPropertyById(id));
-      dispatch(fetchPropertyRooms(id));
+      dispatch(fetchPropertyRoomsList(id));
     }
   }, [id, dispatch]);
 
@@ -263,28 +264,49 @@ export default function PropertyInfo() {
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
-                    <div className=" bg-gray-100 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                       <Phone className="w-4 h-4 text-black" />
                     </div>
-                    <span className="text-sm text-gray-600">
-                      Chưa có số điện thoại
-                    </span>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">
+                        Số điện thoại
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {property.contactPhone ? (
+                          <a
+                            href={`tel:${property.contactPhone}`}
+                            className="hover:text-blue-600 transition-colors"
+                          >
+                            {property.contactPhone}
+                          </a>
+                        ) : (
+                          "Chưa có số điện thoại"
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
-                    <div className="bg-gray-100 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                       <Mail className="w-4 h-4 text-black" />
                     </div>
-                    <span className="text-sm text-gray-600">Chưa có email</span>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
-                    <div className=" bg-gray-100 rounded-full flex items-center justify-center">
-                      <Globe className="w-4 h-4 text-black" />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">
+                        Email
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {property.contactEmail ? (
+                          <a
+                            href={`mailto:${property.contactEmail}`}
+                            className="hover:text-blue-600 transition-colors"
+                          >
+                            {property.contactEmail}
+                          </a>
+                        ) : (
+                          "Chưa có email"
+                        )}
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-600">
-                      Chưa có website
-                    </span>
                   </div>
                 </div>
               </CardContent>
