@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   format,
   startOfMonth,
@@ -8,16 +8,22 @@ import {
   isToday,
   addMonths,
   subMonths,
-} from 'date-fns';
-import { vi } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from './button';
-import { Card } from './card';
-import { calendarApi, CalendarQueryParams, Booking, CalendarData, CalendarDay } from '@/services/calendarApi';
-import { DayDetailModal } from './DayDetailModal';
+} from "date-fns";
+import { vi } from "date-fns/locale";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "./button";
+import { Card } from "./card";
+import {
+  calendarApi,
+  CalendarQueryParams,
+  Booking,
+  CalendarData,
+  CalendarDay,
+} from "@/services/calendarApi";
+import { DayDetailModal } from "./DayDetailModal";
 
 interface BookingCalendarProps {
-  viewType?: 'monthly' | 'weekly' | 'daily';
+  viewType?: "monthly" | "weekly" | "daily";
   startDate?: string;
   endDate?: string;
   propertyId?: string;
@@ -27,7 +33,7 @@ interface BookingCalendarProps {
 }
 
 export const BookingCalendar: React.FC<BookingCalendarProps> = ({
-  viewType = 'monthly',
+  viewType = "monthly",
   propertyId,
   listingId,
   onDayClick,
@@ -41,7 +47,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   // Generate calendar days based on viewType
   const getCalendarDays = () => {
-    if (viewType === 'monthly') {
+    if (viewType === "monthly") {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
 
@@ -51,11 +57,15 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       // Get the first day of the week that contains the first day of the month
       const firstDayOfWeek = new Date(firstDayOfMonth);
-      firstDayOfWeek.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay());
+      firstDayOfWeek.setDate(
+        firstDayOfMonth.getDate() - firstDayOfMonth.getDay()
+      );
 
       // Get the last day of the week that contains the last day of the month
       const lastDayOfWeek = new Date(lastDayOfMonth);
-      lastDayOfWeek.setDate(lastDayOfMonth.getDate() + (6 - lastDayOfMonth.getDay()));
+      lastDayOfWeek.setDate(
+        lastDayOfMonth.getDate() + (6 - lastDayOfMonth.getDay())
+      );
 
       return eachDayOfInterval({ start: firstDayOfWeek, end: lastDayOfWeek });
     }
@@ -79,16 +89,16 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         viewType,
         propertyId,
         listingId,
-        startDate: format(startOfMonth(currentDate), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(currentDate), 'yyyy-MM-dd'),
+        startDate: format(startOfMonth(currentDate), "yyyy-MM-dd"),
+        endDate: format(endOfMonth(currentDate), "yyyy-MM-dd"),
       };
 
-      console.log('📅 Calendar fetching with params:', params);
+      console.log("📅 Calendar fetching with params:", params);
       const data = await calendarApi.getCalendarData(params);
-      console.log('📅 Calendar data received:', data);
+      console.log("📅 Calendar data received:", data);
       setCalendarData(data);
     } catch (error) {
-      console.error('Error fetching calendar data:', error);
+      console.error("Error fetching calendar data:", error);
     } finally {
       setLoading(false);
     }
@@ -97,10 +107,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const getBookingsForDay = (date: Date) => {
     if (!calendarData || !calendarData.days) return [];
 
-    const dateString = format(date, 'yyyy-MM-dd');
-    const dayData = calendarData.days.find((day: CalendarDay) => day.date === dateString);
+    const dateString = format(date, "yyyy-MM-dd");
+    const dayData = calendarData.days.find(
+      (day: CalendarDay) => day.date === dateString
+    );
 
-    console.log('📅 Getting bookings for date:', dateString, 'Found:', dayData);
+    console.log("📅 Getting bookings for date:", dateString, "Found:", dayData);
     return dayData ? dayData.bookings : [];
   };
 
@@ -113,7 +125,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   };
 
   const handleDayClick = (date: Date) => {
-    const dateString = format(date, 'yyyy-MM-dd');
+    const dateString = format(date, "yyyy-MM-dd");
     setSelectedDate(dateString);
     setDayDetailModalOpen(true);
 
@@ -122,41 +134,56 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }
   };
 
-  const handleBookingClick = (bookingId: string, propertyId: string, e: React.MouseEvent) => {
+  const handleBookingClick = (
+    bookingId: string,
+    bookingPropertyId: string | undefined,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
     if (onBookingClick) {
-      onBookingClick(bookingId, propertyId);
+      // Sử dụng propertyId từ booking hoặc fallback về propertyId từ props
+      const finalPropertyId = bookingPropertyId || propertyId || "unknown";
+      onBookingClick(bookingId, finalPropertyId);
     }
   };
 
   return (
-    <Card className='w-full bg-white border border-gray-200 shadow-sm'>
-      <div className='p-6'>
-        <div className='w-full'>
+    <Card className="w-full bg-white border border-gray-200 shadow-sm">
+      <div className="p-6">
+        <div className="w-full">
           {/* Calendar Header */}
-          <div className='flex items-center justify-between mb-6'>
+          <div className="flex items-center justify-between mb-6">
             <Button
-              variant='outline'
-              size='sm'
+              variant="outline"
+              size="sm"
               onClick={handlePreviousMonth}
-              className='border-gray-300 hover:bg-gray-50'>
-              <ChevronLeft className='h-4 w-4' />
+              className="border-gray-300 hover:bg-gray-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <h2 className='text-xl font-semibold text-gray-900'>{format(currentDate, 'MMMM yyyy', { locale: vi })}</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {format(currentDate, "MMMM yyyy", { locale: vi })}
+            </h2>
 
-            <Button variant='outline' size='sm' onClick={handleNextMonth} className='border-gray-300 hover:bg-gray-50'>
-              <ChevronRight className='h-4 w-4' />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextMonth}
+              className="border-gray-300 hover:bg-gray-50"
+            >
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
 
           {/* Calendar Grid */}
-          <div className='grid grid-cols-7 gap-1'>
+          <div className="grid grid-cols-7 gap-1">
             {/* Day Headers */}
-            {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
+            {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day) => (
               <div
                 key={day}
-                className='h-10 p-2 text-center text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg'>
+                className="h-10 p-2 text-center text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg"
+              >
                 {day}
               </div>
             ))}
@@ -169,9 +196,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
               // Debug log cho ngày đầu tiên
               if (day.getDate() === 1) {
-                console.log('📅 First day bookings:', dayBookings);
-                console.log('📅 Calendar data available:', !!calendarData);
-                console.log('📅 Days in calendar data:', calendarData?.days?.length);
+                console.log("📅 First day bookings:", dayBookings);
+                console.log("📅 Calendar data available:", !!calendarData);
+                console.log(
+                  "📅 Days in calendar data:",
+                  calendarData?.days?.length
+                );
               }
 
               return (
@@ -180,29 +210,54 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   onClick={() => handleDayClick(day)}
                   className={`
                   h-32 w-full p-3 border border-gray-200 cursor-pointer relative rounded-lg
-                  ${isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
-                  ${isCurrentDay ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+                  ${isCurrentMonth ? "bg-white" : "bg-gray-50"}
+                  ${isCurrentDay ? "ring-2 ring-blue-500 bg-blue-50" : ""}
                   hover:bg-gray-50 transition-colors
-                  ${dayBookings.length > 0 ? 'border-l-4 border-l-green-500' : ''}
-                `}>
-                  <div className={`text-sm font-medium mb-2 ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
-                    {format(day, 'd')}
+                  ${
+                    dayBookings.length > 0
+                      ? "border-l-4 border-l-green-500"
+                      : ""
+                  }
+                `}
+                >
+                  <div
+                    className={`text-sm font-medium mb-2 ${
+                      isCurrentMonth ? "text-gray-900" : "text-gray-400"
+                    }`}
+                  >
+                    {format(day, "d")}
                   </div>
 
                   {/* Bookings for this day - only show for current month */}
                   {isCurrentMonth && (
-                    <div className='space-y-1 max-h-20 overflow-y-auto'>
+                    <div className="space-y-1 max-h-20 overflow-y-auto">
                       {dayBookings.slice(0, 2).map((booking) => (
                         <div
                           key={booking._id}
-                          onClick={(e) => handleBookingClick(booking._id, booking.propertyId, e)}
-                          className='text-xs p-1 bg-gray-100 text-gray-800 rounded cursor-pointer hover:bg-gray-200 truncate'
-                          title={`${booking.guest_name} - ${booking.property_name}`}>
+                          onClick={(e) => {
+                            // Log booking data để debug
+                            console.log("Booking clicked:", booking);
+                            const bookingPropertyId = booking.propertyId;
+                            console.log(
+                              "PropertyId from booking:",
+                              bookingPropertyId
+                            );
+                            handleBookingClick(
+                              booking._id,
+                              bookingPropertyId,
+                              e
+                            );
+                          }}
+                          className="text-xs p-1 bg-gray-100 text-gray-800 rounded cursor-pointer hover:bg-gray-200 truncate"
+                          title={`${booking.guest_name} - ${booking.property_name}`}
+                        >
                           {booking.guest_name}
                         </div>
                       ))}
                       {dayBookings.length > 2 && (
-                        <div className='text-xs text-gray-500 text-center'>+{dayBookings.length - 2}</div>
+                        <div className="text-xs text-gray-500 text-center">
+                          +{dayBookings.length - 2}
+                        </div>
                       )}
                     </div>
                   )}
@@ -212,26 +267,31 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
           </div>
 
           {/* Calendar Summary */}
-          <div className='mt-4 pt-4 border-t border-gray-200'>
-            <div className='flex items-center justify-between text-sm text-gray-600'>
-              <div className='flex items-center gap-4'>
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center gap-4">
                 <span>
-                  Tổng booking: <span className='font-medium text-gray-900'>{calendarData?.totalBookings || 0}</span>
+                  Tổng booking:{" "}
+                  <span className="font-medium text-gray-900">
+                    {calendarData?.totalBookings || 0}
+                  </span>
                 </span>
                 <span>
-                  Doanh thu:{' '}
-                  <span className='font-medium text-gray-900'>
-                    {(calendarData?.totalRevenue || 0).toLocaleString('vi-VN')}đ
+                  Doanh thu:{" "}
+                  <span className="font-medium text-gray-900">
+                    {(calendarData?.totalRevenue || 0).toLocaleString("vi-VN")}đ
                   </span>
                 </span>
               </div>
-              <div className='text-xs text-gray-500'>Click vào ngày để xem chi tiết</div>
+              <div className="text-xs text-gray-500">
+                Click vào ngày để xem chi tiết
+              </div>
             </div>
           </div>
 
           {loading && (
-            <div className='flex justify-center items-center py-4'>
-              <div className='text-gray-500'>Đang tải...</div>
+            <div className="flex justify-center items-center py-4">
+              <div className="text-gray-500">Đang tải...</div>
             </div>
           )}
         </div>
@@ -246,12 +306,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
             setSelectedDate(null);
           }}
           date={selectedDate}
-          bookings={getBookingsForDay(new Date(selectedDate))}
-          totalBookings={getBookingsForDay(new Date(selectedDate)).length}
-          totalRevenue={getBookingsForDay(new Date(selectedDate)).reduce(
-            (sum: number, booking: Booking) => sum + booking.total_amount,
-            0,
-          )}
+          propertyId={propertyId}
         />
       )}
     </Card>

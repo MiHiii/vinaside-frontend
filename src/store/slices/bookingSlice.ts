@@ -30,10 +30,58 @@ export interface SelectedService {
 }
 
 export interface BookingStatistics {
-  total?: number;
-  revenue?: number;
-  customers?: number;
-  [key: string]: number | undefined;
+  totalBookings?: number;
+  totalRevenue?: number;
+  totalNights?: number;
+  averageOccupancyRate?: number;
+  averageBookingValue?: number;
+  totalGuests?: number;
+  totalInfants?: number;
+  totalVouchersUsed?: number;
+  totalVoucherDiscount?: number;
+  averageVoucherDiscount?: number;
+  voucherUsageRate?: number;
+  totalVoucherDiscountPercent?: number;
+  averageVoucherDiscountPercent?: number;
+  totalServicesRevenue?: number;
+  totalServicesBooked?: number;
+  averageServicesPerBooking?: number;
+  topServicesUsed?: Array<{
+    serviceId: string;
+    serviceName: string;
+    usageCount: number;
+    totalRevenue: number;
+  }>;
+  topVouchersUsed?: Array<{
+    voucherCode: string;
+    usageCount: number;
+    totalDiscount: number;
+    averageDiscount: number;
+  }>;
+  statusBreakdown?: {
+    pending: number;
+    confirmed: number;
+    cancelled: number;
+    completed: number;
+    rejected: number;
+    confirmationRate: number;
+    cancellationRate: number;
+  };
+  paymentStatusBreakdown?: {
+    unpaid: number;
+    partially_paid: number;
+    paid: number;
+    refunding: number;
+    refunded: number;
+    failed: number;
+  };
+  chartData?: Array<{
+    label: string;
+    revenue: number;
+    bookings: number;
+    occupancyRate: number;
+  }>;
+  [key: string]: any;
 }
 
 interface BookingState {
@@ -47,8 +95,6 @@ interface BookingState {
   staffBookings: Booking[];
   bookingDetail: Booking | null;
   statisticsOverview: BookingStatistics | null;
-  statisticsFinancial: BookingStatistics | null;
-  statisticsCustomers: BookingStatistics | null;
   adminBookings: Booking[];
   adminTotal: number;
   adminBookingDetail: Booking | null;
@@ -67,8 +113,6 @@ const initialState: BookingState = {
   staffBookings: [],
   bookingDetail: null,
   statisticsOverview: null,
-  statisticsFinancial: null,
-  statisticsCustomers: null,
   adminBookings: [],
   adminTotal: 0,
   adminBookingDetail: null,
@@ -150,25 +194,12 @@ export const updateAdditionalCost = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      console.log("[DEBUG] updateAdditionalCost - Request:", {
-        propertyId,
-        bookingId,
-        additionalCost,
-        additionalCostReason,
-      });
-
       const response = await api.patch(
         `/bookings/${propertyId}/${bookingId}/additional-cost`,
         {
           additionalCost,
           additionalCostReason,
         }
-      );
-
-      console.log("[DEBUG] updateAdditionalCost - Full response:", response);
-      console.log(
-        "[DEBUG] updateAdditionalCost - Response data:",
-        response.data
       );
 
       // Handle different possible response structures
@@ -181,10 +212,6 @@ export const updateAdditionalCost = createAsyncThunk(
         "data" in response.data
       ) {
         responseData = response.data.data;
-        console.log(
-          "[DEBUG] updateAdditionalCost - Extracted data from response.data.data:",
-          responseData
-        );
       }
 
       // If responseData is still the full response object, try to extract the booking data
@@ -196,71 +223,33 @@ export const updateAdditionalCost = createAsyncThunk(
         // Look for booking data in the response
         if (responseData.booking) {
           responseData = responseData.booking;
-          console.log(
-            "[DEBUG] updateAdditionalCost - Extracted booking from responseData.booking:",
-            responseData
-          );
         } else if (responseData.result) {
           responseData = responseData.result;
-          console.log(
-            "[DEBUG] updateAdditionalCost - Extracted result from responseData.result:",
-            responseData
-          );
         } else if (responseData.data) {
           responseData = responseData.data;
-          console.log(
-            "[DEBUG] updateAdditionalCost - Extracted data from responseData.data:",
-            responseData
-          );
         }
       }
 
-      console.log(
-        "[DEBUG] updateAdditionalCost - Final processed data:",
-        responseData
-      );
-
       if (!responseData) {
-        console.error(
-          "[DEBUG] updateAdditionalCost - No valid data found in response"
-        );
         return rejectWithValue("Không có dữ liệu trả về từ server");
       }
 
       // Ensure we have the required fields
       if (!responseData._id) {
-        console.error(
-          "[DEBUG] updateAdditionalCost - Response data missing _id field"
-        );
-        console.error(
-          "[DEBUG] updateAdditionalCost - Response data keys:",
-          Object.keys(responseData)
-        );
         return rejectWithValue("Dữ liệu trả về không hợp lệ - thiếu _id");
       }
 
       // Ensure we have the additionalCost field
       if (typeof responseData.additionalCost === "undefined") {
-        console.warn(
-          "[DEBUG] updateAdditionalCost - Response data missing additionalCost field, adding it"
-        );
         responseData.additionalCost = additionalCost;
       }
 
       if (typeof responseData.additionalCostReason === "undefined") {
-        console.warn(
-          "[DEBUG] updateAdditionalCost - Response data missing additionalCostReason field, adding it"
-        );
         responseData.additionalCostReason = additionalCostReason;
       }
 
-      console.log(
-        "[DEBUG] updateAdditionalCost - Final response data with additionalCost:",
-        responseData
-      );
       return responseData;
     } catch (err: unknown) {
-      console.error("[DEBUG] updateAdditionalCost - Error:", err);
       if (typeof err === "object" && err !== null && "response" in err) {
         const axiosErr = err as { response?: { data?: unknown } };
         const errorMessage = axiosErr.response?.data
@@ -282,7 +271,6 @@ export const getMyBookingHistory = createAsyncThunk<
 >("booking/getMyBookingHistory", async (params, { rejectWithValue }) => {
   try {
     const response = await api.get("/bookings/my-history", { params });
-    console.log("[DEBUG] getMyBookingHistory response:", response.data);
     const bookings = (
       Array.isArray(response.data?.data?.bookings)
         ? response.data.data.bookings
@@ -291,10 +279,8 @@ export const getMyBookingHistory = createAsyncThunk<
       ...b,
       check_out_date: b.check_out_date,
     }));
-    console.log("[DEBUG] Parsed bookings:", bookings);
     return bookings;
   } catch (error) {
-    console.error("[DEBUG] getMyBookingHistory error:", error);
     return rejectWithValue("Lỗi khi lấy lịch sử booking của tôi");
   }
 });
@@ -311,7 +297,12 @@ export const getMyBookings = createAsyncThunk<
 // Thống kê tổng quan booking
 export const fetchBookingStatisticsOverview = createAsyncThunk<
   BookingStatistics,
-  { startDate?: string; endDate?: string } | void,
+  {
+    dateRange?: string;
+    startDate?: string;
+    endDate?: string;
+    propertyId?: string;
+  } | void,
   { rejectValue: string }
 >(
   "booking/fetchBookingStatisticsOverview",
@@ -319,56 +310,6 @@ export const fetchBookingStatisticsOverview = createAsyncThunk<
     try {
       const res = await api.get("/bookings/statistics/overview", {
         params,
-      });
-      return res.data.data;
-    } catch (err: unknown) {
-      if (typeof err === "object" && err !== null && "response" in err) {
-        const axiosErr = err as { response?: { data?: unknown } };
-        return rejectWithValue(
-          (axiosErr.response?.data as string) || "Unknown error"
-        );
-      }
-      return rejectWithValue("Unknown error");
-    }
-  }
-);
-
-// Thống kê tài chính booking
-export const fetchBookingStatisticsFinancial = createAsyncThunk<
-  BookingStatistics,
-  { startDate?: string; endDate?: string } | void,
-  { rejectValue: string }
->(
-  "booking/fetchBookingStatisticsFinancial",
-  async (params, { rejectWithValue }) => {
-    try {
-      const res = await api.get("/bookings/statistics/detailed", {
-        params: { ...(params || {}), type: "financial" },
-      });
-      return res.data.data;
-    } catch (err: unknown) {
-      if (typeof err === "object" && err !== null && "response" in err) {
-        const axiosErr = err as { response?: { data?: unknown } };
-        return rejectWithValue(
-          (axiosErr.response?.data as string) || "Unknown error"
-        );
-      }
-      return rejectWithValue("Unknown error");
-    }
-  }
-);
-
-// Thống kê khách hàng booking
-export const fetchBookingStatisticsCustomers = createAsyncThunk<
-  BookingStatistics,
-  { startDate?: string; endDate?: string } | void,
-  { rejectValue: string }
->(
-  "booking/fetchBookingStatisticsCustomers",
-  async (params, { rejectWithValue }) => {
-    try {
-      const res = await api.get("/bookings/statistics/detailed", {
-        params: { ...(params || {}), type: "customers" },
       });
       return res.data.data;
     } catch (err: unknown) {
@@ -459,16 +400,14 @@ export const fetchStaffBookings = createAsyncThunk<
       params: queryParams,
     });
 
-    console.log("🔍 Staff API response:", response.data);
-
     if (response.data.success) {
-      const allBookings = response.data.data.bookings || [];
-
-      console.log("🔍 Total staff bookings found:", allBookings.length);
+      const bookings = response.data.data.bookings || [];
+      const meta = response.data.data.meta || {};
+      const total = meta.total || bookings.length;
 
       return {
-        data: allBookings,
-        total: allBookings.length,
+        data: bookings,
+        total: total,
       };
     }
 
@@ -476,7 +415,6 @@ export const fetchStaffBookings = createAsyncThunk<
       response.data.message || "Không thể lấy danh sách bookings"
     );
   } catch (error) {
-    console.error("Error fetching staff bookings:", error);
     return rejectWithValue(
       error instanceof Error
         ? error.message
@@ -796,44 +734,23 @@ const bookingSlice = createSlice({
       })
       .addCase(updateAdditionalCost.fulfilled, (state, action) => {
         state.loading = false;
-        console.log(
-          "[DEBUG] updateAdditionalCost.fulfilled - Payload:",
-          action.payload
-        );
 
         if (!action.payload) {
-          console.error("[DEBUG] updateAdditionalCost.fulfilled - No payload");
           state.error = "Không có dữ liệu trả về từ server";
           return;
         }
 
         // Ensure we have the required _id field
         if (!action.payload._id) {
-          console.error(
-            "[DEBUG] updateAdditionalCost.fulfilled - Payload missing _id"
-          );
-          console.error(
-            "[DEBUG] updateAdditionalCost.fulfilled - Payload keys:",
-            Object.keys(action.payload)
-          );
           state.error = "Dữ liệu trả về không hợp lệ";
           return;
         }
-
-        console.log(
-          "[DEBUG] updateAdditionalCost.fulfilled - Processing payload with _id:",
-          action.payload._id
-        );
 
         // Cập nhật booking detail nếu đang xem chi tiết booking
         if (
           state.adminBookingDetail &&
           state.adminBookingDetail._id === action.payload._id
         ) {
-          console.log(
-            "[DEBUG] Updating adminBookingDetail with:",
-            action.payload
-          );
           const updatedBooking = {
             ...state.adminBookingDetail,
             ...action.payload,
@@ -849,14 +766,12 @@ const bookingSlice = createSlice({
               action.payload.final_amount ||
               state.adminBookingDetail.final_amount,
           };
-          console.log("[DEBUG] Updated adminBookingDetail:", updatedBooking);
           state.adminBookingDetail = updatedBooking;
         }
         if (
           state.bookingDetail &&
           state.bookingDetail._id === action.payload._id
         ) {
-          console.log("[DEBUG] Updating bookingDetail with:", action.payload);
           const updatedBooking = {
             ...state.bookingDetail,
             ...action.payload,
@@ -871,7 +786,6 @@ const bookingSlice = createSlice({
             final_amount:
               action.payload.final_amount || state.bookingDetail.final_amount,
           };
-          console.log("[DEBUG] Updated bookingDetail:", updatedBooking);
           state.bookingDetail = updatedBooking;
         }
         // Cập nhật trong danh sách bookings nếu có
@@ -911,10 +825,6 @@ const bookingSlice = createSlice({
               }
             : booking
         );
-
-        console.log(
-          "[DEBUG] updateAdditionalCost.fulfilled - State update completed"
-        );
       })
       .addCase(updateAdditionalCost.rejected, (state, action) => {
         state.loading = false;
@@ -951,32 +861,7 @@ const bookingSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      // Thống kê financial
-      .addCase(fetchBookingStatisticsFinancial.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchBookingStatisticsFinancial.fulfilled, (state, action) => {
-        state.loading = false;
-        state.statisticsFinancial = action.payload;
-      })
-      .addCase(fetchBookingStatisticsFinancial.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      // Thống kê customers
-      .addCase(fetchBookingStatisticsCustomers.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchBookingStatisticsCustomers.fulfilled, (state, action) => {
-        state.loading = false;
-        state.statisticsCustomers = action.payload;
-      })
-      .addCase(fetchBookingStatisticsCustomers.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
+
       // Xoá booking
 
       // ADMIN: Danh sách booking
