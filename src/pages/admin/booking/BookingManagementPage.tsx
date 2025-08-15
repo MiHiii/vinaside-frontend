@@ -39,7 +39,9 @@ const BookingManagementPage: React.FC = () => {
     id: string;
   } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "detail">("list");
+  const [viewMode, setViewMode] = useState<"list" | "detail" | "statistics">(
+    "list"
+  );
   const [showStaffBookingModal, setShowStaffBookingModal] = useState(false);
 
   // Fetch statistics on component mount
@@ -114,6 +116,15 @@ const BookingManagementPage: React.FC = () => {
               >
                 <Calendar className="w-4 h-4" />
                 Lịch booking
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode("statistics")}
+                className="flex items-center gap-2 bg-white text-gray-900 border border-gray-200 hover:bg-gray-100 cursor-pointer rounded-md"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Thống kê
               </Button>
               <Button
                 variant="outline"
@@ -273,33 +284,12 @@ const BookingManagementPage: React.FC = () => {
                 />
               </div>
             </div>
+          ) : viewMode === "statistics" ? (
+            <div className="min-w-0 p-6">
+              <BookingStatistics onBackToList={() => setViewMode("list")} />
+            </div>
           ) : (
             <div className="min-w-0">
-              {/* <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Danh sách Booking
-                  </h2>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Xuất báo cáo
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      Thống kê
-                    </Button>
-                  </div>
-                </div>
-              </div> */}
               {/* Giữ scroll ngang bên trong list nếu table rộng, tránh scroll ngang toàn trang */}
               <div className="overflow-x-auto">
                 <BookingList />
@@ -307,11 +297,6 @@ const BookingManagementPage: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Statistics Section */}
-        {/* <div className="mt-6 min-w-0">
-          <BookingStatistics />
-        </div> */}
       </div>
 
       <StaffBookingModal
