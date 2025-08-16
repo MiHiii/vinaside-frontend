@@ -49,37 +49,14 @@ const BookingManagementPage: React.FC = () => {
     dispatch(fetchBookingStatisticsOverview());
   }, [dispatch]);
 
-  // Use statistics from API or fallback to calculated values
-  const totalBookings =
-    statisticsOverview?.total || adminTotal || adminBookings?.length || 0;
-  const pendingBookings =
-    adminBookings?.filter((b) => b.status === BookingStatus.PENDING).length ||
-    0;
-  const confirmedBookings =
-    adminBookings?.filter((b) => b.status === BookingStatus.CONFIRMED).length ||
-    0;
-  const cancelledBookings =
-    adminBookings?.filter((b) => b.status === BookingStatus.CANCELLED).length ||
-    0;
+  // Use statistics from API
+  const totalBookings = statisticsOverview?.totalBookings || 0;
+  const pendingBookings = statisticsOverview?.statusBreakdown?.pending || 0;
+  const confirmedBookings = statisticsOverview?.statusBreakdown?.confirmed || 0;
+  const cancelledBookings = statisticsOverview?.statusBreakdown?.cancelled || 0;
   const refundingBookings =
-    adminBookings?.filter(
-      (b) =>
-        b.status === BookingStatus.CANCELLED &&
-        b.payment_status === PaymentStatus.REFUNDING
-    ).length || 0;
-
-  const totalRevenue =
-    statisticsOverview?.revenue ||
-    adminBookings?.reduce((sum, booking) => {
-      if (
-        booking.status === BookingStatus.COMPLETED ||
-        booking.status === BookingStatus.CONFIRMED
-      ) {
-        return sum + (booking.final_amount || 0);
-      }
-      return sum;
-    }, 0) ||
-    0;
+    statisticsOverview?.paymentStatusBreakdown?.refunding || 0;
+  const totalRevenue = statisticsOverview?.totalRevenue || 0;
 
   const handleBackToList = () => {
     setSelectedBooking(null);

@@ -13,6 +13,7 @@ import {
 } from "@/store/slices/propertySlice";
 import { useUserRole } from "@/hooks/useUserRole";
 import { propertyStaffAssignmentApi } from "@/services/propertyStaffAssignmentApi";
+import { fetchBookingStatisticsOverview } from "@/store/slices/bookingSlice";
 
 interface Booking {
   _id: string;
@@ -59,6 +60,12 @@ export const BookingCalendarPage: React.FC = () => {
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(false);
   const [staffProperties, setStaffProperties] = useState<any[]>([]);
+
+  // Get statistics data from Redux store
+  const statisticsOverview = useAppSelector(
+    (state) => state.booking.statisticsOverview
+  );
+  const statisticsLoading = useAppSelector((state) => state.booking.loading);
 
   // Lấy properties từ Redux store
   const propertiesFromStore = useAppSelector(selectProperties);
@@ -150,6 +157,45 @@ export const BookingCalendarPage: React.FC = () => {
     fetchStaffProperties();
   }, [isStaff, user?._id]);
 
+  // Fetch statistics data
+  useEffect(() => {
+    const fetchStatisticsData = async () => {
+      let propertyId = filters.propertyId;
+
+      // For staff users, always get assigned properties
+      if (isStaff && user?._id) {
+        try {
+          const response =
+            await propertyStaffAssignmentApi.getPropertiesByStaff(user._id);
+          if (response.success && response.data && response.data.length > 0) {
+            const staffPropertyIds = response.data
+              .map(
+                (item: { propertyId?: { _id: string } }) => item.propertyId?._id
+              )
+              .filter(Boolean);
+
+            if (staffPropertyIds.length > 1) {
+              propertyId = staffPropertyIds.join(",");
+            } else {
+              propertyId = staffPropertyIds[0];
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch staff properties:", error);
+        }
+      }
+
+      const params = {
+        dateRange: "last_30_days",
+        propertyId: propertyId === "all" ? undefined : propertyId,
+      };
+
+      dispatch(fetchBookingStatisticsOverview(params));
+    };
+
+    fetchStatisticsData();
+  }, [dispatch, isStaff, user?._id, filters.propertyId]);
+
   // Fetch properties và calendar data
   useEffect(() => {
     // Fetch properties nếu chưa có và không phải staff
@@ -229,7 +275,9 @@ export const BookingCalendarPage: React.FC = () => {
                   Tổng Booking
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {calendarData?.totalBookings || 0}
+                  {statisticsLoading
+                    ? "..."
+                    : statisticsOverview?.totalBookings || 0}
                 </p>
               </div>
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -245,7 +293,11 @@ export const BookingCalendarPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Doanh thu</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {calendarData?.totalRevenue?.toLocaleString("vi-VN") || 0}đ
+                  {statisticsLoading
+                    ? "..."
+                    : (statisticsOverview?.totalRevenue || 0).toLocaleString(
+                        "vi-VN"
+                      ) + "đ"}
                 </p>
               </div>
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -263,7 +315,9 @@ export const BookingCalendarPage: React.FC = () => {
                   Tỷ lệ lấp đầy
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {((calendarData?.averageOccupancy || 0) * 100).toFixed(1)}%
+                  {statisticsLoading
+                    ? "..."
+                    : (statisticsOverview?.averageOccupancyRate || 0) + "%"}
                 </p>
               </div>
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
