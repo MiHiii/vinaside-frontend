@@ -19,6 +19,7 @@ import {
 import { DateRangePicker } from "@/components/admin/dasboard/DateRangePicker";
 import { useNavigate } from "react-router-dom";
 import BookingCharts from "./BookingCharts";
+import BookingDetailsModal from "./BookingDetailsModal";
 import { DateRange } from "react-day-picker";
 
 interface BookingStatisticsProps {
@@ -41,6 +42,10 @@ export default function BookingStatisticsAdmin({
   const [dateRangeType, setDateRangeType] = useState<
     "today" | "last_7_days" | "last_15_days" | "last_30_days" | "custom"
   >("last_30_days");
+
+  // Modal state
+  const [isBookingDetailsModalOpen, setIsBookingDetailsModalOpen] =
+    useState(false);
 
   const statisticsOverview = useAppSelector(
     (state) => state.booking.statisticsOverview
@@ -93,14 +98,23 @@ export default function BookingStatisticsAdmin({
 
   // Handle date range change
   const handleDateRangeChange = (range: DateRange | undefined) => {
+    console.log("🔄 BookingStatistics: Date range changed:", range);
     setDateRange(range);
 
     if (range?.from && range?.to) {
       setDateRangeType("custom");
+      const startDate = range.from.toISOString().split("T")[0];
+      const endDate = range.to.toISOString().split("T")[0];
+
+      console.log("🔄 BookingStatistics: Fetching data for custom range:", {
+        startDate,
+        endDate,
+      });
+
       fetchStatisticsData({
         dateRange: "custom",
-        startDate: range.from.toISOString().split("T")[0],
-        endDate: range.to.toISOString().split("T")[0],
+        startDate,
+        endDate,
       });
     }
   };
@@ -111,6 +125,18 @@ export default function BookingStatisticsAdmin({
       dateRange: "last_30_days",
     });
   }, [dispatch, isStaff, user?._id]);
+
+  // Handle preset date range changes
+  const handlePresetChange = (
+    presetType: "today" | "last_7_days" | "last_15_days" | "last_30_days"
+  ) => {
+    console.log("🔄 BookingStatistics: Preset changed to:", presetType);
+    setDateRangeType(presetType);
+
+    fetchStatisticsData({
+      dateRange: presetType,
+    });
+  };
 
   // Update dateRangeType when dateRange changes
   useEffect(() => {
@@ -157,6 +183,10 @@ export default function BookingStatisticsAdmin({
 
   const handleServiceClick = (serviceId: string) => {
     navigate(`/admin/services/${serviceId}/usage`);
+  };
+
+  const handleTotalBookingsClick = () => {
+    setIsBookingDetailsModalOpen(true);
   };
 
   const formatCurrency = (amount: number) => {
@@ -216,18 +246,11 @@ export default function BookingStatisticsAdmin({
             open={dateRangeOpen}
             onOpenChange={setDateRangeOpen}
             useRedux={false}
+            dateRangeType={dateRangeType}
+            onPresetChange={handlePresetChange}
           />
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            className="bg-white border-gray-200 hover:bg-gray-200 cursor-pointer"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Làm mới
-          </Button>
           <Button
             onClick={() => window.print()}
             variant="outline"
@@ -242,7 +265,10 @@ export default function BookingStatisticsAdmin({
 
       {/* Overview Stats */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-0 shadow-md bg-white">
+        <Card
+          onClick={handleTotalBookingsClick}
+          className="border-0 shadow-md bg-white cursor-pointer hover:bg-gray-50"
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -380,6 +406,13 @@ export default function BookingStatisticsAdmin({
         statisticsOverview={statisticsOverview}
         onVoucherClick={handleVoucherClick}
         onServiceClick={handleServiceClick}
+      />
+
+      {/* Booking Details Modal */}
+      <BookingDetailsModal
+        isOpen={isBookingDetailsModalOpen}
+        onClose={() => setIsBookingDetailsModalOpen(false)}
+        bookingDetails={statisticsOverview?.bookingDetails || []}
       />
     </div>
   );

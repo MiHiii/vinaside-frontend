@@ -105,6 +105,34 @@ export default function HomePage() {
     }
   };
 
+  // Handle click on section titles to navigate to search page
+  const handleSectionTitleClick = (sectionType: string) => {
+    let searchParams = new URLSearchParams();
+
+    switch (sectionType) {
+      case "all":
+        // Khám phá tất cả phòng nghỉ - không cần thêm params
+        break;
+      case "topViewed":
+        // Phòng được xem nhiều nhất
+        searchParams.set("sortBy", "views");
+        break;
+      case "topRated":
+        // Phòng được đánh giá cao nhất
+        searchParams.set("sortBy", "rating");
+        break;
+      case "topWishlist":
+        // Phòng được yêu thích nhất
+        searchParams.set("sortBy", "wishlist");
+        break;
+    }
+
+    const searchUrl = searchParams.toString()
+      ? `/search?${searchParams.toString()}`
+      : "/search";
+    navigate(searchUrl);
+  };
+
   // Chia localListings thành các hàng, mỗi hàng tối đa 7 card
   const chunkedListings = chunkArray(localListings, 7);
 
@@ -114,11 +142,13 @@ export default function HomePage() {
     listings,
     loading,
     sectionIndex,
+    sectionType,
   }: {
     title: string;
     listings: Listing[];
     loading: boolean;
     sectionIndex: number;
+    sectionType: string;
   }) => {
     const filteredListings = listings.filter(
       (listing) => listing.status === "active"
@@ -163,7 +193,12 @@ export default function HomePage() {
     return (
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-medium text-card-foreground">{title}</h2>
+          <h2
+            className="text-xl font-medium text-card-foreground cursor-pointer hover:text-gray-600 transition-colors"
+            onClick={() => handleSectionTitleClick(sectionType)}
+          >
+            {title}
+          </h2>
           <div className="flex gap-2">
             <Button
               size="icon"
@@ -204,7 +239,10 @@ export default function HomePage() {
     <div className="container mx-auto px-4 py-8">
       {/* Section title & scroll */}
       <div className="flex items-center justify-between mt-2">
-        <h2 className="text-xl font-medium text-card-foreground">
+        <h2
+          className="text-xl font-medium text-card-foreground cursor-pointer hover:text-gray-600 transition-colors"
+          onClick={() => handleSectionTitleClick("all")}
+        >
           Khám phá tất cả phòng nghỉ tại Vinaside
         </h2>
       </div>
@@ -282,6 +320,7 @@ export default function HomePage() {
         listings={topViewedListings}
         loading={topListingsLoading}
         sectionIndex={0}
+        sectionType="topViewed"
       />
 
       {/* Top Rated Listings */}
@@ -290,6 +329,7 @@ export default function HomePage() {
         listings={topRatedListings}
         loading={topListingsLoading}
         sectionIndex={1}
+        sectionType="topRated"
       />
 
       {/* Top Wishlist Listings */}
@@ -298,6 +338,7 @@ export default function HomePage() {
         listings={topWishlistListings}
         loading={topListingsLoading}
         sectionIndex={2}
+        sectionType="topWishlist"
       />
     </div>
   );
