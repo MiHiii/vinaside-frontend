@@ -25,8 +25,23 @@ export default function PaymentFailedPage() {
         const result = await dispatch(
           fetchPaymentStatus({ bookingId })
         ).unwrap();
+
+        // Kiểm tra trạng thái thanh toán
+        const paymentStatus = result.paymentStatus;
+
         // Chỉ cho phép thử lại nếu trạng thái là failed hoặc pending
-        setCanRetry(["failed", "pending"].includes(result.paymentStatus));
+        if (["failed", "pending", "unpaid"].includes(paymentStatus)) {
+          setCanRetry(true);
+        } else if (["paid", "partially_paid"].includes(paymentStatus)) {
+          // Nếu đã thanh toán, không cho phép thử lại
+          setCanRetry(false);
+        } else {
+          setCanRetry(false);
+        }
+
+        console.log(
+          `[PaymentFailedPage] Payment status: ${paymentStatus}, canRetry: ${canRetry}`
+        );
       } catch (error) {
         console.error("Lỗi khi kiểm tra trạng thái:", error);
         setCanRetry(false);
