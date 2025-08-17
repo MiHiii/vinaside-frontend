@@ -29,6 +29,27 @@ export interface SelectedService {
   total_price: number;
 }
 
+export interface BookingDetail {
+  _id: string;
+  guest_name: string;
+  guest_email: string;
+  propertyId: string;
+  property_name: string;
+  listingId: string;
+  listing_title: string;
+  listing_images: string[];
+  checkInDate: string;
+  check_out_date: string;
+  guests: number;
+  infants: number;
+  nights: number;
+  final_amount: number;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  additionalCost: number;
+}
+
 export interface BookingStatistics {
   totalBookings?: number;
   totalRevenue?: number;
@@ -81,6 +102,7 @@ export interface BookingStatistics {
     bookings: number;
     occupancyRate: number;
   }>;
+  bookingDetails?: BookingDetail[];
   [key: string]: any;
 }
 

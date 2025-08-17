@@ -176,67 +176,56 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
   };
 
   const handleBookingClick = (booking: Booking) => {
-    // Try to get propertyId from multiple sources
-    let finalPropertyId = propertyId;
-
-    // If propertyId from props is "all" or invalid, try to get from booking data
-    if (
-      !finalPropertyId ||
-      finalPropertyId === "all" ||
-      finalPropertyId === "unknown"
-    ) {
-      // Try to extract propertyId from booking data
-      if (booking.propertyId) {
-        finalPropertyId = booking.propertyId;
-      } else if (booking.property_id) {
-        finalPropertyId = booking.property_id;
-      } else if (booking.property?._id) {
-        finalPropertyId = booking.property._id;
-      } else if (booking.property?.id) {
-        finalPropertyId = booking.property.id;
-      } else if (booking.listingId?.propertyId) {
-        finalPropertyId = booking.listingId.propertyId;
-      } else if (booking.listingId?.property_id) {
-        finalPropertyId = booking.listingId.property_id;
-      } else if (booking.listingId?.property?._id) {
-        finalPropertyId = booking.listingId.property._id;
-      } else if (booking.listingId?.property?.id) {
-        finalPropertyId = booking.listingId.property.id;
-      }
-    }
-
-    // If still no valid propertyId and user is staff, try to use first staff property
-    if (
-      (!finalPropertyId ||
-        finalPropertyId === "all" ||
-        finalPropertyId === "unknown") &&
-      isStaff &&
-      staffProperties.length > 0
-    ) {
-      const firstProperty = staffProperties[0];
-      finalPropertyId =
-        firstProperty.propertyId?._id || firstProperty.propertyId?.id;
-      console.log("Using first staff property as fallback:", finalPropertyId);
-    }
-
-    // If still no valid propertyId, show error
-    if (
-      !finalPropertyId ||
-      finalPropertyId === "all" ||
-      finalPropertyId === "unknown"
-    ) {
-      console.error("No valid propertyId found for booking:", booking._id);
-      console.error("Available booking fields:", Object.keys(booking));
-      console.error("Staff properties:", staffProperties);
-      console.error("Cannot navigate: No propertyId available");
+    // Priority 1: Use propertyId from booking data (API now returns this)
+    if (booking.propertyId) {
+      navigate(`/admin/bookings/${booking.propertyId}/${booking._id}`);
+      onClose();
       return;
     }
 
-    console.log(
-      "DayDetailModal - Navigating to:",
-      `/admin/bookings/${finalPropertyId}/${booking._id}`
-    );
-    navigate(`/admin/bookings/${finalPropertyId}/${booking._id}`);
+    // Priority 2: Use propertyId from props if available and valid
+    if (propertyId && propertyId !== "all" && propertyId !== "unknown") {
+      navigate(`/admin/bookings/${propertyId}/${booking._id}`);
+      onClose();
+      return;
+    }
+
+    // Priority 3: Try to get from other booking fields (fallback)
+    let finalPropertyId = null;
+    if (booking.property_id) {
+      finalPropertyId = booking.property_id;
+    } else if (booking.property?._id) {
+      finalPropertyId = booking.property._id;
+    } else if (booking.property?.id) {
+      finalPropertyId = booking.property.id;
+    } else if (booking.listingId?.propertyId) {
+      finalPropertyId = booking.listingId.propertyId;
+    } else if (booking.listingId?.property_id) {
+      finalPropertyId = booking.listingId.property_id;
+    } else if (booking.listingId?.property?._id) {
+      finalPropertyId = booking.listingId.property._id;
+    } else if (booking.listingId?.property?.id) {
+      finalPropertyId = booking.listingId.property.id;
+    }
+
+    if (finalPropertyId) {
+      navigate(`/admin/bookings/${finalPropertyId}/${booking._id}`);
+      onClose();
+      return;
+    }
+
+    // Priority 4: If user is staff, try to use first staff property
+    if (isStaff && staffProperties.length > 0) {
+      const firstProperty = staffProperties[0];
+      const staffPropertyId =
+        firstProperty.propertyId?._id || firstProperty.propertyId?.id;
+      if (staffPropertyId) {
+        navigate(`/admin/bookings/${staffPropertyId}/${booking._id}`);
+        onClose();
+        return;
+      }
+    }
+    navigate(`/admin/bookings`);
     onClose();
   };
 
@@ -244,7 +233,15 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-lg">
+        <DialogContent
+          size="3xl"
+          maxHeight="full"
+          overlayBlur={true}
+          overlayOpacity="medium"
+          showCloseButton={true}
+          closeButtonPosition="top-right"
+          className="overflow-y-auto bg-white border-0 shadow-2xl rounded-lg"
+        >
           <DialogHeader className="pb-4">
             <DialogTitle className="text-xl font-semibold text-gray-900">
               Chi tiết ngày {formatDate(date)}
@@ -265,7 +262,15 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
   if (error) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-lg">
+        <DialogContent
+          size="3xl"
+          maxHeight="full"
+          overlayBlur={true}
+          overlayOpacity="medium"
+          showCloseButton={true}
+          closeButtonPosition="top-right"
+          className="overflow-y-auto bg-white border-0 shadow-2xl rounded-lg"
+        >
           <DialogHeader className="pb-4">
             <DialogTitle className="text-xl font-semibold text-gray-900">
               Chi tiết ngày {formatDate(date)}
@@ -286,7 +291,15 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
   if (!dayData) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-lg">
+        <DialogContent
+          size="3xl"
+          maxHeight="full"
+          overlayBlur={true}
+          overlayOpacity="medium"
+          showCloseButton={true}
+          closeButtonPosition="top-right"
+          className="overflow-y-auto bg-white border-0 shadow-2xl rounded-lg"
+        >
           <DialogHeader className="pb-4">
             <DialogTitle className="text-xl font-semibold text-gray-900">
               Chi tiết ngày {formatDate(date)}
@@ -302,7 +315,15 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-lg">
+      <DialogContent
+        size="3xl"
+        maxHeight="full"
+        overlayBlur={true}
+        overlayOpacity="medium"
+        showCloseButton={true}
+        closeButtonPosition="top-right"
+        className="overflow-y-auto bg-white border-0 shadow-2xl rounded-lg"
+      >
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold text-gray-900">
             Chi tiết ngày {formatDate(dayData.date)}
@@ -318,7 +339,7 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
                 Tổng booking
               </span>
             </div>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-xl font-bold text-gray-900">
               {dayData.totalBookings}
             </p>
           </div>
@@ -330,7 +351,7 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
                 Doanh thu
               </span>
             </div>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-xl font-bold text-gray-900">
               {(dayData.totalRevenue || 0).toLocaleString("vi-VN")}đ
             </p>
           </div>
@@ -340,7 +361,7 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
               <Clock className="h-4 w-4 text-gray-600" />
               <span className="text-sm font-medium text-gray-600">Thứ</span>
             </div>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-xl font-bold text-gray-900">
               {dayData.dayOfWeek}
             </p>
           </div>
@@ -454,13 +475,6 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
                         }}
                       >
                         Xem chi tiết
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-gray-300 hover:bg-gray-100"
-                      >
-                        Chỉnh sửa
                       </Button>
                     </div>
                   </div>

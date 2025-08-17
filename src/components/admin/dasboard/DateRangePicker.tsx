@@ -31,20 +31,33 @@ interface DateRangePickerProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   useRedux?: boolean;
+  dateRangeType?:
+    | "today"
+    | "last_7_days"
+    | "last_15_days"
+    | "last_30_days"
+    | "custom";
+  onPresetChange?: (
+    presetType: "today" | "last_7_days" | "last_15_days" | "last_30_days"
+  ) => void;
 }
 
-export function DateRangePicker({ 
-  className, 
+export function DateRangePicker({
+  className,
   dateRange: externalDateRange,
   onDateRangeChange: externalOnDateRangeChange,
   open: externalOpen,
   onOpenChange: externalOnOpenChange,
-  useRedux = true 
+  useRedux = true,
+  dateRangeType: externalDateRangeType,
+  onPresetChange: externalOnPresetChange,
 }: DateRangePickerProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { dateRange: reduxDateRange, dateRangeType, selectedPropertyId } = useSelector(
-    (state: RootState) => state.dashboard
-  );
+  const {
+    dateRange: reduxDateRange,
+    dateRangeType,
+    selectedPropertyId,
+  } = useSelector((state: RootState) => state.dashboard);
 
   // Initialize date state from Redux store or external props
   const [date, setDate] = React.useState<DateRange | undefined>(() => {
@@ -167,7 +180,10 @@ export function DateRangePicker({
       });
     } else if (externalOnDateRangeChange) {
       // Use external callback
-      console.log("🔄 DateRangePicker: Calling externalOnDateRangeChange with:", newDate);
+      console.log(
+        "🔄 DateRangePicker: Calling externalOnDateRangeChange with:",
+        newDate
+      );
       externalOnDateRangeChange(newDate);
     }
   };
@@ -191,9 +207,14 @@ export function DateRangePicker({
         endDate,
         propertyId: selectedPropertyId,
       });
-    } else if (externalOnDateRangeChange) {
-      // Use external callback
-      externalOnDateRangeChange(newDate);
+    } else {
+      // Use external callbacks
+      if (externalOnDateRangeChange) {
+        externalOnDateRangeChange(newDate);
+      }
+      if (externalOnPresetChange) {
+        externalOnPresetChange(preset.type);
+      }
     }
 
     setIsOpenState(false);
@@ -241,12 +262,22 @@ export function DateRangePicker({
                   <Button
                     key={preset.label}
                     variant={
-                      (useRedux ? dateRangeType === preset.type : false) ? "default" : "ghost"
+                      (
+                        useRedux
+                          ? dateRangeType === preset.type
+                          : externalDateRangeType === preset.type
+                      )
+                        ? "default"
+                        : "ghost"
                     }
                     size="sm"
                     className={cn(
                       "w-full justify-start text-sm font-normal h-10 transition-all",
-                      (useRedux ? dateRangeType === preset.type : false)
+                      (
+                        useRedux
+                          ? dateRangeType === preset.type
+                          : externalDateRangeType === preset.type
+                      )
                         ? "bg-gray-900 text-white hover:bg-gray-800 shadow-sm"
                         : "hover:bg-white hover:shadow-sm text-gray-700"
                     )}
