@@ -8,6 +8,32 @@ export interface Notification {
   time: string;
   isRead: boolean;
   avatar?: string;
+  metadata?: {
+    bookingId?: string;
+    propertyId?: string;
+    listingId?: string;
+    bookingStatus?: string;
+    previousStatus?: string;
+    roomName?: string;
+    propertyName?: string;
+    listingTitle?: string;
+    bookingCode?: string;
+    checkInDate?: string;
+    checkOutDate?: string;
+    guests?: number;
+    finalAmount?: number;
+    nights?: number;
+    amount?: number;
+    guestName?: string;
+    guestEmail?: string;
+    guestPhone?: string;
+    allAdminEmails?: string;
+    paymentStatus?: string;
+    totalPrice?: number;
+    serviceFee?: number;
+    taxAmount?: number;
+    [key: string]: unknown;
+  };
 }
 
 export interface NotificationQuery {
@@ -28,6 +54,32 @@ export interface NotificationRaw {
   created_at?: string;
   is_read: boolean;
   avatar?: string;
+  metadata?: {
+    bookingId?: string | { $oid: string };
+    propertyId?: string | { $oid: string };
+    listingId?: string | { $oid: string };
+    bookingStatus?: string;
+    previousStatus?: string;
+    roomName?: string;
+    propertyName?: string;
+    listingTitle?: string;
+    bookingCode?: string;
+    checkInDate?: string | { $date: string };
+    checkOutDate?: string | { $date: string };
+    guests?: number;
+    finalAmount?: number;
+    nights?: number;
+    amount?: number;
+    guestName?: string;
+    guestEmail?: string;
+    guestPhone?: string;
+    allAdminEmails?: string;
+    paymentStatus?: string;
+    totalPrice?: number;
+    serviceFee?: number;
+    taxAmount?: number;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 
@@ -36,16 +88,61 @@ const notificationService = {
     const res = await api.get("/notifications", { params });
     const notifications: NotificationRaw[] = res.data.data?.notifications || [];
     // Chuẩn hóa dữ liệu cho UI
-    return notifications.map((n) => ({
-      id: n._id, // FE sẽ dùng id là _id backend
-      type: n.type,
-      title: n.title,
-      message: n.message,
-      time: n.sent_at || n.createdAt || n.created_at || "",
-      isRead: n.is_read,
-      avatar: n.avatar || undefined,
-      _id: n._id, // giữ lại _id để dùng khi gọi API nếu cần
-    }));
+    return notifications.map((n) => {
+      // Debug: log raw notification để kiểm tra
+      console.log("Raw notification:", n);
+      console.log("Raw metadata:", n.metadata);
+
+      // Xử lý metadata để chuẩn hóa ObjectId và Date
+      let normalizedMetadata = undefined;
+      if (n.metadata) {
+        normalizedMetadata = {
+          ...n.metadata,
+          // Xử lý bookingId
+          bookingId:
+            typeof n.metadata.bookingId === "object" &&
+            n.metadata.bookingId?.$oid
+              ? n.metadata.bookingId.$oid
+              : n.metadata.bookingId,
+          // Xử lý propertyId
+          propertyId:
+            typeof n.metadata.propertyId === "object" &&
+            n.metadata.propertyId?.$oid
+              ? n.metadata.propertyId.$oid
+              : n.metadata.propertyId,
+          // Xử lý listingId
+          listingId:
+            typeof n.metadata.listingId === "object" &&
+            n.metadata.listingId?.$oid
+              ? n.metadata.listingId.$oid
+              : n.metadata.listingId,
+          // Xử lý checkInDate
+          checkInDate:
+            typeof n.metadata.checkInDate === "object" &&
+            n.metadata.checkInDate?.$date
+              ? n.metadata.checkInDate.$date
+              : n.metadata.checkInDate,
+          // Xử lý checkOutDate
+          checkOutDate:
+            typeof n.metadata.checkOutDate === "object" &&
+            n.metadata.checkOutDate?.$date
+              ? n.metadata.checkOutDate.$date
+              : n.metadata.checkOutDate,
+        };
+      }
+
+      return {
+        id: n._id, // FE sẽ dùng id là _id backend
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        time: n.sent_at || n.createdAt || n.created_at || "",
+        isRead: n.is_read,
+        avatar: n.avatar || undefined,
+        metadata: normalizedMetadata,
+        _id: n._id, // giữ lại _id để dùng khi gọi API nếu cần
+      };
+    });
   },
   async getUnreadCount() {
     const res = await api.get("/notifications/unread-count");

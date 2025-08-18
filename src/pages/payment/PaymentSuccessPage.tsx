@@ -93,24 +93,24 @@ export default function PaymentSuccessPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-        <svg
-          className="mx-auto mb-4"
-          width="64"
-          height="64"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle cx="12" cy="12" r="12" fill="#22c55e" />
-          <path
-            d="M7 13l3 3 7-7"
-            stroke="#fff"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="p-8 max-w-2xl w-full text-center">
+        <div className="relative w-full max-w-sm lg:max-w-lg">
+          <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
+            <video
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              playsInline
+              preload="metadata"
+            >
+              <source
+                src="https://stream.media.muscache.com/H0101WTUG2qWbyFhy02jlOggSkpsM9H02VOWN52g02oxhDVM.mp4?v_q=high"
+                type="video/mp4"
+              />
+            </video>
+          </div>
+        </div>
         <h2 className="text-2xl font-bold mb-4 text-green-600">
           Thanh toán thành công!
         </h2>

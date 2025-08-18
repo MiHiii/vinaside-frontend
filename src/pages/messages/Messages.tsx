@@ -65,6 +65,7 @@ export default function Messages() {
     handleCancelReply,
     handleDeleteMessage,
     handleLoadMoreMessages,
+    handleInputFocus,
 
     // Utilities
     hasValidParticipants,
@@ -214,9 +215,16 @@ export default function Messages() {
                 })
                 .map((u) => {
                   const conversation = Array.isArray(conversations)
-                    ? conversations.find((c) =>
-                        hasValidParticipants(c, u._id, user._id)
-                      )
+                    ? conversations.find((c: any) => {
+                        if (!c) return false;
+                        const byId = c.id && u._id && c.id === u._id;
+                        const byParticipants = hasValidParticipants(
+                          c,
+                          u._id,
+                          user._id
+                        );
+                        return Boolean(byId || byParticipants);
+                      })
                     : undefined;
 
                   return (
@@ -785,6 +793,7 @@ export default function Messages() {
                   value={messageInput}
                   onChange={handleTextareaChange}
                   onKeyPress={handleKeyPress}
+                  onFocus={handleInputFocus}
                   placeholder="Soạn tin nhắn..."
                   className="
                     w-full pr-20 rounded-xl border-gray-300 focus:ring-sky-500 resize-none

@@ -96,24 +96,28 @@ interface SendMessageResponse {
   message: string;
 }
 
-interface ConversationsResponse {
+// New conversations response shape from /messages/conversations
+interface ConversationsResponseNew {
   success: boolean;
   data: Array<{
-    user: {
-      _id: string;
-      username: string;
-      email: string;
-      avatar?: string;
-      name?: string;
-    };
+    _id: string; // other user id
     lastMessage?: {
       _id: string;
       content: string;
+      senderId: string;
+      type?: string;
       sent_at: string;
-      is_read: string;
     };
-    unreadCount: number;
+    unreadCount?: number;
+    user: {
+      name: string;
+      email: string;
+      avatar_url?: string;
+    };
+    lastMessageAt?: string;
+    unreadCounts?: Record<string, number>;
   }>;
+  statusCode?: number;
   message: string;
 }
 
@@ -175,6 +179,15 @@ interface ConversationMessage {
 }
 
 class ChatService {
+  private conversationUserCache: Record<
+    string,
+    {
+      _id: string;
+      name: string;
+      email?: string;
+      avatar_url?: string;
+    }
+  > = {};
   // Lấy danh sách người dùng có thể nhắn tin
   async getUsers() {
     try {
@@ -217,13 +230,68 @@ class ChatService {
   // Lấy danh sách cuộc hội thoại của user hiện tại
   async getConversations() {
     try {
-      const response = await api.get<ConversationsResponse>(
+      const response = await api.get<ConversationsResponseNew>(
         `/messages/conversations`
       );
       console.log("💬 Conversations API response:", response.data);
 
+      // Normalize to internal Conversation[] shape expected by UI
       if (response.data?.success && Array.isArray(response.data.data)) {
-        return response.data.data;
+        const myId = this.getCurrentUserId();
+
+        const normalized = response.data.data.map((item) => {
+          const otherUserId = item._id;
+
+          // Cache sidebar user info from conversations payload
+          if (otherUserId && item.user) {
+            this.conversationUserCache[otherUserId] = {
+              _id: otherUserId,
+              name: item.user.name,
+              email: item.user.email,
+              avatar_url: item.user.avatar_url,
+            };
+          }
+
+          const normalizedLastMessage: Message | undefined = item.lastMessage
+            ? {
+                id: item.lastMessage._id,
+                content: item.lastMessage.content,
+                senderId: item.lastMessage.senderId,
+                receiverId:
+                  item.lastMessage.senderId === myId ? otherUserId : myId,
+                conversationId: "",
+                createdAt: item.lastMessage.sent_at || item.lastMessageAt || "",
+                isRead: (item.unreadCounts && myId
+                  ? (item.unreadCounts[myId] || 0) === 0
+                  : (item.unreadCount || 0) === 0) as boolean,
+              }
+            : undefined;
+
+          const unreadCountForMe =
+            item.unreadCounts && myId
+              ? item.unreadCounts[myId] || 0
+              : item.unreadCount || 0;
+
+          return {
+            id: otherUserId,
+            participants: [myId, otherUserId].filter(Boolean),
+            lastMessage: normalizedLastMessage,
+            unreadCount: unreadCountForMe,
+          } as Conversation;
+        });
+
+        // Sort by lastMessageAt desc if available
+        normalized.sort((a, b) => {
+          const aTime = a.lastMessage?.createdAt
+            ? new Date(a.lastMessage.createdAt).getTime()
+            : 0;
+          const bTime = b.lastMessage?.createdAt
+            ? new Date(b.lastMessage.createdAt).getTime()
+            : 0;
+          return bTime - aTime;
+        });
+
+        return normalized;
       }
 
       // Fallback for backward compatibility
@@ -232,6 +300,16 @@ class ChatService {
       console.error("❌ Error fetching conversations:", error);
       throw error;
     }
+  }
+
+  // Expose cached users derived from conversations
+  getConversationUsers(): Array<{
+    _id: string;
+    name: string;
+    email?: string;
+    avatar_url?: string;
+  }> {
+    return Object.values(this.conversationUserCache);
   }
 
   // Lấy cuộc hội thoại giữa user hiện tại và user khác
