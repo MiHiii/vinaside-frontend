@@ -41,13 +41,20 @@ import {
   CreditCard,
   FileText,
   Plus,
-  Minus,
   Loader2,
+  Building2,
+  Home,
+  Star,
+  Clock,
+  DollarSign,
+  CheckCircle,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
 import { format } from "date-fns";
 import BookingCalendar from "@/components/roomdetail/BookingCalendar";
+import { useVouchers } from "@/hooks/useVouchers";
 
 interface Property {
   _id: string;
@@ -121,6 +128,8 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { vouchers, getVouchers } = useVouchers();
+  
   const [formData, setFormData] = useState<StaffCreateBookingForm>({
     propertyId: "",
     listingId: "",
@@ -167,9 +176,10 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadInitialData();
+      getVouchers(); // Load vouchers from backend
       resetForm();
     }
-  }, [isOpen]);
+  }, [isOpen, getVouchers]);
 
   // Update formData when calendar dates change
   useEffect(() => {
@@ -206,10 +216,24 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
 
   // Calculate price when relevant fields change
   useEffect(() => {
-    if (selectedListing && nights > 0) {
+    if (selectedListing && nights > 0 && checkIn && checkOut) {
       const basePrice =
         formData.price_per_night || selectedListing.price_per_night;
-      const totalPrice = basePrice * nights;
+      
+      // Calculate weekend surcharge
+      let weekendSurcharge = 0;
+      if (selectedListing.has_weekend_surcharge && selectedListing.weekend_surcharge_percent) {
+        const current = new Date(checkIn);
+        while (current < checkOut) {
+          const dayOfWeek = current.getDay(); // 0 = Sunday, 6 = Saturday
+          if (dayOfWeek === 0 || dayOfWeek === 6) { // Weekend
+            weekendSurcharge += basePrice * (selectedListing.weekend_surcharge_percent / 100);
+          }
+          current.setDate(current.getDate() + 1);
+        }
+      }
+
+      const totalPrice = basePrice * nights + weekendSurcharge;
 
       // Calculate services total
       const servicesTotal = formData.services.reduce((sum, service) => {
@@ -220,21 +244,37 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
       // Calculate additional costs
       const additionalCosts = formData.additionalCost || 0;
 
-      // Calculate final amount (simplified calculation)
-      const subtotal = totalPrice + servicesTotal + additionalCosts;
-      const serviceFee = subtotal * 0.1; // 10%
-      const tax = subtotal * 0.08; // 8%
-      const finalAmount = subtotal + serviceFee + tax;
+      // Calculate subtotal before voucher discount
+      const subtotalBeforeDiscount = totalPrice + servicesTotal + additionalCosts;
+
+      // Calculate voucher discount
+      let voucherDiscount = 0;
+      if (formData.voucherCode) {
+        const selectedVoucher = vouchers.find(v => v.code === formData.voucherCode);
+        if (selectedVoucher && selectedVoucher.is_active) {
+          voucherDiscount = subtotalBeforeDiscount * (selectedVoucher.discount_percent / 100);
+        }
+      }
+
+      // Calculate final amount after voucher discount
+      const subtotalAfterDiscount = subtotalBeforeDiscount - voucherDiscount;
+      const serviceFee = subtotalAfterDiscount * 0.1; // 10%
+      const tax = subtotalAfterDiscount * 0.08; // 8%
+      const finalAmount = subtotalAfterDiscount + serviceFee + tax;
 
       setCalculatedPrice(finalAmount);
     }
   }, [
     selectedListing,
     nights,
+    checkIn,
+    checkOut,
     formData.services,
     formData.additionalCost,
     formData.price_per_night,
+    formData.voucherCode,
     services,
+    vouchers,
   ]);
 
   const loadBookedDates = async () => {
@@ -401,7 +441,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
       additionalCost: 0,
       additionalCostReason: "",
       status: "pending",
-      payment_status: "unpaid",
+      payment_status: "", // ban đầu rỗng để hiện placeholder
       price_per_night: undefined,
       final_amount: undefined,
       skip_availability_check: false,
@@ -454,38 +494,6 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
         guest_phone: guest?.phone || "",
       }));
     }
-  };
-
-  const addService = () => {
-    if (services.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        services: [
-          ...prev.services,
-          { serviceId: services[0]._id, quantity: 1 },
-        ],
-      }));
-    }
-  };
-
-  const removeService = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      services: prev.services.filter((_, i) => i !== index),
-    }));
-  };
-
-  const updateService = (
-    index: number,
-    field: keyof StaffBookingService,
-    value: string | number
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      services: prev.services.map((service, i) =>
-        i === index ? { ...service, [field]: value } : service
-      ),
-    }));
   };
 
   const handleSubmit = async () => {
@@ -594,39 +602,45 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+      <DialogContent className="!max-w-[95vw] !w-[1400px] max-h-[90vh] overflow-y-auto bg-white border-0 shadow-2xl mx-0 p-0">
+        <DialogHeader className="text-center pb-4 px-8 pt-6 bg-gray-50 border-b border-gray-200">
+          <div className="mx-auto w-14 h-14 bg-gray-600 rounded-full flex items-center justify-center mb-3">
+            <Users className="w-7 h-7 text-white" />
+          </div>
+          <DialogTitle className="text-2xl font-bold text-gray-800">
             Tạo Booking cho Nhân viên
           </DialogTitle>
+          <p className="text-gray-600 mt-1 text-sm">Quản lý đặt phòng và dịch vụ cho khách hàng</p>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="p-6 space-y-6">
           {/* Property and Listing Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Chọn Property và Listing
+          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Building2 className="w-5 h-5 text-gray-600" />
+                Chọn HomeStay và Phòng
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="property">Property *</Label>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="property" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Home className="w-4 h-4 text-gray-500" />
+                   HomeStay *
+                  </Label>
                   <Select
                     value={formData.propertyId}
                     onValueChange={handlePropertyChange}
                     disabled={dataLoading}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn property" />
+                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400  focus:border-gray-500 transition-colors rounded-lg">
+                      <SelectValue placeholder="Chọn homestay" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
                       {Array.isArray(properties) &&
                         properties.map((property) => (
-                          <SelectItem key={property._id} value={property._id}>
+                          <SelectItem key={property._id} value={property._id} className="rounded-lg py-3 px-4 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-800">
                             {property.name}
                           </SelectItem>
                         ))}
@@ -634,22 +648,27 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="listing">Listing *</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="listing" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-gray-500" />
+                    Phòng *
+                  </Label>
                   <Select
                     value={formData.listingId}
                     onValueChange={handleListingChange}
                     disabled={!formData.propertyId || dataLoading}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn listing" />
+                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
+                      <SelectValue placeholder="Chọn phòng" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
                       {Array.isArray(listings) &&
                         listings.map((listing) => (
-                          <SelectItem key={listing._id} value={listing._id}>
+                          <SelectItem key={listing._id} value={listing._id} className="rounded-lg py-3 px-4 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-800">
                             {listing.title} -{" "}
-                            {listing.price_per_night?.toLocaleString()} VND/đêm
+                            <span className="font-medium text-gray-600">
+                              {listing.price_per_night?.toLocaleString()} VND/đêm
+                            </span>
                           </SelectItem>
                         ))}
                     </SelectContent>
@@ -658,90 +677,193 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
               </div>
 
               {selectedListing && (
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{selectedListing.title}</span>
-                    <Badge variant="secondary">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                        <Star className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-lg text-gray-800">{selectedListing.title}</h3>
+                    </div>
+                    <Badge variant="secondary" className="bg-gray-100 text-gray-700 border-gray-200 px-3 py-1 rounded-full text-sm">
+                      <Users className="w-3 h-3 mr-1" />
                       Tối đa {selectedListing.max_guests} khách
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Giá: {selectedListing.price_per_night?.toLocaleString()}{" "}
-                    VND/đêm
-                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                      <DollarSign className="w-4 h-4 text-gray-600" />
+                      <div>
+                        <span className="text-xs text-gray-600">Giá theo đêm</span>
+                        <p className="font-semibold text-base text-gray-800">
+                          {selectedListing.price_per_night?.toLocaleString()} VND
+                        </p>
+                      </div>
+                    </div>
+                    {selectedListing.has_weekend_surcharge && (
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <Clock className="w-4 h-4 text-gray-600" />
+                        <div>
+                          <span className="text-xs text-gray-600">Phụ thu cuối tuần</span>
+                          <p className="font-semibold text-base text-gray-800">
+                            {selectedListing.weekend_surcharge_percent}%
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Guest Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-4 h-4" />
+          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <User className="w-5 h-5 text-gray-600" />
                 Thông tin Khách hàng
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="guest">Tìm Guest hoặc nhập mới</Label>
-                  <Popover
-                    open={guestSearchOpen}
-                    onOpenChange={setGuestSearchOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={guestSearchOpen}
-                        className="w-full justify-between"
+            <CardContent className="p-6 space-y-6">
+              <div className="space-y-4">
+                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gray-500" />
+                  Tìm Guest hoặc nhập mới
+                </Label>
+                <Popover
+                  open={guestSearchOpen}
+                  onOpenChange={setGuestSearchOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={guestSearchOpen}
+                      className="w-full h-16 justify-between border-2 border-gray-200 hover:border-blue-400 focus:border-blue-500 transition-all duration-300 rounded-2xl text-left font-normal bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-indigo-50 shadow-lg hover:shadow-xl hover:scale-[1.02] group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                          <Users className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="text-left">
+                          {formData.guestId && formData.guestId !== "__new__"
+                            ? (() => {
+                                const selectedGuest = guests.find(
+                                  (guest) => guest._id === formData.guestId
+                                );
+                                const guestName =
+                                  selectedGuest?.name ||
+                                  selectedGuest?.guest_name;
+                                const guestEmail =
+                                  selectedGuest?.email ||
+                                  selectedGuest?.guest_email;
+                                return (
+                                  <>
+                                    <div className="font-semibold text-gray-800 text-base">{guestName}</div>
+                                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                      {guestEmail}
+                                    </div>
+                                  </>
+                                );
+                              })()
+                            : (
+                              <>
+                                <div className="font-semibold text-gray-700 text-base">Tìm guest hoặc nhập thông tin mới</div>
+                                <div className="text-sm text-gray-400 flex items-center gap-2">
+                                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                  Click để tìm kiếm hoặc tạo mới
+                                </div>
+                              </>
+                            )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {formData.guestId && formData.guestId !== "__new__" && (
+                          <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full border border-green-200">
+                            Đã chọn
+                          </div>
+                        )}
+                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-300">
+                          <ChevronDown className={`w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-all duration-300 ${guestSearchOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                      </div>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[1250px] p-0 rounded-2xl shadow-2xl border-0 bg-white/95 backdrop-blur-md">
+                    <Command className="rounded-2xl">
+                      <div className="p-5  border-gray-100 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                           
+                          </div>
+                          <CommandInput
+                            placeholder="Tìm kiếm guest theo tên hoặc email..."
+                            value={guestSearchValue}
+                            onValueChange={setGuestSearchValue}
+                            className="h-10 pl-12 pr-4 border-0 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 text-base placeholder:text-gray-400"
+                          />
+                        </div>
+                        <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span>Gõ để tìm kiếm nhanh</span>
+                        </div>
+                      </div>
+                      <CommandList 
+                        className="max-h-96 p-2"
+                        onWheel={(e) => {
+                          // Cho phép scroll event lan truyền lên parent để cuộn trang
+                          e.stopPropagation();
+                          const container = e.currentTarget;
+                          const { scrollTop, scrollHeight, clientHeight } = container;
+                          
+                          // Nếu đã scroll đến đầu hoặc cuối của dropdown
+                          if ((e.deltaY < 0 && scrollTop <= 0) || 
+                              (e.deltaY > 0 && scrollTop + clientHeight >= scrollHeight)) {
+                            // Cho phép scroll event lan truyền lên để cuộn trang
+                            e.stopPropagation();
+                            // Tạo một wheel event mới để cuộn trang
+                            const wheelEvent = new WheelEvent('wheel', {
+                              deltaY: e.deltaY,
+                              deltaMode: e.deltaMode,
+                              bubbles: true
+                            });
+                            document.dispatchEvent(wheelEvent);
+                          }
+                        }}
                       >
-                        {formData.guestId && formData.guestId !== "__new__"
-                          ? (() => {
-                              const selectedGuest = guests.find(
-                                (guest) => guest._id === formData.guestId
-                              );
-                              const guestName =
-                                selectedGuest?.name ||
-                                selectedGuest?.guest_name;
-                              const guestEmail =
-                                selectedGuest?.email ||
-                                selectedGuest?.guest_email;
-                              return `${guestName} (${guestEmail})`;
-                            })()
-                          : "Tìm guest hoặc nhập thông tin mới..."}
-                        {/* <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /> */}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput
-                          placeholder="Tìm theo tên hoặc email..."
-                          value={guestSearchValue}
-                          onValueChange={setGuestSearchValue}
-                        />
-                        <CommandList>
-                          <CommandEmpty>
-                            <div className="p-2 text-center">
-                              <p className="text-sm text-muted-foreground">
-                                Không tìm thấy guest
-                              </p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mt-2"
-                                onClick={() => {
-                                  handleGuestChange("__new__");
-                                  setGuestSearchOpen(false);
-                                  setGuestSearchValue("");
-                                }}
-                              >
-                                Nhập thông tin mới
-                              </Button>
+                        <CommandEmpty>
+                          <div className="p-8 text-center">
+                            <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <User className="w-10 h-10 text-gray-400" />
                             </div>
-                          </CommandEmpty>
-                          <CommandGroup>
+                            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                              Không tìm thấy guest nào
+                            </h3>
+                            <p className="text-sm text-gray-500 mb-6">
+                              Hãy thử tìm kiếm với từ khóa khác hoặc tạo guest mới
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-12 px-8 bg-gradient-to-r from-blue-500 to-indigo-600 border-0 text-white hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 rounded-xl font-medium shadow-lg hover:shadow-xl hover:scale-105"
+                              onClick={() => {
+                                handleGuestChange("__new__");
+                                setGuestSearchOpen(false);
+                                setGuestSearchValue("");
+                              }}
+                            >
+                              <Plus className="w-5 h-5 mr-2" />
+                              Tạo Guest Mới
+                            </Button>
+                          </div>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          <div className="mb-3">
+                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                              Tùy chọn mới
+                            </div>
                             <CommandItem
                               key="__new__"
                               value="__new__"
@@ -750,21 +872,36 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                                 setGuestSearchOpen(false);
                                 setGuestSearchValue("");
                               }}
+                              className="rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 p-5 mx-1 my-1 transition-all duration-300 cursor-pointer border border-transparent hover:border-blue-200 hover:shadow-lg group"
                             >
-                              {/* <Check
-                                className={`mr-2 h-4 w-4 ${
-                                  formData.guestId === "__new__" ? "opacity-100" : "opacity-0"
-                                }`}
-                              /> */}
-                              <div>
-                                <div className="font-medium">
-                                  Nhập thông tin mới
+                              <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
+                                  <Plus className="w-7 h-7 text-white" />
                                 </div>
-                                <div className="text-sm text-muted-foreground">
-                                  Tạo booking cho guest mới
+                                <div className="flex-1">
+                                  <div className="font-bold text-gray-800 text-lg mb-1">
+                                    Nhập thông tin mới
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    Tạo booking cho guest mới với thông tin chi tiết
+                                  </div>
+                                </div>
+                                <div className="text-xs bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-2 rounded-full font-bold shadow-lg">
+                                  Mới
                                 </div>
                               </div>
                             </CommandItem>
+                          </div>
+                          
+                          <div className="mb-3">
+                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                              Guest có sẵn ({guests.filter(g => 
+                                g.name?.toLowerCase().includes(guestSearchValue.toLowerCase()) ||
+                                g.email?.toLowerCase().includes(guestSearchValue.toLowerCase()) ||
+                                g.guest_name?.toLowerCase().includes(guestSearchValue.toLowerCase()) ||
+                                g.guest_email?.toLowerCase().includes(guestSearchValue.toLowerCase())
+                              ).length})
+                            </div>
                             {Array.isArray(guests) &&
                               guests
                                 .filter(
@@ -797,37 +934,45 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                                       setGuestSearchOpen(false);
                                       setGuestSearchValue("");
                                     }}
+                                    className="rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 p-5 mx-1 my-1 transition-all duration-300 cursor-pointer border border-transparent hover:border-green-200 hover:shadow-lg group"
                                   >
-                                    {/* <Check
-                                      className={`mr-2 h-4 w-4 ${
-                                        formData.guestId === guest._id ? "opacity-100" : "opacity-0"
-                                      }`}
-                                    /> */}
-                                    <div>
-                                      <div className="font-medium">
-                                        {guest.name || guest.guest_name}
+                                    <div className="flex items-center gap-4">
+                                      <div className="w-14 h-14 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
+                                        <User className="w-7 h-7 text-white" />
                                       </div>
-                                      <div className="text-sm text-muted-foreground">
-                                        {guest.email || guest.guest_email}{" "}
-                                        {(guest.phone || guest.guest_phone) &&
-                                          `• ${
-                                            guest.phone || guest.guest_phone
-                                          }`}
+                                      <div className="flex-1">
+                                        <div className="font-bold text-gray-800 text-lg mb-1">
+                                          {guest.name || guest.guest_name}
+                                        </div>
+                                        <div className="text-sm text-gray-500 mb-2">
+                                          {guest.email || guest.guest_email}
+                                        </div>
+                                        {(guest.phone || guest.guest_phone) && (
+                                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                                            <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                                            {guest.phone || guest.guest_phone}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-2 rounded-full font-bold shadow-lg">
+                                        Có sẵn
                                       </div>
                                     </div>
                                   </CommandItem>
                                 ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                          </div>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="guest_name">Tên khách hàng *</Label>
+                  <Label htmlFor="guest_name" className="text-sm font-medium text-gray-700">
+                    Tên khách hàng *
+                  </Label>
                   <Input
                     id="guest_name"
                     value={formData.guest_name}
@@ -838,11 +983,14 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       }))
                     }
                     placeholder="Nhập tên khách hàng"
+                    className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="guest_email">Email *</Label>
+                  <Label htmlFor="guest_email" className="text-sm font-medium text-gray-700">
+                    Email *
+                  </Label>
                   <Input
                     id="guest_email"
                     type="email"
@@ -854,11 +1002,14 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       }))
                     }
                     placeholder="email@example.com"
+                    className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="guest_phone">Số điện thoại</Label>
+                  <Label htmlFor="guest_phone" className="text-sm font-medium text-gray-700">
+                    Số điện thoại
+                  </Label>
                   <Input
                     id="guest_phone"
                     value={formData.guest_phone}
@@ -869,6 +1020,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       }))
                     }
                     placeholder="0123456789"
+                    className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                   />
                 </div>
               </div>
@@ -876,32 +1028,43 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
           </Card>
 
           {/* Booking Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Calendar className="w-5 h-5 text-gray-600" />
                 Chi tiết Booking
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-6 space-y-6">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Chọn ngày check-in và check-out *</Label>
-                  <BookingCalendar
-                    checkIn={checkIn}
-                    checkOut={checkOut}
-                    setCheckIn={setCheckIn}
-                    setCheckOut={setCheckOut}
-                    setNights={setNights}
-                    bookedDates={bookedDates}
-                    dateOpen={dateOpen}
-                    setDateOpen={setDateOpen}
-                  />
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-600" />
+                    Chọn ngày check-in và check-out *
+                  </Label>
+                  <div className="relative border-none p-8">
+                    <div className="absolute inset-4  rounded-lg "></div>
+                    <div className="relative z-10 p-4">
+                    <BookingCalendar
+                      checkIn={checkIn}
+                      checkOut={checkOut}
+                      setCheckIn={setCheckIn}
+                      setCheckOut={setCheckOut}
+                      setNights={setNights}
+                      bookedDates={bookedDates}
+                      dateOpen={dateOpen}
+                      setDateOpen={setDateOpen}
+                    />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="guests">Số khách *</Label>
+                    <Label htmlFor="guests" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-gray-600" />
+                      Số khách *
+                    </Label>
                     <Input
                       id="guests"
                       type="number"
@@ -914,11 +1077,15 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                           guests: parseInt(e.target.value) || 1,
                         }))
                       }
+                      className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="infants">Số trẻ em</Label>
+                  {/* <div className="space-y-2">
+                    <Label htmlFor="infants" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-600" />
+                      Số trẻ em
+                    </Label>
                     <Input
                       id="infants"
                       type="number"
@@ -930,22 +1097,35 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                           infants: parseInt(e.target.value) || 0,
                         }))
                       }
+                      className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
               {nights > 0 && (
-                <div className="bg-green-50 p-3 rounded-lg">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Thời gian lưu trú</span>
-                    <Badge variant="outline">{nights} đêm</Badge>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-lg text-gray-800">Thời gian lưu trú</span>
+                        <p className="text-sm text-gray-600 mt-1">Số đêm khách hàng sẽ ở lại</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300 px-4 py-2 rounded-full text-lg font-bold">
+                      {nights} đêm
+                    </Badge>
                   </div>
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="specialRequests">Yêu cầu đặc biệt</Label>
+                <Label htmlFor="specialRequests" className="text-sm font-medium text-gray-700">
+                  Yêu cầu đặc biệt
+                </Label>
                 <Textarea
                   id="specialRequests"
                   value={formData.specialRequests}
@@ -957,119 +1137,139 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                   }
                   placeholder="Nhập yêu cầu đặc biệt của khách hàng..."
                   rows={3}
+                  className="border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg resize-none"
                 />
               </div>
             </CardContent>
           </Card>
 
           {/* Services */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="w-4 h-4" />
+          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Package className="w-5 h-5 text-gray-600" />
                 Dịch vụ bổ sung
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {formData.services.map((service, index) => {
-                const serviceData = services.find(
-                  (s) => s._id === service.serviceId
-                );
+            <CardContent className="p-6 space-y-4">
+              {/* Available Services List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Dịch vụ kèm theo
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="select-all-services"
+                      checked={formData.services.length === services.length && services.length > 0}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          // Select all services
+                          const allServices = services.map(service => ({
+                            serviceId: service._id,
+                            quantity: 1
+                          }));
+                          setFormData(prev => ({ ...prev, services: allServices }));
+                        } else {
+                          // Deselect all services
+                          setFormData(prev => ({ ...prev, services: [] }));
+                        }
+                      }}
+                      className={`w-5 h-5 rounded border-2 transition-all duration-200 ${
+                        formData.services.length === services.length && services.length > 0
+                          ? 'bg-red-500 border-red-500 text-white' 
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    />
+                    <Label htmlFor="select-all-services" className="text-sm text-gray-600 cursor-pointer">
+                      Chọn tất cả
+                    </Label>
+                  </div>
+                </div>
+                
+                <div className="space-y-0 border border-gray-200 rounded-lg overflow-hidden">
+                  {Array.isArray(services) &&
+                    services.map((service) => {
+                      const existingService = formData.services.find(
+                        (s) => s.serviceId === service._id
+                      );
+                      const isSelected = !!existingService;
+                      
                 return (
                   <div
-                    key={index}
-                    className="flex items-center gap-4 p-3 border rounded-lg"
-                  >
+                          key={service._id}
+                          className={`flex items-center gap-4 p-4 border-b border-gray-200 last:border-b-0 ${
+                            isSelected ? 'bg-red-50 border-l-4 border-l-red-500' : 'bg-white'
+                          }`}
+                        >
+                          {/* Service Icon */}
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Package className="w-5 h-5 text-gray-600" />
+                          </div>
+                          
+                          {/* Service Info */}
                     <div className="flex-1">
-                      <Select
-                        value={service.serviceId}
-                        onValueChange={(value) =>
-                          updateService(index, "serviceId", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn dịch vụ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.isArray(services) &&
-                            services.map((s) => (
-                              <SelectItem key={s._id} value={s._id}>
-                                {s.name} - {s.default_price?.toLocaleString()}{" "}
-                                VND
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                            <div className="font-medium text-gray-800">{service.name}</div>
+                            <div className="text-sm text-gray-500">Dịch vụ bổ sung</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          updateService(
-                            index,
-                            "quantity",
-                            Math.max(1, service.quantity - 1)
-                          )
-                        }
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <span className="w-8 text-center">
-                        {service.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          updateService(index, "quantity", service.quantity + 1)
-                        }
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
+                          
+                          {/* Price */}
+                          <div className="text-right">
+                            <div className="font-medium text-red-600">
+                              {service.default_price?.toLocaleString()}₫
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {serviceData &&
-                        (
-                          serviceData.default_price * service.quantity
-                        ).toLocaleString()}{" "}
-                      VND
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeService(index)}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </Button>
+                          
+                          {/* Checkbox */}
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                // Add service
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  services: [
+                                    ...prev.services,
+                                    { serviceId: service._id, quantity: 1 },
+                                  ],
+                                }));
+                              } else {
+                                // Remove service
+                                const newServices = formData.services.filter(
+                                  (s) => s.serviceId !== service._id
+                                );
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  services: newServices,
+                                }));
+                              }
+                            }}
+                            className={`w-5 h-5 rounded border-2 transition-all duration-200 ${
+                              isSelected 
+                                ? 'bg-red-500 border-red-500 text-white' 
+                                : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                          />
                   </div>
                 );
               })}
-
-              <Button
-                variant="outline"
-                onClick={addService}
-                className="w-full"
-                disabled={services.length === 0}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm dịch vụ
-              </Button>
+                  </div>
+                </div>
             </CardContent>
           </Card>
 
           {/* Pricing and Additional Costs */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
+          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CreditCard className="w-5 h-5 text-gray-600" />
                 Tính giá và Chi phí bổ sung
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price_per_night">
+                  <Label htmlFor="price_per_night" className="text-sm font-medium text-gray-700">
                     Giá theo đêm (tùy chỉnh)
                   </Label>
                   <Input
@@ -1089,11 +1289,48 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       selectedListing?.price_per_night?.toString() ||
                       "Giá mặc định"
                     }
+                    className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="additionalCost">Chi phí bổ sung</Label>
+                  <Label htmlFor="voucherCode" className="text-sm font-medium text-gray-700">
+                    Mã voucher
+                  </Label>
+                  <Select
+                    value={formData.voucherCode || "none"}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        voucherCode: value === "none" ? "" : value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
+                      <SelectValue placeholder="Chọn mã voucher..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
+                      <SelectItem value="none" className="rounded-lg py-3 px-4 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-gray-100 data-[state=checked]:text-gray-800">
+                        Không sử dụng voucher
+                      </SelectItem>
+                      {Array.isArray(vouchers) &&
+                        vouchers
+                          .filter(voucher => voucher.is_active && !voucher.isDeleted)
+                          .map((voucher) => (
+                            <SelectItem key={voucher._id} value={voucher.code} className="rounded-lg py-3 px-4 hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-purple-100 data-[state=checked]:text-purple-800">
+                              {voucher.code} - Giảm {voucher.discount_percent}%
+                              {voucher.description && ` - ${voucher.description}`}
+                            </SelectItem>
+                          ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* <div className="space-y-2">
+                <Label htmlFor="additionalCost" className="text-sm font-medium text-gray-700">
+                    Chi phí bổ sung
+                  </Label>
                   <Input
                     id="additionalCost"
                     type="number"
@@ -1106,12 +1343,12 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       }))
                     }
                     placeholder="0"
+                  className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                   />
-                </div>
-              </div>
+              </div> */}
 
-              <div className="space-y-2">
-                <Label htmlFor="additionalCostReason">
+              {/* <div className="space-y-2">
+                <Label htmlFor="additionalCostReason" className="text-sm font-medium text-gray-700">
                   Lý do chi phí bổ sung
                 </Label>
                 <Input
@@ -1124,16 +1361,129 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                     }))
                   }
                   placeholder="Giải thích lý do chi phí bổ sung..."
+                  className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                 />
-              </div>
+              </div> */}
 
               {calculatedPrice > 0 && (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Tổng tiền ước tính:</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {calculatedPrice.toLocaleString()} VND
-                    </span>
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                        <DollarSign className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-xl text-gray-800">Tổng tiền ước tính</span>
+                        <p className="text-sm text-gray-600 mt-1">Chi tiết các khoản phí</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-3xl font-bold bg-gradient-to-r from-gray-600 to-gray-700 bg-clip-text text-transparent">
+                        {calculatedPrice.toLocaleString()}
+                      </span>
+                      <p className="text-base text-gray-600 font-medium">VND</p>
+                    </div>
+                  </div>
+                  
+                  {/* Price Breakdown */}
+                  <div className="space-y-3 text-sm">
+                    {selectedListing && (
+                      <>
+                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                          <span className="text-gray-600">Giá cơ bản ({nights} đêm)</span>
+                          <span className="font-medium">
+                            {((formData.price_per_night || selectedListing.price_per_night) * nights).toLocaleString()} VND
+                          </span>
+                        </div>
+                        
+                        {selectedListing.has_weekend_surcharge && selectedListing.weekend_surcharge_percent && checkIn && checkOut && (() => {
+                          let weekendNights = 0;
+                          const current = new Date(checkIn);
+                          while (current < checkOut) {
+                            const dayOfWeek = current.getDay();
+                            if (dayOfWeek === 0 || dayOfWeek === 6) weekendNights++;
+                            current.setDate(current.getDate() + 1);
+                          }
+                          const weekendSurcharge = weekendNights > 0 ? 
+                            (formData.price_per_night || selectedListing.price_per_night) * weekendNights * (selectedListing.weekend_surcharge_percent! / 100) : 0;
+                          
+                          return weekendNights > 0 ? (
+                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                              <span className="text-gray-600">Phí cuối tuần ({weekendNights} đêm)</span>
+                              <span className="font-medium text-orange-600">
+                                +{weekendSurcharge.toLocaleString()} VND
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
+                      </>
+                    )}
+                    
+                    {formData.services.length > 0 && (
+                      <>
+                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                          <span className="text-gray-600">Dịch vụ bổ sung</span>
+                          <span className="font-medium">
+                            {formData.services.reduce((sum, service) => {
+                              const serviceData = services.find((s) => s._id === service.serviceId);
+                              return sum + (serviceData?.default_price || 0) * service.quantity;
+                            }, 0).toLocaleString()} VND
+                          </span>
+                        </div>
+                        
+                        {/* Service Details */}
+                        <div className="ml-4 space-y-1 text-xs text-gray-500">
+                          {formData.services.map((service, index) => {
+                            const serviceData = services.find((s) => s._id === service.serviceId);
+                            if (!serviceData) return null;
+                            return (
+                              <div key={index} className="flex justify-between items-center">
+                                <span>• {serviceData.name} (x{service.quantity})</span>
+                                <span>{(serviceData.default_price * service.quantity).toLocaleString()} VND</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                    
+                    {formData.voucherCode && (() => {
+                      const selectedVoucher = vouchers.find(v => v.code === formData.voucherCode);
+                      const discountAmount = selectedVoucher ? 
+                        ((calculatedPrice / 1.18) * (selectedVoucher.discount_percent / 100)) : 0;
+                      
+                      return (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                          <span className="text-gray-600">Giảm giá voucher ({formData.voucherCode})</span>
+                          <span className="font-medium text-green-600">
+                            -{discountAmount.toLocaleString()} VND
+                          </span>
+                        </div>
+                      );
+                    })()}
+                    
+                    {formData.additionalCost > 0 && (
+                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                        <span className="text-gray-600">Chi phí bổ sung</span>
+                        <span className="font-medium">
+                          {formData.additionalCost.toLocaleString()} VND
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                      <span className="text-gray-600">Phí dịch vụ (10%)</span>
+                      <span className="font-medium text-gray-500">
+                        +{((calculatedPrice / 1.18) * 0.1).toLocaleString()} VND
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-gray-600">Thuế (8%)</span>
+                      <span className="font-medium text-gray-500">
+                        +{((calculatedPrice / 1.18) * 0.08).toLocaleString()} VND
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1141,53 +1491,43 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
           </Card>
 
           {/* Advanced Options */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
+          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="w-5 h-5 text-gray-600" />
                 Tùy chọn nâng cao
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="voucherCode">Mã voucher</Label>
-                  <Input
-                    id="voucherCode"
-                    value={formData.voucherCode}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        voucherCode: e.target.value,
-                      }))
-                    }
-                    placeholder="Nhập mã voucher..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">Trạng thái booking</Label>
+                  <Label htmlFor="status" className="text-sm font-medium text-gray-700">
+                    Trạng thái booking
+                  </Label>
                   <Select
                     value={formData.status}
                     onValueChange={(value) =>
                       setFormData((prev) => ({ ...prev, status: value }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Chờ xác nhận</SelectItem>
-                      <SelectItem value="confirmed">Đã xác nhận</SelectItem>
-                      <SelectItem value="cancelled">Đã hủy</SelectItem>
+                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
+                      <SelectItem value="pending" className="rounded-lg py-3 px-4 hover:bg-green-50 hover:text-green-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-green-100 data-[state=checked]:text-green-800">
+                        Chờ xác nhận
+                      </SelectItem>
+                      <SelectItem value="confirmed" className="rounded-lg py-3 px-4 hover:bg-green-50 hover:text-green-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-green-100 data-[state=checked]:text-green-800">
+                        Đã xác nhận
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="payment_status">Trạng thái thanh toán</Label>
+                  <Label htmlFor="payment_status" className="text-sm font-medium text-gray-700">
+                    Trạng thái thanh toán
+                  </Label>
                   <Select
                     value={formData.payment_status}
                     onValueChange={(value) =>
@@ -1197,38 +1537,27 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       }))
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
+                      <SelectValue placeholder="Chọn trạng thái thanh toán" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unpaid">Chưa thanh toán</SelectItem>
-                      <SelectItem value="paid">Đã thanh toán</SelectItem>
-                      <SelectItem value="partially_paid">
+                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
+                    
+                      <SelectItem value="paid" className="rounded-lg py-3 px-4 hover:bg-green-50 hover:text-green-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-green-100 data-[state=checked]:text-green-800">
+                        Đã thanh toán
+                      </SelectItem>
+                      <SelectItem value="partially_paid" className="rounded-lg py-3 px-4 hover:bg-yellow-50 hover:text-yellow-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-yellow-100 data-[state=checked]:text-yellow-800">
                         Thanh toán một phần
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="skip_availability_check"
-                    checked={formData.skip_availability_check}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        skip_availability_check: checked as boolean,
-                      }))
-                    }
-                  />
-                  <Label htmlFor="skip_availability_check">
-                    Bỏ qua kiểm tra availability
-                  </Label>
-                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="note">Ghi chú</Label>
+
+              {/* <div className="space-y-2">
+                <Label htmlFor="note" className="text-sm font-medium text-gray-700">
+                  Ghi chú
+                </Label>
                 <Textarea
                   id="note"
                   value={formData.note}
@@ -1237,34 +1566,48 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                   }
                   placeholder="Ghi chú nội bộ..."
                   rows={3}
+                  className="border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg resize-none"
                 />
-              </div>
+              </div> */}
             </CardContent>
           </Card>
         </div>
 
-        <DialogFooter className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <DialogFooter className="flex items-center justify-between pt-6 border-t border-gray-200 bg-gray-50 p-6">
+          <div className="flex items-center gap-3">
             {dataLoading && (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Đang tải dữ liệu...
+              <div className="flex items-center gap-2 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border border-gray-200">
+                <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                <span className="font-medium">Đang tải dữ liệu...</span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleClose}>
-              Hủy
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              onClick={handleClose}
+              className="h-14 px-10 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-lg font-medium text-gray-700 transition-all duration-200 text-base"
+            >
+              <span>Hủy</span>
             </Button>
-            <Button onClick={handleSubmit} disabled={loading}>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={loading}
+              className="h-14 px-10 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-base flex items-center gap-3"
+            >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang tạo...
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Đang tạo...</span>
                 </>
               ) : (
-                "Tạo Booking"
+                <>
+                  <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-3 h-3 text-white" />
+                  </div>
+                  <span>Tạo Booking</span>
+                </>
               )}
             </Button>
           </div>
