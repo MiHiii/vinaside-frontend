@@ -16,10 +16,11 @@ import type { RootState } from "@/store";
 import { Listing } from "@/types/listing";
 import { useNavigate } from "react-router-dom";
 import ButtonWishlist from "@/components/common/ButtonWishlist";
+import PopularDestinations from "@/components/common/PopularDestinations";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
-// Helper function để chia mảng thành các mảng con size 7
+// Helper function để chia mảng thành các mảng con size 5
 function chunkArray<T>(arr: T[], size: number): T[][] {
   const result: T[][] = [];
   for (let i = 0; i < arr.length; i += size) {
@@ -57,7 +58,7 @@ export default function HomePage() {
   const rowRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
   React.useEffect(() => {
-    dispatch(fetchListings({ limit: 14 }));
+    dispatch(fetchListings({ limit: 7 }));
     dispatch(fetchTopViewedListings({ limit: 7 }));
     dispatch(fetchTopRatedListings({ limit: 7 }));
     dispatch(fetchTopWishlistListings({ limit: 7 }));
@@ -105,8 +106,36 @@ export default function HomePage() {
     }
   };
 
-  // Chia localListings thành các hàng, mỗi hàng tối đa 7 card
-  const chunkedListings = chunkArray(localListings, 7);
+  // Handle click on section titles to navigate to search page
+  const handleSectionTitleClick = (sectionType: string) => {
+    let searchParams = new URLSearchParams();
+
+    switch (sectionType) {
+      case "all":
+        // Khám phá tất cả phòng nghỉ - không cần thêm params
+        break;
+      case "topViewed":
+        // Phòng được xem nhiều nhất
+        searchParams.set("sortBy", "views");
+        break;
+      case "topRated":
+        // Phòng được đánh giá cao nhất
+        searchParams.set("sortBy", "rating");
+        break;
+      case "topWishlist":
+        // Phòng được yêu thích nhất
+        searchParams.set("sortBy", "wishlist");
+        break;
+    }
+
+    const searchUrl = searchParams.toString()
+      ? `/search?${searchParams.toString()}`
+      : "/search";
+    navigate(searchUrl);
+  };
+
+  // Giới hạn chỉ 7 items cho section "Khám phá tất cả phòng nghỉ tại Vinaside"
+  const limitedListings = localListings.slice(0, 7);
 
   // Component helper để render section top listings
   const TopListingsSection = ({
@@ -114,11 +143,13 @@ export default function HomePage() {
     listings,
     loading,
     sectionIndex,
+    sectionType,
   }: {
     title: string;
     listings: Listing[];
     loading: boolean;
     sectionIndex: number;
+    sectionType: string;
   }) => {
     const filteredListings = listings.filter(
       (listing) => listing.status === "active"
@@ -163,7 +194,12 @@ export default function HomePage() {
     return (
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-medium text-card-foreground">{title}</h2>
+          <h2
+            className="text-xl font-medium text-card-foreground cursor-pointer hover:text-gray-600 transition-colors"
+            onClick={() => handleSectionTitleClick(sectionType)}
+          >
+            {title}
+          </h2>
           <div className="flex gap-2">
             <Button
               size="icon"
@@ -202,77 +238,74 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Popular Destinations - Đặt đầu tiên */}
+      <PopularDestinations />
+
       {/* Section title & scroll */}
       <div className="flex items-center justify-between mt-2">
-        <h2 className="text-xl font-medium text-card-foreground">
+        <h2
+          className="text-xl font-medium text-card-foreground cursor-pointer hover:text-gray-600 transition-colors"
+          onClick={() => handleSectionTitleClick("all")}
+        >
           Khám phá tất cả phòng nghỉ tại Vinaside
         </h2>
       </div>
 
-      {/* Nhiều hàng, mỗi hàng tối đa 7 card, scroll ngang từng hàng với nút */}
-      <div className="flex flex-col gap-6 mb-8">
+      {/* Một hàng duy nhất với tối đa 7 items, scroll ngang với nút */}
+      <div className="mb-8">
         {loading || error ? (
-          // Hiển thị 2 hàng, mỗi hàng 7 skeleton card
-          <>
-            {[0, 1].map((rowIdx) => (
-              <div
-                key={rowIdx}
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-6"
-              >
-                {Array.from({ length: 10 }).map((_, idx) => (
-                  <div key={idx} className="min-w-[280px] max-w-[280px] mt-5">
-                    <Skeleton className="h-[220px] w-full rounded-2xl mb-2" />
-                    <div className="p-3 pb-2">
-                      <Skeleton className="h-5 w-2/3 mb-2" />
-                      <Skeleton className="h-4 w-1/3 mb-1" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </>
-        ) : (
-          chunkedListings.map((row, idx) => (
-            <div key={idx} className="mb-2">
-              <div className="flex items-center justify-between mb-2">
-                <div />
-                <div className="flex gap-2">
-                  <Button
-                    size="icon"
-                    className="rounded-full bg-muted hover:bg-muted/70"
-                    onClick={() => scrollRow(idx, "left")}
-                    aria-label="Scroll left"
-                  >
-                    <ChevronLeft className="h-5 w-5 text-foreground" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    className="rounded-full bg-muted hover:bg-muted/70"
-                    onClick={() => scrollRow(idx, "right")}
-                    aria-label="Scroll right"
-                  >
-                    <ChevronRight className="h-5 w-5 text-foreground" />
-                  </Button>
+          // Hiển thị 1 hàng với 7 skeleton card
+          <div className="flex gap-6 overflow-x-auto pb-2">
+            {Array.from({ length: 7 }).map((_, idx) => (
+              <div key={idx} className="min-w-[280px] max-w-[280px]">
+                <Skeleton className="h-[220px] w-full rounded-2xl mb-2" />
+                <div className="p-3 pb-2">
+                  <Skeleton className="h-5 w-2/3 mb-2" />
+                  <Skeleton className="h-4 w-1/3 mb-1" />
+                  <Skeleton className="h-4 w-1/2" />
                 </div>
               </div>
-              <div
-                ref={(el) => {
-                  rowRefs.current[idx] = el;
-                }}
-                className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
-                {row.map((property: Listing) => (
-                  <PropertyCard
-                    key={property._id}
-                    property={property}
-                    onViewDetail={handleViewDetail}
-                  />
-                ))}
+            ))}
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div />
+              <div className="flex gap-2">
+                <Button
+                  size="icon"
+                  className="rounded-full bg-muted hover:bg-muted/70"
+                  onClick={() => scrollRow(0, "left")}
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft className="h-5 w-5 text-foreground" />
+                </Button>
+                <Button
+                  size="icon"
+                  className="rounded-full bg-muted hover:bg-muted/70"
+                  onClick={() => scrollRow(0, "right")}
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight className="h-5 w-5 text-foreground" />
+                </Button>
               </div>
             </div>
-          ))
+            <div
+              ref={(el) => {
+                rowRefs.current[0] = el;
+              }}
+              className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {limitedListings.map((property: Listing) => (
+                <PropertyCard
+                  key={property._id}
+                  property={property}
+                  onViewDetail={handleViewDetail}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
@@ -282,6 +315,7 @@ export default function HomePage() {
         listings={topViewedListings}
         loading={topListingsLoading}
         sectionIndex={0}
+        sectionType="topViewed"
       />
 
       {/* Top Rated Listings */}
@@ -290,6 +324,7 @@ export default function HomePage() {
         listings={topRatedListings}
         loading={topListingsLoading}
         sectionIndex={1}
+        sectionType="topRated"
       />
 
       {/* Top Wishlist Listings */}
@@ -298,6 +333,7 @@ export default function HomePage() {
         listings={topWishlistListings}
         loading={topListingsLoading}
         sectionIndex={2}
+        sectionType="topWishlist"
       />
     </div>
   );

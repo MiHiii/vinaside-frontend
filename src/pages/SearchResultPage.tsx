@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate, useLocation } from "react-router-dom"; // Assuming react-router-dom is used for navigation
 import { useAppSelector } from "@/hooks/useRedux"; // Assuming this hook exists
@@ -6,8 +7,17 @@ import {
   selectListings,
   selectListingsLoading,
   selectListingsError,
+  fetchListings,
+  fetchListingsByAvailability,
 } from "@/store/slices/listingSlice"; // Assuming these Redux selectors exist
-import { selectPropertyLocations } from "@/store/slices/propertySlice";
+import {
+  selectPropertyLocations,
+  selectPropertyRoomsList,
+  selectPropertyRoomsListLoading,
+  selectPropertyRoomsListError,
+  fetchPropertyRoomsList,
+} from "@/store/slices/propertySlice";
+import { useAppDispatch } from "@/hooks/useRedux";
 import ButtonWishlist from "@/components/common/ButtonWishlist"; // Assuming this component exists
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button"; // Ensure Button is imported
@@ -15,6 +25,7 @@ import { Button } from "@/components/ui/button"; // Ensure Button is imported
 export default function SearchResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useAppDispatch();
 
   // Lấy kết quả từ Redux
   const listings = useAppSelector(selectListings);
@@ -22,9 +33,15 @@ export default function SearchResultPage() {
   const error = useAppSelector(selectListingsError);
   const propertyLocations = useAppSelector(selectPropertyLocations);
 
+  // Lấy rooms từ property
+  const propertyRooms = useAppSelector(selectPropertyRoomsList);
+  const propertyRoomsLoading = useAppSelector(selectPropertyRoomsListLoading);
+  const propertyRoomsError = useAppSelector(selectPropertyRoomsListError);
+
   // Lấy thông tin tìm kiếm từ URL params
   const searchParams = new URLSearchParams(location.search);
   const locationKeyword = searchParams.get("locationKeyword");
+  const propertyId = searchParams.get("propertyId");
   const place_id = searchParams.get("place_id");
   const lat = searchParams.get("lat");
   const lng = searchParams.get("lng");
@@ -33,6 +50,14 @@ export default function SearchResultPage() {
   const guests = searchParams.get("guests");
   const min_beds = searchParams.get("min_beds");
   const min_bathrooms = searchParams.get("min_bathrooms");
+  const sortBy = searchParams.get("sortBy");
+
+  // Fetch rooms nếu có propertyId
+  React.useEffect(() => {
+    if (propertyId) {
+      dispatch(fetchPropertyRoomsList(propertyId));
+    }
+  }, [propertyId, dispatch]);
 
   const handleViewDetail = async (id: string) => {
     navigate(`/list/${id}`);
@@ -60,11 +85,27 @@ export default function SearchResultPage() {
     if (min_bathrooms) {
       parts.push(`${min_bathrooms} phòng tắm`);
     }
+    if (sortBy) {
+      switch (sortBy) {
+        case "views":
+          parts.push("Sắp xếp theo lượt xem");
+          break;
+        case "rating":
+          parts.push("Sắp xếp theo đánh giá");
+          break;
+        case "wishlist":
+          parts.push("Sắp xếp theo yêu thích");
+          break;
+        default:
+          parts.push(`Sắp xếp theo ${sortBy}`);
+      }
+    }
     return parts.join(" • ");
   };
 
-  // Kiểm tra có thông số tìm kiếm nào không
+  // Kiểm tra có thông số tìm kiếm nào không (không bao gồm sortBy vì sortBy có thể đứng riêng)
   const hasSearchCriteria =
+    propertyId ||
     locationKeyword ||
     place_id ||
     (lat && lng) ||
@@ -72,6 +113,115 @@ export default function SearchResultPage() {
     guests ||
     min_beds ||
     min_bathrooms;
+
+  // Fetch tất cả listings nếu không có search criteria và không có sortBy (click vào "Khám phá tất cả phòng nghỉ tại Vinaside")
+  React.useEffect(() => {
+    if (!hasSearchCriteria && !sortBy) {
+      dispatch(fetchListings({}));
+    }
+  }, [hasSearchCriteria, sortBy, dispatch]);
+
+  // Fetch listings chỉ với sortBy (click vào các section top listings)
+  React.useEffect(() => {
+    if (sortBy && !hasSearchCriteria && !propertyId) {
+      dispatch(fetchListings({ sortBy }));
+    }
+  }, [sortBy, hasSearchCriteria, propertyId, dispatch]);
+
+  // Fetch listings với search criteria
+  React.useEffect(() => {
+    if (hasSearchCriteria && !propertyId) {
+      // Kiểm tra xem có availability criteria không (checkInDate, checkOutDate, guests)
+      const hasAvailabilityCriteria = checkInDate && checkOutDate && guests;
+
+      if (hasAvailabilityCriteria) {
+        // Sử dụng fetchListingsByAvailability cho search với availability
+        const availabilityParams: any = {
+          checkInDate,
+          checkOutDate,
+          guests: parseInt(guests),
+        };
+
+        if (locationKeyword) {
+          availabilityParams.locationKeyword = locationKeyword;
+        }
+        if (place_id) {
+          availabilityParams.place_id = place_id;
+        }
+        if (lat && lng) {
+          availabilityParams.lat = parseFloat(lat);
+          availabilityParams.lng = parseFloat(lng);
+        }
+        if (min_beds) {
+          availabilityParams.min_beds = parseInt(min_beds);
+        }
+        if (min_bathrooms) {
+          availabilityParams.min_bathrooms = parseInt(min_bathrooms);
+        }
+        if (sortBy) {
+          availabilityParams.sortBy = sortBy;
+        }
+
+        dispatch(fetchListingsByAvailability(availabilityParams));
+      } else {
+        // Sử dụng fetchListings cho search thông thường
+        const searchParams: any = {};
+
+        if (locationKeyword) {
+          searchParams.locationKeyword = locationKeyword;
+        }
+        if (place_id) {
+          searchParams.place_id = place_id;
+        }
+        if (lat && lng) {
+          searchParams.lat = parseFloat(lat);
+          searchParams.lng = parseFloat(lng);
+        }
+        if (checkInDate) {
+          searchParams.checkInDate = checkInDate;
+        }
+        if (checkOutDate) {
+          searchParams.checkOutDate = checkOutDate;
+        }
+        if (guests) {
+          searchParams.guests = parseInt(guests);
+        }
+        if (min_beds) {
+          searchParams.min_beds = parseInt(min_beds);
+        }
+        if (min_bathrooms) {
+          searchParams.min_bathrooms = parseInt(min_bathrooms);
+        }
+        if (sortBy) {
+          searchParams.sortBy = sortBy;
+        }
+
+        dispatch(fetchListings(searchParams));
+      }
+    }
+  }, [
+    hasSearchCriteria,
+    propertyId,
+    locationKeyword,
+    place_id,
+    lat,
+    lng,
+    checkInDate,
+    checkOutDate,
+    guests,
+    min_beds,
+    min_bathrooms,
+    sortBy,
+    dispatch,
+  ]);
+
+  // Quyết định hiển thị listings hay property rooms
+  const shouldShowPropertyRooms = propertyId && propertyRooms.length > 0;
+  const displayListings = shouldShowPropertyRooms ? propertyRooms : listings;
+  const displayLoading = shouldShowPropertyRooms
+    ? propertyRoomsLoading
+    : loading;
+  const displayError = shouldShowPropertyRooms ? propertyRoomsError : error;
 
   // Lấy tọa độ cho bản đồ
   const getMapCoordinates = () => {
@@ -139,6 +289,30 @@ export default function SearchResultPage() {
         <div className="mb-4">
           <div className="text-sm  font-semibold text-muted-foreground">
             {(() => {
+              // Nếu chỉ có sortBy (click vào các section top listings)
+              if (sortBy && !hasSearchCriteria) {
+                let sortText = "";
+                switch (sortBy) {
+                  case "views":
+                    sortText = "phòng được xem nhiều nhất";
+                    break;
+                  case "rating":
+                    sortText = "phòng được đánh giá cao nhất";
+                    break;
+                  case "wishlist":
+                    sortText = "phòng được yêu thích nhất";
+                    break;
+                  default:
+                    sortText = "phòng nghỉ";
+                }
+                return `Có ${displayListings.length} ${sortText} tại Vinaside`;
+              }
+
+              // Nếu không có search criteria (click vào "Khám phá tất cả phòng nghỉ tại Vinaside")
+              if (!hasSearchCriteria) {
+                return `Có ${displayListings.length} phòng nghỉ tại Vinaside`;
+              }
+
               // Ưu tiên lấy vị trí từ URL params trước
               let location = locationKeyword;
 
@@ -153,13 +327,13 @@ export default function SearchResultPage() {
               }
 
               // Nếu vẫn không có, thử lấy từ property đầu tiên
-              if (!location && listings.length > 0) {
-                const firstProperty = listings[0];
+              if (!location && displayListings.length > 0) {
+                const firstProperty = displayListings[0] as any;
                 if (firstProperty.address) {
                   // Lấy phần cuối của address (thường là thành phố)
                   const addressParts = firstProperty.address
                     .split(",")
-                    .map((part) => part.trim());
+                    .map((part: string) => part.trim());
                   location =
                     addressParts[addressParts.length - 1] || addressParts[0];
                 } else if (
@@ -184,10 +358,10 @@ export default function SearchResultPage() {
                 location = "địa điểm này";
               }
 
-              return `Có ${listings.length} phòng ở tại ${location}`;
+              return `Có ${displayListings.length} phòng ở tại ${location}`;
             })()}
           </div>
-          {hasSearchCriteria && (
+          {(hasSearchCriteria || sortBy) && (
             <p className="text-muted-foreground mt-1 text-xs">
               {getSearchDescription()}
             </p>
@@ -196,7 +370,7 @@ export default function SearchResultPage() {
 
         {/* Kết quả tìm kiếm dạng grid giống homepage */}
         <div className="mb-8">
-          {loading && (
+          {displayLoading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
               {Array.from({ length: 6 }).map((_, idx) => (
                 <div key={idx} className="min-w-[280px] max-w-[280px]">
@@ -211,16 +385,16 @@ export default function SearchResultPage() {
             </div>
           )}
 
-          {error && (
+          {displayError && (
             <div className="text-center py-8">
-              <p className="text-red-500 text-lg">{error}</p>
+              <p className="text-red-500 text-lg">{displayError}</p>
               <p className="text-muted-foreground mt-2">
                 Vui lòng thử lại với tiêu chí tìm kiếm khác
               </p>
             </div>
           )}
 
-          {!loading && !error && listings.length === 0 && (
+          {!displayLoading && !displayError && displayListings.length === 0 && (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🏠</div>
               <h3 className="text-xl font-semibold text-card-foreground mb-2">
@@ -233,9 +407,9 @@ export default function SearchResultPage() {
             </div>
           )}
 
-          {!loading && !error && listings.length > 0 && (
+          {!displayLoading && !displayError && displayListings.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-              {listings.map((property: Listing) => (
+              {displayListings.map((property: any) => (
                 <PropertyCard
                   key={property._id}
                   property={property}

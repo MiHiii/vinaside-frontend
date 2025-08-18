@@ -85,68 +85,23 @@ const BookingList: React.FC = () => {
     }
   }, [dispatch, properties.length]);
 
-  // Debug staff assignments
-  useEffect(() => {
-    if (isStaff && user?._id) {
-      console.log("🔍 Checking staff assignments for user:", user._id);
-      console.log("🔍 User object:", user);
-
-      propertyStaffAssignmentApi
-        .getPropertiesByStaff(user._id)
-        .then((response) => {
-          console.log("🔍 Staff assignments response:", response);
-          const staffProperties = response.data?.data || response.data || [];
-          console.log("🔍 Staff properties:", staffProperties);
-
-          // Log chi tiết từng property
-          staffProperties.forEach(
-            (prop: Record<string, unknown>, index: number) => {
-              console.log(`🔍 Property ${index + 1}:`, {
-                id:
-                  (prop._id as string) ||
-                  ((prop.propertyId as Record<string, unknown>)?.id as string),
-                name:
-                  (prop.name as string) ||
-                  ((prop.propertyId as Record<string, unknown>)
-                    ?.name as string),
-                type:
-                  (prop.type as string) ||
-                  ((prop.propertyId as Record<string, unknown>)
-                    ?.type as string),
-              });
-            }
-          );
-
-          // Log tất cả property IDs để so sánh với backend
-          const propertyIds = staffProperties.map(
-            (prop: Record<string, unknown>) =>
-              (prop._id as string) ||
-              ((prop.propertyId as Record<string, unknown>)?.id as string)
-          );
-          console.log("🔍 All property IDs for staff:", propertyIds);
-        })
-        .catch((error) => {
-          console.error("🔍 Error fetching staff assignments:", error);
-        });
-    }
-  }, [isStaff, user?._id]);
-
   // Fetch bookings for admin (all bookings)
   useEffect(() => {
     if (!isStaff) {
-      console.log("🔍 Fetching admin bookings");
       const apiFilters = Object.fromEntries(
         Object.entries(filters).filter(
           ([_, value]) => value !== undefined && value !== ""
         )
       );
-      dispatch(
-        fetchAdminBookings({
-          ...apiFilters,
-          page: currentPage,
-          limit: itemsPerPage,
-        })
-      );
+
+      // Đảm bảo luôn truyền limit parameter
+      const params = {
+        ...apiFilters,
+        page: currentPage,
+        limit: itemsPerPage,
+      };
+
+      dispatch(fetchAdminBookings(params));
     }
   }, [dispatch, filters, currentPage, isStaff, itemsPerPage]);
 
@@ -158,18 +113,15 @@ const BookingList: React.FC = () => {
           ([_, value]) => value !== undefined && value !== ""
         )
       );
-      console.log("🔍 Fetching staff bookings with filters:", {
+
+      // Đảm bảo luôn truyền limit parameter
+      const params = {
         ...apiFilters,
         page: currentPage,
         limit: itemsPerPage,
-      });
-      dispatch(
-        fetchStaffBookings({
-          ...apiFilters,
-          page: currentPage,
-          limit: itemsPerPage,
-        })
-      );
+      };
+
+      dispatch(fetchStaffBookings(params));
     }
   }, [isStaff, dispatch, filters, currentPage, itemsPerPage]);
 
@@ -191,22 +143,18 @@ const BookingList: React.FC = () => {
         ([_, value]) => value !== undefined && value !== ""
       )
     );
+
+    // Đảm bảo luôn truyền limit parameter
+    const params = {
+      ...apiFilters,
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+
     if (isStaff) {
-      dispatch(
-        fetchStaffBookings({
-          ...apiFilters,
-          page: currentPage,
-          limit: itemsPerPage,
-        })
-      );
+      dispatch(fetchStaffBookings(params));
     } else {
-      dispatch(
-        fetchAdminBookings({
-          ...apiFilters,
-          page: currentPage,
-          limit: itemsPerPage,
-        })
-      );
+      dispatch(fetchAdminBookings(params));
     }
   };
 
@@ -244,31 +192,17 @@ const BookingList: React.FC = () => {
     : [];
 
   // Tính toán phân trang (server-side)
-  const totalPages = Math.ceil(
-    (isStaff ? staffBookings.length : adminTotal) / itemsPerPage
-  );
+  const totalPages = Math.ceil(adminTotal / itemsPerPage);
   const currentBookings = allBookings;
+
+  // Tính toán thông tin hiển thị
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, adminTotal);
 
   // Hàm chuyển trang
   const goToPage = (page: number) => {
     setCurrentPage(page);
   };
-
-  console.log("🔍 Debug BookingList:", {
-    isStaff,
-    staffBookingsLength: staffBookings?.length || 0,
-    adminBookingsLength: adminBookings?.length || 0,
-    allBookingsLength: allBookings?.length || 0,
-    staffBookings: staffBookings?.slice(0, 2)?.map((b) => ({
-      id: b._id,
-      guestName: b.guest_name,
-      propertyName:
-        typeof b.propertyId === "object"
-          ? (b.propertyId as { name?: string })?.name
-          : b.propertyId,
-      status: b.status,
-    })),
-  });
 
   // Tính toán stats
   const totalBookings = allBookings.length;
@@ -562,7 +496,9 @@ const BookingList: React.FC = () => {
                     return (
                       <TableRow key={b._id} className={rowClassName}>
                         <TableCell className="text-center py-2 px-2">
-                          <div className="">{idx + 1}</div>
+                          <div className="">
+                            {(currentPage - 1) * itemsPerPage + idx + 1}
+                          </div>
                         </TableCell>
                         <TableCell className="py-2 px-2">
                           <Link
@@ -762,8 +698,9 @@ const BookingList: React.FC = () => {
           {totalPages > 0 && allBookings.length > 0 && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200/50">
               <div className="text-sm text-gray-600">
-                Hiển thị trang {currentPage} trong tổng số {totalPages} trang (
-                {isStaff ? staffBookings.length : adminTotal} booking)
+                Hiển thị {startItem} đến {endItem} trong tổng số {adminTotal}{" "}
+                booking
+                {totalPages > 1 && ` (Trang ${currentPage} / ${totalPages})`}
               </div>
               <div className="flex items-center gap-2">
                 <Button

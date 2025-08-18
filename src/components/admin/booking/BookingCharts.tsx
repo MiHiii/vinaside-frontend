@@ -1,6 +1,18 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PieChart, Pie, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LabelList, Cell } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  PieChart,
+  Pie,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  Area,
+  AreaChart,
+  CartesianGrid,
+} from "recharts";
+import { Tag, Package, TrendingUp, DollarSign, Calendar } from "lucide-react";
 
 const COLORS = [
   "#FF6384", // đỏ hồng
@@ -12,120 +24,373 @@ const COLORS = [
 ];
 
 interface BookingChartsProps {
-  statusData: Array<{ name: string; value: number }>;
-  revenueData: Array<{ month: string; revenue: number }>;
-  bookingByMonth: Array<{ month: string; bookings: number }>;
+  statisticsOverview: any;
+  onVoucherClick: (voucherCode: string) => void;
+  onServiceClick: (serviceId: string) => void;
 }
 
-const BookingCharts: React.FC<BookingChartsProps> = ({ statusData, revenueData, bookingByMonth }) => {
-  // Chuẩn hoá dữ liệu cho PieChart + legend
-  const pieData = statusData.map((item, idx) => ({
-    ...item,
-    fill: COLORS[idx % COLORS.length],
-    key: item.name,
-  }));
+const BookingCharts: React.FC<BookingChartsProps> = ({
+  statisticsOverview,
+  onVoucherClick,
+  onServiceClick,
+}) => {
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
-  // Debug log for revenueData
+  // Status breakdown data for pie chart
+  const statusData = React.useMemo(() => {
+    if (!statisticsOverview?.statusBreakdown) return [];
 
+    const breakdown = statisticsOverview.statusBreakdown;
+    return [
+      { name: "Chờ xác nhận", value: breakdown.pending || 0, color: "#FFCE56" },
+      {
+        name: "Đã xác nhận",
+        value: breakdown.confirmed || 0,
+        color: "#36A2EB",
+      },
+      {
+        name: "Đã hoàn thành",
+        value: breakdown.completed || 0,
+        color: "#4BC0C0",
+      },
+      { name: "Đã hủy", value: breakdown.cancelled || 0, color: "#FF6384" },
+      { name: "Bị từ chối", value: breakdown.rejected || 0, color: "#9966FF" },
+    ].filter((item) => item.value > 0);
+  }, [statisticsOverview]);
+
+  // Payment status breakdown data
+  const paymentStatusData = React.useMemo(() => {
+    if (!statisticsOverview?.paymentStatusBreakdown) return [];
+
+    const breakdown = statisticsOverview.paymentStatusBreakdown;
+    return [
+      {
+        name: "Chưa thanh toán",
+        value: breakdown.unpaid || 0,
+        color: "#FF6384",
+      },
+      {
+        name: "Thanh toán một phần",
+        value: breakdown.partially_paid || 0,
+        color: "#FFCE56",
+      },
+      { name: "Đã thanh toán", value: breakdown.paid || 0, color: "#4BC0C0" },
+      {
+        name: "Đang hoàn tiền",
+        value: breakdown.refunding || 0,
+        color: "#9966FF",
+      },
+      {
+        name: "Đã hoàn tiền",
+        value: breakdown.refunded || 0,
+        color: "#36A2EB",
+      },
+      {
+        name: "Thanh toán thất bại",
+        value: breakdown.failed || 0,
+        color: "#FF9F40",
+      },
+    ].filter((item) => item.value > 0);
+  }, [statisticsOverview]);
+
+  // Chart data for revenue and bookings
+  const chartData = React.useMemo(() => {
+    if (!statisticsOverview?.chartData) return [];
+
+    // Transform API data (label/revenue/bookings) to chart-ready structure
+    return statisticsOverview.chartData.map((item: any) => ({
+      date: item.label || item.date || item.day,
+      totalRevenue: item.revenue || 0,
+      bookings: item.bookings || 0,
+      occupancyRate: item.occupancyRate || 0,
+    }));
+  }, [statisticsOverview]);
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Biểu đồ trạng thái booking với legend đẹp */}
-      <Card className="flex flex-col border-0 shadow">
-        <CardHeader className="items-center pb-0">
-          <CardTitle>Biểu đồ trạng thái booking</CardTitle>
-          <CardDescription>Thống kê trạng thái booking</CardDescription>
+    <div className="space-y-6">
+      {/* Revenue and Bookings Chart */}
+      <Card className="border-0 shadow-md bg-white">
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg gap-2">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
+            Biểu đồ doanh thu và booking theo thời gian
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 pb-0 p-3 md:p-4">
-          <div className="mx-auto aspect-square max-h-[400px] flex items-center justify-center">
-            <PieChart width={360} height={320}>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                fill="#8884d8"
-                outerRadius={110}
-                labelLine={false}
-                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                  if (!percent || percent <= 0) return null;
-                  const RADIAN = Math.PI / 180;
-                  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                  const angle = midAngle ?? 0;
-                  const x = cx + radius * Math.cos(-angle * RADIAN);
-                  const y = cy + radius * Math.sin(-angle * RADIAN);
-                  return (
-                    <text
-                      x={x}
-                      y={y}
-                      fill="#222"
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fontSize={16}
-                      fontWeight={600}
-                    >
-                      {`${((percent ?? 0) * 100).toFixed(0)}%`}
-                    </text>
-                  );
-                }}
+        <CardContent className="px-2">
+          <div className="w-full h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData}
+                margin={{ top: 10, right: 20, left: 40, bottom: 0 }}
               >
-                {pieData.map((entry, idx) => (
-                  <Cell key={`cell-${idx}`} fill={entry.fill} />
-                ))}
-              </Pie>
-              <Legend
-                formatter={(value: string) => {
-                  const item = pieData.find(d => d.name === value);
-                  return (
-                    <span>
-                      {value} <span style={{ fontWeight: 600 }}>{item ? item.value : 0}</span>
-                    </span>
-                  );
-                }}
-                wrapperStyle={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  columnGap: 32,
-                  rowGap: 12,
-                  maxWidth: 400,
-                  margin: '0 auto',
-                }}
-              />
-            </PieChart>
+                <defs>
+                  <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="fillBookings" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={6}
+                  minTickGap={24}
+                  tick={{ fontSize: 11, fill: "#4B5563" }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString("vi-VN", {
+                      month: "short",
+                      day: "numeric",
+                    });
+                  }}
+                />
+                <YAxis
+                  yAxisId="left"
+                  tickLine={false}
+                  axisLine={false}
+                  hide={true}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tickLine={false}
+                  axisLine={false}
+                  hide={true}
+                />
+                <Tooltip
+                  cursor={{
+                    stroke: "#3b82f6",
+                    strokeWidth: 1,
+                    strokeDasharray: "4 4",
+                  }}
+                  contentStyle={{ fontSize: 12, padding: 8 }}
+                  labelStyle={{ fontSize: 12, color: "#111827" }}
+                  itemStyle={{ fontSize: 12 }}
+                  labelFormatter={(value: any) => {
+                    return new Date(value).toLocaleDateString("vi-VN", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+                  }}
+                  formatter={(value: any, name: string) => [
+                    name === "totalRevenue" ? formatCurrency(value) : value,
+                    name === "totalRevenue"
+                      ? "Doanh thu"
+                      : name === "bookings"
+                      ? "Tổng booking"
+                      : name,
+                  ]}
+                />
+                <Area
+                  yAxisId="left"
+                  type="natural"
+                  dataKey="totalRevenue"
+                  fill="url(#fillRevenue)"
+                  stroke="#3b82f6"
+                  name="Doanh thu"
+                />
+                <Area
+                  yAxisId="right"
+                  type="natural"
+                  dataKey="bookings"
+                  fill="url(#fillBookings)"
+                  stroke="#10b981"
+                  name="Số booking"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* Biểu đồ doanh thu theo tháng */}
-        <Card className="flex-1 border-0 shadow">
-          <CardHeader className="pb-0 pt-3 px-3 md:px-4 md:pt-4"><CardTitle>Biểu đồ doanh thu theo tháng</CardTitle></CardHeader>
-          <CardContent className="p-3 md:p-4">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={Array.isArray(revenueData) ? revenueData : []}>
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={v => v.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 })} />
-                <Tooltip formatter={v => v.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 })} />
-                <Legend />
-                <Bar dataKey="revenue" fill="#8884d8" name="Doanh thu" barSize={44} activeBar={false}>
-                  <LabelList dataKey="revenue" position="top" formatter={v => v != null ? Number(v).toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }) : ""} />
-                </Bar>
-              </BarChart>
+
+      {/* Charts Grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Status Breakdown Pie Chart */}
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg gap-2">
+              <Calendar className="w-5 h-5 text-orange-600" />
+              Trạng thái Booking
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ name, percent }) =>
+                    `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                  }
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ fontSize: 12 }}
+                  itemStyle={{ fontSize: 12 }}
+                  labelStyle={{ fontSize: 12 }}
+                  formatter={(value: any) => [value, "Số lượng"]}
+                />
+              </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        {/* Biểu đồ số booking theo tháng */}
-        <Card className="flex-1 border-0 shadow">
-          <CardHeader className="pb-0 pt-3 px-3 md:px-4 md:pt-4"><CardTitle>Biểu đồ số booking theo tháng</CardTitle></CardHeader>
-          <CardContent className="p-3 md:p-4">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={Array.isArray(bookingByMonth) ? bookingByMonth : []}>
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="bookings" fill="#82ca9d" name="Số booking" barSize={44} />
-              </BarChart>
+
+        {/* Payment Status Breakdown Pie Chart */}
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg gap-2">
+              <DollarSign className="w-5 h-5 text-green-600" />
+              Trạng thái Thanh toán
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={paymentStatusData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ name, percent }) =>
+                    `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                  }
+                >
+                  {paymentStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ fontSize: 12 }}
+                  itemStyle={{ fontSize: 12 }}
+                  labelStyle={{ fontSize: 12 }}
+                  formatter={(value: any) => [value, "Số lượng"]}
+                />
+              </PieChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top Lists Grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Top Vouchers */}
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg gap-2">
+              <Tag className="w-5 h-5 text-purple-600" />
+              Top Vouchers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(statisticsOverview?.topVouchersUsed || [])
+                .slice(0, 5)
+                .map((voucher: any, index: number) => (
+                  <div
+                    key={voucher.voucherCode}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => onVoucherClick(voucher.voucherId)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-purple-600">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {voucher.voucherCode}:{" "}
+                          {voucher.discountPercent ||
+                            voucher.averageDiscountPercent ||
+                            0}
+                          % discount
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {voucher.usageCount} lần sử dụng
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-sm text-purple-600">
+                        {voucher.discountPercent ||
+                          voucher.averageDiscountPercent ||
+                          0}
+                        %
+                      </p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Services */}
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg gap-2">
+              <Package className="w-5 h-5 text-blue-600" />
+              Top Services
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(statisticsOverview?.topServicesUsed || [])
+                .slice(0, 5)
+                .map((service: any, index: number) => (
+                  <div
+                    key={service.serviceId}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => onServiceClick(service.serviceId)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-blue-600">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {service.serviceName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {service.usageCount} lần sử dụng
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-sm text-blue-600">
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(service.totalRevenue)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -133,4 +398,4 @@ const BookingCharts: React.FC<BookingChartsProps> = ({ statusData, revenueData, 
   );
 };
 
-export default BookingCharts; 
+export default BookingCharts;

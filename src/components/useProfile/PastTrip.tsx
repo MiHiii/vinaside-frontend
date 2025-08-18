@@ -270,9 +270,24 @@ const PastTrip = () => {
   const upcomingBookings = bookings.filter((b) => {
     const checkInDate = new Date(b.checkInDate);
     const now = new Date(); // Local now for accurate comparison
-    return (
-      STATUS_UPCOMING.includes(b.status as BookingStatus) && checkInDate > now
-    );
+    const isUpcoming =
+      (STATUS_UPCOMING.includes(b.status as BookingStatus) &&
+        checkInDate > now) ||
+      (b.payment_status === PaymentStatus.PENDING && checkInDate > now) ||
+      (b.status === BookingStatus.PENDING && checkInDate > now);
+
+    console.log("Filtering booking:", {
+      bookingId: b._id,
+      status: b.status,
+      payment_status: b.payment_status,
+      checkInDate: checkInDate,
+      now: now,
+      isUpcoming: isUpcoming,
+      isStatusUpcoming: STATUS_UPCOMING.includes(b.status as BookingStatus),
+      isPaymentPending: b.payment_status === PaymentStatus.PENDING,
+    });
+
+    return isUpcoming;
   });
 
   const ongoingBookings = bookings.filter((b) => {
@@ -300,10 +315,19 @@ const PastTrip = () => {
       b.status === BookingStatus.CANCELLED ||
       // Các booking bị từ chối
       b.status === BookingStatus.REJECTED ||
-      // Các booking thanh toán thất bại
-      b.payment_status === PaymentStatus.FAILED ||
+      // Các booking thanh toán thất bại (chỉ khi đã qua ngày check-in)
+      (b.payment_status === PaymentStatus.FAILED &&
+        new Date(b.checkInDate) < now) ||
       // Các booking đã hoàn tiền
       b.payment_status === PaymentStatus.REFUNDED;
+
+    // Loại trừ booking PENDING khỏi history
+    if (
+      b.payment_status === PaymentStatus.PENDING ||
+      b.status === BookingStatus.PENDING
+    ) {
+      return false;
+    }
 
     return result;
   });
@@ -476,19 +500,83 @@ const PastTrip = () => {
     let showPaymentButton = false;
     let showPayRemainderButton = false;
 
+    // Kiểm tra ngày đã được đặt (di chuyển lên trước để sử dụng trong logic FAILED)
+    let isBooked = false;
+    let bookedDates: Date[] = [];
+    if (
+      listing &&
+      typeof listing === "object" &&
+      "_id" in listing &&
+      listing._id
+    ) {
+      bookedDates = bookedDatesByListing[listing._id] || [];
+      const checkIn = new Date(booking.checkInDate);
+      const checkOut = new Date(booking.check_out_date);
+      isBooked = bookedDates.some((date) => date >= checkIn && date < checkOut);
+    }
+
     // Tính toán số tiền còn lại cần thanh toán
     const finalAmount = booking.final_amount || 0;
     const depositPaidAmount = booking.deposit_paid_amount || 0;
     const outstandingAmount = finalAmount - depositPaidAmount;
 
-    if (booking.payment_status === PaymentStatus.FAILED) {
-      statusDisplay = "Thanh toán thất bại";
-      statusColor = "text-red-600";
+    // Đặc biệt xử lý trường hợp cả status và payment_status đều là PENDING
+    if (
+      booking.status === BookingStatus.PENDING &&
+      booking.payment_status === PaymentStatus.PENDING
+    ) {
+      statusDisplay = "Chờ thanh toán";
+      statusColor = "text-yellow-600";
       showPaymentButton = true;
+      console.log("Both status and payment_status are PENDING:", {
+        bookingId: booking._id,
+        status: booking.status,
+        payment_status: booking.payment_status,
+      });
+    } else if (booking.status === BookingStatus.PENDING) {
+      // Xử lý trường hợp status là PENDING (bất kể payment_status)
+      if (booking.payment_status === PaymentStatus.PAID) {
+        // Đã thanh toán nhưng chờ admin xác nhận
+        statusDisplay = "Đã thanh toán - Chờ xác nhận";
+        statusColor = "text-blue-600";
+        showPaymentButton = false; // Không cho thanh toán lại
+      } else if (booking.payment_status === PaymentStatus.PARTIALLY_PAID) {
+        // Đã thanh toán một phần nhưng chờ admin xác nhận
+        statusDisplay = "Đã thanh toán một phần - Chờ xác nhận";
+        statusColor = "text-blue-600";
+        showPaymentButton = false; // Không cho thanh toán lại
+      } else {
+        // Chưa thanh toán
+        statusDisplay = "Chờ thanh toán";
+        statusColor = "text-yellow-600";
+        showPaymentButton = true;
+      }
+      console.log("Status is PENDING:", {
+        bookingId: booking._id,
+        status: booking.status,
+        payment_status: booking.payment_status,
+      });
+    } else if (booking.payment_status === PaymentStatus.FAILED) {
+      // Kiểm tra xem có người khác đã đặt phòng này chưa
+      if (isBooked) {
+        statusDisplay = "Booking này đã được đặt";
+        statusColor = "text-red-600";
+        showPaymentButton = false; // Không cho phép thanh toán lại vì đã có người đặt
+      } else {
+        statusDisplay = "Thanh toán thất bại";
+        statusColor = "text-red-600";
+        showPaymentButton = true; // Cho phép thử lại thanh toán
+      }
     } else if (booking.payment_status === PaymentStatus.PENDING) {
       statusDisplay = "Chờ thanh toán";
       statusColor = "text-yellow-600";
       showPaymentButton = true;
+      // Đảm bảo nút thanh toán luôn hiển thị cho PENDING
+      console.log("PENDING booking - showPaymentButton set to true:", {
+        bookingId: booking._id,
+        status: booking.status,
+        payment_status: booking.payment_status,
+      });
     } else if (booking.payment_status === PaymentStatus.PARTIALLY_PAID) {
       // Phân biệt 2 trường hợp PARTIALLY_PAID
       const hasAdditionalServices =
@@ -555,21 +643,6 @@ const PastTrip = () => {
       }
     }
 
-    // Kiểm tra ngày đã được đặt
-    let isBooked = false;
-    let bookedDates: Date[] = [];
-    if (
-      listing &&
-      typeof listing === "object" &&
-      "_id" in listing &&
-      listing._id
-    ) {
-      bookedDates = bookedDatesByListing[listing._id] || [];
-      const checkIn = new Date(booking.checkInDate);
-      const checkOut = new Date(booking.check_out_date);
-      isBooked = bookedDates.some((date) => date >= checkIn && date < checkOut);
-    }
-
     // Debug: Log thông tin để kiểm tra
     console.log("Debug booking:", {
       bookingId: booking._id,
@@ -577,6 +650,7 @@ const PastTrip = () => {
       outstandingAmount,
       showPaymentButton,
       isBooked,
+      statusDisplay,
       hasAdditionalServices:
         booking.selected_services && booking.selected_services.length > 0,
     });
@@ -744,13 +818,57 @@ const PastTrip = () => {
                 Xem chi tiết đặt chỗ
               </Button>
 
-              {showPaymentButton && (outstandingAmount > 0 || !isBooked) && (
+              {(() => {
+                console.log("Rendering payment button:", {
+                  showPaymentButton,
+                  bookingId: booking._id,
+                  payment_status: booking.payment_status,
+                  status: booking.status,
+                  outstandingAmount,
+                  statusDisplay,
+                });
+                return null;
+              })()}
+              {showPaymentButton && (
                 <Button
                   variant="default"
                   size="sm"
                   className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white"
                   onClick={async () => {
                     try {
+                      // Kiểm tra lại trạng thái booking trước khi thanh toán
+                      const statusCheck = await api.get(
+                        `/bookings/${booking._id}/payment/status`
+                      );
+                      const currentPaymentStatus =
+                        statusCheck.data?.data?.paymentStatus ||
+                        statusCheck.data?.paymentStatus;
+
+                      // Nếu booking đã được thanh toán bởi người khác
+                      if (
+                        currentPaymentStatus === "paid" ||
+                        currentPaymentStatus === "partially_paid"
+                      ) {
+                        toast.error(
+                          "Booking này đã được thanh toán. Vui lòng làm mới trang để xem trạng thái mới nhất."
+                        );
+                        // Refresh lại dữ liệu
+                        dispatch(getMyBookingHistory(undefined));
+                        return;
+                      }
+
+                      // Nếu booking đã bị hủy hoặc không còn hợp lệ
+                      if (
+                        currentPaymentStatus === "cancelled" ||
+                        currentPaymentStatus === "refunded"
+                      ) {
+                        toast.error(
+                          "Booking này không còn hợp lệ để thanh toán."
+                        );
+                        dispatch(getMyBookingHistory(undefined));
+                        return;
+                      }
+
                       // Tạo thanh toán VNPay trực tiếp
                       const response = await api.post(
                         `/bookings/${booking._id}/payment/remaining`,
@@ -767,14 +885,20 @@ const PastTrip = () => {
                       } else {
                         toast.error("Không lấy được link thanh toán VNPay");
                       }
-                    } catch (error) {
+                    } catch (error: unknown) {
                       console.error("Error creating VNPay payment:", error);
-                      toast.error("Có lỗi khi tạo thanh toán VNPay");
+                      toast.error(
+                        "Có lỗi khi tạo thanh toán VNPay. Vui lòng thử lại."
+                      );
                     }
                   }}
                 >
                   <DollarSign size={16} />
-                  Thanh toán {outstandingAmount.toLocaleString()}₫
+                  {booking.payment_status === PaymentStatus.PENDING
+                    ? "Tiếp tục thanh toán"
+                    : outstandingAmount > 0
+                    ? `Thanh toán ${outstandingAmount.toLocaleString()}₫`
+                    : "Thanh toán"}
                 </Button>
               )}
               {showPayRemainderButton && (
@@ -840,17 +964,20 @@ const PastTrip = () => {
 
               {STATUS_UPCOMING.includes(booking.status as BookingStatus) && (
                 <>
-                  {canCancelBooking(booking) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2 text-red-600 border-red-600 hover:bg-red-50"
-                      onClick={() => handleCancelBooking(booking)}
-                    >
-                      <X size={16} />
-                      Hủy đặt phòng
-                    </Button>
-                  )}
+                  {canCancelBooking(booking) &&
+                    (booking.payment_status === PaymentStatus.PAID ||
+                      booking.payment_status ===
+                        PaymentStatus.PARTIALLY_PAID) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2 text-red-600 border-red-600 hover:bg-red-50"
+                        onClick={() => handleCancelBooking(booking)}
+                      >
+                        <X size={16} />
+                        Hủy đặt phòng
+                      </Button>
+                    )}
 
                   {(() => {
                     const propertyIdString = getPropertyIdString(
@@ -1084,6 +1211,17 @@ const PastTrip = () => {
         <div>
           {tab === "upcoming" && (
             <>
+              {(() => {
+                console.log(
+                  "Upcoming bookings:",
+                  upcomingBookings.map((b) => ({
+                    id: b._id,
+                    status: b.status,
+                    payment_status: b.payment_status,
+                  }))
+                );
+                return null;
+              })()}
               {upcomingBookings.length === 0 && ongoingBookings.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   Bạn chưa có chuyến đi nào sắp tới

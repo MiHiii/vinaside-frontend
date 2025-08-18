@@ -1,131 +1,419 @@
-
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
-import {
-  fetchBookingStatisticsOverview,
-  fetchBookingStatisticsFinancial,
-  fetchBookingStatisticsCustomers,
-} from "@/store/slices/bookingSlice";
-import BookingCharts from "./BookingCharts";
-import { Card } from "@/components/ui/card";
-// Định nghĩa lại DatePicker nội bộ (bỏ comment, đặt lại vào đầu file)
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { fetchBookingStatisticsOverview } from "@/store/slices/bookingSlice";
+import { useUserRole } from "@/hooks/useUserRole";
+import { propertyStaffAssignmentApi } from "@/services/propertyStaffAssignmentApi";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import {
+  Users,
+  DollarSign,
+  Calendar,
+  BarChart3,
+  RefreshCw,
+  Tag,
+  Package,
+  Download,
+  ArrowLeft,
+} from "lucide-react";
+import { DateRangePicker } from "@/components/admin/dasboard/DateRangePicker";
+import { useNavigate } from "react-router-dom";
+import BookingCharts from "./BookingCharts";
+import BookingDetailsModal from "./BookingDetailsModal";
+import { DateRange } from "react-day-picker";
 
-
-// Helper to safely extract revenueByMonth
-function getRevenueByMonth(statisticsFinancial: unknown): { month: string; revenue: number }[] {
-  if (
-    statisticsFinancial &&
-    typeof statisticsFinancial === 'object' &&
-    'financial' in statisticsFinancial &&
-    statisticsFinancial.financial &&
-    typeof statisticsFinancial.financial === 'object' &&
-    Array.isArray((statisticsFinancial.financial as unknown as { revenueByMonth?: unknown }).revenueByMonth)
-  ) {
-    return (statisticsFinancial.financial as { revenueByMonth: { month: string; revenue: number }[] }).revenueByMonth;
-  }
-  return [];
+interface BookingStatisticsProps {
+  onBackToList?: () => void;
 }
 
-function DatePicker({ value, onChange, label }: { value?: string; onChange: (date: string) => void; label: React.ReactNode; }) {
-  const [open, setOpen] = React.useState(false);
-  const dateValue = value ? new Date(value) : undefined;
-  return (
-    <div>
-      <label className="block text-sm font-medium mb-1">{label}</label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="w-full justify-start text-left font-normal">
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateValue ? format(dateValue, "dd/MM/yyyy") : <span className="text-gray-400">Chọn ngày</span>}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={dateValue}
-            onSelect={date => { setOpen(false); if (date) onChange(format(date, "yyyy-MM-dd")); }}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
-
-export default function BookingStatisticsAdmin() {
+export default function BookingStatisticsAdmin({
+  onBackToList,
+}: BookingStatisticsProps) {
   const dispatch = useAppDispatch();
-  const statisticsOverview = useAppSelector(state => state.booking.statisticsOverview) || {};
-  const statisticsFinancial = useAppSelector(state => state.booking.statisticsFinancial) || {};
-  const [startDate, setStartDate] = React.useState<string>("");
-  const [endDate, setEndDate] = React.useState<string>("");
+  const navigate = useNavigate();
+  const { isStaff, user } = useUserRole();
 
+  // DateRangePicker state
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    to: new Date(),
+  });
+  const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  const [dateRangeType, setDateRangeType] = useState<
+    "today" | "last_7_days" | "last_15_days" | "last_30_days" | "custom"
+  >("last_30_days");
 
-  useEffect(() => {
-    const params: { startDate?: string; endDate?: string } = {};
-    
-    dispatch(fetchBookingStatisticsOverview(params));
-    dispatch(fetchBookingStatisticsFinancial(params));
-    dispatch(fetchBookingStatisticsCustomers(params));
-  }, [dispatch]);
+  // Modal state
+  const [isBookingDetailsModalOpen, setIsBookingDetailsModalOpen] =
+    useState(false);
 
-  // PieChart trạng thái booking
-  const statusData = useMemo(() => {
-    const breakdown = (statisticsOverview.statusBreakdown ?? {}) as Record<string, number>;
-    return [
-      { name: "Chờ xác nhận", value: breakdown["pending"] ?? 0 },
-      { name: "Đã xác nhận", value: breakdown["confirmed"] ?? 0 },
-      { name: "Đã hoàn thành", value: breakdown["completed"] ?? 0 },
-      { name: "Đã huỷ", value: breakdown["cancelled"] ?? 0 },
-      { name: "Bị từ chối", value: breakdown["rejected"] ?? 0 },
-    ];
-  }, [statisticsOverview]);
+  const statisticsOverview = useAppSelector(
+    (state) => state.booking.statisticsOverview
+  );
+  const loading = useAppSelector((state) => state.booking.loading);
+  const error = useAppSelector((state) => state.booking.error);
 
-  const bookingByMonth = useMemo(() => {
-    if (
-      statisticsFinancial &&
-      typeof statisticsFinancial === 'object' &&
-      'financial' in statisticsFinancial &&
-      statisticsFinancial.financial &&
-      typeof statisticsFinancial.financial === 'object' &&
-      Array.isArray((statisticsFinancial.financial as unknown as { revenueByMonth?: unknown }).revenueByMonth)
-    ) {
-      return ((statisticsFinancial.financial as { revenueByMonth: { month: string; bookings: number }[] }).revenueByMonth).map((item) => ({
-      month: item.month,
-      bookings: item.bookings,
-    }));
+  // Fetch statistics data
+  const fetchStatisticsData = async (params: {
+    dateRange: string;
+    startDate?: string;
+    endDate?: string;
+    propertyId?: string;
+  }) => {
+    let propertyId = params.propertyId;
+
+    // For staff users, always get assigned properties
+    if (isStaff && user?._id) {
+      try {
+        const response = await propertyStaffAssignmentApi.getPropertiesByStaff(
+          user._id
+        );
+        if (response.success && response.data && response.data.length > 0) {
+          const staffPropertyIds = response.data
+            .map(
+              (item: { propertyId?: { _id: string } }) => item.propertyId?._id
+            )
+            .filter(Boolean);
+
+          if (staffPropertyIds.length > 1) {
+            propertyId = staffPropertyIds.join(",");
+          } else {
+            propertyId = staffPropertyIds[0];
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch staff properties:", error);
+      }
     }
-    return [];
-  }, [statisticsFinancial]);
 
+    const apiParams = {
+      dateRange: params.dateRange,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      propertyId: propertyId,
+    };
 
- 
+    dispatch(fetchBookingStatisticsOverview(apiParams));
+  };
+
+  // Handle date range change
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    console.log("🔄 BookingStatistics: Date range changed:", range);
+    setDateRange(range);
+
+    if (range?.from && range?.to) {
+      setDateRangeType("custom");
+      const startDate = range.from.toISOString().split("T")[0];
+      const endDate = range.to.toISOString().split("T")[0];
+
+      console.log("🔄 BookingStatistics: Fetching data for custom range:", {
+        startDate,
+        endDate,
+      });
+
+      fetchStatisticsData({
+        dateRange: "custom",
+        startDate,
+        endDate,
+      });
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchStatisticsData({
+      dateRange: "last_30_days",
+    });
+  }, [dispatch, isStaff, user?._id]);
+
+  // Handle preset date range changes
+  const handlePresetChange = (
+    presetType: "today" | "last_7_days" | "last_15_days" | "last_30_days"
+  ) => {
+    console.log("🔄 BookingStatistics: Preset changed to:", presetType);
+    setDateRangeType(presetType);
+
+    fetchStatisticsData({
+      dateRange: presetType,
+    });
+  };
+
+  // Update dateRangeType when dateRange changes
+  useEffect(() => {
+    if (dateRange?.from && dateRange?.to) {
+      const from = dateRange.from;
+      const to = dateRange.to;
+      const today = new Date();
+      const diffTime = Math.abs(to.getTime() - from.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        setDateRangeType("today");
+      } else if (diffDays === 7) {
+        setDateRangeType("last_7_days");
+      } else if (diffDays === 15) {
+        setDateRangeType("last_15_days");
+      } else if (diffDays === 30) {
+        setDateRangeType("last_30_days");
+      } else {
+        setDateRangeType("custom");
+      }
+    }
+  }, [dateRange]);
+
+  const handleRefresh = () => {
+    // Use current dateRange or default to last_30_days
+    if (dateRange?.from && dateRange?.to) {
+      fetchStatisticsData({
+        dateRange: "custom",
+        startDate: dateRange.from.toISOString().split("T")[0],
+        endDate: dateRange.to.toISOString().split("T")[0],
+      });
+    } else {
+      fetchStatisticsData({
+        dateRange: "last_30_days",
+      });
+    }
+  };
+
+  const handleVoucherClick = (voucherCode: string) => {
+    // Navigate to voucher usage page with voucher ID
+    navigate(`/admin/vouchers/${voucherCode}/usage`);
+  };
+
+  const handleServiceClick = (serviceId: string) => {
+    navigate(`/admin/services/${serviceId}/usage`);
+  };
+
+  const handleTotalBookingsClick = () => {
+    setIsBookingDetailsModalOpen(true);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <RefreshCw className="w-6 h-6 animate-spin" />
+          <span>Đang tải dữ liệu thống kê...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">
+            {typeof error === "string"
+              ? error
+              : "Có lỗi xảy ra khi tải dữ liệu"}
+          </p>
+          <Button onClick={handleRefresh}>Thử lại</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Bộ lọc ngày */}
-      <Card className="p-2 md:p-3 bg-white/80 border-none shadow-none">
-        <div className="flex flex-col md:flex-row md:items-end gap-2 md:gap-3">
-          <DatePicker value={startDate} onChange={setStartDate} label={<span className='text-xs md:text-sm'>Từ ngày</span>} />
-          <DatePicker value={endDate} onChange={setEndDate} label={<span className='text-xs md:text-sm'>Đến ngày</span>} />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {onBackToList && (
+            <Button
+              onClick={onBackToList}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 bg-white text-gray-900 border border-gray-200 hover:bg-gray-100"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Quay lại danh sách
+            </Button>
+          )}
+          <DateRangePicker
+            className="w-[280px]"
+            dateRange={dateRange}
+            onDateRangeChange={handleDateRangeChange}
+            open={dateRangeOpen}
+            onOpenChange={setDateRangeOpen}
+            useRedux={false}
+            dateRangeType={dateRangeType}
+            onPresetChange={handlePresetChange}
+          />
         </div>
-      </Card>
-
-
-      <div className="flex flex-col gap-6">
-  
-        <BookingCharts
-          statusData={statusData}
-          revenueData={getRevenueByMonth(statisticsFinancial)}
-          bookingByMonth={Array.isArray(bookingByMonth) ? bookingByMonth : []}
-        />
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => window.print()}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+          >
+            <Download className="w-4 h-4" />
+            Xuất báo cáo
+          </Button>
+        </div>
       </div>
+
+      {/* Overview Stats */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card
+          onClick={handleTotalBookingsClick}
+          className="border-0 shadow-md bg-white cursor-pointer hover:bg-gray-50"
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Tổng Booking
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">
+              {statisticsOverview?.totalBookings || 0}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">Tổng lượt đặt chỗ</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Tổng doanh thu
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">
+              {formatCurrency(statisticsOverview?.totalRevenue || 0)}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Tổng doanh thu từ bookings
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Tỉ lệ lấp đầy
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">
+              {statisticsOverview?.averageOccupancyRate || 0}%
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Tỉ lệ lấp đầy trung bình
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Tổng khách hàng
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">
+              {statisticsOverview?.totalGuests || 0}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">Tổng số khách hàng</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              Voucher sử dụng
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">
+              {statisticsOverview?.totalVouchersUsed || 0}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Tổng giảm giá:{" "}
+              {formatCurrency(statisticsOverview?.totalVoucherDiscount || 0)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Dịch vụ sử dụng
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">
+              {statisticsOverview?.totalServicesBooked || 0}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Doanh thu:{" "}
+              {formatCurrency(statisticsOverview?.totalServicesRevenue || 0)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Giá trị trung bình
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">
+              {formatCurrency(statisticsOverview?.averageBookingValue || 0)}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Giá trị booking trung bình
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Tổng đêm
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">
+              {statisticsOverview?.totalNights || 0}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">Tổng số đêm đặt</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <BookingCharts
+        statisticsOverview={statisticsOverview}
+        onVoucherClick={handleVoucherClick}
+        onServiceClick={handleServiceClick}
+      />
+
+      {/* Booking Details Modal */}
+      <BookingDetailsModal
+        isOpen={isBookingDetailsModalOpen}
+        onClose={() => setIsBookingDetailsModalOpen(false)}
+        bookingDetails={statisticsOverview?.bookingDetails || []}
+      />
     </div>
   );
 }
-
-

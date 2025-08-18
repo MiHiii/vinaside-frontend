@@ -21,22 +21,24 @@ import {
   Clock,
   RefreshCw,
   Eye,
-
+  BarChart3,
   Plus,
 } from "lucide-react";
-import { BookingStatus, PaymentStatus } from "@/types/enum";
+import BookingStatistics from "@/components/admin/booking/BookingStatistics";
 
 const BookingManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { adminBookings, adminTotal, loading, statisticsOverview } =
+  const { loading, statisticsOverview } =
     useSelector((state: RootState) => state.booking);
   const [selectedBooking, setSelectedBooking] = useState<{
     propertyId: string;
     id: string;
   } | null>(null);
   const [showFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "detail">("list");
+  const [viewMode, setViewMode] = useState<"list" | "detail" | "statistics">(
+    "list"
+  );
   const [showStaffBookingModal, setShowStaffBookingModal] = useState(false);
 
   // Fetch statistics on component mount
@@ -44,37 +46,14 @@ const BookingManagementPage: React.FC = () => {
     dispatch(fetchBookingStatisticsOverview());
   }, [dispatch]);
 
-  // Use statistics from API or fallback to calculated values
-  const totalBookings =
-    statisticsOverview?.total || adminTotal || adminBookings?.length || 0;
-  const pendingBookings =
-    adminBookings?.filter((b) => b.status === BookingStatus.PENDING).length ||
-    0;
-  const confirmedBookings =
-    adminBookings?.filter((b) => b.status === BookingStatus.CONFIRMED).length ||
-    0;
-  const cancelledBookings =
-    adminBookings?.filter((b) => b.status === BookingStatus.CANCELLED).length ||
-    0;
+  // Use statistics from API
+  const totalBookings = statisticsOverview?.totalBookings || 0;
+  const pendingBookings = statisticsOverview?.statusBreakdown?.pending || 0;
+  const confirmedBookings = statisticsOverview?.statusBreakdown?.confirmed || 0;
+  const cancelledBookings = statisticsOverview?.statusBreakdown?.cancelled || 0;
   const refundingBookings =
-    adminBookings?.filter(
-      (b) =>
-        b.status === BookingStatus.CANCELLED &&
-        b.payment_status === PaymentStatus.REFUNDING
-    ).length || 0;
-
-  const totalRevenue =
-    statisticsOverview?.revenue ||
-    adminBookings?.reduce((sum, booking) => {
-      if (
-        booking.status === BookingStatus.COMPLETED ||
-        booking.status === BookingStatus.CONFIRMED
-      ) {
-        return sum + (booking.final_amount || 0);
-      }
-      return sum;
-    }, 0) ||
-    0;
+    statisticsOverview?.paymentStatusBreakdown?.refunding || 0;
+  const totalRevenue = statisticsOverview?.totalRevenue || 0;
 
   const handleBackToList = () => {
     setSelectedBooking(null);
@@ -111,6 +90,15 @@ const BookingManagementPage: React.FC = () => {
               >
                 <Calendar className="w-4 h-4" />
                 Lịch booking
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode("statistics")}
+                className="flex items-center gap-2 bg-white text-gray-900 border border-gray-200 hover:bg-gray-100 cursor-pointer rounded-md"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Thống kê
               </Button>
               <Button
                 variant="outline"
@@ -270,33 +258,12 @@ const BookingManagementPage: React.FC = () => {
                 />
               </div>
             </div>
+          ) : viewMode === "statistics" ? (
+            <div className="min-w-0 p-6">
+              <BookingStatistics onBackToList={() => setViewMode("list")} />
+            </div>
           ) : (
             <div className="min-w-0">
-              {/* <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Danh sách Booking
-                  </h2>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Xuất báo cáo
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      Thống kê
-                    </Button>
-                  </div>
-                </div>
-              </div> */}
               {/* Giữ scroll ngang bên trong list nếu table rộng, tránh scroll ngang toàn trang */}
               <div className="overflow-x-auto">
                 <BookingList />
@@ -304,11 +271,6 @@ const BookingManagementPage: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Statistics Section */}
-        {/* <div className="mt-6 min-w-0">
-          <BookingStatistics />
-        </div> */}
       </div>
 
       <StaffBookingModal

@@ -11,6 +11,9 @@ import {
   fetchProperties,
   selectProperties,
 } from "@/store/slices/propertySlice";
+import { useUserRole } from "@/hooks/useUserRole";
+import { propertyStaffAssignmentApi } from "@/services/propertyStaffAssignmentApi";
+import { fetchBookingStatisticsOverview } from "@/store/slices/bookingSlice";
 
 interface Booking {
   _id: string;
@@ -43,6 +46,7 @@ interface CalendarData {
 export const BookingCalendarPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { isStaff, user } = useUserRole();
 
   const [filters, setFilters] = useState({
     viewType: "monthly" as const,
@@ -55,13 +59,32 @@ export const BookingCalendarPage: React.FC = () => {
 
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [staffProperties, setStaffProperties] = useState<any[]>([]);
+
+  // Get statistics data from Redux store
+  const statisticsOverview = useAppSelector(
+    (state) => state.booking.statisticsOverview
+  );
+  const statisticsLoading = useAppSelector((state) => state.booking.loading);
 
   // Lấy properties từ Redux store
   const propertiesFromStore = useAppSelector(selectProperties);
-  const properties = propertiesFromStore.map((property) => ({
-    _id: property._id || property.id,
-    name: property.name,
-  }));
+
+  // Lọc properties cho staff
+  const properties = React.useMemo(() => {
+    if (isStaff) {
+      return staffProperties
+        .map((property) => ({
+          _id: property.propertyId?._id || property.propertyId?.id,
+          name: property.propertyId?.name,
+        }))
+        .filter(Boolean);
+    }
+    return propertiesFromStore.map((property) => ({
+      _id: property._id || property.id,
+      name: property.name,
+    }));
+  }, [isStaff, staffProperties, propertiesFromStore]);
 
   const fetchCalendarData = useCallback(async () => {
     setLoading(true);
@@ -75,14 +98,34 @@ export const BookingCalendarPage: React.FC = () => {
         .toISOString()
         .split("T")[0];
 
+      let propertyId = filters.propertyId;
+
+      // For staff users, always get assigned properties
+      if (isStaff && user?._id) {
+        if (filters.propertyId === "all" && staffProperties.length > 0) {
+          const staffPropertyIds = staffProperties
+            .map(
+              (item: { propertyId?: { _id: string } }) => item.propertyId?._id
+            )
+            .filter(Boolean);
+
+          if (staffPropertyIds.length > 1) {
+            propertyId = staffPropertyIds.join(",");
+          } else {
+            propertyId = staffPropertyIds[0] || "all";
+          }
+        }
+      }
+
       const params: CalendarQueryParams = {
         viewType: filters.viewType,
         startDate,
         endDate,
-        propertyId: filters.propertyId || undefined,
-        listingId: filters.listingId || undefined,
-        status: filters.status || undefined,
-        payment_status: filters.paymentStatus || undefined,
+        propertyId: propertyId === "all" ? undefined : propertyId,
+        listingId: filters.listingId === "all" ? undefined : filters.listingId,
+        status: filters.status === "all" ? undefined : filters.status,
+        payment_status:
+          filters.paymentStatus === "all" ? undefined : filters.paymentStatus,
         search: filters.search || undefined,
       };
 
@@ -93,24 +136,121 @@ export const BookingCalendarPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, isStaff, user?._id, staffProperties]);
+
+  // Fetch staff properties
+  useEffect(() => {
+    const fetchStaffProperties = async () => {
+      if (isStaff && user?._id) {
+        try {
+          const response =
+            await propertyStaffAssignmentApi.getPropertiesByStaff(user._id);
+          if (response.success && response.data) {
+            setStaffProperties(response.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch staff properties:", error);
+        }
+      }
+    };
+
+    fetchStaffProperties();
+  }, [isStaff, user?._id]);
+
+  // Fetch statistics data
+  useEffect(() => {
+    const fetchStatisticsData = async () => {
+      let propertyId = filters.propertyId;
+
+      // For staff users, always get assigned properties
+      if (isStaff && user?._id) {
+        try {
+          const response =
+            await propertyStaffAssignmentApi.getPropertiesByStaff(user._id);
+          if (response.success && response.data && response.data.length > 0) {
+            const staffPropertyIds = response.data
+              .map(
+                (item: { propertyId?: { _id: string } }) => item.propertyId?._id
+              )
+              .filter(Boolean);
+
+            if (staffPropertyIds.length > 1) {
+              propertyId = staffPropertyIds.join(",");
+            } else {
+              propertyId = staffPropertyIds[0];
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch staff properties:", error);
+        }
+      }
+
+      const params = {
+        dateRange: "last_30_days",
+        propertyId: propertyId === "all" ? undefined : propertyId,
+      };
+
+      dispatch(fetchBookingStatisticsOverview(params));
+    };
+
+    fetchStatisticsData();
+  }, [dispatch, isStaff, user?._id, filters.propertyId]);
 
   // Fetch properties và calendar data
   useEffect(() => {
-    // Fetch properties nếu chưa có
-    if (propertiesFromStore.length === 0) {
+    // Fetch properties nếu chưa có và không phải staff
+    if (propertiesFromStore.length === 0 && !isStaff) {
       dispatch(fetchProperties({ limit: 100 }));
     }
 
     fetchCalendarData();
-  }, [filters, dispatch, propertiesFromStore.length, fetchCalendarData]);
+  }, [
+    filters,
+    dispatch,
+    propertiesFromStore.length,
+    fetchCalendarData,
+    isStaff,
+  ]);
 
   const handleDayClick = (_date: string) => {
     // TODO: Open day detail modal or navigate to day view
   };
 
   const handleBookingClick = (bookingId: string, propertyId: string) => {
-    navigate(`/admin/bookings/${propertyId}/${bookingId}`);
+    // Nếu propertyId là "all" hoặc "unknown", sử dụng propertyId đầu tiên từ staff properties
+    let finalPropertyId = propertyId;
+
+    if (
+      (!propertyId || propertyId === "unknown" || propertyId === "all") &&
+      isStaff &&
+      staffProperties.length > 0
+    ) {
+      const firstProperty = staffProperties[0];
+      finalPropertyId =
+        firstProperty.propertyId?._id || firstProperty.propertyId?.id;
+    }
+
+    // Nếu vẫn không có propertyId hợp lệ và không phải staff, sử dụng propertyId đầu tiên từ properties
+    if (
+      (!finalPropertyId ||
+        finalPropertyId === "unknown" ||
+        finalPropertyId === "all") &&
+      !isStaff &&
+      properties.length > 0
+    ) {
+      finalPropertyId = properties[0]._id;
+    }
+
+    if (
+      !finalPropertyId ||
+      finalPropertyId === "unknown" ||
+      finalPropertyId === "all"
+    ) {
+      console.error("Cannot navigate: No valid propertyId found");
+      return;
+    }
+
+    navigate(`/admin/bookings/${finalPropertyId}/${bookingId}`);
   };
 
   const handleFiltersChange = (newFilters: typeof filters) => {
@@ -135,7 +275,9 @@ export const BookingCalendarPage: React.FC = () => {
                   Tổng Booking
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {calendarData?.totalBookings || 0}
+                  {statisticsLoading
+                    ? "..."
+                    : statisticsOverview?.totalBookings || 0}
                 </p>
               </div>
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -151,7 +293,11 @@ export const BookingCalendarPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Doanh thu</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {calendarData?.totalRevenue?.toLocaleString("vi-VN") || 0}đ
+                  {statisticsLoading
+                    ? "..."
+                    : (statisticsOverview?.totalRevenue || 0).toLocaleString(
+                        "vi-VN"
+                      ) + "đ"}
                 </p>
               </div>
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -169,7 +315,9 @@ export const BookingCalendarPage: React.FC = () => {
                   Tỷ lệ lấp đầy
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {((calendarData?.averageOccupancy || 0) * 100).toFixed(1)}%
+                  {statisticsLoading
+                    ? "..."
+                    : (statisticsOverview?.averageOccupancyRate || 0) + "%"}
                 </p>
               </div>
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">

@@ -55,7 +55,8 @@ interface PropertyState {
   propertyRoomsListError: string | null;
   // Property locations state
   propertyLocations: Array<{
-    id: string;
+    _id?: string;
+    id?: string;
     name: string;
     type: string;
     location: {
@@ -268,12 +269,7 @@ export const uploadPropertyImages = createAsyncThunk<
   try {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
-    for (const pair of formData.entries()) {
-      console.log("FormData:", pair[0], pair[1]);
-    }
-    // Truyền trực tiếp formData vào api.post, không truyền object
     const response = await api.post("/upload/multiple", formData);
-    // Sửa: lấy đúng mảng urls từ response.data.data.urls
     return response.data.data.urls;
   } catch (error) {
     return rejectWithValue(getErrorMessage(error));
@@ -538,7 +534,8 @@ export const fetchPropertyRoomsList = createAsyncThunk<
 // Thunk lấy danh sách địa điểm properties
 export const fetchPropertyLocations = createAsyncThunk<
   Array<{
-    id: string;
+    _id?: string;
+    id?: string;
     name: string;
     type: string;
     location: {
