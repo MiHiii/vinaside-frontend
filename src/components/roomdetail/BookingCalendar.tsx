@@ -133,7 +133,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       {dateOpen && (
         <div
           ref={popoverRef}
-          className="absolute left-0 top-full z-10 w-auto p-6 bg-white text-gray-900 shadow-lg rounded-xl border-0 -translate-x-60 mt-1"
+          className="absolute left-0 top-full z-10 w-auto p-6 bg-white text-gray-900 shadow-lg rounded-xl border-0 -translate-x-18 mt-1"
         >
           <Calendar
             mode="range"

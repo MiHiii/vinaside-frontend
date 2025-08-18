@@ -7,13 +7,12 @@ import {
   fetchAdminBookings,
   fetchBookingStatisticsOverview,
 } from "@/store/slices/bookingSlice";
-import BookingStatistics from "@/components/admin/booking/BookingStatistics";
 import BookingList from "@/components/admin/booking/BookingList";
 import BookingDetail from "@/components/admin/booking/BookingDetail";
 import BookingFilter from "@/components/admin/booking/BookingFilter";
 import StaffBookingModal from "@/components/admin/booking/StaffBookingModal";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Calendar,
   TrendingUp,
@@ -21,10 +20,8 @@ import {
   XCircle,
   Clock,
   RefreshCw,
-  Filter,
-  Download,
   Eye,
-  BarChart3,
+
   Plus,
 } from "lucide-react";
 import { BookingStatus, PaymentStatus } from "@/types/enum";
@@ -38,7 +35,7 @@ const BookingManagementPage: React.FC = () => {
     propertyId: string;
     id: string;
   } | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "detail">("list");
   const [showStaffBookingModal, setShowStaffBookingModal] = useState(false);
 
