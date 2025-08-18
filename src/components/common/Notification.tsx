@@ -98,12 +98,31 @@ export default function Notification({
   const navigate = useNavigate();
 
   const handleNotificationClickToast = (notification: Notification) => {
+    // Debug: log toast notification
+    console.log("=== TOAST NOTIFICATION DEBUG ===");
+    console.log("Toast notification:", notification);
+    console.log("Toast metadata:", notification.metadata);
+
     if (notification.type === "message") {
       navigate(isAdmin ? "/admin/messages" : "/messages");
     } else if (notification.type === "booking") {
-      // Nếu là admin hoặc staff thì chuyển đến trang quản lý booking
+      // Nếu là admin hoặc staff thì chuyển đến trang chi tiết booking
       if (userRole === "admin" || userRole === "staff") {
-        navigate("/admin/bookings");
+        // Kiểm tra xem có metadata với bookingId và propertyId không
+        if (
+          notification.metadata?.bookingId &&
+          notification.metadata?.propertyId
+        ) {
+          const url = `/admin/bookings/${notification.metadata.propertyId}/${notification.metadata.bookingId}`;
+          console.log("✅ Toast navigating to booking detail:", url);
+          navigate(url);
+        } else {
+          // Fallback về trang quản lý booking nếu không có metadata
+          console.log(
+            "❌ Toast no metadata found, navigating to /admin/bookings"
+          );
+          navigate("/admin/bookings");
+        }
       }
     } else if (notification.type === "review") {
       navigate("/profilepage");
@@ -225,6 +244,15 @@ export default function Notification({
   // Xử lý click vào notification
   const handleNotificationClick = useCallback(
     (notification: Notification) => {
+      // Debug: log notification khi click
+      console.log("=== CLICK NOTIFICATION DEBUG ===");
+      console.log("Full notification:", notification);
+      console.log("Notification type:", notification.type);
+      console.log("User role:", userRole);
+      console.log("Metadata:", notification.metadata);
+      console.log("bookingId:", notification.metadata?.bookingId);
+      console.log("propertyId:", notification.metadata?.propertyId);
+
       // Đánh dấu đã đọc
       markNotificationAsRead(notification.id);
       // Ẩn popup
@@ -233,10 +261,23 @@ export default function Notification({
       if (notification.type === "message") {
         navigate("/messages");
       } else if (notification.type === "booking") {
-        // Nếu là admin hoặc staff thì chuyển đến trang quản lý booking
+        // Nếu là admin hoặc staff thì chuyển đến trang chi tiết booking
         if (userRole === "admin" || userRole === "staff") {
-          navigate("/admin/bookings");
+          // Kiểm tra xem có metadata với bookingId và propertyId không
+          if (
+            notification.metadata?.bookingId &&
+            notification.metadata?.propertyId
+          ) {
+            const url = `/admin/bookings/${notification.metadata.propertyId}/${notification.metadata.bookingId}`;
+            console.log("✅ Navigating to booking detail:", url);
+            navigate(url);
+          } else {
+            // Fallback về trang quản lý booking nếu không có metadata
+            console.log("❌ No metadata found, navigating to /admin/bookings");
+            navigate("/admin/bookings");
+          }
         } else {
+          console.log("User is not admin/staff, navigating to /past-trip");
           navigate("/past-trip");
         }
       } else if (notification.type === "review") {
@@ -245,6 +286,7 @@ export default function Notification({
         navigate("/");
       } else {
         // Dự phòng: các type khác có thể mở modal chi tiết hoặc log
+        console.log("Unknown notification type:", notification.type);
       }
     },
     [navigate, markNotificationAsRead, userRole]

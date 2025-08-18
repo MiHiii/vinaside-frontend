@@ -70,6 +70,13 @@ class SocketService {
   }) => void)[] = [];
   private notificationHandlers: ((notification: NotificationData) => void)[] =
     [];
+  private conversationUpdateHandlers: ((data: {
+    otherUserId?: string;
+    unreadCount?: number;
+    unreadCounts?: Record<string, number>;
+    lastMessageAt?: string;
+    lastMessage?: any;
+  }) => void)[] = [];
   private userId: string | null = null;
   private connectionAttempts: number = 0;
   private maxConnectionAttempts: number = 5;
@@ -191,6 +198,24 @@ class SocketService {
     this.socket.on("message_recalled", (data) => {
       this.messageRecallHandlers.forEach((handler) => handler(data));
     });
+
+    // Conversation-level updates (unread counts, last message time, etc.)
+    this.socket.on(
+      "conversation_update",
+      (data: {
+        otherUserId?: string;
+        unreadCount?: number;
+        unreadCounts?: Record<string, number>;
+        lastMessageAt?: string;
+        lastMessage?: any;
+      }) => {
+        try {
+          this.conversationUpdateHandlers.forEach((handler) => handler(data));
+        } catch (error) {
+          console.error("Error processing conversation_update:", error);
+        }
+      }
+    );
 
     this.socket.on(
       "user_online",
@@ -416,6 +441,23 @@ class SocketService {
     return () => {
       this.notificationHandlersV2 = this.notificationHandlersV2.filter(
         (h) => h !== handler
+      );
+    };
+  }
+
+  onConversationUpdate(
+    callback: (data: {
+      otherUserId?: string;
+      unreadCount?: number;
+      unreadCounts?: Record<string, number>;
+      lastMessageAt?: string;
+      lastMessage?: any;
+    }) => void
+  ): () => void {
+    this.conversationUpdateHandlers.push(callback);
+    return () => {
+      this.conversationUpdateHandlers = this.conversationUpdateHandlers.filter(
+        (h) => h !== callback
       );
     };
   }

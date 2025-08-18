@@ -37,6 +37,7 @@ interface Conversation {
   participants: string[];
   lastMessage?: Message;
   unreadCount: number;
+  lastMessageAt?: string;
 }
 
 interface StaffMember {
@@ -253,8 +254,9 @@ export const useMessages = () => {
           updatedConversations[idx] = {
             ...updatedConversations[idx],
             lastMessage: normalizedMessage,
-            unreadCount: unreadCounts[normalizedMessage.senderId] || 0,
-          };
+            lastMessageAt: normalizedMessage.createdAt,
+            // Keep backend-provided unreadCount; don't recompute here for sidebar
+          } as Conversation;
         } else {
           const initialUnreadCount =
             normalizedMessage.receiverId === myId &&
@@ -267,11 +269,25 @@ export const useMessages = () => {
               normalizedMessage.receiverId,
             ],
             lastMessage: normalizedMessage,
+            lastMessageAt: normalizedMessage.createdAt,
             unreadCount: initialUnreadCount,
-          });
+          } as Conversation);
         }
 
-        return updatedConversations;
+        // Sort conversations by lastMessageAt desc
+        return updatedConversations.sort((a: any, b: any) => {
+          const at = a?.lastMessageAt
+            ? new Date(a.lastMessageAt).getTime()
+            : a?.lastMessage?.createdAt
+            ? new Date(a.lastMessage.createdAt).getTime()
+            : 0;
+          const bt = b?.lastMessageAt
+            ? new Date(b.lastMessageAt).getTime()
+            : b?.lastMessage?.createdAt
+            ? new Date(b.lastMessage.createdAt).getTime()
+            : 0;
+          return bt - at;
+        });
       });
 
       // Update messages if in current chat
@@ -339,6 +355,53 @@ export const useMessages = () => {
     }
 
     const unsubscribe = socketService.onNewMessage(handleNewMessage);
+
+    // Listen for conversation-level updates to reflect unreadCount and lastMessageAt
+    const unsubscribeConversationUpdate = socketService.onConversationUpdate(
+      (data) => {
+        const otherUserId = data.otherUserId;
+        setConversations((prev) => {
+          const list = Array.isArray(prev) ? [...prev] : [];
+          const idx = list.findIndex(
+            (c) =>
+              c &&
+              Array.isArray(c.participants) &&
+              otherUserId &&
+              c.participants.includes(otherUserId)
+          );
+          if (idx === -1) return list;
+          const current = list[idx];
+          const unreadForMe =
+            data.unreadCounts && myId
+              ? data.unreadCounts[myId]
+              : data.unreadCount;
+          const updated = {
+            ...current,
+            unreadCount:
+              typeof unreadForMe === "number"
+                ? unreadForMe
+                : current.unreadCount,
+            lastMessageAt: data.lastMessageAt || current.lastMessageAt,
+            lastMessage: data.lastMessage || current.lastMessage,
+          } as Conversation;
+          list[idx] = updated;
+          // Re-sort by lastMessageAt desc
+          return list.sort((a: any, b: any) => {
+            const at = a?.lastMessageAt
+              ? new Date(a.lastMessageAt).getTime()
+              : a?.lastMessage?.createdAt
+              ? new Date(a.lastMessage.createdAt).getTime()
+              : 0;
+            const bt = b?.lastMessageAt
+              ? new Date(b.lastMessageAt).getTime()
+              : b?.lastMessage?.createdAt
+              ? new Date(b.lastMessage.createdAt).getTime()
+              : 0;
+            return bt - at;
+          });
+        });
+      }
+    );
 
     // Listen for reaction updates
     const unsubscribeReactions = socketService.onReactionUpdate((data) => {
@@ -410,6 +473,7 @@ export const useMessages = () => {
 
     return () => {
       unsubscribe();
+      unsubscribeConversationUpdate();
       unsubscribeReactions();
       unsubscribeMessageRecall();
       clearTimeout(connectionCheckTimeout);
@@ -422,121 +486,57 @@ export const useMessages = () => {
     const fetchInitialData = async () => {
       try {
         setIsLoadingConversations(true);
-        const [usersRes, conversationsRes] = await Promise.all([
-          chatService.getUsers(),
-          chatService.getConversations(),
-        ]);
 
-        // Handle users data
-        let processedUsers = [];
-        if (usersRes?.success && Array.isArray(usersRes.data)) {
-          processedUsers = usersRes.data;
-        } else if (usersRes?.data && Array.isArray(usersRes.data)) {
-          processedUsers = usersRes.data;
-        } else if (usersRes?.data && typeof usersRes.data === "object") {
-          const usersObject = usersRes.data;
-          const numericKeys = Object.keys(usersObject).filter(
-            (key) => !isNaN(Number(key))
-          );
-          processedUsers = numericKeys.map(
-            (key) => usersObject[key as keyof typeof usersObject]
-          );
-        } else {
-          const fallbackUsers = usersRes?.data || usersRes || [];
-          processedUsers = Array.isArray(fallbackUsers) ? fallbackUsers : [];
-        }
+        // Only use conversations API
+        const conversationList =
+          (await chatService.getConversations()) as unknown as Conversation[];
 
-        // Handle conversations data and fetch last messages
-        let processedConversations: Conversation[] = [];
-        const conversationsData = conversationsRes as unknown as {
-          success?: boolean;
-          data?: Record<string, unknown>;
-        };
+        // Build users list from conversations cache and keep the same order as conversations
+        const cachedUsers = chatService.getConversationUsers();
+        const userById: Record<string, any> = {};
+        cachedUsers.forEach((u) => {
+          if (u && u._id) userById[u._id] = u;
+        });
 
-        if (
-          conversationsData?.success &&
-          conversationsData.data &&
-          typeof conversationsData.data === "object"
-        ) {
-          const conversationsObject = conversationsData.data;
-          const numericKeys = Object.keys(conversationsObject).filter(
-            (key) => !isNaN(Number(key))
-          );
+        const derivedUsers = (conversationList || []).map(
+          (conv: Conversation) => {
+            const otherUserId = (conv.participants || []).find(
+              (pid: string) => pid !== myId
+            );
+            const cached = otherUserId ? userById[otherUserId] : undefined;
+            return (
+              cached || {
+                _id: otherUserId,
+                name: otherUserId ? `User ${otherUserId}` : "Unknown",
+                avatar_url: "/placeholder.svg",
+              }
+            );
+          }
+        );
 
-          // Fetch last messages for each conversation
-          const conversationPromises = numericKeys.map(async (key) => {
-            const conv = conversationsObject[key] as {
-              _id: string;
-              lastMessage?: {
-                _id: string;
-                sender_id: string;
-                receiver_id: string;
-                content: string;
-                sent_at: string;
-                createdAt?: string;
-                is_read: string;
-              };
-              unreadCount?: number;
-            };
-
-            try {
-              // Fetch the last message for this conversation using the conversation API
-              const lastMessage = await chatService.getLastMessage(conv._id);
-
-              return {
-                participants: lastMessage
-                  ? [lastMessage.senderId, lastMessage.receiverId].filter(
-                      Boolean
-                    )
-                  : [myId, conv._id].filter(Boolean),
-                lastMessage: lastMessage || undefined,
-                unreadCount: conv.unreadCount || 0,
-              };
-            } catch (error) {
-              console.error(
-                `Error fetching last message for conversation ${conv._id}:`,
-                error
-              );
-              // Fallback to original data if API call fails
-              return {
-                participants: conv.lastMessage
-                  ? [
-                      conv.lastMessage.sender_id,
-                      conv.lastMessage.receiver_id,
-                    ].filter(Boolean)
-                  : [myId, conv._id].filter(Boolean),
-                lastMessage: conv.lastMessage
-                  ? {
-                      id: conv.lastMessage._id,
-                      content: conv.lastMessage.content,
-                      senderId: conv.lastMessage.sender_id,
-                      receiverId: conv.lastMessage.receiver_id,
-                      conversationId: "",
-                      createdAt:
-                        conv.lastMessage.sent_at ||
-                        conv.lastMessage.createdAt ||
-                        new Date().toISOString(),
-                      isRead: conv.lastMessage.is_read === "read",
-                    }
-                  : undefined,
-                unreadCount: conv.unreadCount || 0,
-              };
-            }
+        setUsers(derivedUsers as unknown as User[]);
+        // Ensure each conversation includes myId and compute lastMessageAt, then sort desc
+        const fixedConversations = (conversationList || [])
+          .map((c: Conversation) => ({
+            ...c,
+            participants: Array.from(
+              new Set([
+                ...((c.participants || []) as string[]),
+                ...(myId ? [myId] : []),
+              ])
+            ),
+            lastMessageAt: c.lastMessage?.createdAt || c.lastMessageAt || "",
+          }))
+          .sort((a, b) => {
+            const at = a.lastMessageAt
+              ? new Date(a.lastMessageAt).getTime()
+              : 0;
+            const bt = b.lastMessageAt
+              ? new Date(b.lastMessageAt).getTime()
+              : 0;
+            return bt - at;
           });
-
-          // Wait for all conversation data to be fetched
-          processedConversations = await Promise.all(conversationPromises);
-        } else {
-          const conversations = Array.isArray(conversationsRes)
-            ? conversationsRes
-            : (conversationsRes as unknown as { data?: unknown })?.data || [];
-          processedConversations = Array.isArray(conversations)
-            ? (conversations as unknown as Conversation[])
-            : [];
-        }
-
-        setUsers(processedUsers as unknown as User[]);
-        setConversations(processedConversations);
+        setConversations(fixedConversations as unknown as Conversation[]);
       } catch (err) {
         console.error("❌ Error fetching initial data:", err);
         const error = err as { response?: { data?: unknown; status?: number } };
@@ -712,16 +712,31 @@ export const useMessages = () => {
               updatedConversations[conversationIndex] = {
                 ...updatedConversations[conversationIndex],
                 lastMessage: newMessage,
-              };
+                lastMessageAt: newMessage.createdAt,
+              } as Conversation;
             }
           } else {
             updatedConversations.unshift({
               participants: [myId, selectedUser.id],
               lastMessage: newMessage,
+              lastMessageAt: newMessage.createdAt,
               unreadCount: 0,
-            });
+            } as Conversation);
           }
-          return updatedConversations;
+          // Sort by lastMessageAt desc for sidebar ordering
+          return updatedConversations.sort((a: any, b: any) => {
+            const at = a?.lastMessageAt
+              ? new Date(a.lastMessageAt).getTime()
+              : a?.lastMessage?.createdAt
+              ? new Date(a.lastMessage.createdAt).getTime()
+              : 0;
+            const bt = b?.lastMessageAt
+              ? new Date(b.lastMessageAt).getTime()
+              : b?.lastMessage?.createdAt
+              ? new Date(b.lastMessage.createdAt).getTime()
+              : 0;
+            return bt - at;
+          });
         });
       } catch (error) {
         console.error("Error sending message:", error);
@@ -912,6 +927,40 @@ export const useMessages = () => {
     }
   };
 
+  // Mark current conversation as read when focusing the input
+  const handleInputFocus = async () => {
+    try {
+      if (!selectedUser || !myId) return;
+      const otherUserId = selectedUser.id;
+
+      // Optimistically clear unread badge in sidebar
+      setConversations((prev) => {
+        if (!Array.isArray(prev)) return [];
+        const updated = prev.map((c) => {
+          if (
+            c &&
+            Array.isArray(c.participants) &&
+            c.participants.includes(myId) &&
+            c.participants.includes(otherUserId)
+          ) {
+            return { ...c, unreadCount: 0 } as Conversation;
+          }
+          return c;
+        });
+        return updated;
+      });
+
+      // Clear per-user unread map
+      setUnreadCounts((prev) => ({ ...prev, [otherUserId]: 0 }));
+
+      // Notify backend
+      await chatService.markConversationAsRead(otherUserId, myId);
+    } catch (error) {
+      // Silent fail; UI already updated optimistically
+      console.warn("handleInputFocus markConversationAsRead error:", error);
+    }
+  };
+
   return {
     // States
     messageInput,
@@ -952,6 +1001,7 @@ export const useMessages = () => {
     handleCancelReply,
     handleDeleteMessage,
     handleLoadMoreMessages,
+    handleInputFocus,
     setPropertyId,
 
     // Utilities
