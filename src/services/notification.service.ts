@@ -84,19 +84,19 @@ export interface NotificationRaw {
 }
 
 const notificationService = {
-  async getNotifications(params?: NotificationQuery) {
+  async getNotifications(params?: NotificationQuery): Promise<Notification[]> {
     const res = await api.get("/notifications", { params });
     const notifications: NotificationRaw[] = res.data.data?.notifications || [];
     // Chuẩn hóa dữ liệu cho UI
-    return notifications.map((n) => {
+    return notifications.map<Notification>((n) => {
       // Debug: log raw notification để kiểm tra
       console.log("Raw notification:", n);
       console.log("Raw metadata:", n.metadata);
 
       // Xử lý metadata để chuẩn hóa ObjectId và Date
-      let normalizedMetadata = undefined;
+      let normalizedMetadata: Notification["metadata"] | undefined = undefined;
       if (n.metadata) {
-        normalizedMetadata = {
+        const meta = {
           ...n.metadata,
           // Xử lý bookingId
           bookingId:
@@ -128,7 +128,8 @@ const notificationService = {
             n.metadata.checkOutDate?.$date
               ? n.metadata.checkOutDate.$date
               : n.metadata.checkOutDate,
-        };
+        } as Notification["metadata"]; // cast to normalized metadata type
+        normalizedMetadata = meta;
       }
 
       return {
@@ -140,7 +141,6 @@ const notificationService = {
         isRead: n.is_read,
         avatar: n.avatar || undefined,
         metadata: normalizedMetadata,
-        _id: n._id, // giữ lại _id để dùng khi gọi API nếu cần
       };
     });
   },
