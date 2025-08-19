@@ -54,7 +54,7 @@ import { toast } from "sonner";
 import { api } from "@/services/api";
 import { format } from "date-fns";
 import BookingCalendar from "@/components/roomdetail/BookingCalendar";
-import { useVouchers } from "@/hooks/useVouchers";
+
 
 interface Property {
   _id: string;
@@ -128,7 +128,6 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { vouchers, getVouchers } = useVouchers();
   
   const [formData, setFormData] = useState<StaffCreateBookingForm>({
     propertyId: "",
@@ -158,6 +157,14 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
   const [listings, setListings] = useState<Listing[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [validVouchers, setValidVouchers] = useState<Array<{
+    _id: string;
+    code: string;
+    discount_percent: number;
+    is_active: boolean;
+    isDeleted?: boolean;
+    description?: string;
+  }>>([]);
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
@@ -176,10 +183,10 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadInitialData();
-      getVouchers(); // Load vouchers from backend
+      loadVouchersForStaff(); // Load vouchers using public API
       resetForm();
     }
-  }, [isOpen, getVouchers]);
+  }, [isOpen]);
 
   // Update formData when calendar dates change
   useEffect(() => {
@@ -250,7 +257,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
       // Calculate voucher discount
       let voucherDiscount = 0;
       if (formData.voucherCode) {
-        const selectedVoucher = vouchers.find(v => v.code === formData.voucherCode);
+        const selectedVoucher = validVouchers.find(v => v.code === formData.voucherCode);
         if (selectedVoucher && selectedVoucher.is_active) {
           voucherDiscount = subtotalBeforeDiscount * (selectedVoucher.discount_percent / 100);
         }
@@ -274,19 +281,39 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
     formData.price_per_night,
     formData.voucherCode,
     services,
-    vouchers,
+    validVouchers,
   ]);
 
   const loadBookedDates = async () => {
     try {
       const res = await api.get(
-        `/bookings/listing/${formData.listingId}/booked-dates`
+        `/bookings/booked-dates/${formData.listingId}`
       );
       const dates = res.data.data || [];
       setBookedDates(dates.map((dateStr: string) => new Date(dateStr)));
     } catch (error) {
       console.error("Error loading booked dates:", error);
       setBookedDates([]);
+    }
+  };
+
+  // Load vouchers using valid/public API for staff
+  const loadVouchersForStaff = async () => {
+    try {
+      const response = await api.get("/vouchers/valid");
+      console.log("Valid vouchers response:", response);
+      
+      if (response.data && response.data.data && response.data.data.data) {
+        setValidVouchers(response.data.data.data);
+        console.log("Valid vouchers loaded:", response.data.data.data);
+      } else if (response.data && response.data.data) {
+        setValidVouchers(response.data.data);
+        console.log("Valid vouchers loaded:", response.data.data);
+      }
+    } catch (error) {
+      console.error("Error loading valid vouchers:", error);
+      setValidVouchers([]);
+      // Fallback: continue without vouchers
     }
   };
 
@@ -339,40 +366,10 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
       setProperties(propertiesData);
       console.log("Final properties data set:", propertiesData);
 
-      // Load guests
-      const guestsRes = await api.get("/users?role=guest");
-      console.log("Guests API response:", guestsRes);
-      console.log("Guests response.data:", guestsRes.data);
-      console.log("Guests response.data.data:", guestsRes.data.data);
-
-      // Parse dữ liệu guests
-      let guestsData = [];
-      if (
-        guestsRes.data &&
-        guestsRes.data.data &&
-        guestsRes.data.data.data &&
-        Array.isArray(guestsRes.data.data.data)
-      ) {
-        guestsData = guestsRes.data.data.data;
-        console.log("Using guestsRes.data.data.data:", guestsData);
-      } else if (
-        guestsRes.data &&
-        guestsRes.data.data &&
-        Array.isArray(guestsRes.data.data)
-      ) {
-        guestsData = guestsRes.data.data;
-        console.log("Using guestsRes.data.data:", guestsData);
-      } else if (Array.isArray(guestsRes.data)) {
-        guestsData = guestsRes.data;
-        console.log("Using guestsRes.data");
-      } else {
-        console.log("Không tìm thấy mảng guests trong response");
-        guestsData = [];
-      }
-
-      setGuests(guestsData);
-      console.log("Final guests data set:", guestsData);
-      console.log("Sample guest:", guestsData[0]);
+      // For staff, we'll skip loading guests list from API and only allow manual input
+      // This avoids the 403 permission issue with /users?role=guest endpoint
+      console.log("Skipping guests loading for staff - manual input only");
+      setGuests([]);
 
       // Load services
       const servicesRes = await api.get("/services/active");
@@ -1313,8 +1310,8 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       <SelectItem value="none" className="rounded-lg py-3 px-4 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-gray-100 data-[state=checked]:text-gray-800">
                         Không sử dụng voucher
                       </SelectItem>
-                      {Array.isArray(vouchers) &&
-                        vouchers
+                      {Array.isArray(validVouchers) &&
+                        validVouchers
                           .filter(voucher => voucher.is_active && !voucher.isDeleted)
                           .map((voucher) => (
                             <SelectItem key={voucher._id} value={voucher.code} className="rounded-lg py-3 px-4 hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-purple-100 data-[state=checked]:text-purple-800">
@@ -1448,7 +1445,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                     )}
                     
                     {formData.voucherCode && (() => {
-                      const selectedVoucher = vouchers.find(v => v.code === formData.voucherCode);
+                      const selectedVoucher = validVouchers.find(v => v.code === formData.voucherCode);
                       const discountAmount = selectedVoucher ? 
                         ((calculatedPrice / 1.18) * (selectedVoucher.discount_percent / 100)) : 0;
                       
