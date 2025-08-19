@@ -13,12 +13,13 @@ import { Search, Filter } from "lucide-react";
 
 interface CalendarFilterProps {
   filters: {
-    viewType: "monthly" | "weekly" | "daily";
+    viewType: "month" | "week" | "day" | "today";
     propertyId: string;
     listingId: string;
     status: string;
     paymentStatus: string;
-    search: string;
+    keyword: string;
+    searchType?: "keyword" | "guestName" | "listingTitle" | "propertyName";
   };
   onFiltersChange: (filters: any) => void;
   properties?: Array<{ _id: string; name: string }>;
@@ -40,6 +41,14 @@ export const CalendarFilter: React.FC<CalendarFilterProps> = ({
     });
   };
 
+  // Local keyword state to apply only when pressing the Search button
+  const [pendingKeyword, setPendingKeyword] = React.useState(
+    filters.keyword || ""
+  );
+  React.useEffect(() => {
+    setPendingKeyword(filters.keyword || "");
+  }, [filters.keyword]);
+
   return (
     <Card className="mb-6 bg-white border border-gray-200 shadow-sm">
       <div className="p-4">
@@ -48,31 +57,31 @@ export const CalendarFilter: React.FC<CalendarFilterProps> = ({
           <h3 className="text-lg font-medium text-gray-900">Bộ lọc</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex flex-wrap gap-6 items-center">
           {/* View Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Chế độ xem
             </label>
             <Select
               value={filters.viewType}
               onValueChange={(value) => handleFilterChange("viewType", value)}
             >
-              <SelectTrigger className="border-gray-300">
+              <SelectTrigger className="border-gray-300 w-40">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Tháng</SelectItem>
-                <SelectItem value="weekly">Tuần</SelectItem>
-                <SelectItem value="daily">Ngày</SelectItem>
+              <SelectContent className="max-w-2xl bg-white border border-gray-300 rounded-md">
+                <SelectItem value="today">Hôm nay</SelectItem>
+                <SelectItem value="week">Tuần</SelectItem>
+                <SelectItem value="month">Tháng</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Property Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Property
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Homestay
             </label>
             <Select
               value={filters.propertyId || "all"}
@@ -81,8 +90,8 @@ export const CalendarFilter: React.FC<CalendarFilterProps> = ({
               <SelectTrigger className="border-gray-300">
                 <SelectValue placeholder="Tất cả properties" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả properties</SelectItem>
+              <SelectContent className="max-w-2xl bg-white border border-gray-300 rounded-md">
+                <SelectItem value="all">Tất cả homestay</SelectItem>
                 {properties.map((property) => (
                   <SelectItem key={property._id} value={property._id}>
                     {property.name}
@@ -94,7 +103,7 @@ export const CalendarFilter: React.FC<CalendarFilterProps> = ({
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Trạng thái
             </label>
             <Select
@@ -104,7 +113,7 @@ export const CalendarFilter: React.FC<CalendarFilterProps> = ({
               <SelectTrigger className="border-gray-300">
                 <SelectValue placeholder="Tất cả trạng thái" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-2xl bg-white border border-gray-300 rounded-md">
                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
                 <SelectItem value="pending">Chờ xác nhận</SelectItem>
                 <SelectItem value="confirmed">Đã xác nhận</SelectItem>
@@ -117,7 +126,7 @@ export const CalendarFilter: React.FC<CalendarFilterProps> = ({
 
           {/* Payment Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Trạng thái thanh toán
             </label>
             <Select
@@ -126,10 +135,10 @@ export const CalendarFilter: React.FC<CalendarFilterProps> = ({
                 handleFilterChange("paymentStatus", value)
               }
             >
-              <SelectTrigger className="border-gray-300">
+              <SelectTrigger className="border-gray-300 w-40">
                 <SelectValue placeholder="Tất cả" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-2xl bg-white border border-gray-300 rounded-md">
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="unpaid">Chưa thanh toán</SelectItem>
                 <SelectItem value="partially_paid">
@@ -142,43 +151,52 @@ export const CalendarFilter: React.FC<CalendarFilterProps> = ({
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        {/* Search */}
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tìm kiếm
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Tìm theo tên khách, property..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-              className="pl-10 border-gray-300"
-            />
+          <div className="">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Từ khóa
+            </label>
+            <div className="relative md:col-span-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Tìm theo tên khách, phòng, homestay"
+                value={pendingKeyword}
+                onChange={(e) => setPendingKeyword(e.target.value)}
+                className="pl-10 border-gray-300"
+              />
+            </div>
           </div>
-        </div>
-
-        {/* Clear Filters */}
-        <div className="mt-4 flex justify-end">
-          <Button
-            variant="outline"
-            onClick={() =>
-              onFiltersChange({
-                viewType: "monthly",
-                propertyId: "all",
-                listingId: "all",
-                status: "all",
-                paymentStatus: "all",
-                search: "",
-              })
-            }
-            className="border-gray-300 hover:bg-gray-100"
-          >
-            Xóa bộ lọc
-          </Button>
+          <div className="mt-7 flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() =>
+                onFiltersChange({
+                  ...filters,
+                  keyword: pendingKeyword,
+                })
+              }
+              className="border-gray-300 hover:bg-gray-100"
+            >
+              Tìm kiếm
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                onFiltersChange({
+                  viewType: "monthly",
+                  propertyId: "all",
+                  listingId: "all",
+                  status: "all",
+                  paymentStatus: "all",
+                  keyword: "",
+                  searchType: "keyword",
+                })
+              }
+              className="border-gray-300 hover:bg-gray-100"
+            >
+              Xóa bộ lọc
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

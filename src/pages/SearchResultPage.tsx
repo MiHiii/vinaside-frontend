@@ -22,6 +22,17 @@ import ButtonWishlist from "@/components/common/ButtonWishlist"; // Assuming thi
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button"; // Ensure Button is imported
 
+// Helper function để lấy city từ property
+function getPropertyCity(property: Listing): string | null {
+  if (
+    typeof property.propertyId === "object" &&
+    property.propertyId?.location?.city
+  ) {
+    return property.propertyId.location.city;
+  }
+  return null;
+}
+
 export default function SearchResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -447,6 +458,10 @@ function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
   const imageUrl = property.images?.[0]?.startsWith("http")
     ? property.images[0]
     : `/placeholder.svg?height=220&width=280&query=property%20image%20of%20${property.title}`; // Fallback to placeholder
+
+  // Lấy city từ property
+  const city = getPropertyCity(property);
+
   return (
     <Card
       onClick={() => onViewDetail(property._id)}
@@ -471,6 +486,12 @@ function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
             <span>{property.average_rating?.toFixed(1) ?? "--"}</span>
           </div>
         </div>
+        {/* Hiển thị city nếu có */}
+        {city && (
+          <div className="text-sm text-muted-foreground mb-1 font-medium">
+            {city}
+          </div>
+        )}
         <div className="text-sm text-gray-500 text-muted-foreground font-medium mb-1">
           {property.price_per_night?.toLocaleString()}₫ /đêm
         </div>

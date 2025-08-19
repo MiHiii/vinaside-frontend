@@ -29,6 +29,17 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return result;
 }
 
+// Helper function để lấy city từ property
+function getPropertyCity(property: Listing): string | null {
+  if (
+    typeof property.propertyId === "object" &&
+    property.propertyId?.location?.city
+  ) {
+    return property.propertyId.location.city;
+  }
+  return null;
+}
+
 export default function HomePage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -350,6 +361,9 @@ function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
     ? property.images[0]
     : `https://yourcdn.com${property.images?.[0]}`;
 
+  // Lấy city từ property
+  const city = getPropertyCity(property);
+
   return (
     <Card
       onClick={() => onViewDetail(property._id)}
@@ -376,6 +390,12 @@ function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
             <span>{property.average_rating?.toFixed(1) ?? "--"}</span>
           </div>
         </div>
+        {/* Hiển thị city nếu có */}
+        {city && (
+          <div className="text-sm text-muted-foreground mb-1 font-medium">
+            {city}
+          </div>
+        )}
         {/* Hiển thị giá tiền */}
         <div className="text-sm text-gray-500 text-muted-foreground font-medium mb-1">
           {property.price_per_night?.toLocaleString()}₫ /đêm
