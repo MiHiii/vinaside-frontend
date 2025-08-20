@@ -174,25 +174,25 @@ const EditCancellationModal: React.FC<EditCancellationModalProps> = ({
                     <span className="font-semibold">Thông tin hoàn tiền hiện tại:</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    {cancellationDetails.accountName && (
+                    {cancellationDetails?.accountName && (
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-green-600" />
                         <span className="text-green-700 font-medium">Tên: {cancellationDetails.accountName}</span>
                       </div>
                     )}
-                    {cancellationDetails.bankName && (
+                    {cancellationDetails?.bankName && (
                       <div className="flex items-center gap-2">
                         <Building className="w-4 h-4 text-green-600" />
                         <span className="text-green-700 font-medium">Ngân hàng: {cancellationDetails.bankName}</span>
                       </div>
                     )}
-                    {cancellationDetails.accountNumber && (
+                    {cancellationDetails?.accountNumber && (
                       <div className="flex items-center gap-2">
                         <CreditCard className="w-4 h-4 text-green-600" />
                         <span className="text-green-700 font-medium">Số TK: {cancellationDetails.accountNumber}</span>
                       </div>
                     )}
-                    {cancellationDetails.refundMethod && (
+                    {cancellationDetails?.refundMethod && (
                       <div className="flex items-center gap-2">
                         <Wallet className="w-4 h-4 text-green-600" />
                         <span className="text-green-700 font-medium">Phương thức: {cancellationDetails.refundMethod}</span>

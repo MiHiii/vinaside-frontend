@@ -124,6 +124,29 @@ export default function Notification({
           navigate("/admin/bookings");
         }
       }
+    } else if (notification.type === "payment") {
+      const recipientType = notification.metadata?.["recipient_type"] as
+        | string
+        | undefined;
+      if (recipientType === "guest") {
+        navigate("/past-trip");
+      } else if (userRole === "admin" || userRole === "staff") {
+        if (
+          notification.metadata?.bookingId &&
+          notification.metadata?.propertyId
+        ) {
+          const url = `/admin/bookings/${notification.metadata.propertyId}/${notification.metadata.bookingId}`;
+          console.log("✅ Toast navigating to booking detail:", url);
+          navigate(url);
+        } else {
+          console.log(
+            "❌ Toast no metadata found, navigating to /admin/bookings"
+          );
+          navigate("/admin/bookings");
+        }
+      } else {
+        navigate("/past-trip");
+      }
     } else if (notification.type === "review") {
       navigate("/profilepage");
     } else if (notification.type === "system") {
@@ -278,6 +301,27 @@ export default function Notification({
           }
         } else {
           console.log("User is not admin/staff, navigating to /past-trip");
+          navigate("/past-trip");
+        }
+      } else if (notification.type === "payment") {
+        const recipientType = notification.metadata?.["recipient_type"] as
+          | string
+          | undefined;
+        if (recipientType === "guest") {
+          navigate("/past-trip");
+        } else if (userRole === "admin" || userRole === "staff") {
+          if (
+            notification.metadata?.bookingId &&
+            notification.metadata?.propertyId
+          ) {
+            const url = `/admin/bookings/${notification.metadata.propertyId}/${notification.metadata.bookingId}`;
+            console.log("✅ Navigating to booking detail:", url);
+            navigate(url);
+          } else {
+            console.log("❌ No metadata found, navigating to /admin/bookings");
+            navigate("/admin/bookings");
+          }
+        } else {
           navigate("/past-trip");
         }
       } else if (notification.type === "review") {

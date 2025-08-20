@@ -24,6 +24,7 @@ import {
 import { BookingStatus, PaymentStatus } from "@/types/enum";
 import type { Booking } from "@/types/booking.interface";
 import { Link } from "react-router-dom";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import CancelBookingModal from "./CancelBookingModal";
 
 interface BookingActionsProps {
@@ -38,7 +39,34 @@ const BookingActions: React.FC<BookingActionsProps> = ({
   onSuccess,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState({
+    title: "",
+    description: "",
+    confirmText: "Xác nhận",
+    variant: "default" as "default" | "destructive",
+  });
   const [showCancelModal, setShowCancelModal] = useState(false);
+
+  const showConfirm = (
+    title: string,
+    description: string,
+    action: () => void,
+    confirmText = "Xác nhận",
+    variant: "default" | "destructive" = "default"
+  ) => {
+    setConfirmConfig({ title, description, confirmText, variant });
+    setConfirmAction(() => action);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirm = () => {
+    if (confirmAction) {
+      confirmAction();
+    }
+    setShowConfirmDialog(false);
+  };
 
   const handleConfirmBooking = async () => {
     try {
@@ -93,9 +121,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
     }
   };
 
-  const handleCancelBooking = () => {
-    setShowCancelModal(true);
-  };
+
 
   const handleRefundBooking = async () => {
     try {
@@ -156,7 +182,14 @@ const BookingActions: React.FC<BookingActionsProps> = ({
           {/* Confirm Booking - Chỉ hiển thị khi status là PENDING */}
           {booking.status === BookingStatus.PENDING && (
             <DropdownMenuItem
-              onClick={handleConfirmBooking}
+              onClick={() =>
+                showConfirm(
+                  "Xác nhận booking",
+                  `Bạn có chắc chắn muốn xác nhận booking cho khách hàng "${booking.guest_name}"?`,
+                  handleConfirmBooking,
+                  "Xác nhận"
+                )
+              }
               className="flex items-center gap-2 text-green-600 hover:bg-green-50 hover:text-green-700 rounded-md px-2 py-1.5 transition-colors duration-200"
             >
               <CheckCircle size={14} />
@@ -167,7 +200,15 @@ const BookingActions: React.FC<BookingActionsProps> = ({
           {/* Complete Booking - Chỉ hiển thị khi status là CONFIRMED */}
           {booking.status === BookingStatus.CONFIRMED && (
             <DropdownMenuItem
-              onClick={handleCompleteBooking}
+              onClick={() =>
+                canComplete &&
+                showConfirm(
+                  "Hoàn thành booking",
+                  `Bạn có chắc chắn muốn hoàn thành booking cho khách hàng "${booking.guest_name}"?`,
+                  handleCompleteBooking,
+                  "Hoàn thành"
+                )
+              }
               disabled={!canComplete}
               className={`flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors duration-200 ${
                 canComplete
@@ -186,7 +227,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={handleCancelBooking}
+                onClick={() => setShowCancelModal(true)}
                 className="flex items-center gap-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-md px-2 py-1.5 transition-colors duration-200"
               >
                 <XCircle size={14} />
@@ -199,7 +240,14 @@ const BookingActions: React.FC<BookingActionsProps> = ({
           {booking.status === BookingStatus.CANCELLED &&
             booking.payment_status === PaymentStatus.REFUNDING && (
               <DropdownMenuItem
-                onClick={handleRefundBooking}
+                onClick={() =>
+                  showConfirm(
+                    "Hoàn tiền booking",
+                    `Bạn có chắc chắn muốn hoàn tiền booking cho khách hàng "${booking.guest_name}"?`,
+                    handleRefundBooking,
+                    "Hoàn tiền"
+                  )
+                }
                 className="flex items-center gap-2 text-purple-600 hover:bg-purple-50 hover:text-purple-700 rounded-md px-2 py-1.5 transition-colors duration-200"
               >
                 <RefreshCw size={14} />
@@ -226,17 +274,40 @@ const BookingActions: React.FC<BookingActionsProps> = ({
             <DropdownMenuItem asChild>
               <Link
                 to={`/admin/bookings/${propertyId}/${booking._id}`}
-                className="flex items-center gap-2 text-green-600 hover:bg-green-50 hover:text-green-700 rounded-md px-2 py-1.5 transition-colors duration-200"
+                className="flex items-center gap-2 text-green-600 hover:bg-green-700 rounded-md px-2 py-1.5 transition-colors duration-200"
               >
                 <DollarSign size={14} />
                 Thanh toán số tiền còn lại
               </Link>
             </DropdownMenuItem>
           )}
+
+          {/* Completed Booking Info - Chỉ hiển thị khi status là COMPLETED */}
+          {booking.status === BookingStatus.COMPLETED && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled
+                className="flex items-center gap-2 text-gray-400 cursor-not-allowed rounded-md px-2 py-1.5"
+              >
+                <CheckCircle size={14} />
+                Booking đã hoàn thành
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Cancel Booking Modal */}
+      <ConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        confirmText={confirmConfig.confirmText}
+        variant={confirmConfig.variant}
+        onConfirm={handleConfirm}
+      />
+
       <CancelBookingModal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
