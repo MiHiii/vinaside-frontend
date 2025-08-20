@@ -146,7 +146,7 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
   if (outstandingAmount <= 0) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-white border border-gray-200">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
