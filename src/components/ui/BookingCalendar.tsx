@@ -16,26 +16,33 @@ import { Card } from "./card";
 import {
   calendarApi,
   CalendarQueryParams,
-  Booking,
   CalendarData,
   CalendarDay,
 } from "@/services/calendarApi";
 import { DayDetailModal } from "./DayDetailModal";
 
 interface BookingCalendarProps {
-  viewType?: "monthly" | "weekly" | "daily";
+  viewType?: "month" | "week" | "day" | "today";
   startDate?: string;
   endDate?: string;
   propertyId?: string;
   listingId?: string;
+  status?: string;
+  paymentStatus?: string;
+  keyword?: string;
+  searchType?: "keyword" | "guestName" | "listingTitle" | "propertyName";
   onDayClick?: (date: string) => void;
   onBookingClick?: (bookingId: string, propertyId: string) => void;
 }
 
 export const BookingCalendar: React.FC<BookingCalendarProps> = ({
-  viewType = "monthly",
+  viewType = "month",
   propertyId,
   listingId,
+  status,
+  paymentStatus,
+  keyword,
+  searchType,
   onDayClick,
   onBookingClick,
 }) => {
@@ -47,7 +54,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   // Generate calendar days based on viewType
   const getCalendarDays = () => {
-    if (viewType === "monthly") {
+    if (viewType === "month") {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
 
@@ -80,7 +87,16 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   // Get bookings for current month
   useEffect(() => {
     fetchCalendarData();
-  }, [currentDate, propertyId, listingId, viewType]);
+  }, [
+    currentDate,
+    propertyId,
+    listingId,
+    viewType,
+    status,
+    paymentStatus,
+    keyword,
+    searchType,
+  ]);
 
   const fetchCalendarData = async () => {
     setLoading(true);
@@ -89,6 +105,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         viewType,
         propertyId,
         listingId,
+        status,
+        payment_status: paymentStatus,
+        ...(searchType === "guestName" ? { guestName: keyword } : {}),
+        ...(searchType === "listingTitle" ? { listingTitle: keyword } : {}),
+        ...(searchType === "propertyName" ? { propertyName: keyword } : {}),
+        ...(searchType === "keyword" || !searchType ? { keyword } : {}),
         startDate: format(startOfMonth(currentDate), "yyyy-MM-dd"),
         endDate: format(endOfMonth(currentDate), "yyyy-MM-dd"),
       };
@@ -269,20 +291,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
           {/* Calendar Summary */}
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex items-center justify-between text-sm text-gray-600">
-              <div className="flex items-center gap-4">
-                <span>
-                  Tổng booking:{" "}
-                  <span className="font-medium text-gray-900">
-                    {calendarData?.totalBookings || 0}
-                  </span>
-                </span>
-                <span>
-                  Doanh thu:{" "}
-                  <span className="font-medium text-gray-900">
-                    {(calendarData?.totalRevenue || 0).toLocaleString("vi-VN")}đ
-                  </span>
-                </span>
-              </div>
+              <div className="flex items-center gap-4"></div>
               <div className="text-xs text-gray-500">
                 Click vào ngày để xem chi tiết
               </div>

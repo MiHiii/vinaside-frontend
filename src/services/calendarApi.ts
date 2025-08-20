@@ -1,14 +1,17 @@
 import { api } from "./api";
 
 export interface CalendarQueryParams {
-  viewType?: "monthly" | "weekly" | "daily";
+  viewType?: "month" | "week" | "day" | "today";
   startDate?: string;
   endDate?: string;
   propertyId?: string;
   listingId?: string;
   status?: string;
   payment_status?: string;
-  search?: string;
+  keyword?: string;
+  guestName?: string;
+  listingTitle?: string;
+  propertyName?: string;
 }
 
 export interface CalendarDay {
@@ -104,9 +107,12 @@ export const calendarApi = {
       if (params.payment_status && params.payment_status !== "all") {
         queryParams.append("paymentStatus", params.payment_status);
       }
-      if (params.search) {
-        queryParams.append("search", params.search);
-      }
+      if (params.keyword) queryParams.append("keyword", params.keyword);
+      if (params.guestName) queryParams.append("guestName", params.guestName);
+      if (params.listingTitle)
+        queryParams.append("listingTitle", params.listingTitle);
+      if (params.propertyName)
+        queryParams.append("propertyName", params.propertyName);
 
       // Sử dụng API calendar mới
       const endpoint = "/bookings/calendar";

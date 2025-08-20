@@ -49,12 +49,13 @@ export const BookingCalendarPage: React.FC = () => {
   const { isStaff, user } = useUserRole();
 
   const [filters, setFilters] = useState({
-    viewType: "monthly" as const,
+    viewType: "month" as const,
     propertyId: "all",
     listingId: "all",
     status: "all",
     paymentStatus: "all",
-    search: "",
+    keyword: "",
+    searchType: "keyword" as const,
   });
 
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
@@ -89,14 +90,33 @@ export const BookingCalendarPage: React.FC = () => {
   const fetchCalendarData = useCallback(async () => {
     setLoading(true);
     try {
-      // Tính toán startDate và endDate cho tháng hiện tại
+      // Tính toán startDate và endDate theo viewType mới (month/week/day/today)
       const now = new Date();
-      const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      let startDate = new Date(now.getFullYear(), now.getMonth(), 1)
         .toISOString()
         .split("T")[0];
-      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      let endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
         .toISOString()
         .split("T")[0];
+      if ((filters as any).viewType === "today") {
+        const d = new Date();
+        startDate = d.toISOString().split("T")[0];
+        endDate = d.toISOString().split("T")[0];
+      } else if ((filters as any).viewType === "day") {
+        const d = new Date();
+        startDate = d.toISOString().split("T")[0];
+        endDate = d.toISOString().split("T")[0];
+      } else if ((filters as any).viewType === "week") {
+        const d = new Date();
+        const day = d.getDay();
+        const diffToMonday = (day + 6) % 7; // Monday as start
+        const monday = new Date(d);
+        monday.setDate(d.getDate() - diffToMonday);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        startDate = monday.toISOString().split("T")[0];
+        endDate = sunday.toISOString().split("T")[0];
+      }
 
       let propertyId = filters.propertyId;
 
@@ -117,7 +137,7 @@ export const BookingCalendarPage: React.FC = () => {
         }
       }
 
-      const params: CalendarQueryParams = {
+      const params: Partial<CalendarQueryParams> & { keyword?: string } = {
         viewType: filters.viewType,
         startDate,
         endDate,
@@ -126,7 +146,19 @@ export const BookingCalendarPage: React.FC = () => {
         status: filters.status === "all" ? undefined : filters.status,
         payment_status:
           filters.paymentStatus === "all" ? undefined : filters.paymentStatus,
-        search: filters.search || undefined,
+        ...((filters as any).searchType === "guestName"
+          ? { guestName: filters.keyword || undefined }
+          : {}),
+        ...((filters as any).searchType === "listingTitle"
+          ? { listingTitle: filters.keyword || undefined }
+          : {}),
+        ...((filters as any).searchType === "propertyName"
+          ? { propertyName: filters.keyword || undefined }
+          : {}),
+        ...((filters as any).searchType === "keyword" ||
+        !(filters as any).searchType
+          ? { keyword: filters.keyword || undefined }
+          : {}),
       };
 
       const data = await calendarApi.getCalendarData(params);
@@ -275,9 +307,7 @@ export const BookingCalendarPage: React.FC = () => {
                   Tổng Booking
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {statisticsLoading
-                    ? "..."
-                    : statisticsOverview?.totalBookings || 0}
+                  {loading ? "..." : calendarData?.totalBookings || 0}
                 </p>
               </div>
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -293,9 +323,9 @@ export const BookingCalendarPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Doanh thu</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {statisticsLoading
+                  {loading
                     ? "..."
-                    : (statisticsOverview?.totalRevenue || 0).toLocaleString(
+                    : (calendarData?.totalRevenue || 0).toLocaleString(
                         "vi-VN"
                       ) + "đ"}
                 </p>
@@ -315,9 +345,9 @@ export const BookingCalendarPage: React.FC = () => {
                   Tỷ lệ lấp đầy
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {statisticsLoading
+                  {loading
                     ? "..."
-                    : (statisticsOverview?.averageOccupancyRate || 0) + "%"}
+                    : (calendarData?.averageOccupancy || 0).toFixed(2) + "%"}
                 </p>
               </div>
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -357,6 +387,12 @@ export const BookingCalendarPage: React.FC = () => {
           viewType={filters.viewType}
           propertyId={filters.propertyId}
           listingId={filters.listingId}
+          status={filters.status === "all" ? undefined : filters.status}
+          paymentStatus={
+            filters.paymentStatus === "all" ? undefined : filters.paymentStatus
+          }
+          keyword={filters.keyword || undefined}
+          searchType={(filters as any).searchType || "keyword"}
           onDayClick={handleDayClick}
           onBookingClick={handleBookingClick}
         />

@@ -1,6 +1,22 @@
 export interface Listing {
   _id: string;
-  propertyId: string | { _id: string; name: string; type?: string };
+  propertyId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        type?: string;
+        location?: {
+          place_id?: string;
+          lat?: number;
+          lng?: number;
+          address?: string;
+          city?: string;
+          district?: string;
+          ward?: string;
+          coordinates?: number[];
+        };
+      };
   title: string;
   building_name?: string;
   address?: string;

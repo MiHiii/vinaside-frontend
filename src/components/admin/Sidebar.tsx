@@ -249,6 +249,8 @@ export function Sidebar({ collapsed }: SidebarProps) {
               badge="3"
               collapsed={collapsed}
             />
+          </PermissionGuard>
+          <PermissionGuard permission="booking.view">
             <SidebarItem
               to="/admin/bookings"
               icon={<Ticket className="h-4 w-4" />}

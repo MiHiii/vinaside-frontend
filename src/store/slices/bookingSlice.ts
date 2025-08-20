@@ -349,7 +349,7 @@ export const fetchBookingStatisticsOverview = createAsyncThunk<
 // ADMIN BOOKING THUNKS
 export const fetchAdminBookings = createAsyncThunk<
   { data: Booking[]; total: number },
-  { status?: BookingStatus; paymentStatus?: PaymentStatus } & Record<
+  { status?: BookingStatus; paymentStatus?: PaymentStatus | "unpaid" } & Record<
     string,
     unknown
   >,
@@ -368,7 +368,7 @@ export const fetchAdminBookings = createAsyncThunk<
     }
     if (
       queryParams.paymentStatus &&
-      !Object.values(PaymentStatus).includes(
+      ![...Object.values(PaymentStatus), "unpaid"].includes(
         queryParams.paymentStatus as PaymentStatus
       )
     ) {
@@ -391,7 +391,7 @@ export const fetchAdminBookings = createAsyncThunk<
 // Staff bookings thunk
 export const fetchStaffBookings = createAsyncThunk<
   { data: Booking[]; total: number },
-  { status?: BookingStatus; paymentStatus?: PaymentStatus } & Record<
+  { status?: BookingStatus; paymentStatus?: PaymentStatus | "unpaid" } & Record<
     string,
     unknown
   >,
@@ -410,32 +410,16 @@ export const fetchStaffBookings = createAsyncThunk<
     }
     if (
       queryParams.paymentStatus &&
-      !Object.values(PaymentStatus).includes(
+      ![...Object.values(PaymentStatus), "unpaid"].includes(
         queryParams.paymentStatus as PaymentStatus
       )
     ) {
       queryParams.paymentStatus = undefined;
     }
+    // Sử dụng cùng endpoint với Admin để lấy danh sách + bộ lọc
+    const res = await api.get("/bookings", { params: queryParams });
 
-    // Gọi API lấy tất cả bookings
-    const response = await api.get("/bookings/my-bookings-as-staff", {
-      params: queryParams,
-    });
-
-    if (response.data.success) {
-      const bookings = response.data.data.bookings || [];
-      const meta = response.data.data.meta || {};
-      const total = meta.total || bookings.length;
-
-      return {
-        data: bookings,
-        total: total,
-      };
-    }
-
-    throw new Error(
-      response.data.message || "Không thể lấy danh sách bookings"
-    );
+    return res.data.data;
   } catch (error) {
     return rejectWithValue(
       error instanceof Error
@@ -632,6 +616,32 @@ export const fetchSupportedPaymentMethods = createAsyncThunk<
       );
     }
     return rejectWithValue("Lỗi khi lấy phương thức thanh toán");
+  }
+});
+
+// Export bookings CSV
+export const exportBookingsCsv = createAsyncThunk<
+  { blobUrl: string },
+  Record<string, unknown> | void,
+  { rejectValue: string }
+>("booking/exportCsv", async (params, { rejectWithValue }) => {
+  try {
+    const response = await api.get("/bookings/export/csv", {
+      params,
+      responseType: "blob",
+    });
+
+    const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+    const blobUrl = URL.createObjectURL(blob);
+    return { blobUrl };
+  } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && "response" in err) {
+      const axiosErr = err as { response?: { data?: unknown } };
+      return rejectWithValue(
+        (axiosErr.response?.data as string) || "Không thể xuất báo cáo CSV"
+      );
+    }
+    return rejectWithValue("Không thể xuất báo cáo CSV");
   }
 });
 
@@ -1117,6 +1127,17 @@ const bookingSlice = createSlice({
       .addCase(createStaffRemainingPayment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Thanh toán thất bại";
+      })
+      .addCase(exportBookingsCsv.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(exportBookingsCsv.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(exportBookingsCsv.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

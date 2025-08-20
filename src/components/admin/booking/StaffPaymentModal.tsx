@@ -15,7 +15,6 @@ import {
   DollarSign,
   Banknote,
   CheckCircle,
-  Info,
   Calculator,
   Receipt,
 } from "lucide-react";

@@ -131,8 +131,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { vouchers, getVouchers } = useVouchers();
-
+  const { vouchers } = useVouchers();
   const [formData, setFormData] = useState<StaffCreateBookingForm>({
     propertyId: "",
     listingId: "",
@@ -163,6 +162,16 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
   const [listings, setListings] = useState<Listing[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [validVouchers, setValidVouchers] = useState<
+    Array<{
+      _id: string;
+      code: string;
+      discount_percent: number;
+      is_active: boolean;
+      isDeleted?: boolean;
+      description?: string;
+    }>
+  >([]);
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
@@ -190,10 +199,10 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadInitialData();
-      getVouchers(); // Load vouchers from backend
+      loadVouchersForStaff(); // Load vouchers using public API
       resetForm();
     }
-  }, [isOpen, getVouchers]);
+  }, [isOpen]);
 
   // Debug guests data
   useEffect(() => {
@@ -309,7 +318,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
       // Calculate voucher discount
       let voucherDiscount = 0;
       if (formData.voucherCode) {
-        const selectedVoucher = vouchers.find(
+        const selectedVoucher = validVouchers.find(
           (v) => v.code === formData.voucherCode
         );
         if (selectedVoucher && selectedVoucher.is_active) {
@@ -338,7 +347,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
     formData.price_per_night,
     formData.voucherCode,
     services,
-    vouchers,
+    validVouchers,
   ]);
 
   const loadBookedDates = async () => {
@@ -490,6 +499,26 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
 
     setGuests(guestsData);
     return guestsData;
+  };
+
+  // Load vouchers using valid/public API for staff
+  const loadVouchersForStaff = async () => {
+    try {
+      const response = await api.get("/vouchers/valid");
+      console.log("Valid vouchers response:", response);
+
+      if (response.data && response.data.data && response.data.data.data) {
+        setValidVouchers(response.data.data.data);
+        console.log("Valid vouchers loaded:", response.data.data.data);
+      } else if (response.data && response.data.data) {
+        setValidVouchers(response.data.data);
+        console.log("Valid vouchers loaded:", response.data.data);
+      }
+    } catch (error) {
+      console.error("Error loading valid vouchers:", error);
+      setValidVouchers([]);
+      // Fallback: continue without vouchers
+    }
   };
 
   const loadInitialData = async () => {
@@ -1628,7 +1657,6 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       </Label>
                     </div>
                   </div>
-
                   <div className="space-y-0 border border-gray-200 rounded-lg overflow-hidden">
                     {Array.isArray(services) &&
                       services.map((service) => {
@@ -1702,6 +1730,51 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                         );
                       })}
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="voucherCode"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Mã voucher
+                  </Label>
+                  <Select
+                    value={formData.voucherCode || "none"}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        voucherCode: value === "none" ? "" : value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
+                      <SelectValue placeholder="Chọn mã voucher..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
+                      <SelectItem
+                        value="none"
+                        className="rounded-lg py-3 px-4 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-gray-100 data-[state=checked]:text-gray-800"
+                      >
+                        Không sử dụng voucher
+                      </SelectItem>
+                      {Array.isArray(validVouchers) &&
+                        validVouchers
+                          .filter(
+                            (voucher) => voucher.is_active && !voucher.isDeleted
+                          )
+                          .map((voucher) => (
+                            <SelectItem
+                              key={voucher._id}
+                              value={voucher.code}
+                              className="rounded-lg py-3 px-4 hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-purple-100 data-[state=checked]:text-purple-800"
+                            >
+                              {voucher.code} - Giảm {voucher.discount_percent}%
+                              {voucher.description &&
+                                ` - ${voucher.description}`}
+                            </SelectItem>
+                          ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
@@ -1964,7 +2037,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
 
                       {formData.voucherCode &&
                         (() => {
-                          const selectedVoucher = vouchers.find(
+                          const selectedVoucher = validVouchers.find(
                             (v) => v.code === formData.voucherCode
                           );
                           const discountAmount = selectedVoucher
@@ -1992,6 +2065,28 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                           </span>
                         </div>
                       )}
+
+                      {formData.voucherCode &&
+                        (() => {
+                          const selectedVoucher = validVouchers.find(
+                            (v) => v.code === formData.voucherCode
+                          );
+                          const discountAmount = selectedVoucher
+                            ? (calculatedPrice / 1.18) *
+                              (selectedVoucher.discount_percent / 100)
+                            : 0;
+
+                          return (
+                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                              <span className="text-gray-600">
+                                Giảm giá voucher ({formData.voucherCode})
+                              </span>
+                              <span className="font-medium text-green-600">
+                                -{discountAmount.toLocaleString()} VND
+                              </span>
+                            </div>
+                          );
+                        })()}
 
                       <div className="flex justify-between items-center py-2 border-b border-gray-200">
                         <span className="text-gray-600">Phí dịch vụ (10%)</span>

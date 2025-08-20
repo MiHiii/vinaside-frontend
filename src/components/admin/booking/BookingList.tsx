@@ -23,7 +23,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPaymentStatusVN, getStatusVN } from "@/helper/status";
 import { Link } from "react-router-dom";
+import { exportBookingsCsv } from "@/store/slices/bookingSlice";
 import { useUserRole } from "@/hooks/useUserRole";
+import { api } from "@/services/api";
 import {
   Calendar,
   Users,
@@ -33,9 +35,29 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Download,
 } from "lucide-react";
 
-// Type definitions for booking data
+interface ApiResponse {
+  data?: {
+    data?: {
+      data?: {
+        name?: string;
+        fullName?: string;
+        username?: string;
+        email?: string;
+      };
+      name?: string;
+      fullName?: string;
+      username?: string;
+      email?: string;
+    };
+    name?: string;
+    fullName?: string;
+    username?: string;
+    email?: string;
+  };
+}
 
 const BookingList: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -49,8 +71,22 @@ const BookingList: React.FC = () => {
     propertyId: "",
     status: "",
     paymentStatus: "",
-    search: "",
+    keyword: "",
   });
+  // Bộ lọc nháp (chỉ áp dụng khi bấm Tìm kiếm)
+  const [pendingFilters, setPendingFilters] = useState<Record<string, unknown>>(
+    {
+      propertyId: "",
+      status: "",
+      paymentStatus: "",
+      keyword: "",
+    }
+  );
+  // Map lưu tên/email khách từ guestId dạng string
+  const [guestMap, setGuestMap] = useState<
+    Record<string, { name?: string; email?: string }>
+  >({});
+  // Giữ cơ chế fetch ban đầu (lúc đầu có dữ liệu và theo phân trang)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -61,7 +97,7 @@ const BookingList: React.FC = () => {
     }
   }, [dispatch, properties.length]);
 
-  // Fetch bookings for admin (all bookings)
+  // Fetch khi mount, khi đổi trang, hoặc khi filters áp dụng
   useEffect(() => {
     if (!isStaff) {
       const apiFilters = Object.fromEntries(
@@ -69,21 +105,14 @@ const BookingList: React.FC = () => {
           ([, value]) => value !== undefined && value !== ""
         )
       );
-
-      // Đảm bảo luôn truyền limit parameter
       const params = {
         ...apiFilters,
         page: currentPage,
         limit: itemsPerPage,
-      };
+      } as Record<string, unknown>;
 
       dispatch(fetchAdminBookings(params));
-    }
-  }, [dispatch, filters, currentPage, isStaff, itemsPerPage]);
-
-  // Fetch bookings for staff
-  useEffect(() => {
-    if (isStaff) {
+    } else {
       const apiFilters = Object.fromEntries(
         Object.entries(filters).filter(
           ([, value]) => value !== undefined && value !== ""
@@ -99,12 +128,86 @@ const BookingList: React.FC = () => {
 
       dispatch(fetchStaffBookings(params));
     }
-  }, [isStaff, dispatch, filters, currentPage, itemsPerPage]);
+  }, [dispatch, isStaff, filters, currentPage, itemsPerPage]);
+
+  // Khi danh sách bookings thay đổi, tải thông tin guest nếu chỉ có guestId dạng string
+  useEffect(() => {
+    const bookings = isStaff
+      ? Array.isArray(staffBookings)
+        ? staffBookings
+        : []
+      : Array.isArray(adminBookings)
+      ? adminBookings
+      : [];
+
+    const ids = Array.from(
+      new Set(
+        bookings
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((b: any) =>
+            typeof b?.guestId === "string" ? (b.guestId as string) : null
+          )
+          .filter((id: string | null): id is string => Boolean(id))
+      )
+    );
+    const idsToFetch = ids.filter((id) => !guestMap[id]);
+    if (idsToFetch.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const results = await Promise.allSettled(
+          idsToFetch.map((id) => api.get(`/users/${id}`))
+        );
+        const newEntries: Record<string, { name?: string; email?: string }> =
+          {};
+        results.forEach((res, idx) => {
+          if (res.status === "fulfilled") {
+            const payload =
+              (res.value as ApiResponse)?.data?.data?.data ||
+              (res.value as ApiResponse)?.data?.data ||
+              (res.value as ApiResponse)?.data;
+            if (payload) {
+              const name: string | undefined =
+                payload.name || payload.fullName || payload.username;
+              const email: string | undefined = payload.email;
+              newEntries[idsToFetch[idx]] = { name, email };
+            }
+          }
+        });
+        if (!cancelled && Object.keys(newEntries).length > 0) {
+          setGuestMap((prev) => ({ ...prev, ...newEntries }));
+        }
+      } catch {
+        // ignore errors per-id
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [adminBookings, staffBookings, isStaff, guestMap]);
 
   const handleFilterChange = (newFilters: Record<string, unknown>) => {
-    // Convert "all" values to undefined for API compatibility
+    // Cập nhật bộ lọc nháp, chưa gọi API
+    setPendingFilters(newFilters);
+  };
+
+  // Áp dụng ngay các thay đổi cho select (propertyId, status, paymentStatus)
+  const applyImmediateFiltersChange = (changes: Record<string, unknown>) => {
+    setPendingFilters((prev) => ({ ...prev, ...changes }));
+    const converted: Record<string, unknown> = {};
+    Object.entries(changes).forEach(([key, value]) => {
+      converted[key] = value === "all" ? undefined : value;
+    });
+    setFilters((prev) => ({ ...prev, ...converted }));
+    setCurrentPage(1);
+  };
+
+  const applySearch = () => {
+    // Convert "all" values to undefined chỉ khi bấm tìm kiếm
     const processedFilters = Object.fromEntries(
-      Object.entries(newFilters).map(([key, value]) => [
+      Object.entries(pendingFilters).map(([key, value]) => [
         key,
         value === "all" ? undefined : value,
       ])
@@ -155,18 +258,6 @@ const BookingList: React.FC = () => {
   const goToPage = (page: number) => {
     setCurrentPage(page);
   };
-
-  // Tính toán stats (commented out since not used)
-  // const totalBookings = allBookings.length;
-  // const confirmedBookings = allBookings.filter(
-  //   (b: BookingWithDeleted) => b.status === "confirmed"
-  // ).length;
-  // const pendingBookings = allBookings.filter(
-  //   (b: BookingWithDeleted) => b.status === "pending"
-  // ).length;
-  // const cancelledBookings = allBookings.filter(
-  //   (b: BookingWithDeleted) => b.status === "cancelled"
-  // ).length;
 
   if (loading) {
     return (
@@ -219,22 +310,24 @@ const BookingList: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900">Bộ lọc</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
             {/* Property Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Property
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Homestay
               </label>
               <select
                 value={
-                  filters.propertyId ? (filters.propertyId as string) : "all"
+                  pendingFilters.propertyId
+                    ? (pendingFilters.propertyId as string)
+                    : "all"
                 }
                 onChange={(e) =>
-                  handleFilterChange({ ...filters, propertyId: e.target.value })
+                  applyImmediateFiltersChange({ propertyId: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="max-w-2xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">Tất cả properties</option>
+                <option value="all">Tất cả homestay</option>
                 {properties.map((property) => (
                   <option key={property._id} value={property._id}>
                     {property.name}
@@ -245,15 +338,19 @@ const BookingList: React.FC = () => {
 
             {/* Status Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Trạng thái
               </label>
               <select
-                value={filters.status ? (filters.status as string) : "all"}
-                onChange={(e) =>
-                  handleFilterChange({ ...filters, status: e.target.value })
+                value={
+                  pendingFilters.status
+                    ? (pendingFilters.status as string)
+                    : "all"
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) =>
+                  applyImmediateFiltersChange({ status: e.target.value })
+                }
+                className="max-w-4xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả trạng thái</option>
                 <option value="pending">Chờ xác nhận</option>
@@ -266,22 +363,19 @@ const BookingList: React.FC = () => {
 
             {/* Payment Status Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Trạng thái thanh toán
               </label>
               <select
                 value={
-                  filters.paymentStatus
-                    ? (filters.paymentStatus as string)
+                  pendingFilters.paymentStatus
+                    ? (pendingFilters.paymentStatus as string)
                     : "all"
                 }
                 onChange={(e) =>
-                  handleFilterChange({
-                    ...filters,
-                    paymentStatus: e.target.value,
-                  })
+                  applyImmediateFiltersChange({ paymentStatus: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="max-w-2xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả</option>
                 <option value="unpaid">Chưa thanh toán</option>
@@ -293,56 +387,111 @@ const BookingList: React.FC = () => {
               </select>
             </div>
 
-            {/* Search */}
+            {/* Keyword */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tìm kiếm
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Từ khóa
               </label>
               <input
                 type="text"
-                placeholder="Tìm theo tên khách, property..."
-                value={filters.search ? (filters.search as string) : ""}
-                onChange={(e) =>
-                  handleFilterChange({ ...filters, search: e.target.value })
+                placeholder="Tìm theo tên khách, tên phòng, tên homestay"
+                value={
+                  pendingFilters.keyword
+                    ? (pendingFilters.keyword as string)
+                    : ""
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) =>
+                  handleFilterChange({
+                    ...pendingFilters,
+                    keyword: e.target.value,
+                  })
+                }
+                className="max-w-2xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-          </div>
-
-          {/* Clear Filters */}
-          <div className="mt-4 flex justify-end">
-            <Button
-              variant="outline"
-              onClick={() =>
-                handleFilterChange({
-                  propertyId: "all",
-                  status: "all",
-                  paymentStatus: "all",
-                  search: "",
-                })
-              }
-              className="border-gray-300 hover:bg-gray-100"
-            >
-              Xóa bộ lọc
-            </Button>
+            {/* Clear Filters */}
+            <div className="mt-7 flex items-center gap-2">
+              <Button
+                onClick={applySearch}
+                variant="outline"
+                className="border-gray-300 px-3 py-2 hover:bg-gray-100"
+                title="Tìm kiếm"
+              >
+                Tìm kiếm
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const reset = {
+                    propertyId: "",
+                    status: "",
+                    paymentStatus: "",
+                    keyword: "",
+                  } as Record<string, unknown>;
+                  setPendingFilters(reset);
+                  setFilters(reset);
+                  setCurrentPage(1);
+                }}
+                className="border-gray-300 px-3 py-2 hover:bg-gray-100"
+              >
+                Xóa bộ lọc
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Table Section */}
         <div className="bg-white rounded-2xl border border-white/20 shadow-xl overflow-hidden">
           <div className="p-6 border-b border-gray-200/50">
-            <div className="flex items-center gap-3">
-              <div className="w-1 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full"></div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Danh sách Booking
-              </h2>
-              <Badge
-                variant="secondary"
-                className="ml-auto bg-white text-gray-900 border border-gray-200 hover:bg-gray-100 cursor-pointer rounded-md"
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full"></div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Danh sách Booking
+                </h2>
+              </div>
+              <Button
+                onClick={async () => {
+                  const apiFilters = Object.fromEntries(
+                    Object.entries(filters).filter(
+                      ([, value]) => value !== undefined && value !== ""
+                    )
+                  );
+                  const params = {
+                    ...apiFilters,
+                    page: currentPage,
+                    limit: itemsPerPage,
+                  } as Record<string, unknown>;
+
+                  try {
+                    const action = await dispatch(exportBookingsCsv(params));
+                    if (exportBookingsCsv.fulfilled.match(action)) {
+                      const url = action.payload.blobUrl;
+                      const a = document.createElement("a");
+                      a.href = url;
+                      const timestamp = new Date()
+                        .toISOString()
+                        .replace(/[:.]/g, "-");
+                      a.download = `bookings-${timestamp}.csv`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    } else {
+                      console.error("Export CSV failed", action);
+                    }
+                  } catch (e) {
+                    console.error("Export CSV error", e);
+                  }
+                }}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                title="Xuất CSV"
               >
-                {isStaff ? staffBookings.length : adminTotal} kết quả
-              </Badge>
+                <Download className="w-4 h-4" />
+                Xuất báo cáo
+              </Button>
             </div>
           </div>
 
@@ -390,47 +539,43 @@ const BookingList: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {currentBookings.length > 0 ? (
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   currentBookings.map((b: any, idx) => {
-                    // Lấy thông tin khách
-                    const guestId = (b as { guestId?: { name?: string } })
-                      .guestId;
+                    // Lấy thông tin khách với các trường hợp: guest, guestId object, guest_name string, hoặc guestId string (resolve qua guestMap)
                     let guestName = "";
                     let guestEmail = "";
-
-                    // Debug logs
-                    console.log("=== BOOKING GUEST DEBUG ===");
-                    console.log("Booking ID:", b._id);
-                    console.log("guestId:", guestId);
-                    console.log("b.guest_name:", b.guest_name);
-                    console.log("b.guest_email:", b.guest_email);
-                    console.log("b.guest_phone:", b.guest_phone);
-                    console.log("typeof guestId:", typeof guestId);
-                    console.log("guestId === null:", guestId === null);
-                    console.log("!guestId:", !guestId);
-
-                    // Kiểm tra nếu guestId là null, undefined, hoặc empty string → hiển thị guest_name, guest_email, guest_phone
-                    if (!guestId || guestId === null) {
-                      console.log("Using guest_name/guest_email from booking");
-                      guestName = b.guest_name || "Chưa có tên";
-                    } else if (
-                      typeof guestId === "object" &&
-                      guestId !== null
-                    ) {
-                      console.log("Using guestId object");
-                      // Nếu có guestId object → lấy từ guest object
-                      guestName = guestId.name || "";
+                    const guestIdAny = b?.guestId;
+                    const guestAny = b?.guest;
+                    if (guestAny && typeof guestAny === "object") {
+                      guestName = guestAny.name || guestName;
                       guestEmail =
-                        "email" in guestId && typeof guestId.email === "string"
-                          ? guestId.email
-                          : "";
-                    } else if (typeof b.guest_name === "string") {
-                      console.log("Using fallback guest_name");
-                      // Fallback cho trường hợp khác
-                      guestName = b.guest_name;
+                        typeof guestAny.email === "string"
+                          ? guestAny.email
+                          : guestEmail;
+                    } else if (guestIdAny && typeof guestIdAny === "object") {
+                      guestName = guestIdAny.name || guestName;
+                      guestEmail =
+                        typeof guestIdAny.email === "string"
+                          ? guestIdAny.email
+                          : guestEmail;
+                    } else if (typeof b?.guest_name === "string") {
+                      guestName = b.guest_name || guestName;
+                    } else if (
+                      typeof b?.guest_name === "object" &&
+                      b?.guest_name?.name
+                    ) {
+                      guestName = b.guest_name.name || guestName;
+                      guestEmail =
+                        typeof b.guest_name.email === "string"
+                          ? b.guest_name.email
+                          : guestEmail;
+                    } else if (typeof guestIdAny === "string") {
+                      const resolved = guestMap[guestIdAny];
+                      if (resolved) {
+                        guestName = resolved.name || guestName;
+                        guestEmail = resolved.email || guestEmail;
+                      }
                     }
-
-                    console.log("Final guestName:", guestName);
-                    console.log("Final guestEmail:", guestEmail);
 
                     // Lấy thông tin phòng
                     let roomName = "";
@@ -617,7 +762,6 @@ const BookingList: React.FC = () => {
                             <div className="p-2">
                               <div className="flex items-center gap-2">
                                 <CreditCard className="w-4 h-4 text-gray-600" />
-                                {b.payment_method === "vnpay"}
                                 <span className="font-medium text-gray-900">
                                   {(
                                     b.payment_method as string
@@ -665,7 +809,7 @@ const BookingList: React.FC = () => {
                           {filters.propertyId ||
                           filters.status ||
                           filters.paymentStatus ||
-                          filters.search
+                          filters.keyword
                             ? "Không tìm thấy booking nào phù hợp với bộ lọc"
                             : "Chưa có booking nào được tạo trong hệ thống"}
                         </p>
