@@ -38,6 +38,7 @@ import CancellationDetailsModal from "./CancellationDetailsModal";
 import EditCancellationModal from "./EditCancellationModal";
 import StaffPaymentModal from "./StaffPaymentModal";
 import AddServiceModal from "./AddServiceModal";
+import CancelBookingModal from "./CancelBookingModal";
 import {
   User,
   Settings,
@@ -84,6 +85,7 @@ const BookingDetail: React.FC<{
     useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const booking = adminBookingDetail as unknown as BookingDetail;
 
@@ -165,28 +167,8 @@ const BookingDetail: React.FC<{
     }
   };
 
-  const handleCancelBooking = async () => {
-    try {
-      await dispatch(
-        updateAdminBookingStatus({
-          propertyId,
-          id: bookingId,
-          data: {
-            status: BookingStatus.CANCELLED,
-            payment_status: PaymentStatus.REFUNDING,
-          },
-        })
-      ).unwrap();
-      toast.success("Hủy booking thành công! Đang xử lý hoàn tiền...");
-      // Refresh booking data
-      dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Có lỗi xảy ra khi hủy booking";
-      toast.error(errorMessage);
-    }
+  const handleCancelBooking = () => {
+    setShowCancelModal(true);
   };
 
   const handleRefundBooking = async () => {
@@ -1363,6 +1345,18 @@ const BookingDetail: React.FC<{
         onSuccess={() => {
           // Refresh booking data after adding service
           dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
+        }}
+      />
+
+      {/* Cancel Booking Modal */}
+      <CancelBookingModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        booking={booking}
+        onSuccess={() => {
+          // Refresh booking data after cancelling
+          dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
+          setShowCancelModal(false);
         }}
       />
     </div>
