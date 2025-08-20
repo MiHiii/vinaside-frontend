@@ -121,7 +121,7 @@ const BookingManagementPage: React.FC = () => {
                 className="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                Tạo Booking (Staff)
+                Tạo Booking 
               </Button>
             </div>
           </div>

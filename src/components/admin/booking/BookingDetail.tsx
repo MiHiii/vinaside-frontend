@@ -11,6 +11,7 @@ import { RootState } from "@/store";
 import type { BookingDetail } from "@/types/booking.interface";
 import { useSelector } from "react-redux";
 import { useServices } from "@/hooks/useServices";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // import {
 //   Table,
@@ -84,13 +85,42 @@ const BookingDetail: React.FC<{
     useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState({
+    title: "",
+    description: "",
+    confirmText: "Xác nhận",
+    variant: "default" as "default" | "destructive",
+  });
 
   const booking = adminBookingDetail as unknown as BookingDetail;
 
+  const showConfirm = (
+    title: string,
+    description: string,
+    action: () => void,
+    confirmText = "Xác nhận",
+    variant: "default" | "destructive" = "default"
+  ) => {
+    setConfirmConfig({ title, description, confirmText, variant });
+    setConfirmAction(() => action);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirm = () => {
+    if (confirmAction) {
+      confirmAction();
+    }
+    setShowConfirmDialog(false);
+  };
+
   // State for additional cost (chỉ dùng cho form input)
   const [additionalCostInput, setAdditionalCostInput] = useState<number>(0);
-  const [additionalCostReasonInput, setAdditionalCostReasonInput] = useState<string>("");
-  const [isUpdatingAdditionalCost, setIsUpdatingAdditionalCost] = useState<boolean>(false);
+  const [additionalCostReasonInput, setAdditionalCostReasonInput] =
+    useState<string>("");
+  const [isUpdatingAdditionalCost, setIsUpdatingAdditionalCost] =
+    useState<boolean>(false);
 
   useEffect(() => {
     if (propertyId && bookingId)
@@ -105,7 +135,9 @@ const BookingDetail: React.FC<{
     if (adminBookingDetail) {
       // Cập nhật state với dữ liệu mới từ booking
       setAdditionalCostInput(adminBookingDetail.additionalCost || 0);
-      setAdditionalCostReasonInput(adminBookingDetail.additionalCostReason || "");
+      setAdditionalCostReasonInput(
+        adminBookingDetail.additionalCostReason || ""
+      );
     }
   }, [adminBookingDetail]);
 
@@ -229,7 +261,7 @@ const BookingDetail: React.FC<{
       ).unwrap();
 
       toast.success("Cập nhật chi phí phát sinh thành công!");
-      
+
       // Update local state to reflect the changes immediately
       if (result.additionalCost !== undefined) {
         setAdditionalCostInput(result.additionalCost);
@@ -237,15 +269,14 @@ const BookingDetail: React.FC<{
       if (result.additionalCostReason !== undefined) {
         setAdditionalCostReasonInput(result.additionalCostReason);
       }
-      
+
       // Refresh booking data to ensure we have the latest data
       await dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
-      
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : typeof error === 'string'
+          : typeof error === "string"
           ? error
           : "Có lỗi xảy ra khi cập nhật chi phí phát sinh";
       toast.error(errorMessage);
@@ -497,7 +528,14 @@ const BookingDetail: React.FC<{
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={handleConfirmBooking}
+                    onClick={() =>
+                      showConfirm(
+                        "Xác nhận booking",
+                        `Bạn có chắc chắn muốn xác nhận booking cho khách hàng "${booking.guest_name}"?`,
+                        handleConfirmBooking,
+                        "Xác nhận"
+                      )
+                    }
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     <CheckCircle size={16} className="mr-2" />
@@ -517,7 +555,15 @@ const BookingDetail: React.FC<{
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={handleCompleteBooking}
+                        onClick={() =>
+                          canComplete &&
+                          showConfirm(
+                            "Hoàn thành booking",
+                            `Bạn có chắc chắn muốn hoàn thành booking cho khách hàng "${booking.guest_name}"?`,
+                            handleCompleteBooking,
+                            "Hoàn thành"
+                          )
+                        }
                         disabled={!canComplete}
                         className={`${
                           canComplete
@@ -537,7 +583,15 @@ const BookingDetail: React.FC<{
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleCancelBooking}
+                    onClick={() =>
+                      showConfirm(
+                        "Hủy booking",
+                        `Bạn có chắc chắn muốn hủy booking cho khách hàng "${booking.guest_name}"? Hành động này không thể hoàn tác.`,
+                        handleCancelBooking,
+                        "Hủy booking",
+                        "destructive"
+                      )
+                    }
                     className="text-red-600 border-red-600 hover:bg-red-50"
                   >
                     <XCircle size={16} className="mr-2" />
@@ -550,7 +604,14 @@ const BookingDetail: React.FC<{
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={handleRefundBooking}
+                      onClick={() =>
+                        showConfirm(
+                          "Hoàn tiền booking",
+                          `Bạn có chắc chắn muốn hoàn tiền booking cho khách hàng "${booking.guest_name}"?`,
+                          handleRefundBooking,
+                          "Hoàn tiền"
+                        )
+                      }
                       className="bg-purple-600 hover:bg-purple-700 text-white"
                     >
                       <RefreshCw size={16} className="mr-2" />
@@ -593,10 +654,34 @@ const BookingDetail: React.FC<{
                     variant="outline"
                     size="sm"
                     onClick={() => setShowAddServiceModal(true)}
-                    className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                    disabled={status === BookingStatus.COMPLETED}
+                    className={`${
+                      status === BookingStatus.COMPLETED
+                        ? "text-gray-400 border-gray-300 cursor-not-allowed"
+                        : "text-blue-600 border-blue-600 hover:bg-blue-50"
+                    }`}
+                    title={
+                      status === BookingStatus.COMPLETED
+                        ? "Booking đã hoàn thành"
+                        : ""
+                    }
                   >
                     <Package size={16} className="mr-2" />
                     Thêm dịch vụ
+                  </Button>
+                )}
+
+                {/* Completed Booking Info - Show when booking is completed */}
+                {status === BookingStatus.COMPLETED && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="text-gray-400 border-gray-300 cursor-not-allowed"
+                    title="Booking đã hoàn thành"
+                  >
+                    <CheckCircle size={16} className="mr-2" />
+                    Đã hoàn thành
                   </Button>
                 )}
               </div>
@@ -890,31 +975,59 @@ const BookingDetail: React.FC<{
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Chi phí phát sinh</h2>
-                      <p className="text-sm text-gray-500">Cập nhật chi phí phát sinh cho booking này</p>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        Chi phí phát sinh
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        Cập nhật chi phí phát sinh cho booking này
+                      </p>
                     </div>
                   </div>
-                  {adminBookingDetail?.additionalCost && adminBookingDetail.additionalCost > 0 && (
-                    <div className="bg-gray-900 px-3 py-1 rounded-full">
-                      <span className="text-sm font-medium text-white">
-                        +{adminBookingDetail.additionalCost.toLocaleString()}₫
-                      </span>
-                    </div>
-                  )}
+                  {adminBookingDetail?.additionalCost &&
+                    adminBookingDetail.additionalCost > 0 && (
+                      <div className="bg-gray-900 px-3 py-1 rounded-full">
+                        <span className="text-sm font-medium text-white">
+                          +{adminBookingDetail.additionalCost.toLocaleString()}₫
+                        </span>
+                      </div>
+                    )}
                 </div>
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Chi phí phát sinh */}
                   <div className="space-y-2">
-                    <Label htmlFor="additionalCost" className="text-sm font-medium text-gray-700 flex items-center">
-                      <svg className="w-4 h-4 mr-2 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <Label
+                      htmlFor="additionalCost"
+                      className="text-sm font-medium text-gray-700 flex items-center"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2 text-gray-900"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       Chi phí phát sinh (VNĐ)
                     </Label>
@@ -924,7 +1037,9 @@ const BookingDetail: React.FC<{
                         type="number"
                         min="0"
                         value={additionalCostInput}
-                        onChange={(e) => setAdditionalCostInput(Number(e.target.value))}
+                        onChange={(e) =>
+                          setAdditionalCostInput(Number(e.target.value))
+                        }
                         className="pl-10 pr-4 py-3 border-gray-300 focus:border-gray-900 focus:ring-gray-900 rounded-lg transition-colors"
                         placeholder="0"
                       />
@@ -934,33 +1049,71 @@ const BookingDetail: React.FC<{
                     </div>
                     {additionalCostInput > 0 && (
                       <div className="flex items-center space-x-2 text-sm text-gray-700">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
-                        <span>Chi phí phát sinh: {additionalCostInput.toLocaleString()}₫</span>
+                        <span>
+                          Chi phí phát sinh:{" "}
+                          {additionalCostInput.toLocaleString()}₫
+                        </span>
                       </div>
                     )}
                   </div>
 
                   {/* Lý do chi phí phát sinh */}
                   <div className="space-y-2">
-                    <Label htmlFor="additionalCostReason" className="text-sm font-medium text-gray-700 flex items-center">
-                      <svg className="w-4 h-4 mr-2 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <Label
+                      htmlFor="additionalCostReason"
+                      className="text-sm font-medium text-gray-700 flex items-center"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2 text-gray-900"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
                       </svg>
                       Lý do chi phí phát sinh
                     </Label>
                     <Textarea
                       id="additionalCostReason"
                       value={additionalCostReasonInput}
-                      onChange={(e) => setAdditionalCostReasonInput(e.target.value)}
+                      onChange={(e) =>
+                        setAdditionalCostReasonInput(e.target.value)
+                      }
                       className="min-h-[80px] border-gray-300 focus:border-gray-900 focus:ring-gray-900 rounded-lg transition-colors resize-none"
                       placeholder="Nhập lý do chi phí phát sinh (tùy chọn)..."
                     />
                     {additionalCostReasonInput && (
                       <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                         <span>Lý do đã được ghi nhận</span>
                       </div>
@@ -982,8 +1135,18 @@ const BookingDetail: React.FC<{
                       </div>
                     ) : (
                       <div className="flex items-center space-x-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
                         </svg>
                         <span>Cập nhật chi phí phát sinh</span>
                       </div>
@@ -992,33 +1155,50 @@ const BookingDetail: React.FC<{
                 </div>
 
                 {/* Current Additional Cost Display */}
-                {adminBookingDetail?.additionalCost && adminBookingDetail.additionalCost > 0 && (
-                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
+                {adminBookingDetail?.additionalCost &&
+                  adminBookingDetail.additionalCost > 0 && (
+                    <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">
+                              Chi phí phát sinh hiện tại
+                            </p>
+                            <p className="text-lg font-bold text-gray-900">
+                              +
+                              {adminBookingDetail.additionalCost.toLocaleString()}
+                              ₫
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-700">Chi phí phát sinh hiện tại</p>
-                          <p className="text-lg font-bold text-gray-900">
-                            +{adminBookingDetail.additionalCost.toLocaleString()}₫
-                          </p>
-                        </div>
+                        {adminBookingDetail.additionalCostReason && (
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500 font-medium">
+                              Lý do:
+                            </p>
+                            <p className="text-sm text-gray-700 max-w-xs truncate">
+                              {adminBookingDetail.additionalCostReason}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      {adminBookingDetail.additionalCostReason && (
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 font-medium">Lý do:</p>
-                          <p className="text-sm text-gray-700 max-w-xs truncate">
-                            {adminBookingDetail.additionalCostReason}
-                          </p>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
 
@@ -1097,14 +1277,22 @@ const BookingDetail: React.FC<{
                       </span>
                     </div>
                   )}
-                  {(adminBookingDetail?.additionalCost !== null && adminBookingDetail?.additionalCost !== undefined && adminBookingDetail.additionalCost >= 0) && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Chi phí phát sinh</span>
-                      <span className="text-sm font-medium text-orange-600">
-                        +{(adminBookingDetail?.additionalCost || 0).toLocaleString()}₫
-                      </span>
-                    </div>
-                  )}
+                  {adminBookingDetail?.additionalCost !== null &&
+                    adminBookingDetail?.additionalCost !== undefined &&
+                    adminBookingDetail.additionalCost >= 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">
+                          Chi phí phát sinh
+                        </span>
+                        <span className="text-sm font-medium text-orange-600">
+                          +
+                          {(
+                            adminBookingDetail?.additionalCost || 0
+                          ).toLocaleString()}
+                          ₫
+                        </span>
+                      </div>
+                    )}
                   <div className="pt-3 border-t border-gray-200">
                     <div className="flex justify-between">
                       <span className="text-lg font-semibold text-gray-900">
@@ -1365,8 +1553,18 @@ const BookingDetail: React.FC<{
           dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
         }}
       />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        confirmText={confirmConfig.confirmText}
+        variant={confirmConfig.variant}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 };
 export default BookingDetail;
-
