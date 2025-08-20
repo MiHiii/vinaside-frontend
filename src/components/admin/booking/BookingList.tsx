@@ -35,7 +35,7 @@ import {
   Search,
 } from "lucide-react";
 
-// Removed unused type definition
+// Type definitions for booking data
 
 const BookingList: React.FC = () => {
   const dispatch = useAppDispatch();
