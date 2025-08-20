@@ -12,6 +12,7 @@ import type { BookingDetail } from "@/types/booking.interface";
 import { useSelector } from "react-redux";
 import { useServices } from "@/hooks/useServices";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import CancelBookingModal from "./CancelBookingModal";
 
 // import {
 //   Table,
@@ -86,6 +87,7 @@ const BookingDetail: React.FC<{
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
   const [confirmConfig, setConfirmConfig] = useState({
     title: "",
@@ -197,29 +199,7 @@ const BookingDetail: React.FC<{
     }
   };
 
-  const handleCancelBooking = async () => {
-    try {
-      await dispatch(
-        updateAdminBookingStatus({
-          propertyId,
-          id: bookingId,
-          data: {
-            status: BookingStatus.CANCELLED,
-            payment_status: PaymentStatus.REFUNDING,
-          },
-        })
-      ).unwrap();
-      toast.success("Hủy booking thành công! Đang xử lý hoàn tiền...");
-      // Refresh booking data
-      dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Có lỗi xảy ra khi hủy booking";
-      toast.error(errorMessage);
-    }
-  };
+
 
   const handleRefundBooking = async () => {
     try {
@@ -583,15 +563,7 @@ const BookingDetail: React.FC<{
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      showConfirm(
-                        "Hủy booking",
-                        `Bạn có chắc chắn muốn hủy booking cho khách hàng "${booking.guest_name}"? Hành động này không thể hoàn tác.`,
-                        handleCancelBooking,
-                        "Hủy booking",
-                        "destructive"
-                      )
-                    }
+                    onClick={() => setShowCancelModal(true)}
                     className="text-red-600 border-red-600 hover:bg-red-50"
                   >
                     <XCircle size={16} className="mr-2" />
@@ -1563,6 +1535,18 @@ const BookingDetail: React.FC<{
         confirmText={confirmConfig.confirmText}
         variant={confirmConfig.variant}
         onConfirm={handleConfirm}
+      />
+
+      {/* Cancel Booking Modal */}
+      <CancelBookingModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        booking={booking}
+        onSuccess={() => {
+          // Refresh booking data after cancellation
+          dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
+          setShowCancelModal(false);
+        }}
       />
     </div>
   );

@@ -25,6 +25,7 @@ import { BookingStatus, PaymentStatus } from "@/types/enum";
 import type { Booking } from "@/types/booking.interface";
 import { Link } from "react-router-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import CancelBookingModal from "./CancelBookingModal";
 
 interface BookingActionsProps {
   booking: Booking;
@@ -46,6 +47,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
     confirmText: "Xác nhận",
     variant: "default" as "default" | "destructive",
   });
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const showConfirm = (
     title: string,
@@ -119,28 +121,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
     }
   };
 
-  const handleCancelBooking = async () => {
-    try {
-      await dispatch(
-        updateAdminBookingStatus({
-          propertyId,
-          id: booking._id,
-          data: {
-            status: BookingStatus.CANCELLED,
-            payment_status: PaymentStatus.REFUNDING,
-          },
-        })
-      ).unwrap();
-      toast.success("Hủy booking thành công! Đang xử lý hoàn tiền...");
-      onSuccess?.();
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Có lỗi xảy ra khi hủy booking";
-      toast.error(errorMessage);
-    }
-  };
+
 
   const handleRefundBooking = async () => {
     try {
@@ -246,15 +227,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() =>
-                  showConfirm(
-                    "Hủy booking",
-                    `Bạn có chắc chắn muốn hủy booking cho khách hàng "${booking.guest_name}"? Hành động này không thể hoàn tác.`,
-                    handleCancelBooking,
-                    "Hủy booking",
-                    "destructive"
-                  )
-                }
+                onClick={() => setShowCancelModal(true)}
                 className="flex items-center gap-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-md px-2 py-1.5 transition-colors duration-200"
               >
                 <XCircle size={14} />
@@ -301,7 +274,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
             <DropdownMenuItem asChild>
               <Link
                 to={`/admin/bookings/${propertyId}/${booking._id}`}
-                className="flex items-center gap-2 text-green-600 hover:bg-green-50 hover:text-green-700 rounded-md px-2 py-1.5 transition-colors duration-200"
+                className="flex items-center gap-2 text-green-600 hover:bg-green-700 rounded-md px-2 py-1.5 transition-colors duration-200"
               >
                 <DollarSign size={14} />
                 Thanh toán số tiền còn lại
@@ -333,6 +306,16 @@ const BookingActions: React.FC<BookingActionsProps> = ({
         confirmText={confirmConfig.confirmText}
         variant={confirmConfig.variant}
         onConfirm={handleConfirm}
+      />
+
+      <CancelBookingModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        booking={booking}
+        onSuccess={() => {
+          onSuccess?.();
+          setShowCancelModal(false);
+        }}
       />
     </>
   );
