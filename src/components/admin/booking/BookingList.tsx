@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/hooks/useRedux";
 import {
@@ -10,9 +10,7 @@ import {
   selectProperties,
 } from "@/store/slices/propertySlice";
 import { RootState } from "@/store";
-import BookingFilter from "./BookingFilter";
 import BookingActions from "./BookingActions";
-import type { Booking } from "@/types/booking.interface";
 import {
   Table,
   TableHeader,
@@ -24,46 +22,24 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPaymentStatusVN, getStatusVN } from "@/helper/status";
-import { BookingStatus, PaymentStatus } from "@/types/enum";
 import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
-import { propertyStaffAssignmentApi } from "@/services/propertyStaffAssignmentApi";
 import {
   Calendar,
   Users,
   Building2,
   CreditCard,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  XCircle,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Search,
 } from "lucide-react";
 
-type BookingWithDeleted = Booking & {
-  isDeleted?: boolean;
-  deleted?: boolean;
-  payment_status?: string;
-  paymentStatus?: string;
-  refund_amount?: number;
-  nights?: number;
-  payment_method?: string;
-  propertyId?:
-    | {
-        name?: string;
-        _id?: string;
-      }
-    | string;
-};
+// Removed unused type definition
 
 const BookingList: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isStaff, user } = useUserRole();
+  const { isStaff } = useUserRole();
   const { adminBookings, staffBookings, adminTotal, loading, error } =
     useSelector((state: RootState) => state.booking);
   const properties = useSelector(selectProperties);
@@ -90,7 +66,7 @@ const BookingList: React.FC = () => {
     if (!isStaff) {
       const apiFilters = Object.fromEntries(
         Object.entries(filters).filter(
-          ([_, value]) => value !== undefined && value !== ""
+          ([, value]) => value !== undefined && value !== ""
         )
       );
 
@@ -110,7 +86,7 @@ const BookingList: React.FC = () => {
     if (isStaff) {
       const apiFilters = Object.fromEntries(
         Object.entries(filters).filter(
-          ([_, value]) => value !== undefined && value !== ""
+          ([, value]) => value !== undefined && value !== ""
         )
       );
 
@@ -140,7 +116,7 @@ const BookingList: React.FC = () => {
   const handleActionSuccess = () => {
     const apiFilters = Object.fromEntries(
       Object.entries(filters).filter(
-        ([_, value]) => value !== undefined && value !== ""
+        ([, value]) => value !== undefined && value !== ""
       )
     );
 
@@ -157,30 +133,6 @@ const BookingList: React.FC = () => {
       dispatch(fetchAdminBookings(params));
     }
   };
-
-  // Thêm icon VNPAY SVG inline
-  const VNPayIcon = () => (
-    <svg
-      width="24"
-      height="12"
-      viewBox="0 0 48 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="inline align-middle mr-1"
-    >
-      <rect width="48" height="24" rx="4" fill="#0060AF" />
-      <text
-        x="24"
-        y="16"
-        textAnchor="middle"
-        fontSize="12"
-        fill="white"
-        fontWeight="bold"
-      >
-        VNPAY
-      </text>
-    </svg>
-  );
 
   // Hiển thị tất cả booking trong cùng một bảng
   const allBookings = isStaff
@@ -204,17 +156,17 @@ const BookingList: React.FC = () => {
     setCurrentPage(page);
   };
 
-  // Tính toán stats
-  const totalBookings = allBookings.length;
-  const confirmedBookings = allBookings.filter(
-    (b: any) => b.status === "confirmed"
-  ).length;
-  const pendingBookings = allBookings.filter(
-    (b: any) => b.status === "pending"
-  ).length;
-  const cancelledBookings = allBookings.filter(
-    (b: any) => b.status === "cancelled"
-  ).length;
+  // Tính toán stats (commented out since not used)
+  // const totalBookings = allBookings.length;
+  // const confirmedBookings = allBookings.filter(
+  //   (b: BookingWithDeleted) => b.status === "confirmed"
+  // ).length;
+  // const pendingBookings = allBookings.filter(
+  //   (b: BookingWithDeleted) => b.status === "pending"
+  // ).length;
+  // const cancelledBookings = allBookings.filter(
+  //   (b: BookingWithDeleted) => b.status === "cancelled"
+  // ).length;
 
   if (loading) {
     return (
@@ -438,21 +390,47 @@ const BookingList: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {currentBookings.length > 0 ? (
-                  currentBookings.map((b: BookingWithDeleted, idx) => {
+                  currentBookings.map((b: any, idx) => {
                     // Lấy thông tin khách
                     const guestId = (b as { guestId?: { name?: string } })
                       .guestId;
                     let guestName = "";
                     let guestEmail = "";
-                    if (typeof guestId === "object" && guestId !== null) {
+
+                    // Debug logs
+                    console.log("=== BOOKING GUEST DEBUG ===");
+                    console.log("Booking ID:", b._id);
+                    console.log("guestId:", guestId);
+                    console.log("b.guest_name:", b.guest_name);
+                    console.log("b.guest_email:", b.guest_email);
+                    console.log("b.guest_phone:", b.guest_phone);
+                    console.log("typeof guestId:", typeof guestId);
+                    console.log("guestId === null:", guestId === null);
+                    console.log("!guestId:", !guestId);
+
+                    // Kiểm tra nếu guestId là null, undefined, hoặc empty string → hiển thị guest_name, guest_email, guest_phone
+                    if (!guestId || guestId === null) {
+                      console.log("Using guest_name/guest_email from booking");
+                      guestName = b.guest_name || "Chưa có tên";
+                    } else if (
+                      typeof guestId === "object" &&
+                      guestId !== null
+                    ) {
+                      console.log("Using guestId object");
+                      // Nếu có guestId object → lấy từ guest object
                       guestName = guestId.name || "";
                       guestEmail =
                         "email" in guestId && typeof guestId.email === "string"
                           ? guestId.email
                           : "";
                     } else if (typeof b.guest_name === "string") {
+                      console.log("Using fallback guest_name");
+                      // Fallback cho trường hợp khác
                       guestName = b.guest_name;
                     }
+
+                    console.log("Final guestName:", guestName);
+                    console.log("Final guestEmail:", guestEmail);
 
                     // Lấy thông tin phòng
                     let roomName = "";
@@ -517,6 +495,11 @@ const BookingList: React.FC = () => {
                                   <div className="text-sm text-gray-500">
                                     {guestEmail}
                                   </div>
+                                  {b.guest_phone && (
+                                    <div className="text-xs text-gray-400">
+                                      {b.guest_phone}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
