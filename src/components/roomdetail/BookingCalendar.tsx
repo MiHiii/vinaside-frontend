@@ -93,6 +93,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dateOpen]);
 
+  // Debug booked dates
+  console.log("BookingCalendar - bookedDates:", bookedDates);
+  console.log("BookingCalendar - bookedDates length:", bookedDates.length);
+
   // Tạo mảng ngày bị disable bao gồm cả ngày quá khứ
   const disabledDates = [
     ...bookedDates,
@@ -102,6 +106,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       return date;
     }),
   ];
+
+  console.log("BookingCalendar - disabledDates length:", disabledDates.length);
 
   const selected = {
     from: checkIn ?? undefined,
@@ -177,7 +183,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             modifiers={{ booked: bookedDates }}
             modifiersClassNames={{
               booked:
-                "text-gray-300 line-through opacity-50 cursor-not-allowed",
+                "text-red-500 line-through opacity-80 cursor-not-allowed bg-red-100 border border-red-200",
             }}
           />
           <div className="mt-4 text-right text-base text-gray-600">

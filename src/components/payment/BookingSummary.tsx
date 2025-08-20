@@ -190,10 +190,15 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
 
   // Tính weekend surcharge nếu có
   let weekendSurcharge = 0;
-  if (listing.has_weekend_surcharge && listing.weekend_surcharge_percent && tripStart && tripEnd) {
+  if (
+    listing.has_weekend_surcharge &&
+    listing.weekend_surcharge_percent &&
+    tripStart &&
+    tripEnd
+  ) {
     const startDate = new Date(tripStart);
     const endDate = new Date(tripEnd);
-    
+
     // Sử dụng utility function giống Backend
     weekendSurcharge = calculateWeekendSurcharge(listing, startDate, endDate);
   }
@@ -441,7 +446,9 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           </div>
           {weekendSurcharge > 0 && (
             <div className="flex justify-between text-base text-yellow-600">
-              <span>Phụ phí cuối tuần (+{listing.weekend_surcharge_percent}%)</span>
+              <span>
+                Phụ phí cuối tuần (+{listing.weekend_surcharge_percent}%)
+              </span>
               <span>
                 +₫
                 {paymentType === "deposit"

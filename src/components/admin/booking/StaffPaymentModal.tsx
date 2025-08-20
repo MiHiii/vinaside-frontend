@@ -11,11 +11,27 @@ import {
 import { toast } from "sonner";
 import { useAppDispatch } from "@/hooks/useRedux";
 import { createStaffRemainingPayment } from "@/store/slices/bookingSlice";
-import { DollarSign, Banknote, CheckCircle, Info } from "lucide-react";
+import {
+  DollarSign,
+  Banknote,
+  CheckCircle,
+  Calculator,
+  Receipt,
+} from "lucide-react";
 
 interface Booking {
   final_amount?: number;
   deposit_paid_amount?: number;
+  total_price?: number;
+  services_total_amount?: number;
+  additionalCost?: number;
+  additionalCostReason?: string;
+  selected_services?: Array<{
+    service_name?: string;
+    quantity?: number;
+    service_price?: number;
+    total_price?: number;
+  }>;
 }
 
 interface StaffPaymentModalProps {
@@ -42,6 +58,7 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
     note: "",
   });
   const [vnpayLoading, setVnpayLoading] = useState(false);
+  const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
 
   // Tính số tiền còn lại cần thanh toán
   const outstandingAmount =
@@ -159,7 +176,7 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden">
+      <DialogContent className="max-w-2xl p-0 overflow-hidden">
         <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-green-700">
@@ -221,6 +238,132 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
               </div>
             </div>
 
+            {/* Detailed Breakdown Toggle */}
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDetailedBreakdown(!showDetailedBreakdown)}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+              >
+                <Calculator className="w-4 h-4" />
+                {showDetailedBreakdown ? "Ẩn" : "Xem"} chi tiết các khoản tiền
+              </Button>
+            </div>
+
+            {/* Detailed Breakdown */}
+            {showDetailedBreakdown && (
+              <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Receipt className="w-5 h-5 text-gray-600" />
+                  <h4 className="font-semibold text-gray-800">
+                    Chi tiết các khoản tiền
+                  </h4>
+                </div>
+
+                {/* Giá phòng cơ bản */}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">
+                    Giá phòng cơ bản:
+                  </span>
+                  <span className="text-sm font-medium">
+                    {(booking?.total_price || 0).toLocaleString("vi-VN")}₫
+                  </span>
+                </div>
+
+                {/* Dịch vụ đã chọn */}
+                {booking?.selected_services &&
+                  booking.selected_services.length > 0 && (
+                    <>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">
+                          Dịch vụ đã chọn:
+                        </span>
+                        <span className="text-sm font-medium text-green-600">
+                          +
+                          {(booking?.services_total_amount || 0).toLocaleString(
+                            "vi-VN"
+                          )}
+                          ₫
+                        </span>
+                      </div>
+
+                      {/* Chi tiết từng dịch vụ */}
+                      <div className="ml-4 space-y-1">
+                        {booking.selected_services.map((service, index) => (
+                          <div
+                            key={index}
+                            className="flex justify-between items-center text-xs text-gray-500"
+                          >
+                            <span>
+                              • {service.service_name} (x{service.quantity})
+                            </span>
+                            <span>
+                              {(service.total_price || 0).toLocaleString(
+                                "vi-VN"
+                              )}
+                              ₫
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                {/* Chi phí phát sinh */}
+                {booking?.additionalCost && booking.additionalCost > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div>
+                      <span className="text-sm text-gray-600">
+                        Chi phí phát sinh:
+                      </span>
+                      {booking.additionalCostReason && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          ({booking.additionalCostReason})
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-sm font-medium text-orange-600">
+                      +{booking.additionalCost.toLocaleString("vi-VN")}₫
+                    </span>
+                  </div>
+                )}
+
+                {/* Tổng cộng */}
+                <div className="flex justify-between items-center py-2 border-t border-gray-200">
+                  <span className="text-sm font-semibold text-gray-800">
+                    Tổng cộng:
+                  </span>
+                  <span className="text-sm font-bold text-blue-600">
+                    {(booking?.final_amount || 0).toLocaleString("vi-VN")}₫
+                  </span>
+                </div>
+
+                {/* Đã thanh toán */}
+                <div className="flex justify-between items-center py-2 border-t border-gray-200 bg-green-50 rounded-lg px-3">
+                  <span className="text-sm font-semibold text-green-700">
+                    Đã thanh toán:
+                  </span>
+                  <span className="text-sm font-bold text-green-700">
+                    {(booking?.deposit_paid_amount || 0).toLocaleString(
+                      "vi-VN"
+                    )}
+                    ₫
+                  </span>
+                </div>
+
+                {/* Còn lại */}
+                <div className="flex justify-between items-center py-2 border-t-2 border-blue-200 bg-blue-50 rounded-lg px-3">
+                  <span className="text-sm font-semibold text-blue-700">
+                    Còn lại cần thanh toán:
+                  </span>
+                  <span className="text-lg font-bold text-blue-700">
+                    {outstandingAmount.toLocaleString("vi-VN")}₫
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Note */}
             <div>
               <Label htmlFor="note" className="text-base font-semibold">
@@ -236,8 +379,8 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
               />
             </div>
 
-            {/* Booking Info */}
-            <div className="p-4 bg-white rounded-lg border shadow-sm">
+            {/* Booking Info Summary */}
+            {/* <div className="p-4 bg-white rounded-lg border shadow-sm">
               <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                 <Info className="w-4 h-4 text-blue-400" /> Thông tin booking
               </h4>
@@ -257,7 +400,7 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
                   </span>
                 </p>
               </div>
-            </div>
+            </div> */}
 
             <div className="flex justify-end gap-3 pt-6">
               <Button
