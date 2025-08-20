@@ -293,7 +293,7 @@ export default function SearchResultPage() {
   const mapSrc = `https://www.google.com/maps?q=${mapCoords.lat},${mapCoords.lng}&output=embed`;
 
   return (
-    <div className="flex flex-col lg:flex-row w-full p-4 lg:p-10 gap-4 lg:gap-10">
+    <div className="flex flex-col lg:flex-row w-[93%] mx-auto p-4 lg:p-8 gap-2 lg:gap-6">
       {/* Cột bên trái - Danh sách phòng dạng grid */}
       <div className="flex-1 order-2 lg:order-1">
         {/* Header với thông tin tìm kiếm */}
@@ -382,7 +382,7 @@ export default function SearchResultPage() {
         {/* Kết quả tìm kiếm dạng grid giống homepage */}
         <div className="mb-8">
           {displayLoading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-2">
               {Array.from({ length: 6 }).map((_, idx) => (
                 <div key={idx} className="min-w-[280px] max-w-[280px]">
                   <Skeleton className="h-[220px] w-full rounded-2xl mb-2" />
@@ -419,7 +419,7 @@ export default function SearchResultPage() {
           )}
 
           {!displayLoading && !displayError && displayListings.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-5">
               {displayListings.map((property: any) => (
                 <PropertyCard
                   key={property._id}
@@ -433,7 +433,7 @@ export default function SearchResultPage() {
       </div>
 
       {/* Cột bên phải - Bản đồ (ẩn trên mobile) */}
-      <div className="hidden lg:block w-[45%] flex-shrink-0 order-1 lg:order-2">
+      <div className="mt-8 hidden lg:block w-[45%] flex-shrink-0 order-1 lg:order-2">
         <div className="w-full h-[770px] rounded-2xl overflow-hidden">
           <iframe
             title="Google Map"
