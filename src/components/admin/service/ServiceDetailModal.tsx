@@ -17,6 +17,7 @@ const ServiceDetailModal = ({ service, onClose }: Props) => (
         <div><span className="font-medium">Mô tả:</span> {service.description || "-"}</div>
         <div><span className="font-medium">Đơn vị:</span> {service.unit}</div>
         <div><span className="font-medium">Giá:</span> {service.default_price.toLocaleString()} đ</div>
+        <div><span className="font-medium">Cho phép số lượng:</span> {service.allow_quantity ? "Có" : "Không"}</div>
         <div><span className="font-medium">Trạng thái:</span> {service.is_active ? "Đang hoạt động" : "Không hoạt động"}</div>
         <div><span className="font-medium">Icon URL:</span> {service.icon_url || "-"}</div>
         <div><span className="font-medium">Ngày tạo:</span> {new Date(service.created_at).toLocaleString()}</div>

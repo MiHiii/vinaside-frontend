@@ -6,6 +6,7 @@ export interface Service {
   default_price: number;
   icon_url?: string;
   is_active: boolean;
+  allow_quantity: boolean;
   isDeleted: boolean;
   created_at: string;
   updated_at: string;
@@ -22,6 +23,7 @@ export interface CreateServiceDto {
   default_price: number;
   icon_url?: string;
   is_active?: boolean;
+  allow_quantity?: boolean;
 }
 
 export type UpdateServiceDto = Partial<CreateServiceDto>; 

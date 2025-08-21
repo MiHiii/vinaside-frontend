@@ -11,6 +11,7 @@ interface ServiceUsageData {
   unit: string;
   default_price: number;
   is_active: boolean;
+  allow_quantity: boolean; // Trường mới
   isDeleted: boolean;
   created_at: string;
   updated_at: string;

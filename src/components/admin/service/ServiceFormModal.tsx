@@ -16,6 +16,7 @@ const serviceSchema = z.object({
   default_price: z.coerce.number().min(0, "Giá phải lớn hơn hoặc bằng 0"),
   icon_url: z.string().url("URL icon không hợp lệ").optional().or(z.literal("")),
   is_active: z.boolean().optional(),
+  allow_quantity: z.boolean().optional(), // Trường mới
 });
 
 type ServiceFormValues = z.infer<typeof serviceSchema>;
@@ -35,6 +36,7 @@ const defaultValues: CreateServiceDto = {
   default_price: 0,
   icon_url: "",
   is_active: true,
+  allow_quantity: false, // Trường mới
 };
 
 const ServiceFormModal = ({ initialValues, loading, onSubmit, onClose, isEdit }: Props) => {
@@ -140,6 +142,10 @@ const ServiceFormModal = ({ initialValues, loading, onSubmit, onClose, isEdit }:
           <div className="flex items-center gap-2">
             <input id="active" type="checkbox" {...register("is_active")} defaultChecked className="accent-primary w-5 h-5" />
             <label htmlFor="active" className="font-medium select-none">Đang hoạt động</label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input id="allow_quantity" type="checkbox" {...register("allow_quantity")} className="accent-primary w-5 h-5" />
+            <label htmlFor="allow_quantity" className="font-medium select-none">Cho phép chọn số lượng</label>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={onClose}>Hủy</Button>

@@ -30,6 +30,7 @@ export interface BookingData {
     service_price?: number;
     quantity?: number;
     total_price?: number;
+    allow_quantity?: boolean; // Trường mới
   }>;
   services_total_amount?: number;
   // Thông tin hủy phòng

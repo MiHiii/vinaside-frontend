@@ -27,6 +27,7 @@ export interface SelectedService {
   service_price: number;
   quantity: number;
   total_price: number;
+  allow_quantity?: boolean; // Trường mới
 }
 
 export interface BookingDetail {

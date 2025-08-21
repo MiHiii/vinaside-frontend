@@ -47,6 +47,7 @@ const ServiceTable: React.FC<Props> = ({
             <th className="text-center p-2">Mô tả</th>
             <th className="text-center p-2">Đơn vị</th>
             <th className="text-center p-2">Giá</th>
+            <th className="text-center p-2">Số lượng</th>
             <th className="text-center p-2">Trạng thái</th>
             <th className="text-center p-2">Hành động</th>
           </tr>
@@ -80,6 +81,9 @@ const ServiceTable: React.FC<Props> = ({
               <td className="text-center p-2">{s.unit}</td>
               <td className="text-center p-2">
                 {s.default_price.toLocaleString()} đ
+              </td>
+              <td className="text-center p-2">
+                {s.allow_quantity ? "Cho phép" : "Không cho phép"}
               </td>
               <td
                 className={`text-center p-2 ${statusColor(

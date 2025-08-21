@@ -830,6 +830,9 @@ const BookingDetail: React.FC<{
                             Số lượng
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Cho phép SL
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Đơn giá
                           </th>
                           <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -854,6 +857,9 @@ const BookingDetail: React.FC<{
                               {service.quantity}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              {service.allow_quantity ? "Có" : "Không"}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                               {service.service_price?.toLocaleString() || "0"}₫
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
@@ -865,7 +871,7 @@ const BookingDetail: React.FC<{
                       <tfoot className="bg-gray-50">
                         <tr>
                           <td
-                            colSpan={3}
+                            colSpan={4}
                             className="px-4 py-3 text-sm font-medium text-gray-900"
                           >
                             Tổng dịch vụ:

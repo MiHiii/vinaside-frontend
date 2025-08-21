@@ -47,6 +47,7 @@ interface BookingFormProps {
     quantity: number;
     total_price: number;
     icon_url?: string;
+    allow_quantity?: boolean;
   }>;
   loading?: boolean;
 }
