@@ -235,6 +235,37 @@ export const useMessages = () => {
     }
   }, [messages, myId, scrollToBottom]);
 
+  // Load more messages (pagination)
+  const loadMoreMessages = useCallback(async () => {
+    if (!selectedConversation || isLoading || !hasMoreMessages) return;
+
+    try {
+      setIsLoading(true);
+      console.log('🔄 [useMessages] Loading more messages...');
+
+      const currentPage = Math.ceil(messages.length / 50) + 1;
+      const newMessages = await messageService.getConversationMessages(
+        selectedConversation._id,
+        50,
+        currentPage,
+        userRole as 'guest' | 'staff',
+      );
+
+      console.log('✅ [useMessages] More messages loaded:', newMessages.length);
+
+      if (newMessages.length < 50) {
+        setHasMoreMessages(false);
+      }
+
+      // Add new messages to the beginning (for pagination)
+      setMessages((prev) => [...newMessages, ...prev]);
+    } catch (error: any) {
+      console.error('❌ [useMessages] Error loading more messages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedConversation, messages.length, isLoading, hasMoreMessages, userRole]);
+
   // Setup Socket.IO connection and event listeners
   useEffect(() => {
     console.log('🔌 [useMessages] Setting up Socket.IO connection...');
@@ -408,6 +439,7 @@ export const useMessages = () => {
     handleTextareaChange,
     isSending,
     scrollToBottom,
+    loadMoreMessages,
 
     // Setters
     setMessageInput,
