@@ -82,23 +82,38 @@ const createListingSchema = z.object({
   property_id: z.string().min(1, "Phải chọn property"),
   price_per_night: z.preprocess(
     (val) => Number(val),
-    z.number().gt(100000, "Giá/đêm phải lớn hơn 100.000")
+    z
+      .number()
+      .min(10000, "Giá/đêm phải từ 10.000 VNĐ")
+      .max(5000000, "Giá/đêm không được vượt quá 5.000.000 VNĐ")
   ),
   guests: z.preprocess(
     (val) => Number(val),
-    z.number().min(1, "Số khách phải lớn hơn hoặc bằng 1")
+    z
+      .number()
+      .min(1, "Số khách phải từ 1")
+      .max(20, "Số khách không được vượt quá 20")
   ),
   max_guests: z.preprocess(
     (val) => Number(val),
-    z.number().min(1, "Số khách tối đa phải lớn hơn hoặc bằng 1")
+    z
+      .number()
+      .min(1, "Số khách tối đa phải từ 1")
+      .max(50, "Số khách tối đa không được vượt quá 50")
   ),
   beds: z.preprocess(
     (val) => Number(val),
-    z.number().min(1, "Số giường phải lớn hơn hoặc bằng 1")
+    z
+      .number()
+      .min(1, "Số giường phải từ 1")
+      .max(20, "Số giường không được vượt quá 20")
   ),
   bathrooms: z.preprocess(
     (val) => Number(val),
-    z.number().min(1, "Số phòng tắm phải lớn hơn hoặc bằng 1")
+    z
+      .number()
+      .min(1, "Số phòng tắm phải từ 1")
+      .max(10, "Số phòng tắm không được vượt quá 10")
   ),
   cancel_policy: z.string().min(1, "Chính sách hủy là bắt buộc"),
   status: z.string().min(1, "Trạng thái là bắt buộc"),
@@ -189,6 +204,18 @@ export default function CreateListing() {
       console.log("Updated formData:", newData);
       return newData;
     });
+  };
+
+  // Format number to Vietnamese currency
+  const formatVietnameseCurrency = (value: number): string => {
+    if (value === 0) return "";
+    return value.toLocaleString("vi-VN");
+  };
+
+  // Parse Vietnamese currency format to number
+  const parseVietnameseCurrency = (value: string): number => {
+    if (!value) return 0;
+    return parseInt(value.replace(/\./g, ""), 10);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -428,13 +455,18 @@ export default function CreateListing() {
             </Label>
             <Input
               id="price"
-              type="number"
-              value={formData.price_per_night}
-              onChange={(e) =>
-                handleInputChange("price_per_night", Number(e.target.value))
-              }
-              placeholder="0"
-              min="0"
+              type="text"
+              value={formatVietnameseCurrency(formData.price_per_night)}
+              onChange={(e) => {
+                const rawValue = e.target.value.replace(/\./g, "");
+                const numValue = parseInt(rawValue, 10);
+                if (!isNaN(numValue) && numValue >= 0) {
+                  handleInputChange("price_per_night", numValue);
+                } else if (rawValue === "") {
+                  handleInputChange("price_per_night", 0);
+                }
+              }}
+              placeholder="Nhập giá (VD: 1.000.000)"
               className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
             {errors.price_per_night && (
@@ -457,10 +489,14 @@ export default function CreateListing() {
                 id="guests"
                 type="number"
                 value={formData.guests}
-                onChange={(e) =>
-                  handleInputChange("guests", Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (value >= 1) {
+                    handleInputChange("guests", value);
+                  }
+                }}
                 min="1"
+                max="20"
                 className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
               {errors.guests && (
@@ -480,10 +516,14 @@ export default function CreateListing() {
                 id="max_guests"
                 type="number"
                 value={formData.max_guests}
-                onChange={(e) =>
-                  handleInputChange("max_guests", Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (value >= 1) {
+                    handleInputChange("max_guests", value);
+                  }
+                }}
                 min="1"
+                max="50"
                 className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
               {errors.max_guests && (
@@ -507,10 +547,14 @@ export default function CreateListing() {
                 id="beds"
                 type="number"
                 value={formData.beds}
-                onChange={(e) =>
-                  handleInputChange("beds", Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (value >= 1) {
+                    handleInputChange("beds", value);
+                  }
+                }}
                 min="1"
+                max="20"
                 className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
               {errors.beds && (
@@ -530,10 +574,14 @@ export default function CreateListing() {
                 id="bathrooms"
                 type="number"
                 value={formData.bathrooms}
-                onChange={(e) =>
-                  handleInputChange("bathrooms", Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (value >= 1) {
+                    handleInputChange("bathrooms", value);
+                  }
+                }}
                 min="1"
+                max="10"
                 className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
               {errors.bathrooms && (

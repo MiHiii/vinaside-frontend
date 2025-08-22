@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { api } from "@/services/api";
 
-
 // Dashboard interfaces based on actual API response
 export interface RevenueChartDataItem {
   date: string;
@@ -218,7 +217,7 @@ const initialState: DashboardState = {
     startDate: new Date().toISOString().split("T")[0],
     endDate: new Date().toISOString().split("T")[0],
   },
-  dateRangeType: "today",
+  dateRangeType: "last_30_days",
   selectedPropertyId: null,
 };
 

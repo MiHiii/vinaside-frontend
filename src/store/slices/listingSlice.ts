@@ -298,19 +298,20 @@ export const fetchListingStatistics = createAsyncThunk<
   { rejectValue: string }
 >(
   "listings/fetchListingStatistics",
-  async ({ id, dateRange, startDate, endDate }, { rejectWithValue }) => {
+  async (
+    { id, dateRange = "last_30_days", startDate, endDate },
+    { rejectWithValue }
+  ) => {
     try {
       const params: Record<string, string> = {};
 
-      if (dateRange && dateRange !== "custom") {
-        params.dateRange = dateRange;
-      } else if (dateRange === "custom" && startDate && endDate) {
+      if (dateRange === "custom" && startDate && endDate) {
         params.dateRange = "custom";
         params.startDate = startDate;
         params.endDate = endDate;
-      } else if (startDate && endDate) {
-        params.startDate = startDate;
-        params.endDate = endDate;
+      } else {
+        // Luôn append dateRange, mặc định là "last_30_days"
+        params.dateRange = dateRange;
       }
 
       const res = await api.get(`/listings/statistics/${id}`, { params });
