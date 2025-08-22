@@ -4,6 +4,7 @@ export interface Service {
   description?: string;
   unit: string;
   default_price: number;
+  allow_quantity?: boolean;
   icon_url?: string;
   is_active: boolean;
   isDeleted: boolean;
@@ -22,6 +23,7 @@ export interface CreateServiceDto {
   default_price: number;
   icon_url?: string;
   is_active?: boolean;
+  allow_quantity?: boolean;
 }
 
-export type UpdateServiceDto = Partial<CreateServiceDto>; 
+export type UpdateServiceDto = Partial<CreateServiceDto>;

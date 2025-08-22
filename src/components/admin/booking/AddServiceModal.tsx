@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
+import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from "@/constants/service";
 
 interface Service {
   _id: string;
@@ -19,6 +20,7 @@ interface Service {
   description?: string;
   default_price: number;
   unit: string;
+  allow_quantity?: boolean;
 }
 
 interface BookingService {
@@ -98,6 +100,26 @@ const AddServiceModal: React.FC<AddServiceModalProps> = ({
     if (Object.keys(selectedServices).length === 0) {
       toast.error("Vui lòng chọn ít nhất một dịch vụ");
       return;
+    }
+
+    // Validate and enforce quantity rules
+    for (const [serviceId, quantity] of Object.entries(selectedServices)) {
+      const service = availableServices.find((s) => s._id === serviceId);
+      if (!service) continue;
+      if (!service.allow_quantity && quantity > 1) {
+        toast.error(
+          `Dịch vụ "${service.name}" không cho phép chọn số lượng. Chỉ có thể chọn 1 lần.`
+        );
+        return;
+      }
+      if (quantity > SERVICE_CONSTANTS.MAX_QUANTITY) {
+        toast.error(SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED);
+        return;
+      }
+      if (quantity < SERVICE_CONSTANTS.MIN_QUANTITY) {
+        toast.error(SERVICE_MESSAGES.MIN_QUANTITY_REQUIRED);
+        return;
+      }
     }
 
     setLoading(true);
@@ -251,6 +273,99 @@ const AddServiceModal: React.FC<AddServiceModalProps> = ({
                           {service.default_price?.toLocaleString()}₫ /{" "}
                           {service.unit}
                         </p>
+                        {service.allow_quantity && selectedServices[service._id] && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedServices((prev) => {
+                                  const current = prev[service._id] || 1;
+                                  const next = Math.max(SERVICE_CONSTANTS.MIN_QUANTITY, current - 1);
+                                  return { ...prev, [service._id]: next };
+                                });
+                              }}
+                            >
+                              -
+                            </Button>
+                            <span className="min-w-[20px] text-center text-sm font-medium">
+                              {selectedServices[service._id] || 1}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedServices((prev) => {
+                                  const current = prev[service._id] || 1;
+                                  if (current >= SERVICE_CONSTANTS.MAX_QUANTITY) {
+                                    toast.error(SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED);
+                                    return prev;
+                                  }
+                                  const next = current + 1;
+                                  return { ...prev, [service._id]: next };
+                                });
+                              }}
+                              disabled={(selectedServices[service._id] || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY}
+                            >
+                              +
+                            </Button>
+                            {(selectedServices[service._id] || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY && (
+                              <span className="text-xs text-gray-500">{SERVICE_MESSAGES.QUANTITY_LIMIT_HINT}</span>
+                            )}
+                          </div>
+                        )}
+                        {service.allow_quantity && selectedServices[service._id] && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedServices((prev) => {
+                                  const current = prev[service._id] || 1;
+                                  const next = Math.max(
+                                    SERVICE_CONSTANTS.MIN_QUANTITY,
+                                    current - 1
+                                  );
+                                  return { ...prev, [service._id]: next };
+                                });
+                              }}
+                            >
+                              -
+                            </Button>
+                            <span className="min-w-[20px] text-center text-sm font-medium">
+                              {selectedServices[service._id] || 1}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedServices((prev) => {
+                                  const current = prev[service._id] || 1;
+                                  if (current >= SERVICE_CONSTANTS.MAX_QUANTITY) {
+                                    toast.error(SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED);
+                                    return prev;
+                                  }
+                                  const next = current + 1;
+                                  return { ...prev, [service._id]: next };
+                                });
+                              }}
+                              disabled={(selectedServices[service._id] || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY}
+                            >
+                              +
+                            </Button>
+                            {(selectedServices[service._id] || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY && (
+                              <span className="text-xs text-gray-500">{SERVICE_MESSAGES.QUANTITY_LIMIT_HINT}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
