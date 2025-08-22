@@ -51,19 +51,12 @@ export default function PropertyDetailView() {
 
   // State cho date range
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(
-    () => {
-      // Default to today
-      const today = new Date();
-      return {
-        from: today,
-        to: today,
-      };
-    }
+    undefined
   );
   const [open, setOpen] = React.useState(false);
   const [dateRangeType, setDateRangeType] = React.useState<
     "today" | "last_7_days" | "last_15_days" | "last_30_days" | "custom"
-  >("today");
+  >("custom");
   const [activeTab, setActiveTab] = React.useState<"statistics" | "rooms">(
     "statistics"
   );
@@ -102,11 +95,10 @@ export default function PropertyDetailView() {
           );
         }
       } else {
-        // Default to today
+        // Không truyền dateRange nếu không có range
         dispatch(
           fetchPropertyStatistics({
             id,
-            dateRange: "today",
           })
         );
       }
@@ -126,10 +118,15 @@ export default function PropertyDetailView() {
 
   useEffect(() => {
     if (id) {
-      fetchData();
+      // Gọi API không có dateRange khi component mount
+      dispatch(
+        fetchPropertyStatistics({
+          id,
+        })
+      );
       dispatch(fetchPropertyById(id));
     }
-  }, [id, dispatch, fetchData]);
+  }, [id, dispatch]);
 
   // Fetch rooms data when switching to rooms tab
   useEffect(() => {
@@ -141,7 +138,14 @@ export default function PropertyDetailView() {
 
   // Handle refresh
   const handleRefresh = () => {
-    fetchData();
+    if (id) {
+      // Gọi API không có dateRange khi refresh
+      dispatch(
+        fetchPropertyStatistics({
+          id,
+        })
+      );
+    }
   };
 
   // Loading and error handling

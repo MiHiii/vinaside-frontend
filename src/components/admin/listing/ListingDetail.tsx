@@ -59,14 +59,11 @@ const ListingDetail = () => {
 
   // State cho date range
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(
-    () => {
-      const today = new Date();
-      return { from: today, to: today };
-    }
+    undefined
   );
   const [dateRangeType, setDateRangeType] = React.useState<
     "today" | "last_7_days" | "last_15_days" | "last_30_days" | "custom"
-  >("today");
+  >("custom");
   const [open, setOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<"statistics" | "info">(
     "info"
@@ -76,7 +73,8 @@ const ListingDetail = () => {
     if (id) {
       dispatch(fetchListingByIdForAdmin(id));
       dispatch(fetchReviewsByRoomId(id));
-      fetchData(dateRangeType, dateRange);
+      // Gọi API không có dateRange khi refresh
+      dispatch(fetchListingStatistics({ id }));
     }
     dispatch(fetchServices({}));
     dispatch(fetchSafetyFeatures({}));
@@ -107,7 +105,8 @@ const ListingDetail = () => {
   useEffect(() => {
     if (id) {
       dispatch(fetchListingByIdForAdmin(id));
-      dispatch(fetchListingStatistics({ id, dateRange: "today" }));
+      // Gọi API không có dateRange khi component mount
+      dispatch(fetchListingStatistics({ id }));
       dispatch(fetchReviewsByRoomId(id));
     }
     dispatch(fetchServices({}));
@@ -141,6 +140,9 @@ const ListingDetail = () => {
             endDate: customRange.to.toISOString().slice(0, 10),
           })
         );
+      } else {
+        // Không truyền dateRange nếu không có range
+        dispatch(fetchListingStatistics({ id }));
       }
     },
     [id, dispatch]

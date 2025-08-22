@@ -53,7 +53,7 @@ interface CreatePropertyFormData {
 
 const createPropertySchema = z.object({
   name: z.string().min(1, "Tên property là bắt buộc"),
-  description: z.string().min(1, "Mô tả là bắt buộc"),
+  description: z.string().optional(),
   type: z.string().min(1, "Loại bất động sản là bắt buộc"),
   location: z.object({
     address: z.string().min(1, "Địa chỉ là bắt buộc"),
@@ -66,8 +66,11 @@ const createPropertySchema = z.object({
   }),
   checkInTime: z.string().optional(),
   checkOutTime: z.string().optional(),
-  contactPhone: z.string().optional(),
-  contactEmail: z.string().optional(),
+  contactPhone: z
+    .string()
+    .min(1, "Số điện thoại liên hệ là bắt buộc")
+    .regex(/^[0-9+\-\s()]+$/, "Số điện thoại không hợp lệ"),
+  contactEmail: z.string().email("Email không hợp lệ").optional(),
   allowPets: z.boolean().optional(),
   thumbnail: z.string().optional(),
   images: z.array(z.string()).min(1, "Cần upload ít nhất 1 ảnh"),
@@ -139,6 +142,31 @@ export default function CreatePropertyForm() {
     field: keyof CreatePropertyFormData,
     value: string | boolean
   ) => {
+    // Validation cho các trường cụ thể
+    if (field === "name" && typeof value === "string" && value.length > 100) {
+      return; // Không cho phép vượt quá 100 ký tự
+    }
+    if (
+      field === "description" &&
+      typeof value === "string" &&
+      value.length > 1000
+    ) {
+      return; // Không cho phép vượt quá 1000 ký tự
+    }
+    if (field === "contactPhone" && typeof value === "string") {
+      // Chỉ cho phép số, dấu +, -, khoảng trắng, dấu ngoặc
+      if (!/^[0-9+\-\s()]*$/.test(value)) {
+        return;
+      }
+    }
+    if (field === "contactEmail" && typeof value === "string" && value) {
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        return;
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -149,6 +177,15 @@ export default function CreatePropertyForm() {
     field: keyof typeof formData.location,
     value: string | number
   ) => {
+    // Validation cho địa chỉ
+    if (
+      field === "address" &&
+      typeof value === "string" &&
+      value.length > 200
+    ) {
+      return; // Không cho phép vượt quá 200 ký tự
+    }
+
     setFormData((prev) => ({
       ...prev,
       location: {
@@ -288,6 +325,7 @@ export default function CreatePropertyForm() {
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="Nhập tên property"
+                  maxLength={100}
                   className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
                 {errors.name && (
@@ -303,7 +341,7 @@ export default function CreatePropertyForm() {
                   htmlFor="description"
                   className="text-base font-semibold text-gray-800 dark:text-gray-200"
                 >
-                  Mô tả *
+                  Mô tả
                 </Label>
                 <Textarea
                   id="description"
@@ -313,6 +351,7 @@ export default function CreatePropertyForm() {
                   }
                   placeholder="Mô tả chi tiết về property"
                   rows={3}
+                  maxLength={1000}
                   className="text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
                 />
                 {errors.description && (
@@ -703,7 +742,7 @@ export default function CreatePropertyForm() {
                     htmlFor="contactPhone"
                     className="text-base font-semibold text-gray-800 dark:text-gray-200"
                   >
-                    Số điện thoại liên hệ
+                    Số điện thoại liên hệ *
                   </Label>
                   <Input
                     id="contactPhone"
@@ -711,7 +750,8 @@ export default function CreatePropertyForm() {
                     onChange={(e) =>
                       handleInputChange("contactPhone", e.target.value)
                     }
-                    placeholder="Số điện thoại"
+                    placeholder="Số điện thoại (VD: +84 123 456 789)"
+                    maxLength={20}
                     className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -729,7 +769,8 @@ export default function CreatePropertyForm() {
                     onChange={(e) =>
                       handleInputChange("contactEmail", e.target.value)
                     }
-                    placeholder="Email"
+                    placeholder="Email (VD: contact@example.com)"
+                    maxLength={100}
                     className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>

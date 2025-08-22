@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { chatbotService, ChatbotMessage } from "@/services/chatbot.service";
+import {
+  chatbotService,
+  ChatbotMessage,
+  BotMessage,
+} from "@/services/chatbot.service";
 import { useAppSelector } from "@/hooks/useRedux";
 
 export const useChatbot = () => {
@@ -16,24 +20,10 @@ export const useChatbot = () => {
     chatbotService.connectWebSocket(user?._id);
   }, [user?._id]);
 
-  // Load chat history
+  // Load chat history - removed since we don't use conversation API anymore
   const loadChatHistory = useCallback(async () => {
-    try {
-      const response = await chatbotService.getConversation(20, 1);
-      if (response.success && response.data) {
-        // Loại bỏ duplicate messages dựa trên content và reply
-        const uniqueMessages = response.data.filter(
-          (message, index, self) =>
-            index ===
-            self.findIndex(
-              (m) => m.content === message.content && m.reply === message.reply
-            )
-        );
-        setMessages(uniqueMessages);
-      }
-    } catch (error) {
-      console.error("Error loading chat history:", error);
-    }
+    // No longer loading history from API
+    console.log("Chat history loading disabled");
   }, []);
 
   // Gửi tin nhắn
@@ -54,50 +44,34 @@ export const useChatbot = () => {
       setIsLoading(true);
 
       try {
-        if (isConnected) {
-          // Gửi qua WebSocket nếu đã kết nối
-          // Không tạo bot reply ở đây, đợi WebSocket response
-          chatbotService.sendMessageViaWebSocket(content.trim());
-        } else {
-          // Fallback: gửi qua API
-          const response = await chatbotService.sendMessage({
-            content: content.trim(),
-            user_id: user?._id,
-          });
+        // Chỉ gửi qua API, không gửi qua WebSocket để tránh duplicate
+        const response = await chatbotService.sendMessage({
+          content: content.trim(),
+          user_id: user?._id,
+        });
 
-          // Chỉ tạo bot reply khi không có WebSocket connection
-          if (response.success && response.data?.reply) {
-            // Cập nhật tin nhắn hiện có thay vì tạo tin nhắn mới
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg._id === messageId
-                  ? { ...msg, reply: response.data.reply || "" }
-                  : msg
-              )
-            );
-          } else if (response.success && response.data?.message) {
-            // Fallback cho trường hợp response có data.message
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg._id === messageId
-                  ? { ...msg, reply: response.data.message || "" }
-                  : msg
-              )
-            );
-          } else {
-            // Fallback message khi không có response data
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg._id === messageId
-                  ? {
-                      ...msg,
-                      reply:
-                        "Xin lỗi, tôi không thể xử lý tin nhắn của bạn ngay lúc này. Vui lòng thử lại sau.",
-                    }
-                  : msg
-              )
-            );
-          }
+        // Cập nhật tin nhắn với response ngay lập tức
+        if (response.success && response.data) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg._id === messageId ? { ...msg, reply: response.data } : msg
+            )
+          );
+        } else {
+          // Fallback message khi không có response data
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg._id === messageId
+                ? {
+                    ...msg,
+                    reply: {
+                      type: "text",
+                      text: "Xin lỗi, tôi không thể xử lý tin nhắn của bạn ngay lúc này. Vui lòng thử lại sau.",
+                    },
+                  }
+                : msg
+            )
+          );
         }
       } catch (error: any) {
         console.error("useChatbot: Error sending message:", error);
@@ -127,7 +101,15 @@ export const useChatbot = () => {
         // Cập nhật tin nhắn hiện có với error message
         setMessages((prev) =>
           prev.map((msg) =>
-            msg._id === messageId ? { ...msg, reply: errorMessage } : msg
+            msg._id === messageId
+              ? {
+                  ...msg,
+                  reply: {
+                    type: "text",
+                    text: errorMessage,
+                  },
+                }
+              : msg
           )
         );
       } finally {
@@ -151,45 +133,36 @@ export const useChatbot = () => {
   useEffect(() => {
     connectWebSocket();
 
-    // Load chat history
-    loadChatHistory();
+    // Chat history loading disabled - no longer using conversation API
 
-    // Đăng ký listener cho tin nhắn mới
+    // Đăng ký listener cho tin nhắn mới từ WebSocket
     const unsubscribeMessage = chatbotService.onMessage((message) => {
-      // Chỉ cập nhật tin nhắn cuối cùng nếu nó chưa có reply
+      // Chỉ xử lý tin nhắn mới từ WebSocket, không duplicate với API response
       setMessages((prev) => {
-        const lastMessage = prev[prev.length - 1];
-        if (
-          lastMessage &&
-          lastMessage.reply === "" &&
-          lastMessage.content === message.content
-        ) {
-          // Cập nhật tin nhắn cuối cùng với reply, giữ nguyên content
-          return [
-            ...prev.slice(0, -1),
-            { ...lastMessage, reply: message.reply || "" },
-          ];
-        } else if (
-          lastMessage &&
-          lastMessage.reply === "" &&
-          lastMessage.content !== message.reply
-        ) {
-          // Cập nhật tin nhắn cuối cùng với reply, giữ nguyên content
-          return [
-            ...prev.slice(0, -1),
-            { ...lastMessage, reply: message.reply || "" },
-          ];
-        } else {
-          // Kiểm tra xem tin nhắn này đã tồn tại chưa để tránh duplicate
-          const existingMessage = prev.find(
-            (msg) =>
-              msg.content === message.content && msg.reply === message.reply
-          );
-          if (!existingMessage) {
-            return [...prev, message];
-          }
-          return prev;
+        // Kiểm tra xem tin nhắn này đã tồn tại chưa để tránh duplicate
+        const existingMessage = prev.find(
+          (msg) =>
+            msg.content === message.content &&
+            (typeof msg.reply === "string"
+              ? msg.reply ===
+                (typeof message.reply === "string" ? message.reply : "")
+              : JSON.stringify(msg.reply) === JSON.stringify(message.reply))
+        );
+
+        if (!existingMessage) {
+          return [...prev, message];
         }
+
+        // Nếu tin nhắn đã tồn tại, chỉ cập nhật nếu reply rỗng
+        return prev.map((msg) => {
+          if (
+            msg.content === message.content &&
+            (typeof msg.reply === "string" ? msg.reply === "" : !msg.reply)
+          ) {
+            return { ...msg, reply: message.reply };
+          }
+          return msg;
+        });
       });
       setHasUnreadMessages(true);
     });
@@ -207,7 +180,7 @@ export const useChatbot = () => {
       unsubscribeMessage();
       unsubscribeConnection();
     };
-  }, [connectWebSocket, loadChatHistory]);
+  }, [connectWebSocket]);
 
   return {
     messages,
@@ -219,6 +192,5 @@ export const useChatbot = () => {
     clearMessages,
     markAsRead,
     connectWebSocket,
-    loadChatHistory,
   };
 };
