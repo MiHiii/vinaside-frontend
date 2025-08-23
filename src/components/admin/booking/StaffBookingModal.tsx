@@ -55,6 +55,7 @@ import { api } from "@/services/api";
 import { format } from "date-fns";
 import BookingCalendar from "@/components/roomdetail/BookingCalendar";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from "@/constants/service";
 interface Property {
   _id: string;
   name: string;
@@ -85,6 +86,7 @@ interface Service {
   description?: string;
   default_price: number;
   unit: string;
+  allow_quantity?: boolean;
 }
 
 interface StaffBookingService {
@@ -1788,6 +1790,62 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                           </div>
                         );
                       })}
+                            }`}
+                          />
+                          {isSelected && service.allow_quantity && (
+                            <div className="ml-4 flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    services: prev.services.map((s) =>
+                                      s.serviceId === service._id
+                                        ? {
+                                            ...s,
+                                            quantity: Math.max(1, s.quantity - 1),
+                                          }
+                                        : s
+                                    ),
+                                  }));
+                                }}
+                              >
+                                -
+                              </Button>
+                              <span className="min-w-[20px] text-center text-sm font-medium">
+                                {formData.services.find((s) => s.serviceId === service._id)?.quantity || 1}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    services: prev.services.map((s) => {
+                                      if (s.serviceId !== service._id) return s;
+                                      if ((s.quantity || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY) {
+                                        toast.error(SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED);
+                                        return s;
+                                      }
+                                      return { ...s, quantity: (s.quantity || 1) + 1 };
+                                    }),
+                                  }));
+                                }}
+                                disabled={(formData.services.find((s) => s.serviceId === service._id)?.quantity || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY}
+                              >
+                                +
+                              </Button>
+                              {(formData.services.find((s) => s.serviceId === service._id)?.quantity || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY && (
+                                <span className="text-xs text-gray-500">{SERVICE_MESSAGES.QUANTITY_LIMIT_HINT}</span>
+                              )}
+                            </div>
+                          )}
+                  </div>
+                );
+              })}
                   </div>
                 </div>
                 <div className="space-y-2">

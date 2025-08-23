@@ -17,7 +17,9 @@ const voucherSchema = z.object({
     .min(1, "Số lượt sử dụng tối đa phải từ 1 trở lên"),
   expiration_date: z.string().nonempty("Ngày hết hạn là bắt buộc"),
   description: z.string().optional(),
-  min_order_value: z.coerce.number().min(0, "Giá trị đơn hàng tối thiểu không được âm").optional(),
+  min_order_value: z.coerce.number().min(0, "Giá trị đơn hàng tối thiểu không được âm")
+  .max(15000000, "Giá trị đơn hàng tối thiểu không vượt quá 15 triệu")
+  .optional(),
   applies_to: z.object({ room_ids: z.array(z.string()).optional() }).optional(),
 });
 

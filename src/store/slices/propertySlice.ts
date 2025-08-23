@@ -431,12 +431,15 @@ export const fetchPropertyStatistics = createAsyncThunk(
       // Chuẩn bị query parameters
       const params = new URLSearchParams();
 
-      if (dateRange && dateRange !== "custom") {
-        params.append("dateRange", dateRange);
-      } else if (dateRange === "custom" && startDate && endDate) {
-        params.append("dateRange", "custom");
-        params.append("startDate", startDate);
-        params.append("endDate", endDate);
+      // Chỉ append dateRange nếu được truyền vào
+      if (dateRange) {
+        if (dateRange === "custom" && startDate && endDate) {
+          params.append("dateRange", "custom");
+          params.append("startDate", startDate);
+          params.append("endDate", endDate);
+        } else {
+          params.append("dateRange", dateRange);
+        }
       }
 
       const queryString = params.toString();
