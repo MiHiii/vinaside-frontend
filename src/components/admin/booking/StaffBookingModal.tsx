@@ -85,6 +85,7 @@ interface Service {
   description?: string;
   default_price: number;
   unit: string;
+  allow_quantity?: boolean;
 }
 
 interface StaffBookingService {

@@ -1,10 +1,36 @@
 import { api } from "./api";
 import { io, Socket } from "socket.io-client";
 
+export interface BotMessage {
+  type: "text" | "listings";
+  text?: string;
+  header?: string;
+  meta?: {
+    dateRange?: string;
+    guests?: number;
+    city?: string;
+    total?: number;
+  };
+  items?: Array<{
+    id: string;
+    title: string;
+    pricePerNight: number;
+    address?: string;
+    tags?: string[];
+    imageUrl?: string;
+    detailUrl?: string;
+  }>;
+  cta?: {
+    label: string;
+    action: "HOLD" | "DETAIL";
+    payload?: any;
+  };
+}
+
 export interface ChatbotMessage {
   _id: string;
   content: string;
-  reply: string;
+  reply: string | BotMessage;
   createdAt: string;
   user_id?: string;
 }
@@ -16,12 +42,7 @@ export interface SendMessageRequest {
 
 export interface SendMessageResponse {
   success: boolean;
-  data: {
-    reply: string;
-    message?: string;
-    timestamp?: string;
-    sent_at?: string;
-  };
+  data: BotMessage;
   statusCode?: number;
   message?: string;
 }
@@ -53,41 +74,6 @@ class ChatbotService {
       return response.data;
     } catch (error) {
       console.error("Error sending message:", error);
-      throw error;
-    }
-  }
-
-  // Lấy lịch sử chat
-  async getConversation(limit = 20, page = 1): Promise<ConversationResponse> {
-    try {
-      const response = await api.get("/chatbot/conversation", {
-        params: { limit, page },
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Error getting conversation:", error);
-      throw error;
-    }
-  }
-
-  // Lấy danh sách cuộc trò chuyện
-  async getConversations(): Promise<ConversationResponse> {
-    try {
-      const response = await api.get("/chatbot/conversations");
-      return response.data;
-    } catch (error) {
-      console.error("Error getting conversations:", error);
-      throw error;
-    }
-  }
-
-  // Lấy lịch sử chat
-  async getHistory(): Promise<ConversationResponse> {
-    try {
-      const response = await api.get("/chatbot/history");
-      return response.data;
-    } catch (error) {
-      console.error("Error getting chat history:", error);
       throw error;
     }
   }
@@ -148,7 +134,7 @@ class ChatbotService {
         const message: ChatbotMessage = {
           _id: data._id || Date.now().toString(),
           content: data.content || "", // Giữ nguyên content gốc
-          reply: data.reply || data.message || "", // Reply từ bot
+          reply: data.reply || data.message || data.data || "", // Reply từ bot
           createdAt: data.createdAt || new Date().toISOString(),
           user_id: data.user_id || this.userId,
         };
@@ -164,7 +150,7 @@ class ChatbotService {
         const message: ChatbotMessage = {
           _id: data._id || data.id || Date.now().toString(),
           content: data.content || "", // Giữ nguyên content gốc
-          reply: data.reply || data.message || "", // Reply từ bot
+          reply: data.reply || data.message || data.data || "", // Reply từ bot
           createdAt:
             data.createdAt || data.timestamp || new Date().toISOString(),
           user_id: data.user_id || this.userId,
@@ -188,7 +174,7 @@ class ChatbotService {
     });
   }
 
-  // Gửi tin nhắn qua Socket.IO
+  // Gửi tin nhắn qua Socket.IO (chỉ dùng cho realtime, không dùng cho gửi tin nhắn chính)
   sendMessageViaWebSocket(content: string) {
     if (this.socket && this.socket.connected) {
       const messageData = {
@@ -197,9 +183,6 @@ class ChatbotService {
         timestamp: new Date().toISOString(),
       };
       this.socket.emit("send_message", messageData);
-    } else {
-      // Fallback to API
-      this.sendMessage({ content, user_id: this.userId || undefined });
     }
   }
 

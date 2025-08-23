@@ -6,6 +6,7 @@ import { getMyBookingHistory } from "@/store/slices/bookingSlice";
 import { BookingData, isListingObj } from "@/types/booking";
 import { BookingStatus, PaymentStatus, CancelPolicy } from "@/types/enum";
 import { api } from "@/services/api";
+import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from "@/constants/service";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -218,7 +219,7 @@ const PastTrip = () => {
     new Set(
       ((myBookingHistory as BookingWithStatus[]) || [])
         .map((b) =>
-          typeof b.listingId === "object" && "_id" in b.listingId
+          b.listingId && typeof b.listingId === "object" && "_id" in b.listingId
             ? b.listingId._id
             : null
         )
@@ -255,6 +256,7 @@ const PastTrip = () => {
       description?: string;
       default_price: number;
       unit: string;
+      allow_quantity?: boolean;
     }>
   >([]);
   const [selectedServices, setSelectedServices] = useState<{
@@ -339,7 +341,7 @@ const PastTrip = () => {
           try {
             const listing = booking.listingId;
             const listingId =
-              typeof listing === "object" && "_id" in listing
+              listing && typeof listing === "object" && "_id" in listing
                 ? listing._id
                 : listing;
 
@@ -588,6 +590,25 @@ const PastTrip = () => {
     ) {
       toast.error("Vui lòng chọn ít nhất một dịch vụ");
       return;
+    }
+    // Validate quantities against allow_quantity and limits
+    for (const [serviceId, quantity] of Object.entries(selectedServices)) {
+      const service = availableServices.find((s) => s._id === serviceId);
+      if (!service) continue;
+      if (!service.allow_quantity && quantity > 1) {
+        toast.error(
+          `Dịch vụ "${service.name}" không cho phép chọn số lượng. Chỉ có thể chọn 1 lần.`
+        );
+        return;
+      }
+      if (quantity > SERVICE_CONSTANTS.MAX_QUANTITY) {
+        toast.error(SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED);
+        return;
+      }
+      if (quantity < SERVICE_CONSTANTS.MIN_QUANTITY) {
+        toast.error(SERVICE_MESSAGES.MIN_QUANTITY_REQUIRED);
+        return;
+      }
     }
 
     setAddServiceLoading(true);
@@ -904,7 +925,7 @@ const PastTrip = () => {
         finalAmount,
         depositPaidAmount,
         listingId:
-          typeof listing === "object" && "_id" in listing
+          listing && typeof listing === "object" && "_id" in listing
             ? listing._id
             : listing,
         hasBookedDates: bookedDates.length > 0,
