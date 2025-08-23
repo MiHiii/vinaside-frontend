@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
@@ -6,6 +6,7 @@ import { getMyBookingHistory } from "@/store/slices/bookingSlice";
 import { BookingData, isListingObj } from "@/types/booking";
 import { BookingStatus, PaymentStatus, CancelPolicy } from "@/types/enum";
 import { api } from "@/services/api";
+import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from "@/constants/service";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -205,39 +206,6 @@ function useAllBookedDates(listingIds: string[]) {
 const PastTrip = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-
-  // Helper function để tạo URL thanh toán
-  const createPaymentUrl = (
-    booking: BookingWithStatus,
-    outstandingAmount: number
-  ) => {
-    const listingId =
-      typeof booking.listingId === "object" && "_id" in booking.listingId
-        ? booking.listingId._id
-        : booking.listingId;
-
-    if (!listingId) return null;
-
-    // Format ngày tháng đúng định dạng YYYY-MM-DD
-    const formatDate = (dateString: string) => {
-      const date = new Date(dateString);
-      return date.toISOString().split("T")[0];
-    };
-
-    // Lấy propertyId từ booking (propertyId là trường riêng biệt trong BookingData)
-    const propertyId = booking.propertyId || "";
-
-    // Tạo URL với đầy đủ tham số
-    return `/payment?bookingId=${
-      booking._id
-    }&listingId=${listingId}&propertyId=${propertyId}&checkInDate=${formatDate(
-      booking.checkInDate
-    )}&checkOutDate=${formatDate(booking.check_out_date)}&guests=${
-      booking.guests || 1
-    }&infants=0&pets=0&total_price=${
-      booking.final_amount || outstandingAmount
-    }&final_amount=${outstandingAmount}&selectedServiceTotal=0`;
-  };
   const { myBookingHistory, loading, error } = useSelector(
     (state: RootState) => {
       return state.booking;
@@ -250,7 +218,7 @@ const PastTrip = () => {
     new Set(
       ((myBookingHistory as BookingWithStatus[]) || [])
         .map((b) =>
-          typeof b.listingId === "object" && "_id" in b.listingId
+          b.listingId && typeof b.listingId === "object" && "_id" in b.listingId
             ? b.listingId._id
             : null
         )
@@ -287,6 +255,7 @@ const PastTrip = () => {
       description?: string;
       default_price: number;
       unit: string;
+      allow_quantity?: boolean;
     }>
   >([]);
   const [selectedServices, setSelectedServices] = useState<{
@@ -323,8 +292,10 @@ const PastTrip = () => {
     }
   }, [showCancelModal, selectedBookingForCancel]);
 
-  const bookings: BookingWithStatus[] =
-    (myBookingHistory as BookingWithStatus[]) || [];
+  const bookings: BookingWithStatus[] = useMemo(
+    () => (myBookingHistory as BookingWithStatus[]) || [],
+    [myBookingHistory]
+  );
 
   // Log tất cả bookings để debug
   useEffect(() => {
@@ -369,7 +340,7 @@ const PastTrip = () => {
           try {
             const listing = booking.listingId;
             const listingId =
-              typeof listing === "object" && "_id" in listing
+              listing && typeof listing === "object" && "_id" in listing
                 ? listing._id
                 : listing;
 
@@ -411,11 +382,19 @@ const PastTrip = () => {
               error
             );
             if (error && typeof error === "object" && "message" in error) {
+              const errorObj = error as {
+                message?: string;
+                response?: {
+                  status?: number;
+                  data?: unknown;
+                };
+                config?: unknown;
+              };
               console.error(`❌ Error details:`, {
-                message: (error as any).message,
-                status: (error as any).response?.status,
-                data: (error as any).response?.data,
-                config: (error as any).config,
+                message: errorObj.message,
+                status: errorObj.response?.status,
+                data: errorObj.response?.data,
+                config: errorObj.config,
               });
             }
             conflicts[booking._id] = false;
@@ -610,6 +589,25 @@ const PastTrip = () => {
     ) {
       toast.error("Vui lòng chọn ít nhất một dịch vụ");
       return;
+    }
+    // Validate quantities against allow_quantity and limits
+    for (const [serviceId, quantity] of Object.entries(selectedServices)) {
+      const service = availableServices.find((s) => s._id === serviceId);
+      if (!service) continue;
+      if (!service.allow_quantity && quantity > 1) {
+        toast.error(
+          `Dịch vụ "${service.name}" không cho phép chọn số lượng. Chỉ có thể chọn 1 lần.`
+        );
+        return;
+      }
+      if (quantity > SERVICE_CONSTANTS.MAX_QUANTITY) {
+        toast.error(SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED);
+        return;
+      }
+      if (quantity < SERVICE_CONSTANTS.MIN_QUANTITY) {
+        toast.error(SERVICE_MESSAGES.MIN_QUANTITY_REQUIRED);
+        return;
+      }
     }
 
     setAddServiceLoading(true);
@@ -926,7 +924,7 @@ const PastTrip = () => {
         finalAmount,
         depositPaidAmount,
         listingId:
-          typeof listing === "object" && "_id" in listing
+          listing && typeof listing === "object" && "_id" in listing
             ? listing._id
             : listing,
         hasBookedDates: bookedDates.length > 0,

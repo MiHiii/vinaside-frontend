@@ -1,1096 +1,449 @@
-import { useEffect, useState, useRef, useMemo } from "react";
-import chatService, {
-  Message,
-  MessageReaction,
-  ReactionType,
-} from "@/services/chat.service";
-import socketService from "@/services/socket.service";
-import { format } from "date-fns";
-import { useAppSelector } from "@/hooks/useRedux";
-import { RootState } from "@/store";
-import { User } from "@/types/user";
-import { toast } from "sonner";
-
-interface SocketMessage {
-  _id?: string;
-  id?: string;
-  content: string;
-  sender_id?: { _id?: string } | string;
-  senderId?: string;
-  receiver_id?: { _id?: string } | string;
-  receiverId?: string;
-  conversation_id?: string;
-  conversationId?: string;
-  sent_at?: string;
-  createdAt?: string;
-  is_read?: string | boolean;
-  reply_to?: {
-    message_id: string;
-    content: string;
-    sender_id: string;
-    sender_name: string;
-    sent_at?: string;
-  };
-}
-
-interface Conversation {
-  participants: string[];
-  lastMessage?: Message;
-  unreadCount: number;
-  lastMessageAt?: string;
-}
-
-interface StaffMember {
-  _id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  avatar_url: string;
-  is_online: boolean;
-  last_seen: string;
-}
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { useAppSelector } from '@/hooks/useRedux';
+import { RootState } from '@/store';
+import messageService from '@/services/message.service';
+import socketService from '@/services/socket.service';
+import { MessageWithUI, ConversationUI, CreateMessageDto, ReactionType, ConversationUpdateV2 } from '@/types/message';
 
 export const useMessages = () => {
   const { user, token } = useAppSelector((state: RootState) => state.auth);
-  const [messageInput, setMessageInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedUser, setSelectedUser] = useState<{
-    id: string;
-    name: string;
-    avatar?: string;
-  } | null>(null);
-  const [textareaHeight, setTextareaHeight] = useState(40);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(
-    null
-  );
-  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
-  const [currentPropertyId, setCurrentPropertyId] = useState<
-    string | undefined
-  >(undefined);
-  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
 
+  // States
+  const [conversations, setConversations] = useState<ConversationUI[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<ConversationUI | null>(null);
+  const [messages, setMessages] = useState<MessageWithUI[]>([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [replyingTo, setReplyingTo] = useState<MessageWithUI | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+
+  const userRole = messageService.getUserRole();
   const myId = user?._id;
 
-  // Limit messages for performance - show last 100 messages
-  const displayedMessages = useMemo(() => {
-    if (!messages || messages.length === 0) return [];
-    const maxMessages = 100;
-    if (messages.length <= maxMessages) return messages;
-    return messages.slice(-maxMessages);
-  }, [messages]);
+  // Quick reactions
+  const quickReactions: { emoji: string; type: ReactionType }[] = [
+    { emoji: '👍', type: 'like' },
+    { emoji: '❤️', type: 'love' },
+    { emoji: '😂', type: 'laugh' },
+    { emoji: '😮', type: 'wow' },
+    { emoji: '😢', type: 'sad' },
+    { emoji: '😡', type: 'angry' },
+  ];
 
-  // Load selected user from localStorage on component mount
-  useEffect(() => {
-    const savedSelectedUser = localStorage.getItem("selectedUser");
-    if (savedSelectedUser && users.length > 0) {
-      try {
-        const parsedUser = JSON.parse(savedSelectedUser);
-        const userExists = users.find((u) => u._id === parsedUser.id);
-        if (userExists) {
-          setSelectedUser(parsedUser);
-          chatService
-            .getConversation(parsedUser.id, 1000)
-            .then((messages) => {
-              setMessages(messages);
-              scrollToBottom();
-            })
-            .catch((err) =>
-              console.error("Error loading saved conversation:", err)
-            );
-        }
-      } catch (error) {
-        console.error("Error parsing saved selected user:", error);
-        localStorage.removeItem("selectedUser");
-      }
-    }
-  }, [users.length]);
-
-  // Save selected user to localStorage whenever it changes
-  useEffect(() => {
-    if (selectedUser) {
-      localStorage.setItem("selectedUser", JSON.stringify(selectedUser));
-    } else {
-      localStorage.removeItem("selectedUser");
-    }
-  }, [selectedUser]);
-
-  // Debug socket connection on mount
-  useEffect(() => {
-    if (token && myId) {
-      setTimeout(() => {
-        const status = socketService.getSocketStatus();
-        if (!status.connected) {
-          console.warn(
-            "⚠️ Socket not connected after mount - this might be the issue!"
-          );
-        }
-      }, 2000);
-    }
-  }, [token, myId]);
-
-  // Initialize socket connection first
-  useEffect(() => {
-    if (!token || !myId) {
-      return;
-    }
-
-    if (!socketService.isConnected()) {
-      socketService.connect(token, myId);
-    }
-
-    const connectionTimeout = setTimeout(() => {
-      const status = socketService.getSocketStatus();
-      if (!status.connected) {
-        console.warn(
-          "❌ Socket still not connected after timeout, trying force reconnect"
-        );
-        socketService.forceReconnect(token, myId);
-      }
-    }, 3000);
-
-    return () => {
-      clearTimeout(connectionTimeout);
-    };
-  }, [token, myId]);
-
-  // Setup socket message handling after connection
-  useEffect(() => {
-    if (!token || !myId) return;
-
-    const handleNewMessage = (socketMessage: any) => {
-      const isNormalizedMessage =
-        socketMessage.replyTo !== undefined ||
-        socketMessage.senderId !== undefined;
-
-      let normalizedMessage: Message;
-
-      if (isNormalizedMessage) {
-        normalizedMessage = {
-          id: socketMessage.id || `temp_${Date.now()}`,
-          content: socketMessage.content,
-          senderId: socketMessage.senderId,
-          receiverId: socketMessage.receiverId,
-          conversationId: socketMessage.conversationId || "",
-          createdAt: socketMessage.createdAt || new Date().toISOString(),
-          isRead: socketMessage.isRead,
-          replyTo: socketMessage.replyTo,
-        };
-      } else {
-        const senderId =
-          typeof socketMessage.sender_id === "object"
-            ? socketMessage.sender_id?._id || ""
-            : socketMessage.sender_id || socketMessage.senderId || "";
-        const receiverId =
-          typeof socketMessage.receiver_id === "object"
-            ? socketMessage.receiver_id?._id || ""
-            : socketMessage.receiver_id || socketMessage.receiverId || "";
-
-        normalizedMessage = {
-          id: socketMessage._id || socketMessage.id || `temp_${Date.now()}`,
-          content: socketMessage.content,
-          senderId,
-          receiverId,
-          conversationId:
-            socketMessage.conversation_id || socketMessage.conversationId || "",
-          createdAt:
-            socketMessage.sent_at ||
-            socketMessage.createdAt ||
-            new Date().toISOString(),
-          isRead: socketMessage.is_read === "read",
-          replyTo: socketMessage.reply_to
-            ? {
-                messageId: socketMessage.reply_to.message_id,
-                content: socketMessage.reply_to.content,
-                senderName: socketMessage.reply_to.sender_name || "Người dùng",
-                senderId: socketMessage.reply_to.sender_id,
-              }
-            : undefined,
-        };
-      }
-
-      const isCurrentChat =
-        selectedUser &&
-        (normalizedMessage.senderId === selectedUser.id ||
-          normalizedMessage.receiverId === selectedUser.id);
-
-      // Update unread counts
-      setUnreadCounts((prev) => {
-        const newCounts = { ...prev };
-        if (
-          normalizedMessage.receiverId === myId &&
-          (!selectedUser || selectedUser.id !== normalizedMessage.senderId)
-        ) {
-          newCounts[normalizedMessage.senderId] =
-            (newCounts[normalizedMessage.senderId] || 0) + 1;
-        }
-        return newCounts;
-      });
-
-      // Update conversations
-      setConversations((prev) => {
-        if (!normalizedMessage.senderId || !normalizedMessage.receiverId)
-          return Array.isArray(prev) ? prev : [];
-
-        const currentConversations = Array.isArray(prev) ? prev : [];
-        const updatedConversations = [...currentConversations];
-
-        const idx = updatedConversations.findIndex(
-          (c) =>
-            c &&
-            Array.isArray(c.participants) &&
-            c.participants.includes(normalizedMessage.senderId) &&
-            c.participants.includes(normalizedMessage.receiverId)
-        );
-
-        if (idx !== -1) {
-          updatedConversations[idx] = {
-            ...updatedConversations[idx],
-            lastMessage: normalizedMessage,
-            lastMessageAt: normalizedMessage.createdAt,
-            // Keep backend-provided unreadCount; don't recompute here for sidebar
-          } as Conversation;
-        } else {
-          const initialUnreadCount =
-            normalizedMessage.receiverId === myId &&
-            (!selectedUser || selectedUser.id !== normalizedMessage.senderId)
-              ? 1
-              : 0;
-          updatedConversations.unshift({
-            participants: [
-              normalizedMessage.senderId,
-              normalizedMessage.receiverId,
-            ],
-            lastMessage: normalizedMessage,
-            lastMessageAt: normalizedMessage.createdAt,
-            unreadCount: initialUnreadCount,
-          } as Conversation);
-        }
-
-        // Sort conversations by lastMessageAt desc
-        return updatedConversations.sort((a: any, b: any) => {
-          const at = a?.lastMessageAt
-            ? new Date(a.lastMessageAt).getTime()
-            : a?.lastMessage?.createdAt
-            ? new Date(a.lastMessage.createdAt).getTime()
-            : 0;
-          const bt = b?.lastMessageAt
-            ? new Date(b.lastMessageAt).getTime()
-            : b?.lastMessage?.createdAt
-            ? new Date(b.lastMessage.createdAt).getTime()
-            : 0;
-          return bt - at;
-        });
-      });
-
-      // Update messages if in current chat
-      if (isCurrentChat) {
-        setMessages((prev) => {
-          const currentMessages = Array.isArray(prev) ? prev : [];
-
-          const isDuplicate = currentMessages.some((msg) => {
-            if (msg.id === normalizedMessage.id) {
-              return true;
-            }
-
-            const contentMatch = msg.content === normalizedMessage.content;
-            const senderMatch = msg.senderId === normalizedMessage.senderId;
-            const timeDiff = Math.abs(
-              new Date(msg.createdAt).getTime() -
-                new Date(normalizedMessage.createdAt).getTime()
-            );
-
-            const timeThreshold = normalizedMessage.replyTo ? 1000 : 2000;
-            const timeMatch = timeDiff < timeThreshold;
-
-            if (contentMatch && senderMatch && timeMatch) {
-              if (normalizedMessage.replyTo && msg.replyTo) {
-                const replyMatch =
-                  msg.replyTo.messageId === normalizedMessage.replyTo.messageId;
-                if (replyMatch) {
-                  return true;
-                }
-              } else if (!normalizedMessage.replyTo && !msg.replyTo) {
-                return true;
-              }
-            }
-            return false;
-          });
-
-          if (isDuplicate) {
-            return currentMessages;
-          }
-
-          const newMessages = [...currentMessages, normalizedMessage];
-          const maxMessages = 200;
-          const limitedMessages =
-            newMessages.length > maxMessages
-              ? newMessages.slice(-maxMessages)
-              : newMessages;
-
-          if (normalizedMessage.replyTo) {
-            setTimeout(() => scrollToBottom(), 10);
-          } else {
-            setTimeout(() => scrollToBottom(), 50);
-          }
-
-          return limitedMessages;
-        });
-      }
-    };
-
-    const socketStatus = socketService.getSocketStatus();
-    if (!socketService.isConnected()) {
-      socketService.connect(token, myId);
-      setTimeout(() => {
-        const newStatus = socketService.getSocketStatus();
-      }, 1000);
-    }
-
-    const unsubscribe = socketService.onNewMessage(handleNewMessage);
-
-    // Listen for conversation-level updates to reflect unreadCount and lastMessageAt
-    const unsubscribeConversationUpdate = socketService.onConversationUpdate(
-      (data) => {
-        const otherUserId = data.otherUserId;
-        setConversations((prev) => {
-          const list = Array.isArray(prev) ? [...prev] : [];
-          const idx = list.findIndex(
-            (c) =>
-              c &&
-              Array.isArray(c.participants) &&
-              otherUserId &&
-              c.participants.includes(otherUserId)
-          );
-          if (idx === -1) return list;
-          const current = list[idx];
-          const unreadForMe =
-            data.unreadCounts && myId
-              ? data.unreadCounts[myId]
-              : data.unreadCount;
-          const updated = {
-            ...current,
-            unreadCount:
-              typeof unreadForMe === "number"
-                ? unreadForMe
-                : current.unreadCount,
-            lastMessageAt: data.lastMessageAt || current.lastMessageAt,
-            lastMessage: data.lastMessage || current.lastMessage,
-          } as Conversation;
-          list[idx] = updated;
-          // Re-sort by lastMessageAt desc
-          return list.sort((a: any, b: any) => {
-            const at = a?.lastMessageAt
-              ? new Date(a.lastMessageAt).getTime()
-              : a?.lastMessage?.createdAt
-              ? new Date(a.lastMessage.createdAt).getTime()
-              : 0;
-            const bt = b?.lastMessageAt
-              ? new Date(b.lastMessageAt).getTime()
-              : b?.lastMessage?.createdAt
-              ? new Date(b.lastMessage.createdAt).getTime()
-              : 0;
-            return bt - at;
-          });
-        });
-      }
-    );
-
-    // Listen for reaction updates
-    const unsubscribeReactions = socketService.onReactionUpdate((data) => {
-      console.log("[SOCKET] reaction_update event received:", data);
-      setMessages((prev) => {
-        const updated = prev.map((msg) => {
-          if (msg.id === data.messageId) {
-            let updatedReactions: MessageReaction[] = [];
-            if (Array.isArray(data.reactions)) {
-              updatedReactions = data.reactions.map((reaction: any) => ({
-                emoji: reaction.emoji || "👍",
-                userId: reaction.user_id,
-                userName: reaction.user_name || "",
-                createdAt: reaction.created_at,
-                type: reaction.type,
-              }));
-            }
-            return {
-              ...msg,
-              reactions: updatedReactions,
-            };
-          }
-          return msg;
-        });
-        // Force update để useMemo chạy lại
-        return [...updated];
-      });
-    });
-
-    // Listen for message recall updates
-    const unsubscribeMessageRecall =
-      socketService.onMessageRecall?.(
-        (data: {
-          messageId: string;
-          content: string;
-          is_recalled: boolean;
-          recalled_at: string;
-        }) => {
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.id === data.messageId) {
-                return {
-                  ...msg,
-                  content: data.content,
-                  isRecalled: data.is_recalled,
-                  recalledAt: data.recalled_at,
-                };
-              }
-              return msg;
-            })
-          );
-        }
-      ) || (() => {});
-
-    const connectionCheckTimeout = setTimeout(() => {
-      if (!socketService.isConnected()) {
-        console.warn(
-          "⚠️ Socket not connected after 5 seconds, attempting force reconnect"
-        );
-        socketService.forceReconnect(token, myId);
-        setTimeout(() => {
-          const finalStatus = socketService.getSocketStatus();
-          if (!finalStatus.connected) {
-            console.error("❌ Socket connection completely failed!");
-          }
-        }, 2000);
-      }
-    }, 5000);
-
-    return () => {
-      unsubscribe();
-      unsubscribeConversationUpdate();
-      unsubscribeReactions();
-      unsubscribeMessageRecall();
-      clearTimeout(connectionCheckTimeout);
-    };
-  }, [token, myId, selectedUser?.id, unreadCounts]);
-
-  useEffect(() => {
-    if (!token || !myId) return;
-
-    const fetchInitialData = async () => {
-      try {
-        setIsLoadingConversations(true);
-
-        // Only use conversations API
-        const conversationList =
-          (await chatService.getConversations()) as unknown as Conversation[];
-
-        // Build users list from conversations cache and keep the same order as conversations
-        const cachedUsers = chatService.getConversationUsers();
-        const userById: Record<string, any> = {};
-        cachedUsers.forEach((u) => {
-          if (u && u._id) userById[u._id] = u;
-        });
-
-        const derivedUsers = (conversationList || []).map(
-          (conv: Conversation) => {
-            const otherUserId = (conv.participants || []).find(
-              (pid: string) => pid !== myId
-            );
-            const cached = otherUserId ? userById[otherUserId] : undefined;
-            return (
-              cached || {
-                _id: otherUserId,
-                name: otherUserId ? `User ${otherUserId}` : "Unknown",
-                avatar_url: "/placeholder.svg",
-              }
-            );
-          }
-        );
-
-        setUsers(derivedUsers as unknown as User[]);
-        // Ensure each conversation includes myId and compute lastMessageAt, then sort desc
-        const fixedConversations = (conversationList || [])
-          .map((c: Conversation) => ({
-            ...c,
-            participants: Array.from(
-              new Set([
-                ...((c.participants || []) as string[]),
-                ...(myId ? [myId] : []),
-              ])
-            ),
-            lastMessageAt: c.lastMessage?.createdAt || c.lastMessageAt || "",
-          }))
-          .sort((a, b) => {
-            const at = a.lastMessageAt
-              ? new Date(a.lastMessageAt).getTime()
-              : 0;
-            const bt = b.lastMessageAt
-              ? new Date(b.lastMessageAt).getTime()
-              : 0;
-            return bt - at;
-          });
-        setConversations(fixedConversations as unknown as Conversation[]);
-      } catch (err) {
-        console.error("❌ Error fetching initial data:", err);
-        const error = err as { response?: { data?: unknown; status?: number } };
-        console.error("Error details:", {
-          message: err instanceof Error ? err.message : "Unknown error",
-          response: error?.response?.data,
-          status: error?.response?.status,
-        });
-      } finally {
-        setIsLoadingConversations(false);
-      }
-    };
-
-    fetchInitialData();
-  }, [token, myId]);
-
-  const handleConnect = async (userId: string) => {
-    if (!user || !myId) return;
+  // Load conversations with debug logging
+  const loadConversations = useCallback(async () => {
     try {
-      const selected = users.find((u) => u?._id === userId);
-      if (!selected) return;
+      setIsLoadingConversations(true);
+      console.log('🔄 [useMessages] Loading conversations for userRole:', userRole);
+      console.log('🔄 [useMessages] Token exists:', !!token);
+      console.log('🔄 [useMessages] User ID:', myId);
+      console.log(
+        '🔄 [useMessages] localStorage token:',
+        localStorage.getItem('access_token')?.substring(0, 50) + '...',
+      );
 
-      setSelectedUser({
-        id: userId,
-        name: selected?.name || `User ${userId}`,
-        avatar: selected?.avatar_url || "/placeholder.svg",
-      });
-
-      const messages = await chatService.getConversation(userId, 1000);
-      setMessages(messages);
-      setHasMoreMessages(messages.length >= 1000);
-      setIsLoadingMoreMessages(false);
-
-      setUnreadCounts((prev) => {
-        const newCounts = { ...prev };
-        delete newCounts[userId];
-        return newCounts;
-      });
-
-      setConversations((prev) => {
-        if (!Array.isArray(prev)) return [];
-        return prev.map((c) => {
-          if (!c || !c.participants || !Array.isArray(c.participants)) {
-            return c;
-          }
-          if (
-            c.participants.includes(userId) &&
-            c.participants.includes(myId)
-          ) {
-            return { ...c, unreadCount: 0 };
-          }
-          return c;
+      const data = await messageService.getConversations(userRole);
+      console.log('✅ [useMessages] Conversations loaded:', data);
+      setConversations(data);
+    } catch (error: any) {
+      console.error('❌ [useMessages] Error loading conversations:', error);
+      if (error?.response?.status === 401) {
+        console.error('❌ [useMessages] 401 Error details:', {
+          url: error?.config?.url,
+          headers: error?.config?.headers,
+          responseData: error?.response?.data,
         });
-      });
-
-      try {
-        const result = await chatService.markConversationAsRead(userId, myId);
-        if (result.success) {
-          const updatedMessages = await chatService.getConversation(userId);
-          setMessages(updatedMessages);
-        }
-      } catch (error) {
-        console.error("❌ Error marking conversation as read:", error);
       }
-
-      scrollToBottom();
-    } catch (error) {
-      console.error("Error connecting to chat:", error);
+    } finally {
+      setIsLoadingConversations(false);
     }
-  };
+  }, [userRole, token, myId]);
 
-  const handleSendMessage = async () => {
-    if (messageInput.trim() && selectedUser && user && myId) {
+  // Select conversation and load messages
+  const selectConversation = useCallback(
+    async (conversation: ConversationUI) => {
       try {
-        const response = await chatService.sendMessage(
-          selectedUser.id,
-          messageInput,
-          replyingTo?.id,
-          currentPropertyId
-        );
+        console.log('🔄 [useMessages] Selecting conversation:', conversation._id);
+        setSelectedConversation(conversation);
+        setMessages([]);
+        setHasMoreMessages(true);
+        setIsLoading(true);
 
-        const responseData = response?.data || response;
-        const newMessage: Message = {
-          id: responseData._id || `temp_${Date.now()}`,
-          content: responseData.content || messageInput,
-          senderId:
-            typeof responseData.sender_id === "object"
-              ? responseData.sender_id._id
-              : responseData.sender_id || myId,
-          receiverId:
-            typeof responseData.receiver_id === "object"
-              ? responseData.receiver_id._id
-              : responseData.receiver_id || selectedUser.id,
-          conversationId:
-            (responseData as unknown as { conversation_id?: string })
-              .conversation_id || "",
-          createdAt:
-            responseData.sent_at ||
-            responseData.createdAt ||
-            new Date().toISOString(),
-          isRead: responseData.is_read === "read",
-          replyTo: (responseData as any).reply_to
-            ? {
-                messageId: (responseData as any).reply_to.message_id,
-                content: (responseData as any).reply_to.content,
-                senderName:
-                  (responseData as any).reply_to.sender_name || "Người dùng",
-                senderId: (responseData as any).reply_to.sender_id,
-              }
-            : replyingTo
-            ? {
-                messageId: replyingTo.id,
-                content: replyingTo.content,
-                senderName:
-                  replyingTo.senderId === myId
-                    ? user?.name || "Bạn"
-                    : users.find((u) => u._id === replyingTo.senderId)?.name ||
-                      "Người dùng",
-                senderId: replyingTo.senderId,
-              }
-            : undefined,
-        };
+        const data = await messageService.getConversationMessages(conversation._id, 50, 1, userRole);
+        console.log('✅ [useMessages] Messages loaded:', data.length);
+        setMessages(data.reverse());
 
-        setMessages((prev) => {
-          const currentMessages = Array.isArray(prev) ? prev : [];
-          const exists = currentMessages.some(
-            (msg) =>
-              msg.id === newMessage.id ||
-              (msg.content === newMessage.content &&
-                msg.senderId === newMessage.senderId &&
-                Math.abs(
-                  new Date(msg.createdAt).getTime() -
-                    new Date(newMessage.createdAt).getTime()
-                ) < 1000)
-          );
+        // Mark as read
+        await messageService.markConversationAsRead(conversation._id);
+      } catch (error: any) {
+        console.error('❌ [useMessages] Error selecting conversation:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [userRole],
+  );
 
-          if (exists) {
-            return currentMessages;
-          }
-          const newMessages = [...currentMessages, newMessage];
-          const maxMessages = 200;
-          if (newMessages.length > maxMessages) {
-            return newMessages.slice(-maxMessages);
-          }
-          return newMessages;
-        });
+  // Send message
+  const sendMessage = useCallback(async () => {
+    if (!messageInput.trim() || !selectedConversation || isSending) return;
 
-        setMessageInput("");
-        setReplyingTo(null);
-        setTextareaHeight(40);
+    try {
+      setIsSending(true);
+      console.log('🔄 [useMessages] Sending message...');
+      const messageData: CreateMessageDto = {
+        conversation_id: selectedConversation._id,
+        content: messageInput.trim(),
+        reply_to_message_id: replyingTo?._id,
+      };
+
+      const newMessage = await messageService.sendMessage(messageData);
+      console.log('✅ [useMessages] Message sent:', newMessage);
+
+      // Convert MessageResponse to MessageWithUI for consistency
+      const messageWithUI: MessageWithUI = {
+        ...newMessage,
+        ui_for: userRole,
+        ui: {
+          mine: true,
+          show_sender_meta: false,
+          sender_display_name: user?.name || 'You',
+          sender_avatar_url: user?.avatar_url || null,
+        },
+      };
+
+      setMessages((prev) => [...prev, messageWithUI]);
+      setMessageInput('');
+      setReplyingTo(null);
+
+      // Auto-scroll to bottom after sending message
+      setTimeout(() => {
         scrollToBottom();
-
-        setConversations((prev) => {
-          if (!Array.isArray(prev)) return [];
-          const updatedConversations = [...prev];
-          const conversationIndex = updatedConversations.findIndex(
-            (c) =>
-              c &&
-              c.participants &&
-              Array.isArray(c.participants) &&
-              c.participants.includes(myId) &&
-              c.participants.includes(selectedUser.id)
-          );
-
-          if (conversationIndex !== -1) {
-            const existingMessage =
-              updatedConversations[conversationIndex].lastMessage;
-            if (
-              !existingMessage ||
-              new Date(newMessage.createdAt) >
-                new Date(existingMessage.createdAt)
-            ) {
-              updatedConversations[conversationIndex] = {
-                ...updatedConversations[conversationIndex],
-                lastMessage: newMessage,
-                lastMessageAt: newMessage.createdAt,
-              } as Conversation;
-            }
-          } else {
-            updatedConversations.unshift({
-              participants: [myId, selectedUser.id],
-              lastMessage: newMessage,
-              lastMessageAt: newMessage.createdAt,
-              unreadCount: 0,
-            } as Conversation);
-          }
-          // Sort by lastMessageAt desc for sidebar ordering
-          return updatedConversations.sort((a: any, b: any) => {
-            const at = a?.lastMessageAt
-              ? new Date(a.lastMessageAt).getTime()
-              : a?.lastMessage?.createdAt
-              ? new Date(a.lastMessage.createdAt).getTime()
-              : 0;
-            const bt = b?.lastMessageAt
-              ? new Date(b.lastMessageAt).getTime()
-              : b?.lastMessage?.createdAt
-              ? new Date(b.lastMessage.createdAt).getTime()
-              : 0;
-            return bt - at;
-          });
-        });
-      } catch (error) {
-        console.error("Error sending message:", error);
-      }
+      }, 200);
+    } catch (error: any) {
+      console.error('❌ [useMessages] Error sending message:', error);
+    } finally {
+      setIsSending(false);
     }
-  };
+  }, [messageInput, selectedConversation, replyingTo, isSending, userRole, user]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  // Toggle reaction
+  const toggleReaction = useCallback(async (messageId: string, type: ReactionType) => {
+    try {
+      console.log('🔄 [useMessages] Toggling reaction:', messageId, type);
+      const response = await messageService.toggleReaction(messageId, type);
+      console.log('✅ [useMessages] Reaction toggled:', response);
+
+      // Update message in local state - convert MessageResponse to MessageWithUI
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId
+            ? {
+                ...response.message,
+                ui_for: msg.ui_for,
+                ui: msg.ui,
+              }
+            : msg,
+        ),
+      );
+    } catch (error: any) {
+      console.error('❌ [useMessages] Error toggling reaction:', error);
     }
-  };
+  }, []);
 
-  // Auto-resize textarea
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const textarea = e.target;
-    setMessageInput(textarea.value);
+  // Recall message
+  const recallMessage = useCallback(async (messageId: string) => {
+    try {
+      console.log('🔄 [useMessages] Recalling message:', messageId);
+      const updatedMessage = await messageService.recallMessage(messageId);
+      console.log('✅ [useMessages] Message recalled:', updatedMessage);
 
-    if (textarea.value.trim() === "") {
-      setTextareaHeight(40);
-      textarea.style.height = "40px";
-      return;
+      // Update message in local state - convert MessageResponse to MessageWithUI
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId
+            ? {
+                ...updatedMessage,
+                ui_for: msg.ui_for,
+                ui: msg.ui,
+              }
+            : msg,
+        ),
+      );
+    } catch (error: any) {
+      console.error('❌ [useMessages] Error recalling message:', error);
     }
+  }, []);
 
-    textarea.style.height = "auto";
-    const scrollHeight = textarea.scrollHeight;
-    const newHeight = Math.max(40, Math.min(120, scrollHeight));
-    setTextareaHeight(newHeight);
-    textarea.style.height = newHeight + "px";
-  };
+  // Reply to message
+  const replyToMessage = useCallback((message: MessageWithUI) => {
+    console.log('🔄 [useMessages] Setting reply to message:', message._id);
+    setReplyingTo(message);
+    setShowEmojiPicker(false);
+  }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
-    });
-  };
+  // Cancel reply
+  const cancelReply = useCallback(() => {
+    console.log('🔄 [useMessages] Canceling reply');
+    setReplyingTo(null);
+  }, []);
+
+  // Handle emoji selection
+  const handleEmojiSelect = useCallback((emojiObject: { emoji: string }) => {
+    setMessageInput((prev) => prev + emojiObject.emoji);
+    setShowEmojiPicker(false);
+  }, []);
+
+  const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageInput(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, []);
+
+  // Scroll to bottom function
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, []);
 
   // Auto-scroll when messages change
   useEffect(() => {
-    const shouldScroll = () => {
-      const container = messagesEndRef.current?.parentElement?.parentElement;
-      if (!container) return true;
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-      return isNearBottom;
-    };
-
-    if (shouldScroll()) {
-      const timeoutId = setTimeout(() => {
-        scrollToBottom();
-      }, 50);
-      return () => clearTimeout(timeoutId);
+    if (messages.length > 0) {
+      scrollToBottom();
     }
-  }, [displayedMessages.length]);
+  }, [messages.length, scrollToBottom]);
 
-  // Scroll to bottom when selecting a new conversation
+  // Auto-scroll when new message is added
   useEffect(() => {
-    if (selectedUser && messages.length > 0) {
-      setTimeout(() => scrollToBottom(), 100);
-    }
-  }, [selectedUser, displayedMessages.length]);
-
-  // Quick reactions mapping
-  const quickReactions: { emoji: string; type: ReactionType }[] = [
-    { emoji: "👍", type: ReactionType.LIKE },
-    { emoji: "❤️", type: ReactionType.LOVE },
-    { emoji: "😂", type: ReactionType.LAUGH },
-    { emoji: "😮", type: ReactionType.WOW },
-    { emoji: "😢", type: ReactionType.SAD },
-    { emoji: "😡", type: ReactionType.ANGRY },
-  ];
-
-  // Handle emoji selection from picker
-  const handleEmojiSelect = (emojiData: { emoji: string }) => {
-    setMessageInput((prev) => prev + emojiData.emoji);
-    setShowEmojiPicker(false);
-  };
-
-  // Handle toggling reaction
-  const handleToggleReaction = async (
-    messageId: string,
-    reactionType: ReactionType
-  ) => {
-    try {
-      await chatService.toggleReaction(messageId, reactionType);
-      setShowReactionPicker(null);
-      // KHÔNG cập nhật state messages ở đây, chờ socket update
-    } catch (error) {
-      console.error("❌ Error toggling reaction:", error);
-    }
-  };
-
-  // Helper function to safely check participants
-  const hasValidParticipants = (
-    conversation: any,
-    ...userIds: (string | undefined)[]
-  ): boolean => {
-    if (
-      !conversation ||
-      !conversation.participants ||
-      !Array.isArray(conversation.participants)
-    ) {
-      return false;
-    }
-    return userIds.every((id) => id && conversation.participants.includes(id));
-  };
-
-  // Handle message reply
-  const handleReplyMessage = (message: Message) => {
-    try {
-      setReplyingTo(message);
-      const inputElement = document.querySelector(
-        "textarea"
-      ) as HTMLTextAreaElement;
-      if (inputElement) {
-        inputElement.focus();
+    if (messages.length > 0 && messagesEndRef.current) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.sender_id === myId) {
+        // Auto-scroll for own messages
+        scrollToBottom();
       }
-    } catch (error) {
-      console.error("❌ Error setting up reply:", error);
     }
-  };
+  }, [messages, myId, scrollToBottom]);
 
-  // Handle cancel reply
-  const handleCancelReply = () => {
-    setReplyingTo(null);
-  };
-
-  // Handle message delete (recall)
-  const handleDeleteMessage = async (messageId: string) => {
-    try {
-      const response = await chatService.deleteMessage(messageId);
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId
-            ? {
-                ...msg,
-                content: "Bạn đã thu hồi một tin nhắn",
-                isRecalled: true,
-              }
-            : msg
-        )
-      );
-    } catch (error) {
-      console.error("❌ Error recalling message:", error);
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId && msg.isRecalled
-            ? {
-                ...msg,
-                isRecalled: false,
-              }
-            : msg
-        )
-      );
-    }
-  };
-
-  // Set property ID for current conversation
-  const setPropertyId = (propertyId: string | undefined) => {
-    setCurrentPropertyId(propertyId);
-  };
-
-  // Handle loading more messages
-  const handleLoadMoreMessages = async () => {
-    if (!selectedUser || isLoadingMoreMessages || !hasMoreMessages) return;
+  // Load more messages (pagination)
+  const loadMoreMessages = useCallback(async () => {
+    if (!selectedConversation || isLoading || !hasMoreMessages) return;
 
     try {
-      setIsLoadingMoreMessages(true);
-      const oldestMessage = messages[0];
-      const beforeMessageId = oldestMessage?.id;
-      const olderMessages = await chatService.loadMoreMessages(
-        selectedUser.id,
-        beforeMessageId,
-        50
+      setIsLoading(true);
+      console.log('🔄 [useMessages] Loading more messages...');
+
+      const currentPage = Math.ceil(messages.length / 50) + 1;
+      const newMessages = await messageService.getConversationMessages(
+        selectedConversation._id,
+        50,
+        currentPage,
+        userRole as 'guest' | 'staff',
       );
 
-      if (olderMessages.length === 0) {
+      console.log('✅ [useMessages] More messages loaded:', newMessages.length);
+
+      if (newMessages.length < 50) {
         setHasMoreMessages(false);
-      } else {
-        setMessages((prev) => [...olderMessages, ...prev]);
       }
-    } catch (error) {
-      console.error("❌ Error loading more messages:", error);
+
+      // Add new messages to the beginning (for pagination)
+      setMessages((prev) => [...newMessages, ...prev]);
+    } catch (error: any) {
+      console.error('❌ [useMessages] Error loading more messages:', error);
     } finally {
-      setIsLoadingMoreMessages(false);
+      setIsLoading(false);
     }
-  };
+  }, [selectedConversation, messages.length, isLoading, hasMoreMessages, userRole]);
 
-  // Mark current conversation as read when focusing the input
-  const handleInputFocus = async () => {
-    try {
-      if (!selectedUser || !myId) return;
-      const otherUserId = selectedUser.id;
+  // Setup Socket.IO connection and event listeners
+  useEffect(() => {
+    console.log('🔌 [useMessages] Setting up Socket.IO connection...');
 
-      // Optimistically clear unread badge in sidebar
+    if (!token || !myId) {
+      console.log('⚠️ [useMessages] No token or user ID, skipping socket setup');
+      return;
+    }
+
+    // Connect to socket service
+    socketService.connect(token, myId);
+
+    // Check if already connected
+    if (socketService.isConnected()) {
+      console.log('🔌 [useMessages] Socket already connected');
+      console.log('🔌 [useMessages] Socket status:', socketService.getSocketStatus());
+    }
+
+    // Join user room for general messages
+    socketService.joinUserRoom(myId);
+    console.log('🏠 [useMessages] Joined user room:', `user_${myId}`);
+
+    // Join admin room if user is admin
+    if (userRole === ('admin' as any)) {
+      socketService.joinAdminRoom();
+      console.log('🏠 [useMessages] Joined admin room');
+    }
+
+    // Connect to notifications
+    socketService.connectNotification(token, myId);
+    console.log('🔔 [useMessages] Connected to notifications');
+
+    // Setup event listeners
+    const handleNewMessage = (message: MessageWithUI) => {
+      console.log('📨 [useMessages] New message received via socket:', message);
+
+      // Update conversations list if message is for current user
       setConversations((prev) => {
-        if (!Array.isArray(prev)) return [];
-        const updated = prev.map((c) => {
-          if (
-            c &&
-            Array.isArray(c.participants) &&
-            c.participants.includes(myId) &&
-            c.participants.includes(otherUserId)
-          ) {
-            return { ...c, unreadCount: 0 } as Conversation;
-          }
-          return c;
-        });
+        const updated = [...prev];
+        const convIndex = updated.findIndex((c) => c._id === message.conversation_id);
+
+        if (convIndex >= 0) {
+          // Update existing conversation
+          updated[convIndex] = {
+            ...updated[convIndex],
+            lastMessage: {
+              _id: message._id,
+              content: message.content,
+              sender_id: message.sender_id,
+              sender_role: 'guest' as const,
+              sent_at: message.sent_at,
+              is_read: message.is_read,
+            },
+            messageCount: (updated[convIndex].messageCount || 0) + 1,
+            display: {
+              ...updated[convIndex].display,
+              unreadCount: (updated[convIndex].display.unreadCount || 0) + 1,
+            },
+          };
+        } else {
+          // Add new conversation if not exists
+          console.log('🆕 [useMessages] New conversation detected, reloading conversations...');
+          loadConversations();
+        }
+
         return updated;
       });
 
-      // Clear per-user unread map
-      setUnreadCounts((prev) => ({ ...prev, [otherUserId]: 0 }));
+      // Update messages if conversation is selected
+      if (selectedConversation?._id === message.conversation_id) {
+        setMessages((prev) => [...prev, message]);
+      }
+    };
 
-      // Notify backend
-      await chatService.markConversationAsRead(otherUserId, myId);
-    } catch (error) {
-      // Silent fail; UI already updated optimistically
-      console.warn("handleInputFocus markConversationAsRead error:", error);
+    const handleConversationUpdate = (data: ConversationUpdateV2) => {
+      console.log('💬 [useMessages] Conversation update received via socket:', data);
+
+      // Reload conversations to get latest data
+      loadConversations();
+
+      // If this conversation is selected, reload messages
+      if (selectedConversation?._id === data.conversationId) {
+        loadConversations(); // Changed from loadMessages to loadConversations
+      }
+    };
+
+    const handleReactionUpdate = (message: MessageWithUI) => {
+      console.log('👍 [useMessages] Reaction update received via socket:', message);
+
+      // Update message in current conversation
+      if (selectedConversation?._id === message.conversation_id) {
+        setMessages((prev) => prev.map((msg) => (msg._id === message._id ? message : msg)));
+      }
+    };
+
+    const handleMessageRecall = (message: MessageWithUI) => {
+      console.log('🗑️ [useMessages] Message recall received via socket:', message);
+
+      // Update message in current conversation
+      if (selectedConversation?._id === message.conversation_id) {
+        setMessages((prev) => prev.map((msg) => (msg._id === message._id ? message : msg)));
+      }
+    };
+
+    // Register event listeners
+    socketService.onNewMessage(handleNewMessage);
+    socketService.onConversationUpdate(handleConversationUpdate);
+    socketService.onReactionUpdate(handleReactionUpdate);
+    socketService.onMessageRecall(handleMessageRecall);
+
+    // Cleanup function
+    return () => {
+      console.log('🧹 [useMessages] Cleaning up socket listeners...');
+      // Note: SocketService doesn't have off methods, listeners are cleaned up automatically
+    };
+  }, [token, myId, userRole, selectedConversation?._id, loadConversations]);
+
+  // Join conversation room when conversation is selected
+  useEffect(() => {
+    if (selectedConversation && socketService.isConnected()) {
+      console.log('🏠 [useMessages] Joining conversation room:', selectedConversation._id);
+      socketService.joinConversation(selectedConversation._id);
+
+      // Leave previous conversation room if any
+      return () => {
+        console.log('🚪 [useMessages] Leaving conversation room:', selectedConversation._id);
+        socketService.leaveConversation(selectedConversation._id);
+      };
     }
-  };
+  }, [selectedConversation]);
+
+  // Initialize and load conversations
+  useEffect(() => {
+    if (token && user) {
+      console.log('🚀 [useMessages] Initializing with token and user...');
+      loadConversations();
+    } else {
+      console.log('❌ [useMessages] Missing token or user:', { hasToken: !!token, hasUser: !!user });
+    }
+  }, [loadConversations, token, user]);
 
   return {
     // States
-    messageInput,
-    messages,
-    selectedUser,
-    textareaHeight,
     conversations,
-    users,
-    messagesEndRef,
-    unreadCounts,
+    selectedConversation,
+    messages,
+    messageInput,
+    replyingTo,
     showEmojiPicker,
     showReactionPicker,
-    isLoadingMoreMessages,
+    isLoading,
+    isLoadingConversations,
     hasMoreMessages,
-    replyingTo,
-    displayedMessages,
     quickReactions,
+    userRole,
     myId,
     user,
-    token,
-    currentPropertyId,
-    isLoadingConversations,
+    messagesEndRef,
+    textareaRef,
+    topSentinelRef,
 
-    // State setters
+    // Actions
+    loadConversations,
+    selectConversation,
+    sendMessage,
+    toggleReaction,
+    recallMessage,
+    replyToMessage,
+    cancelReply,
+    handleEmojiSelect,
+    handleTextareaChange,
+    isSending,
+    scrollToBottom,
+    loadMoreMessages,
+
+    // Setters
     setMessageInput,
     setShowEmojiPicker,
     setShowReactionPicker,
-    setCurrentPropertyId,
-
-    // Handlers
-    handleConnect,
-    handleSendMessage,
-    handleKeyPress,
-    handleTextareaChange,
-    handleEmojiSelect,
-    handleToggleReaction,
-    handleReplyMessage,
-    handleCancelReply,
-    handleDeleteMessage,
-    handleLoadMoreMessages,
-    handleInputFocus,
-    setPropertyId,
-
-    // Utilities
-    hasValidParticipants,
-    scrollToBottom,
-    format,
-  };
-};
-
-export const usePropertyStaff = (propertyId?: string) => {
-  const [staffList, setStaffList] = useState<StaffMember[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadStaffList = async () => {
-    if (!propertyId) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await chatService.getPropertyStaff(propertyId);
-      if (response.success && response.data.length > 0) {
-        setStaffList(response.data);
-      } else {
-        setStaffList([]);
-        setError("Không tìm thấy nhân viên cho tòa nhà này");
-      }
-    } catch (error) {
-      console.error("Error loading staff:", error);
-      // setError("Không thể tải danh sách nhân viên");
-      // toast.error("Không thể tải danh sách nhân viên");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const sendMessageToStaff = async (
-    staffId: string,
-    content: string,
-    propertyId?: string // Made optional since we're not using it anymore
-  ) => {
-    if (!staffId || !content.trim()) {
-      throw new Error("Thiếu thông tin cần thiết để gửi tin nhắn");
-    }
-
-    try {
-      const response = await chatService.sendMessage(
-        staffId,
-        content.trim(),
-        undefined
-        // propertyId parameter removed since it's no longer needed
-      );
-
-      if (response.success) {
-        toast.success("Đã gửi tin nhắn thành công!", {
-          style: {
-            background: "#000000",
-            color: "#ffffff",
-          },
-          className: "bg-white text-black border-gray-200",
-          action: {
-            label: "Xem tin nhắn",
-            onClick: () => (window.location.href = "/messages"),
-          },
-          duration: 4000,
-        });
-        return response;
-      } else {
-        throw new Error("Không thể gửi tin nhắn");
-      }
-    } catch (error) {
-      console.error("Error sending message to staff:", error);
-      toast.error("Không thể gửi tin nhắn. Vui lòng thử lại.");
-      throw error;
-    }
-  };
-
-  useEffect(() => {
-    if (propertyId) {
-      loadStaffList();
-    }
-  }, [propertyId]);
-
-  return {
-    staffList,
-    loading,
-    error,
-    loadStaffList,
-    sendMessageToStaff,
   };
 };

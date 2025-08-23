@@ -70,12 +70,8 @@ export function DateRangePicker({
         to: new Date(reduxDateRange.endDate),
       };
     }
-    // Default to today
-    const today = new Date();
-    return {
-      from: today,
-      to: today,
-    };
+    // Không set default value
+    return undefined;
   });
 
   const [isOpen, setIsOpen] = React.useState(false);

@@ -201,8 +201,6 @@ const BookingDetail: React.FC<{
     }
   };
 
-
-
   const handleRefundBooking = async () => {
     try {
       await dispatch(
@@ -353,6 +351,10 @@ const BookingDetail: React.FC<{
   const services_total_amount = booking.services_total_amount || 0;
   const subtotal_amount = booking.subtotal_amount || 0;
   const discount_amount = booking.discount_amount || 0;
+  const total_price = booking.total_price || 0;
+  const amount_after_discount = booking.amount_after_discount || 0;
+  const service_fee = booking.service_fee || 0;
+  const tax_amount = booking.tax_amount || 0;
 
   const paymentId = booking.payment_id || "";
   let paymentDate = "Chưa có";
@@ -1242,43 +1244,99 @@ const BookingDetail: React.FC<{
                 </h2>
               </div>
               <div className="p-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">
+                <div className="space-y-3 text-sm bg-white rounded-lg border border-gray-100 p-4">
+                  {/* Giá phòng cơ bản */}
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-600">
                       Giá phòng ({nights} đêm)
                     </span>
-                    <span className="text-sm font-medium">
-                      {((subtotal_amount as number) || 0).toLocaleString()}₫
+                    <span className="font-medium text-gray-800">
+                      {((total_price as number) || 0).toLocaleString()}₫
                     </span>
                   </div>
+
+                  {/* Dịch vụ bổ sung */}
                   {((services_total_amount as number) || 0) > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Dịch vụ</span>
-                      <span className="text-sm font-medium text-green-600">
-                        +
-                        {(
-                          (services_total_amount as number) || 0
-                        ).toLocaleString()}
-                        ₫
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-600 font-medium">
+                          Dịch vụ bổ sung
+                        </span>
+                        <span className="font-medium text-blue-600">
+                          +
+                          {(
+                            (services_total_amount as number) || 0
+                          ).toLocaleString()}
+                          ₫
+                        </span>
+                      </div>
+
+                      {/* Chi tiết dịch vụ */}
+                      {adminBookingDetail?.selected_services &&
+                        adminBookingDetail.selected_services.length > 0 && (
+                          <div className="ml-4 space-y-1 bg-gray-50 rounded-lg p-3">
+                            {adminBookingDetail.selected_services.map(
+                              (
+                                service: {
+                                  service_name: string;
+                                  quantity: number;
+                                  total_price: number;
+                                },
+                                index: number
+                              ) => (
+                                <div
+                                  key={index}
+                                  className="flex justify-between items-center text-xs text-gray-600"
+                                >
+                                  <span>
+                                    • {service.service_name} (x
+                                    {service.quantity})
+                                  </span>
+                                  <span className="font-medium">
+                                    {(
+                                      service.total_price || 0
+                                    ).toLocaleString()}
+                                    ₫
+                                  </span>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                     </div>
                   )}
+
+                  {/* Voucher giảm giá */}
                   {((discount_amount as number) || 0) > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Giảm giá</span>
-                      <span className="text-sm font-medium text-red-600">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-gray-600">
+                        Giảm giá{" "}
+                        {adminBookingDetail?.voucher_code
+                          ? `(${adminBookingDetail.voucher_code})`
+                          : ""}
+                      </span>
+                      <span className="font-medium text-green-600">
                         -{((discount_amount as number) || 0).toLocaleString()}₫
                       </span>
                     </div>
                   )}
+
+                  {/* Chi phí phát sinh */}
                   {adminBookingDetail?.additionalCost !== null &&
                     adminBookingDetail?.additionalCost !== undefined &&
                     adminBookingDetail.additionalCost >= 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">
-                          Chi phí phát sinh
-                        </span>
-                        <span className="text-sm font-medium text-orange-600">
+                      <div className="flex justify-between items-center py-2">
+                        <div>
+                          <span className="text-gray-600">
+                            Chi phí phát sinh
+                          </span>
+                          {adminBookingDetail?.additionalCostReason && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              ({adminBookingDetail.additionalCostReason})
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-medium text-orange-600">
                           +
                           {(
                             adminBookingDetail?.additionalCost || 0
@@ -1287,12 +1345,48 @@ const BookingDetail: React.FC<{
                         </span>
                       </div>
                     )}
-                  <div className="pt-3 border-t border-gray-200">
-                    <div className="flex justify-between">
-                      <span className="text-lg font-semibold text-gray-900">
+
+                  {/* Phân cách */}
+                  <div className="border-t border-gray-200 pt-3 mt-3">
+                    {/* Tạm tính */}
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-gray-600 font-medium">
+                        Tạm tính
+                      </span>
+                      <span className="font-medium text-gray-800">
+                        {(
+                          (amount_after_discount as number) ||
+                          (subtotal_amount as number) ||
+                          0
+                        ).toLocaleString()}
+                        ₫
+                      </span>
+                    </div>
+
+                    {/* Phí dịch vụ */}
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-gray-600">Phí dịch vụ (10%)</span>
+                      <span className="font-medium text-gray-600">
+                        +{((service_fee as number) || 0).toLocaleString()}₫
+                      </span>
+                    </div>
+
+                    {/* Thuế VAT */}
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-gray-600">Thuế VAT (8%)</span>
+                      <span className="font-medium text-gray-600">
+                        +{((tax_amount as number) || 0).toLocaleString()}₫
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tổng cộng */}
+                  <div className="border-t-2 border-blue-200 pt-3 mt-3 bg-blue-50 -mx-4 px-4 py-3 rounded-b-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-blue-800">
                         Tổng cộng
                       </span>
-                      <span className="text-lg font-bold text-blue-600">
+                      <span className="text-xl font-bold text-blue-600">
                         {((final_amount as number) || 0).toLocaleString()}₫
                       </span>
                     </div>

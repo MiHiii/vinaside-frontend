@@ -85,6 +85,7 @@ interface Service {
   description?: string;
   default_price: number;
   unit: string;
+  allow_quantity?: boolean;
 }
 
 interface StaffBookingService {
@@ -278,7 +279,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
     if (selectedListing && nights > 0 && checkIn && checkOut) {
       const basePrice =
         formData.price_per_night || selectedListing.price_per_night;
-      
+
       // Calculate weekend surcharge
       let weekendSurcharge = 0;
       if (
@@ -670,9 +671,9 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
     setSelectedListing(listing || null);
     setFormData((prev) => {
       const newFormData = {
-      ...prev,
-      listingId,
-      price_per_night: listing?.price_per_night,
+        ...prev,
+        listingId,
+        price_per_night: listing?.price_per_night,
       };
       console.log("Updated formData:", newFormData);
       return newFormData;
@@ -754,33 +755,33 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
     }
 
     const submitBooking = async () => {
-    setLoading(true);
-    try {
-      // Tạo payload và loại bỏ guestId nếu rỗng
-      const payload = { ...formData };
-      if (!payload.guestId || payload.guestId.trim() === "") {
-        delete payload.guestId;
-      }
+      setLoading(true);
+      try {
+        // Tạo payload và loại bỏ guestId nếu rỗng
+        const payload = { ...formData };
+        if (!payload.guestId || payload.guestId.trim() === "") {
+          delete payload.guestId;
+        }
 
-      // Xóa các field rỗng để tránh validation issues
-      if (!payload.specialRequests || payload.specialRequests.trim() === "") {
-        delete payload.specialRequests;
-      }
-      if (!payload.voucherCode || payload.voucherCode.trim() === "") {
-        delete payload.voucherCode;
-      }
-      if (!payload.note || payload.note.trim() === "") {
-        delete payload.note;
-      }
-      if (
-        !payload.additionalCostReason ||
-        payload.additionalCostReason.trim() === ""
-      ) {
-        delete payload.additionalCostReason;
-      }
-      if (!payload.guest_phone || payload.guest_phone.trim() === "") {
-        delete payload.guest_phone;
-      }
+        // Xóa các field rỗng để tránh validation issues
+        if (!payload.specialRequests || payload.specialRequests.trim() === "") {
+          delete payload.specialRequests;
+        }
+        if (!payload.voucherCode || payload.voucherCode.trim() === "") {
+          delete payload.voucherCode;
+        }
+        if (!payload.note || payload.note.trim() === "") {
+          delete payload.note;
+        }
+        if (
+          !payload.additionalCostReason ||
+          payload.additionalCostReason.trim() === ""
+        ) {
+          delete payload.additionalCostReason;
+        }
+        if (!payload.guest_phone || payload.guest_phone.trim() === "") {
+          delete payload.guest_phone;
+        }
 
         // Đảm bảo deposit_paid_amount được set đúng dựa trên payment_status
         const finalAmount = payload.final_amount || 0;
@@ -795,43 +796,88 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
           payload.deposit_paid_amount = 0;
         }
 
-      console.log("Sending payload:", JSON.stringify(payload, null, 2));
-      await api.post("/bookings/staff/create", payload);
-      toast.success("Tạo booking thành công!");
-      onSuccess();
-      onClose();
-    } catch (error: unknown) {
-      console.error("Error creating booking:", error);
+        console.log("Sending payload:", JSON.stringify(payload, null, 2));
+        const bookingResponse = await api.post(
+          "/bookings/staff/create",
+          payload
+        );
+        const bookingId =
+          bookingResponse.data?.data?._id || bookingResponse.data?._id;
 
-      let errorMessage = "Có lỗi xảy ra khi tạo booking";
+        toast.success("Tạo booking thành công!");
 
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as {
-          response?: {
-            data?: {
-              error?: string;
-              message?: string;
+        // Nếu chọn VNPay, tự động tạo payment URL và redirect
+        if (
+          payload.payment_method === "vnpay" &&
+          bookingId &&
+          payload.propertyId
+        ) {
+          try {
+            console.log("Creating VNPay payment for booking:", bookingId);
+            const paymentResponse = await api.post(
+              `/bookings/${payload.propertyId}/${bookingId}/payment/remaining/staff`,
+              {
+                paymentMethod: "vnpay",
+                returnUrl: `${window.location.origin}/admin/bookings?payment=success&bookingId=${bookingId}`,
+                cancelUrl: `${window.location.origin}/admin/bookings?payment=cancel&bookingId=${bookingId}`,
+                note: "Admin tạo booking với VNPay",
+              }
+            );
+
+            const paymentUrl =
+              paymentResponse.data?.data?.paymentUrl ||
+              paymentResponse.data?.paymentUrl;
+            if (paymentUrl) {
+              console.log("Redirecting to VNPay:", paymentUrl);
+              onSuccess(); // Gọi trước khi redirect
+              onClose();
+              // Redirect đến VNPay
+              window.location.href = paymentUrl;
+              return;
+            } else {
+              console.error("No payment URL received:", paymentResponse.data);
+              toast.error("Không nhận được link thanh toán VNPay");
+            }
+          } catch (paymentError) {
+            console.error("Error creating VNPay payment:", paymentError);
+            toast.error("Lỗi tạo thanh toán VNPay, vui lòng thử lại");
+          }
+        }
+
+        onSuccess();
+        onClose();
+      } catch (error: unknown) {
+        console.error("Error creating booking:", error);
+
+        let errorMessage = "Có lỗi xảy ra khi tạo booking";
+
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as {
+            response?: {
+              data?: {
+                error?: string;
+                message?: string;
+              };
             };
+            message?: string;
           };
-          message?: string;
-        };
 
-        console.error("Error response:", axiosError.response);
-        console.error("Error response data:", axiosError.response?.data);
+          console.error("Error response:", axiosError.response);
+          console.error("Error response data:", axiosError.response?.data);
 
-        errorMessage =
-          axiosError.response?.data?.error ||
-          axiosError.response?.data?.message ||
-          axiosError.message ||
-          errorMessage;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
+          errorMessage =
+            axiosError.response?.data?.error ||
+            axiosError.response?.data?.message ||
+            axiosError.message ||
+            errorMessage;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
       }
-
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
     };
 
     showConfirm(
@@ -854,179 +900,179 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
 
   return (
     <>
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="!max-w-[95vw] !w-[1400px] max-h-[90vh] overflow-y-auto bg-white border-0 shadow-2xl mx-0 p-0">
-        <DialogHeader className="text-center pb-4 px-8 pt-6 bg-gray-50 border-b border-gray-200">
-          <div className="mx-auto w-14 h-14 bg-gray-600 rounded-full flex items-center justify-center mb-3">
-            <Users className="w-7 h-7 text-white" />
-          </div>
-          <DialogTitle className="text-2xl font-bold text-gray-800">
-            Tạo Booking cho Nhân viên
-          </DialogTitle>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="!max-w-[95vw] !w-[1400px] max-h-[90vh] overflow-y-auto bg-white border-0 shadow-2xl mx-0 p-0">
+          <DialogHeader className="text-center pb-4 px-8 pt-6 bg-gray-50 border-b border-gray-200">
+            <div className="mx-auto w-14 h-14 bg-gray-600 rounded-full flex items-center justify-center mb-3">
+              <Users className="w-7 h-7 text-white" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-gray-800">
+              Tạo Booking cho Nhân viên
+            </DialogTitle>
             <p className="text-gray-600 mt-1 text-sm">
               Quản lý đặt phòng và dịch vụ cho khách hàng
             </p>
-        </DialogHeader>
+          </DialogHeader>
 
-        <div className="p-6 space-y-6">
-          {/* Property and Listing Selection */}
-          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="w-5 h-5 text-gray-600" />
-                Chọn HomeStay và Phòng
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
-                <div className="space-y-3">
+          <div className="p-6 space-y-6">
+            {/* Property and Listing Selection */}
+            <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+              <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Building2 className="w-5 h-5 text-gray-600" />
+                  Chọn HomeStay và Phòng
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
+                  <div className="space-y-3">
                     <Label
                       htmlFor="property"
                       className="text-sm font-medium text-gray-700 flex items-center gap-2"
                     >
-                    <Home className="w-4 h-4 text-gray-500" />
-                   HomeStay *
-                  </Label>
-                  <Select
-                    value={formData.propertyId}
-                    onValueChange={handlePropertyChange}
-                    disabled={dataLoading}
-                  >
-                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400  focus:border-gray-500 transition-colors rounded-lg">
-                      <SelectValue placeholder="Chọn homestay" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
-                      {Array.isArray(properties) &&
-                        properties.map((property) => (
+                      <Home className="w-4 h-4 text-gray-500" />
+                      HomeStay *
+                    </Label>
+                    <Select
+                      value={formData.propertyId}
+                      onValueChange={handlePropertyChange}
+                      disabled={dataLoading}
+                    >
+                      <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400  focus:border-gray-500 transition-colors rounded-lg">
+                        <SelectValue placeholder="Chọn homestay" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
+                        {Array.isArray(properties) &&
+                          properties.map((property) => (
                             <SelectItem
                               key={property._id}
                               value={property._id}
                               className="rounded-lg py-3 px-4 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-800"
                             >
-                            {property.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                              {property.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-3">
+                  <div className="space-y-3">
                     <Label
                       htmlFor="listing"
                       className="text-sm font-medium text-gray-700 flex items-center gap-2"
                     >
-                    <Star className="w-4 h-4 text-gray-500" />
-                    Phòng *
-                  </Label>
-                  <Select
-                    value={formData.listingId}
-                    onValueChange={handleListingChange}
-                    disabled={!formData.propertyId || dataLoading}
-                  >
-                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
-                      <SelectValue placeholder="Chọn phòng" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
-                      {Array.isArray(listings) &&
-                        listings.map((listing) => (
+                      <Star className="w-4 h-4 text-gray-500" />
+                      Phòng *
+                    </Label>
+                    <Select
+                      value={formData.listingId}
+                      onValueChange={handleListingChange}
+                      disabled={!formData.propertyId || dataLoading}
+                    >
+                      <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
+                        <SelectValue placeholder="Chọn phòng" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
+                        {Array.isArray(listings) &&
+                          listings.map((listing) => (
                             <SelectItem
                               key={listing._id}
                               value={listing._id}
                               className="rounded-lg py-3 px-4 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-800"
                             >
-                            {listing.title} -{" "}
-                            <span className="font-medium text-gray-600">
+                              {listing.title} -{" "}
+                              <span className="font-medium text-gray-600">
                                 {listing.price_per_night?.toLocaleString()}{" "}
                                 VND/đêm
-                            </span>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                              </span>
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
 
-              {selectedListing && (
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                        <Star className="w-4 h-4 text-white" />
-                      </div>
+                {selectedListing && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                          <Star className="w-4 h-4 text-white" />
+                        </div>
                         <h3 className="font-semibold text-lg text-gray-800">
                           {selectedListing.title}
                         </h3>
-                    </div>
+                      </div>
                       <Badge
                         variant="secondary"
                         className="bg-gray-100 text-gray-700 border-gray-200 px-3 py-1 rounded-full text-sm"
                       >
-                      <Users className="w-3 h-3 mr-1" />
-                      Tối đa {selectedListing.max_guests} khách
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                      <DollarSign className="w-4 h-4 text-gray-600" />
-                      <div>
+                        <Users className="w-3 h-3 mr-1" />
+                        Tối đa {selectedListing.max_guests} khách
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <DollarSign className="w-4 h-4 text-gray-600" />
+                        <div>
                           <span className="text-xs text-gray-600">
                             Giá theo đêm
                           </span>
-                        <p className="font-semibold text-base text-gray-800">
+                          <p className="font-semibold text-base text-gray-800">
                             {selectedListing.price_per_night?.toLocaleString()}{" "}
                             VND
-                        </p>
-                      </div>
-                    </div>
-                    {selectedListing.has_weekend_surcharge && (
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                        <Clock className="w-4 h-4 text-gray-600" />
-                        <div>
-                            <span className="text-xs text-gray-600">
-                              Phụ thu cuối tuần
-                            </span>
-                          <p className="font-semibold text-base text-gray-800">
-                            {selectedListing.weekend_surcharge_percent}%
                           </p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Guest Information */}
-          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <User className="w-5 h-5 text-gray-600" />
-                Thông tin Khách hàng
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="space-y-4">
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-gray-500" />
-                  Tìm Guest hoặc nhập mới
-                </Label>
-                <Popover
-                  open={guestSearchOpen}
-                  onOpenChange={setGuestSearchOpen}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={guestSearchOpen}
-                      className="w-full h-16 justify-between border-2 border-gray-200 hover:border-blue-400 focus:border-blue-500 transition-all duration-300 rounded-2xl text-left font-normal bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-indigo-50 shadow-lg hover:shadow-xl hover:scale-[1.02] group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
-                          <Users className="w-5 h-5 text-white" />
+                      {selectedListing.has_weekend_surcharge && (
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <Clock className="w-4 h-4 text-gray-600" />
+                          <div>
+                            <span className="text-xs text-gray-600">
+                              Phụ thu cuối tuần
+                            </span>
+                            <p className="font-semibold text-base text-gray-800">
+                              {selectedListing.weekend_surcharge_percent}%
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-left">
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Guest Information */}
+            <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+              <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <User className="w-5 h-5 text-gray-600" />
+                  Thông tin Khách hàng
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    Tìm Guest hoặc nhập mới
+                  </Label>
+                  <Popover
+                    open={guestSearchOpen}
+                    onOpenChange={setGuestSearchOpen}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={guestSearchOpen}
+                        className="w-full h-16 justify-between border-2 border-gray-200 hover:border-blue-400 focus:border-blue-500 transition-all duration-300 rounded-2xl text-left font-normal bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-indigo-50 shadow-lg hover:shadow-xl hover:scale-[1.02] group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                            <Users className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="text-left">
                             {(() => {
                               // Nếu có guestId và không phải là "__new__" → lấy theo ID
                               if (
@@ -1104,16 +1150,16 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                                   <div className="font-semibold text-gray-700 text-base">
                                     Tìm guest hoặc nhập thông tin mới
                                   </div>
-                                <div className="text-sm text-gray-400 flex items-center gap-2">
-                                  <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                                  Click để tìm kiếm hoặc tạo mới
-                                </div>
-                              </>
+                                  <div className="text-sm text-gray-400 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                    Click để tìm kiếm hoặc tạo mới
+                                  </div>
+                                </>
                               );
                             })()}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                           {(() => {
                             // Hiển thị badge "Đã chọn" cho cả hai trường hợp
                             if (
@@ -1121,9 +1167,9 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                               formData.guestId !== "__new__"
                             ) {
                               return (
-                          <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full border border-green-200">
+                                <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full border border-green-200">
                                   Đã chọn (ID)
-                          </div>
+                                </div>
                               );
                             }
                             if (
@@ -1139,32 +1185,32 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             }
                             return null;
                           })()}
-                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-300">
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-300">
                             <ChevronDown
                               className={`w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-all duration-300 ${
                                 guestSearchOpen ? "rotate-180" : ""
                               }`}
                             />
+                          </div>
                         </div>
-                      </div>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[1250px] p-0 rounded-2xl shadow-2xl border-0 bg-white/95 backdrop-blur-md">
-                    <Command className="rounded-2xl">
-                      <div className="p-5  border-gray-100 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-                        <div className="relative">
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[1250px] p-0 rounded-2xl shadow-2xl border-0 bg-white/95 backdrop-blur-md">
+                      <Command className="rounded-2xl">
+                        <div className="p-5  border-gray-100 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+                          <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"></div>
-                          <CommandInput
-                            placeholder="Tìm kiếm guest theo tên hoặc email..."
-                            value={guestSearchValue}
-                            onValueChange={setGuestSearchValue}
-                            className="h-10 pl-12 pr-4 border-0 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 text-base placeholder:text-gray-400"
-                          />
-                        </div>
+                            <CommandInput
+                              placeholder="Tìm kiếm guest theo tên hoặc email..."
+                              value={guestSearchValue}
+                              onValueChange={setGuestSearchValue}
+                              className="h-10 pl-12 pr-4 border-0 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 text-base placeholder:text-gray-400"
+                            />
+                          </div>
                           <div className="mt-3 flex items-center justify-between">
                             <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                          <span>Gõ để tìm kiếm nhanh</span>
+                              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                              <span>Gõ để tìm kiếm nhanh</span>
                             </div>
                             <div className="flex gap-2">
                               <Button
@@ -1215,35 +1261,35 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                                 Debug
                               </Button>
                             </div>
+                          </div>
                         </div>
-                      </div>
-                      <CommandList 
-                        className="max-h-96 p-2"
-                        onWheel={(e) => {
-                          // Cho phép scroll event lan truyền lên parent để cuộn trang
-                          e.stopPropagation();
-                          const container = e.currentTarget;
+                        <CommandList
+                          className="max-h-96 p-2"
+                          onWheel={(e) => {
+                            // Cho phép scroll event lan truyền lên parent để cuộn trang
+                            e.stopPropagation();
+                            const container = e.currentTarget;
                             const { scrollTop, scrollHeight, clientHeight } =
                               container;
-                          
-                          // Nếu đã scroll đến đầu hoặc cuối của dropdown
+
+                            // Nếu đã scroll đến đầu hoặc cuối của dropdown
                             if (
                               (e.deltaY < 0 && scrollTop <= 0) ||
                               (e.deltaY > 0 &&
                                 scrollTop + clientHeight >= scrollHeight)
                             ) {
-                            // Cho phép scroll event lan truyền lên để cuộn trang
-                            e.stopPropagation();
-                            // Tạo một wheel event mới để cuộn trang
+                              // Cho phép scroll event lan truyền lên để cuộn trang
+                              e.stopPropagation();
+                              // Tạo một wheel event mới để cuộn trang
                               const wheelEvent = new WheelEvent("wheel", {
-                              deltaY: e.deltaY,
-                              deltaMode: e.deltaMode,
+                                deltaY: e.deltaY,
+                                deltaMode: e.deltaMode,
                                 bubbles: true,
-                            });
-                            document.dispatchEvent(wheelEvent);
-                          }
-                        }}
-                      >
+                              });
+                              document.dispatchEvent(wheelEvent);
+                            }
+                          }}
+                        >
                           {(() => {
                             const filteredGuests = guests.filter(
                               (g) =>
@@ -1282,33 +1328,33 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                               guestSearchValue
                             ) {
                               return (
-                        <CommandEmpty>
-                          <div className="p-8 text-center">
-                            <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                              <User className="w-10 h-10 text-gray-400" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                              Không tìm thấy guest nào
-                            </h3>
-                            <p className="text-sm text-gray-500 mb-6">
+                                <CommandEmpty>
+                                  <div className="p-8 text-center">
+                                    <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                      <User className="w-10 h-10 text-gray-400" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                                      Không tìm thấy guest nào
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mb-6">
                                       Hãy thử tìm kiếm với từ khóa khác hoặc tạo
                                       guest mới
-                            </p>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-12 px-8 bg-gradient-to-r from-blue-500 to-indigo-600 border-0 text-white hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 rounded-xl font-medium shadow-lg hover:shadow-xl hover:scale-105"
-                              onClick={() => {
-                                handleGuestChange("__new__");
-                                setGuestSearchOpen(false);
-                                setGuestSearchValue("");
-                              }}
-                            >
-                              <Plus className="w-5 h-5 mr-2" />
-                              Tạo Guest Mới
-                            </Button>
-                          </div>
-                        </CommandEmpty>
+                                    </p>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-12 px-8 bg-gradient-to-r from-blue-500 to-indigo-600 border-0 text-white hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 rounded-xl font-medium shadow-lg hover:shadow-xl hover:scale-105"
+                                      onClick={() => {
+                                        handleGuestChange("__new__");
+                                        setGuestSearchOpen(false);
+                                        setGuestSearchValue("");
+                                      }}
+                                    >
+                                      <Plus className="w-5 h-5 mr-2" />
+                                      Tạo Guest Mới
+                                    </Button>
+                                  </div>
+                                </CommandEmpty>
                               );
                             }
 
@@ -1320,168 +1366,168 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             return (
                               <>
                                 {/* Tùy chọn tạo guest mới - luôn hiển thị */}
-                            <CommandItem
-                              key="__new__"
-                              value="__new__"
-                              onSelect={() => {
-                                handleGuestChange("__new__");
-                                setGuestSearchOpen(false);
-                                setGuestSearchValue("");
-                              }}
-                              className="rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 p-5 mx-1 my-1 transition-all duration-300 cursor-pointer border border-transparent hover:border-blue-200 hover:shadow-lg group"
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
-                                  <Plus className="w-7 h-7 text-white" />
-                                </div>
-                                <div className="flex-1">
-                                  <div className="font-bold text-gray-800 text-lg mb-1">
-                                    Nhập thông tin mới
-                                  </div>
-                                  <div className="text-sm text-gray-500">
+                                <CommandItem
+                                  key="__new__"
+                                  value="__new__"
+                                  onSelect={() => {
+                                    handleGuestChange("__new__");
+                                    setGuestSearchOpen(false);
+                                    setGuestSearchValue("");
+                                  }}
+                                  className="rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 p-5 mx-1 my-1 transition-all duration-300 cursor-pointer border border-transparent hover:border-blue-200 hover:shadow-lg group"
+                                >
+                                  <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
+                                      <Plus className="w-7 h-7 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="font-bold text-gray-800 text-lg mb-1">
+                                        Nhập thông tin mới
+                                      </div>
+                                      <div className="text-sm text-gray-500">
                                         Tạo booking cho guest mới với thông tin
                                         chi tiết
+                                      </div>
+                                    </div>
+                                    <div className="text-xs bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-2 rounded-full font-bold shadow-lg">
+                                      Mới
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="text-xs bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-3 py-2 rounded-full font-bold shadow-lg">
-                                  Mới
-                                </div>
-                              </div>
-                            </CommandItem>
+                                </CommandItem>
 
                                 {/* Guest có sẵn - chỉ hiển thị khi có kết quả tìm kiếm */}
                                 {filteredGuests.length > 0 &&
                                   filteredGuests.map((guest) => (
-                                  <CommandItem
-                                    key={guest._id}
-                                    value={guest._id}
-                                    onSelect={() => {
-                                      handleGuestChange(guest._id);
-                                      setGuestSearchOpen(false);
-                                      setGuestSearchValue("");
-                                    }}
-                                    className="rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 p-5 mx-1 my-1 transition-all duration-300 cursor-pointer border border-transparent hover:border-green-200 hover:shadow-lg group"
-                                  >
-                                    <div className="flex items-center gap-4">
-                                      <div className="w-14 h-14 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
-                                        <User className="w-7 h-7 text-white" />
-                                      </div>
-                                      <div className="flex-1">
-                                        <div className="font-bold text-gray-800 text-lg mb-1">
-                                          {guest.name || guest.guest_name}
+                                    <CommandItem
+                                      key={guest._id}
+                                      value={guest._id}
+                                      onSelect={() => {
+                                        handleGuestChange(guest._id);
+                                        setGuestSearchOpen(false);
+                                        setGuestSearchValue("");
+                                      }}
+                                      className="rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-green-700 p-5 mx-1 my-1 transition-all duration-300 cursor-pointer border border-transparent hover:border-green-200 hover:shadow-lg group"
+                                    >
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
+                                          <User className="w-7 h-7 text-white" />
                                         </div>
-                                        <div className="text-sm text-gray-500 mb-2">
-                                          {guest.email || guest.guest_email}
-                                        </div>
+                                        <div className="flex-1">
+                                          <div className="font-bold text-gray-800 text-lg mb-1">
+                                            {guest.name || guest.guest_name}
+                                          </div>
+                                          <div className="text-sm text-gray-500 mb-2">
+                                            {guest.email || guest.guest_email}
+                                          </div>
                                           {(guest.phone ||
                                             guest.guest_phone) && (
-                                          <div className="flex items-center gap-2 text-xs text-gray-400">
-                                            <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                            {guest.phone || guest.guest_phone}
-                                          </div>
-                                        )}
+                                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                              <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                                              {guest.phone || guest.guest_phone}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-2 rounded-full font-bold shadow-lg">
+                                          Có sẵn
+                                        </div>
                                       </div>
-                                      <div className="text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-2 rounded-full font-bold shadow-lg">
-                                        Có sẵn
-                                      </div>
-                                    </div>
-                                  </CommandItem>
-                                ))}
+                                    </CommandItem>
+                                  ))}
                               </>
                             );
                           })()}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4">
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4">
+                  <div className="space-y-2">
                     <Label
                       htmlFor="guest_name"
                       className="text-sm font-medium text-gray-700"
                     >
-                    Tên khách hàng *
-                  </Label>
-                  <Input
-                    id="guest_name"
-                    value={formData.guest_name}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        guest_name: e.target.value,
-                      }))
-                    }
-                    placeholder="Nhập tên khách hàng"
-                    className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
-                  />
-                </div>
+                      Tên khách hàng *
+                    </Label>
+                    <Input
+                      id="guest_name"
+                      value={formData.guest_name}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          guest_name: e.target.value,
+                        }))
+                      }
+                      placeholder="Nhập tên khách hàng"
+                      className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
+                    />
+                  </div>
 
-                <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label
                       htmlFor="guest_email"
                       className="text-sm font-medium text-gray-700"
                     >
-                    Email *
-                  </Label>
-                  <Input
-                    id="guest_email"
-                    type="email"
-                    value={formData.guest_email}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        guest_email: e.target.value,
-                      }))
-                    }
-                    placeholder="email@example.com"
-                    className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
-                  />
-                </div>
+                      Email *
+                    </Label>
+                    <Input
+                      id="guest_email"
+                      type="email"
+                      value={formData.guest_email}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          guest_email: e.target.value,
+                        }))
+                      }
+                      placeholder="email@example.com"
+                      className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
+                    />
+                  </div>
 
-                <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label
                       htmlFor="guest_phone"
                       className="text-sm font-medium text-gray-700"
                     >
-                    Số điện thoại
-                  </Label>
-                  <Input
-                    id="guest_phone"
-                    value={formData.guest_phone}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        guest_phone: e.target.value,
-                      }))
-                    }
-                    placeholder="0123456789"
-                    className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
-                  />
+                      Số điện thoại
+                    </Label>
+                    <Input
+                      id="guest_phone"
+                      value={formData.guest_phone}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          guest_phone: e.target.value,
+                        }))
+                      }
+                      placeholder="0123456789"
+                      className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
+                    />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Booking Details */}
-          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="w-5 h-5 text-gray-600" />
-                Chi tiết Booking
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-600" />
-                    Chọn ngày check-in và check-out *
-                  </Label>
-                  <div className="relative border-none p-8">
-                    <div className="absolute inset-4  rounded-lg "></div>
-                    <div className="relative z-10 p-4">
+            {/* Booking Details */}
+            <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+              <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Calendar className="w-5 h-5 text-gray-600" />
+                  Chi tiết Booking
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-600" />
+                      Chọn ngày check-in và check-out *
+                    </Label>
+                    <div className="relative border-none p-8">
+                      <div className="absolute inset-4  rounded-lg "></div>
+                      <div className="relative z-10 p-4">
                         {bookedDatesLoading && (
                           <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                             <p className="text-sm text-blue-700 flex items-center gap-2">
@@ -1490,22 +1536,22 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             </p>
                           </div>
                         )}
-                    <BookingCalendar
-                      checkIn={checkIn}
-                      checkOut={checkOut}
-                      setCheckIn={setCheckIn}
-                      setCheckOut={setCheckOut}
-                      setNights={setNights}
-                      bookedDates={bookedDates}
-                      dateOpen={dateOpen}
-                      setDateOpen={setDateOpen}
-                    />
+                        <BookingCalendar
+                          checkIn={checkIn}
+                          checkOut={checkOut}
+                          setCheckIn={setCheckIn}
+                          setCheckOut={setCheckOut}
+                          setNights={setNights}
+                          bookedDates={bookedDates}
+                          dateOpen={dateOpen}
+                          setDateOpen={setDateOpen}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <Label
                         htmlFor="guests"
                         className="text-sm font-medium text-gray-700 flex items-center gap-2"
@@ -1522,12 +1568,14 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                         onChange={(e) => {
                           const value = parseInt(e.target.value) || 1;
                           const maxGuests = selectedListing?.max_guests || 10;
-                          
+
                           if (value > maxGuests) {
-                            toast.error(`Số khách không được vượt quá ${maxGuests} người`);
+                            toast.error(
+                              `Số khách không được vượt quá ${maxGuests} người`
+                            );
                             return;
                           }
-                          
+
                           setFormData((prev) => ({
                             ...prev,
                             guests: value,
@@ -1535,14 +1583,16 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                         }}
                         className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                       />
-                      {formData.guests > (selectedListing?.max_guests || 10) && (
+                      {formData.guests >
+                        (selectedListing?.max_guests || 10) && (
                         <p className="text-sm text-red-600">
-                          Số khách vượt quá giới hạn cho phép ({selectedListing?.max_guests || 10} người)
+                          Số khách vượt quá giới hạn cho phép (
+                          {selectedListing?.max_guests || 10} người)
                         </p>
                       )}
-                  </div>
+                    </div>
 
-                  {/* <div className="space-y-2">
+                    {/* <div className="space-y-2">
                     <Label htmlFor="infants" className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-600" />
                       Số trẻ em
@@ -1561,184 +1611,184 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                       className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg"
                     />
                   </div> */}
+                  </div>
                 </div>
-              </div>
 
-              {nights > 0 && (
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                        <Clock className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
+                {nights > 0 && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
                           <span className="font-semibold text-lg text-gray-800">
                             Thời gian lưu trú
                           </span>
                           <p className="text-sm text-gray-600 mt-1">
                             Số đêm khách hàng sẽ ở lại
                           </p>
+                        </div>
                       </div>
-                    </div>
                       <Badge
                         variant="outline"
                         className="bg-gray-100 text-gray-800 border-gray-300 px-4 py-2 rounded-full text-lg font-bold"
                       >
-                      {nights} đêm
-                    </Badge>
+                        {nights} đêm
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="space-y-2">
+                <div className="space-y-2">
                   <Label
                     htmlFor="specialRequests"
                     className="text-sm font-medium text-gray-700"
                   >
-                  Yêu cầu đặc biệt
-                </Label>
-                <Textarea
-                  id="specialRequests"
-                  value={formData.specialRequests}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      specialRequests: e.target.value,
-                    }))
-                  }
-                  placeholder="Nhập yêu cầu đặc biệt của khách hàng..."
-                  rows={3}
-                  className="border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg resize-none"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Services */}
-          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Package className="w-5 h-5 text-gray-600" />
-                Dịch vụ bổ sung
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              {/* Available Services List */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-gray-700">
-                    Dịch vụ kèm theo
+                    Yêu cầu đặc biệt
                   </Label>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="select-all-services"
+                  <Textarea
+                    id="specialRequests"
+                    value={formData.specialRequests}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        specialRequests: e.target.value,
+                      }))
+                    }
+                    placeholder="Nhập yêu cầu đặc biệt của khách hàng..."
+                    rows={3}
+                    className="border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg resize-none"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Services */}
+            <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+              <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Package className="w-5 h-5 text-gray-600" />
+                  Dịch vụ bổ sung
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                {/* Available Services List */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-gray-700">
+                      Dịch vụ kèm theo
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="select-all-services"
                         checked={
                           formData.services.length === services.length &&
                           services.length > 0
                         }
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          // Select all services
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            // Select all services
                             const allServices = services.map((service) => ({
-                            serviceId: service._id,
+                              serviceId: service._id,
                               quantity: 1,
-                          }));
+                            }));
                             setFormData((prev) => ({
                               ...prev,
                               services: allServices,
                             }));
-                        } else {
-                          // Deselect all services
+                          } else {
+                            // Deselect all services
                             setFormData((prev) => ({ ...prev, services: [] }));
-                        }
-                      }}
-                      className={`w-5 h-5 rounded border-2 transition-all duration-200 ${
+                          }
+                        }}
+                        className={`w-5 h-5 rounded border-2 transition-all duration-200 ${
                           formData.services.length === services.length &&
                           services.length > 0
                             ? "bg-red-500 border-red-500 text-white"
                             : "border-gray-300 hover:border-gray-400"
-                      }`}
-                    />
+                        }`}
+                      />
                       <Label
                         htmlFor="select-all-services"
                         className="text-sm text-gray-600 cursor-pointer"
                       >
-                      Chọn tất cả
-                    </Label>
+                        Chọn tất cả
+                      </Label>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-0 border border-gray-200 rounded-lg overflow-hidden">
-                  {Array.isArray(services) &&
-                    services.map((service) => {
-                      const existingService = formData.services.find(
-                        (s) => s.serviceId === service._id
-                      );
-                      const isSelected = !!existingService;
-                      
-                return (
-                  <div
-                          key={service._id}
-                          className={`flex items-center gap-4 p-4 border-b border-gray-200 last:border-b-0 ${
+                  <div className="space-y-0 border border-gray-200 rounded-lg overflow-hidden">
+                    {Array.isArray(services) &&
+                      services.map((service) => {
+                        const existingService = formData.services.find(
+                          (s) => s.serviceId === service._id
+                        );
+                        const isSelected = !!existingService;
+
+                        return (
+                          <div
+                            key={service._id}
+                            className={`flex items-center gap-4 p-4 border-b border-gray-200 last:border-b-0 ${
                               isSelected
                                 ? "bg-red-50 border-l-4 border-l-red-500"
                                 : "bg-white"
-                          }`}
-                        >
-                          {/* Service Icon */}
-                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Package className="w-5 h-5 text-gray-600" />
-                          </div>
-                          
-                          {/* Service Info */}
-                    <div className="flex-1">
+                            }`}
+                          >
+                            {/* Service Icon */}
+                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Package className="w-5 h-5 text-gray-600" />
+                            </div>
+
+                            {/* Service Info */}
+                            <div className="flex-1">
                               <div className="font-medium text-gray-800">
                                 {service.name}
                               </div>
                               <div className="text-sm text-gray-500">
                                 Dịch vụ bổ sung
                               </div>
-                    </div>
-                          
-                          {/* Price */}
-                          <div className="text-right">
-                            <div className="font-medium text-red-600">
-                              {service.default_price?.toLocaleString()}₫
-                    </div>
-                    </div>
-                          
-                          {/* Checkbox */}
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                // Add service
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  services: [
-                                    ...prev.services,
-                                    { serviceId: service._id, quantity: 1 },
-                                  ],
-                                }));
-                              } else {
-                                // Remove service
-                                const newServices = formData.services.filter(
-                                  (s) => s.serviceId !== service._id
-                                );
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  services: newServices,
-                                }));
-                              }
-                            }}
-                            className={`w-5 h-5 rounded border-2 transition-all duration-200 ${
-                              isSelected 
+                            </div>
+
+                            {/* Price */}
+                            <div className="text-right">
+                              <div className="font-medium text-red-600">
+                                {service.default_price?.toLocaleString()}₫
+                              </div>
+                            </div>
+
+                            {/* Checkbox */}
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  // Add service
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    services: [
+                                      ...prev.services,
+                                      { serviceId: service._id, quantity: 1 },
+                                    ],
+                                  }));
+                                } else {
+                                  // Remove service
+                                  const newServices = formData.services.filter(
+                                    (s) => s.serviceId !== service._id
+                                  );
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    services: newServices,
+                                  }));
+                                }
+                              }}
+                              className={`w-5 h-5 rounded border-2 transition-all duration-200 ${
+                                isSelected
                                   ? "bg-red-500 border-red-500 text-white"
                                   : "border-gray-300 hover:border-gray-400"
-                            }`}
-                          />
-                  </div>
-                );
-              })}
+                              }`}
+                            />
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1786,19 +1836,19 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Pricing and Additional Costs */}
-          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <CreditCard className="w-5 h-5 text-gray-600" />
-                Tính giá và Chi phí bổ sung
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              {/* <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
+            {/* Pricing and Additional Costs */}
+            <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+              <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CreditCard className="w-5 h-5 text-gray-600" />
+                  Tính giá và Chi phí bổ sung
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                {/* <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                 <div className="space-y-2">
                     <Label
                       htmlFor="price_per_night"
@@ -1830,7 +1880,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
 
               </div> */}
 
-              {/* <div className="space-y-2">
+                {/* <div className="space-y-2">
                 <Label htmlFor="additionalCost" className="text-sm font-medium text-gray-700">
                     Chi phí bổ sung
                   </Label>
@@ -1850,7 +1900,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                   />
               </div> */}
 
-              {/* <div className="space-y-2">
+                {/* <div className="space-y-2">
                 <Label htmlFor="additionalCostReason" className="text-sm font-medium text-gray-700">
                   Lý do chi phí bổ sung
                 </Label>
@@ -1868,92 +1918,100 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                 />
               </div> */}
 
-              {calculatedPrice > 0 && (
-                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                        <DollarSign className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
+                {(calculatedPrice > 0 || (selectedListing && nights > 0)) && (
+                  <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                          <DollarSign className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
                           <span className="font-bold text-xl text-gray-800">
                             Tổng tiền ước tính
                           </span>
                           <p className="text-sm text-gray-600 mt-1">
                             Chi tiết các khoản phí
                           </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-3xl font-bold bg-gradient-to-r from-gray-600 to-gray-700 bg-clip-text text-transparent">
-                        {calculatedPrice.toLocaleString()}
-                      </span>
+                      <div className="text-right">
+                        <span className="text-3xl font-bold bg-gradient-to-r from-gray-600 to-gray-700 bg-clip-text text-transparent">
+                          {(calculatedPrice || 0).toLocaleString()}
+                        </span>
                         <p className="text-base text-gray-600 font-medium">
                           VND
                         </p>
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Price Breakdown */}
-                  <div className="space-y-3 text-sm">
-                    {selectedListing && (
-                      <>
-                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                            <span className="text-gray-600">
-                              Giá cơ bản ({nights} đêm)
-                            </span>
-                          <span className="font-medium">
-                              {(
+
+                    {/* Price Breakdown */}
+                    <div className="space-y-3 text-sm bg-white rounded-lg border border-gray-100 p-4">
+                      <div className="font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-3">
+                        Chi tiết thanh toán
+                      </div>
+
+                      {/* Giá phòng cơ bản */}
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-600">
+                          Giá phòng ({nights || 0} đêm)
+                        </span>
+                        <span className="font-medium text-gray-800">
+                          {selectedListing
+                            ? (
                                 (formData.price_per_night ||
-                                  selectedListing.price_per_night) * nights
-                              ).toLocaleString()}{" "}
-                              VND
-                          </span>
-                        </div>
-                        
-                          {selectedListing.has_weekend_surcharge &&
-                            selectedListing.weekend_surcharge_percent &&
-                            checkIn &&
-                            checkOut &&
-                            (() => {
+                                  selectedListing.price_per_night) *
+                                (nights || 0)
+                              ).toLocaleString()
+                            : "0"}
+                          ₫
+                        </span>
+                      </div>
+
+                      {/* Phí cuối tuần */}
+                      {selectedListing?.has_weekend_surcharge &&
+                        selectedListing.weekend_surcharge_percent &&
+                        checkIn &&
+                        checkOut &&
+                        (() => {
                           let weekendNights = 0;
                           const current = new Date(checkIn);
                           while (current < checkOut) {
                             const dayOfWeek = current.getDay();
-                                if (dayOfWeek === 0 || dayOfWeek === 6)
-                                  weekendNights++;
+                            if (dayOfWeek === 0 || dayOfWeek === 6)
+                              weekendNights++;
                             current.setDate(current.getDate() + 1);
                           }
-                              const weekendSurcharge =
-                                weekendNights > 0
-                                  ? (formData.price_per_night ||
-                                      selectedListing.price_per_night) *
-                                    weekendNights *
-                                    (selectedListing.weekend_surcharge_percent! /
-                                      100)
-                                  : 0;
-                          
+                          const weekendSurcharge =
+                            weekendNights > 0
+                              ? (formData.price_per_night ||
+                                  selectedListing.price_per_night) *
+                                weekendNights *
+                                (selectedListing.weekend_surcharge_percent! /
+                                  100)
+                              : 0;
+
                           return weekendNights > 0 ? (
-                            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                                  <span className="text-gray-600">
-                                    Phí cuối tuần ({weekendNights} đêm)
-                                  </span>
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-gray-600">
+                                Phí cuối tuần ({weekendNights} đêm -{" "}
+                                {selectedListing.weekend_surcharge_percent}%)
+                              </span>
                               <span className="font-medium text-orange-600">
-                                +{weekendSurcharge.toLocaleString()} VND
+                                +{weekendSurcharge.toLocaleString()}₫
                               </span>
                             </div>
                           ) : null;
                         })()}
-                      </>
-                    )}
-                    
-                    {formData.services.length > 0 && (
-                      <>
-                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                            <span className="text-gray-600">
+
+                      {/* Dịch vụ bổ sung */}
+                      {formData.services.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-gray-600 font-medium">
                               Dịch vụ bổ sung
                             </span>
-                          <span className="font-medium">
+                            <span className="font-medium text-blue-600">
+                              +
                               {formData.services
                                 .reduce((sum, service) => {
                                   const serviceData = services.find(
@@ -1965,164 +2023,316 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                                       service.quantity
                                   );
                                 }, 0)
-                                .toLocaleString()}{" "}
-                              VND
-                          </span>
-                        </div>
-                        
-                        {/* Service Details */}
-                        <div className="ml-4 space-y-1 text-xs text-gray-500">
-                          {formData.services.map((service, index) => {
+                                .toLocaleString()}
+                              ₫
+                            </span>
+                          </div>
+
+                          {/* Chi tiết dịch vụ */}
+                          <div className="ml-4 space-y-1 bg-gray-50 rounded-lg p-3">
+                            {formData.services.map((service, index) => {
                               const serviceData = services.find(
                                 (s) => s._id === service.serviceId
                               );
-                            if (!serviceData) return null;
-                            return (
+                              if (!serviceData) return null;
+                              return (
                                 <div
                                   key={index}
-                                  className="flex justify-between items-center"
+                                  className="flex justify-between items-center text-xs text-gray-600"
                                 >
                                   <span>
                                     • {serviceData.name} (x{service.quantity})
                                   </span>
-                                  <span>
+                                  <span className="font-medium">
                                     {(
                                       serviceData.default_price *
                                       service.quantity
-                                    ).toLocaleString()}{" "}
-                                    VND
+                                    ).toLocaleString()}
+                                    ₫
                                   </span>
-                              </div>
-                            );
-                          })}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </>
-                    )}
-                    
+                      )}
+
+                      {/* Voucher giảm giá */}
                       {formData.voucherCode &&
                         (() => {
                           const selectedVoucher = validVouchers.find(
                             (v) => v.code === formData.voucherCode
                           );
-                          const discountAmount = selectedVoucher
-                            ? (calculatedPrice / 1.18) *
-                              (selectedVoucher.discount_percent / 100)
+                          if (!selectedVoucher) return null;
+
+                          // Tính subtotal trước khi áp dụng voucher
+                          const basePrice = selectedListing
+                            ? (formData.price_per_night ||
+                                selectedListing.price_per_night) * nights
                             : 0;
-                      
-                      return (
-                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+
+                          const weekendSurcharge =
+                            selectedListing?.has_weekend_surcharge &&
+                            selectedListing.weekend_surcharge_percent &&
+                            checkIn &&
+                            checkOut
+                              ? (() => {
+                                  let weekendNights = 0;
+                                  const current = new Date(checkIn);
+                                  while (current < checkOut) {
+                                    const dayOfWeek = current.getDay();
+                                    if (dayOfWeek === 0 || dayOfWeek === 6)
+                                      weekendNights++;
+                                    current.setDate(current.getDate() + 1);
+                                  }
+                                  return weekendNights > 0
+                                    ? (formData.price_per_night ||
+                                        selectedListing.price_per_night) *
+                                        weekendNights *
+                                        (selectedListing.weekend_surcharge_percent! /
+                                          100)
+                                    : 0;
+                                })()
+                              : 0;
+
+                          const servicesTotal = formData.services.reduce(
+                            (sum, service) => {
+                              const serviceData = services.find(
+                                (s) => s._id === service.serviceId
+                              );
+                              return (
+                                sum +
+                                (serviceData?.default_price || 0) *
+                                  service.quantity
+                              );
+                            },
+                            0
+                          );
+
+                          const subtotal =
+                            basePrice +
+                            weekendSurcharge +
+                            servicesTotal +
+                            formData.additionalCost;
+                          const discountAmount =
+                            subtotal * (selectedVoucher.discount_percent / 100);
+
+                          return (
+                            <div className="flex justify-between items-center py-2">
                               <span className="text-gray-600">
-                                Giảm giá voucher ({formData.voucherCode})
+                                Giảm giá ({formData.voucherCode} -{" "}
+                                {selectedVoucher.discount_percent}%)
                               </span>
-                          <span className="font-medium text-green-600">
-                            -{discountAmount.toLocaleString()} VND
+                              <span className="font-medium text-green-600">
+                                -{discountAmount.toLocaleString()}₫
+                              </span>
+                            </div>
+                          );
+                        })()}
+
+                      {/* Chi phí phát sinh */}
+                      <div className="flex justify-between items-center py-2">
+                        <div>
+                          <span className="text-gray-600">
+                            Chi phí phát sinh
                           </span>
+                          {formData.additionalCostReason && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              ({formData.additionalCostReason})
+                            </div>
+                          )}
                         </div>
-                      );
-                    })()}
-                    
-                    {formData.additionalCost > 0 && (
-                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                        <span className="text-gray-600">Chi phí bổ sung</span>
-                        <span className="font-medium">
-                          {formData.additionalCost.toLocaleString()} VND
+                        <span className="font-medium text-orange-600">
+                          {formData.additionalCost > 0 ? "+" : ""}
+                          {(formData.additionalCost || 0).toLocaleString()}₫
                         </span>
                       </div>
-                    )}
-                    
 
+                      {/* Phân cách */}
+                      <div className="border-t border-gray-200 pt-3 mt-3">
+                        {/* Tạm tính */}
+                        {(() => {
+                          const basePrice = selectedListing
+                            ? (formData.price_per_night ||
+                                selectedListing.price_per_night) * nights
+                            : 0;
 
-                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                      <span className="text-gray-600">Phí dịch vụ (10%)</span>
-                      <span className="font-medium text-gray-500">
-                          +{((calculatedPrice / 1.18) * 0.1).toLocaleString()}{" "}
-                          VND
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-gray-600">Thuế (8%)</span>
-                      <span className="font-medium text-gray-500">
-                          +{((calculatedPrice / 1.18) * 0.08).toLocaleString()}{" "}
-                          VND
-                      </span>
+                          const weekendSurcharge =
+                            selectedListing?.has_weekend_surcharge &&
+                            selectedListing.weekend_surcharge_percent &&
+                            checkIn &&
+                            checkOut
+                              ? (() => {
+                                  let weekendNights = 0;
+                                  const current = new Date(checkIn);
+                                  while (current < checkOut) {
+                                    const dayOfWeek = current.getDay();
+                                    if (dayOfWeek === 0 || dayOfWeek === 6)
+                                      weekendNights++;
+                                    current.setDate(current.getDate() + 1);
+                                  }
+                                  return weekendNights > 0
+                                    ? (formData.price_per_night ||
+                                        selectedListing.price_per_night) *
+                                        weekendNights *
+                                        (selectedListing.weekend_surcharge_percent! /
+                                          100)
+                                    : 0;
+                                })()
+                              : 0;
+
+                          const servicesTotal = formData.services.reduce(
+                            (sum, service) => {
+                              const serviceData = services.find(
+                                (s) => s._id === service.serviceId
+                              );
+                              return (
+                                sum +
+                                (serviceData?.default_price || 0) *
+                                  service.quantity
+                              );
+                            },
+                            0
+                          );
+
+                          const subtotal =
+                            basePrice +
+                            weekendSurcharge +
+                            servicesTotal +
+                            formData.additionalCost;
+
+                          const selectedVoucher = validVouchers.find(
+                            (v) => v.code === formData.voucherCode
+                          );
+                          const discountAmount = selectedVoucher
+                            ? subtotal *
+                              (selectedVoucher.discount_percent / 100)
+                            : 0;
+
+                          const amountAfterDiscount = subtotal - discountAmount;
+                          const serviceFee = amountAfterDiscount * 0.1;
+                          const taxAmount = amountAfterDiscount * 0.08;
+
+                          return (
+                            <>
+                              <div className="flex justify-between items-center py-2">
+                                <span className="text-gray-600 font-medium">
+                                  Tạm tính
+                                </span>
+                                <span className="font-medium text-gray-800">
+                                  {amountAfterDiscount.toLocaleString()}₫
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between items-center py-2">
+                                <span className="text-gray-600">
+                                  Phí dịch vụ (10%)
+                                </span>
+                                <span className="font-medium text-gray-600">
+                                  +{serviceFee.toLocaleString()}₫
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between items-center py-2">
+                                <span className="text-gray-600">
+                                  Thuế VAT (8%)
+                                </span>
+                                <span className="font-medium text-gray-600">
+                                  +{taxAmount.toLocaleString()}₫
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Tổng cộng */}
+                      <div className="border-t-2 border-blue-200 pt-3 mt-3 bg-blue-50 -mx-4 px-4 py-3 rounded-b-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-bold text-blue-800">
+                            Tổng cộng
+                          </span>
+                          <span className="text-xl font-bold text-blue-600">
+                            {(calculatedPrice || 0).toLocaleString()}₫
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Advanced Options */}
-          <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="w-5 h-5 text-gray-600" />
-                Tùy chọn nâng cao
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4">
-                <div className="space-y-2">
+            {/* Advanced Options */}
+            <Card className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-200">
+              <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg py-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="w-5 h-5 text-gray-600" />
+                  Tùy chọn nâng cao
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4">
+                  <div className="space-y-2">
                     <Label
                       htmlFor="status"
                       className="text-sm font-medium text-gray-700"
                     >
-                    Trạng thái booking
-                  </Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, status: value }))
-                    }
-                  >
-                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
+                      Trạng thái booking
+                    </Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({ ...prev, status: value }))
+                      }
+                    >
+                      <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
                         <SelectItem
                           value="confirmed"
                           className="rounded-lg py-3 px-4 hover:bg-green-50 hover:text-green-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-green-100 data-[state=checked]:text-green-800"
                         >
-                        Đã xác nhận
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                          Đã xác nhận
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label
                       htmlFor="payment_status"
                       className="text-sm font-medium text-gray-700"
                     >
-                    Trạng thái thanh toán
-                  </Label>
-                  <Select
-                    value={formData.payment_status}
+                      Trạng thái thanh toán
+                    </Label>
+                    <Select
+                      value={formData.payment_status}
                       onValueChange={(value) => {
                         // Chỉ cập nhật payment_status, không tự động thay đổi payment_method
-                      setFormData((prev) => ({
-                        ...prev,
-                        payment_status: value,
+                        setFormData((prev) => ({
+                          ...prev,
+                          payment_status: value,
                         }));
                       }}
-                  >
-                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
-                      <SelectValue placeholder="Chọn trạng thái thanh toán" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
+                    >
+                      <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
+                        <SelectValue placeholder="Chọn trạng thái thanh toán" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
                         <SelectItem
                           value="paid"
                           className="rounded-lg py-3 px-4 hover:bg-green-50 hover:text-green-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-green-100 data-[state=checked]:text-green-800"
                         >
-                        Đã thanh toán
-                      </SelectItem>
+                          Đã thanh toán
+                        </SelectItem>
                         <SelectItem
                           value="partially_paid"
                           className="rounded-lg py-3 px-4 hover:bg-yellow-50 hover:text-yellow-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-yellow-100 data-[state=checked]:text-yellow-800"
                         >
-                        Thanh toán một phần
-                      </SelectItem>
+                          Thanh toán một phần
+                        </SelectItem>
                         <SelectItem
                           value="unpaid"
                           className="rounded-lg py-3 px-4 hover:bg-red-50 hover:text-red-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-red-100 data-[state=checked]:text-red-800"
@@ -2172,12 +2382,12 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             VNPay
                           </div>
                         </SelectItem>
-                    </SelectContent>
-                  </Select>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
 
-              {/* <div className="space-y-2">
+                {/* <div className="space-y-2">
                 <Label htmlFor="note" className="text-sm font-medium text-gray-700">
                   Ghi chú
                 </Label>
@@ -2192,51 +2402,51 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                   className="border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg resize-none"
                 />
               </div> */}
-            </CardContent>
-          </Card>
-        </div>
-
-        <DialogFooter className="flex items-center justify-between pt-6 border-t border-gray-200 bg-gray-50 p-6">
-          <div className="flex items-center gap-3">
-            {dataLoading && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border border-gray-200">
-                <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
-                <span className="font-medium">Đang tải dữ liệu...</span>
-              </div>
-            )}
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={handleClose}
-              className="h-14 px-10 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-lg font-medium text-gray-700 transition-all duration-200 text-base"
-            >
-              <span>Hủy</span>
-            </Button>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={loading}
-              className="h-14 px-10 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-base flex items-center gap-3"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Đang tạo...</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-3 h-3 text-white" />
-                  </div>
-                  <span>Tạo Booking</span>
-                </>
+          <DialogFooter className="flex items-center justify-between pt-6 border-t border-gray-200 bg-gray-50 p-6">
+            <div className="flex items-center gap-3">
+              {dataLoading && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border border-gray-200">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                  <span className="font-medium">Đang tải dữ liệu...</span>
+                </div>
               )}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="h-14 px-10 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-lg font-medium text-gray-700 transition-all duration-200 text-base"
+              >
+                <span>Hủy</span>
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="h-14 px-10 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-base flex items-center gap-3"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Đang tạo...</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-3 h-3 text-white" />
+                    </div>
+                    <span>Tạo Booking</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={showConfirmDialog}
