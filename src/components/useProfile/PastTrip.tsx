@@ -206,7 +206,6 @@ function useAllBookedDates(listingIds: string[]) {
 const PastTrip = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-
   const { myBookingHistory, loading, error } = useSelector(
     (state: RootState) => {
       return state.booking;
