@@ -38,9 +38,9 @@ import {
   Calendar,
   RefreshCw,
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+// import { Progress } from "@/components/ui/progress";
 import ListingStatistics from "./ListingStatistics";
-import { format } from "date-fns";
+// import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 
@@ -188,12 +188,12 @@ const ListingDetail = () => {
     </span>
   );
 
-  const isDateRangeSelected = dateRange?.from && dateRange?.to;
-  const now = new Date();
-  const currentMonthYear = `${String(now.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}/${now.getFullYear()}`;
+  // const isDateRangeSelected = dateRange?.from && dateRange?.to;
+  // const now = new Date();
+  // const currentMonthYear = `${String(now.getMonth() + 1).padStart(
+  //   2,
+  //   "0"
+  // )}/${now.getFullYear()}`;
 
   // Hàm chuyển trạng thái booking sang tiếng Việt
   const getBookingStatusVN = (status: string) => {
@@ -235,14 +235,14 @@ const ListingDetail = () => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  // const formatCurrency = (value: number) => {
+  //   return new Intl.NumberFormat("vi-VN", {
+  //     style: "currency",
+  //     currency: "VND",
+  //     minimumFractionDigits: 0,
+  //     maximumFractionDigits: 0,
+  //   }).format(value);
+  // };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
