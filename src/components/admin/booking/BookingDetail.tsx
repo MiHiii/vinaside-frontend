@@ -2,6 +2,7 @@
 // @ts-nocheck - Temporarily disable TypeScript checking due to complex type inference issues with paymentStatus.label
 import React, { useEffect, useState } from "react";
 import { useAppDispatch } from "@/hooks/useRedux";
+import { useNavigate } from "react-router-dom";
 import {
   fetchAdminBookingDetail,
   updateAdminBookingStatus,
@@ -77,6 +78,7 @@ const BookingDetail: React.FC<{
   onBack: () => void;
 }> = ({ propertyId, bookingId, onBack }) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { adminBookingDetail, loading, error } = useSelector(
     (state: RootState) => state.booking
   );
@@ -220,10 +222,22 @@ const BookingDetail: React.FC<{
     }
   };
 
+  // Handler for navigating to listing detail
+  const handleNavigateToListing = () => {
+    if (listing && typeof listing === "object" && listing._id) {
+      navigate(`/admin/listings/${listing._id}`);
+    }
+  };
+
   // Handler for updating additional cost
   const handleUpdateAdditionalCost = async () => {
     if (additionalCostInput < 0) {
       toast.error("Chi phí phát sinh không thể âm!");
+      return;
+    }
+
+    if (additionalCostInput > 10000000) {
+      toast.error("Chi phí phát sinh không được lớn hơn 10 triệu VND!");
       return;
     }
 
@@ -676,10 +690,14 @@ const BookingDetail: React.FC<{
                   <img
                     src={getListingImage(listing)}
                     alt="room"
-                    className="w-full h-48 object-cover"
+                    className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={handleNavigateToListing}
                   />
                 ) : (
-                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                  <div 
+                    className="w-full h-48 bg-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
+                    onClick={handleNavigateToListing}
+                  >
                     <Camera className="w-12 h-12 text-gray-400" />
                   </div>
                 )}
@@ -691,7 +709,10 @@ const BookingDetail: React.FC<{
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 
+                  className="text-lg font-semibold text-gray-900 mb-2 cursor-pointer hover:text-blue-600 transition-colors"
+                  onClick={handleNavigateToListing}
+                >
                   {hasListingFields(listing) && listing.title
                     ? listing.title
                     : "N/A"}
@@ -1010,6 +1031,7 @@ const BookingDetail: React.FC<{
                         id="additionalCost"
                         type="number"
                         min="0"
+                        max="10000000"
                         value={additionalCostInput}
                         onChange={(e) =>
                           setAdditionalCostInput(Number(e.target.value))
