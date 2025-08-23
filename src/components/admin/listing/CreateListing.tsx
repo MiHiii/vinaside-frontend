@@ -85,7 +85,7 @@ const createListingSchema = z.object({
     z
       .number()
       .min(10000, "Giá/đêm phải từ 10.000 VNĐ")
-      .max(5000000, "Giá/đêm không được vượt quá 5.000.000 VNĐ")
+      .max(10000000, "Giá/đêm không được vượt quá 10.000.000 VNĐ")
   ),
   guests: z.preprocess(
     (val) => Number(val),
@@ -212,11 +212,11 @@ export default function CreateListing() {
     return value.toLocaleString("vi-VN");
   };
 
-  // Parse Vietnamese currency format to number
-  const parseVietnameseCurrency = (value: string): number => {
-    if (!value) return 0;
-    return parseInt(value.replace(/\./g, ""), 10);
-  };
+  // // Parse Vietnamese currency format to number
+  // const parseVietnameseCurrency = (value: string): number => {
+  //   if (!value) return 0;
+  //   return parseInt(value.replace(/\./g, ""), 10);
+  // };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
