@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
+import { useNavigate } from "react-router-dom";
 import {
   fetchAdminListings,
   deleteListing,
@@ -97,6 +98,7 @@ const formatPrice = (price: number) => {
 
 export default function Listings() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { isAdmin, isStaff } = useUserRole();
   const allListings = useAppSelector(selectListings);
   const loading = useAppSelector(selectListingsLoading);
@@ -313,6 +315,11 @@ export default function Listings() {
       [field]: value,
       page: field === "page" ? Number(value) : 1,
     }));
+  };
+
+  // Handler for navigating to property detail
+  const handleNavigateToProperty = (propertyId: string) => {
+    navigate(`/admin/properties/${propertyId}`);
   };
 
   const handleDelete = async (id: string) => {
@@ -628,8 +635,12 @@ export default function Listings() {
                         }
                       >
                         {typeof listing.propertyId === "object" &&
-                        listing.propertyId !== null ? (
-                          <span className="text-green-700 dark:text-green-400 font-medium">
+                        listing.propertyId !== null &&
+                        "_id" in listing.propertyId ? (
+                          <span 
+                            className="text-green-700 dark:text-green-400 font-medium cursor-pointer hover:text-green-800 dark:hover:text-green-300 transition-colors"
+                            onClick={() => handleNavigateToProperty((listing.propertyId as { _id: string })._id)}
+                          >
                             {listing.propertyId.name}
                           </span>
                         ) : (

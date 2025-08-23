@@ -77,8 +77,8 @@ const cancelPolicies = [
 ];
 
 const createListingSchema = z.object({
-  title: z.string().min(1, "Tiêu đề là bắt buộc"),
-  description: z.string().min(1, "Mô tả là bắt buộc"),
+  title: z.string().min(1, "Tiêu đề là bắt buộc").max(255, "Tiêu đề không được vượt quá 255 ký tự"),
+  description: z.string().min(1, "Mô tả là bắt buộc").max(255, "Mô tả không được vượt quá 255 ký tự"),
   property_id: z.string().min(1, "Phải chọn property"),
   price_per_night: z.preprocess(
     (val) => Number(val),
@@ -86,19 +86,19 @@ const createListingSchema = z.object({
   ),
   guests: z.preprocess(
     (val) => Number(val),
-    z.number().min(1, "Số khách phải lớn hơn hoặc bằng 1")
+    z.number().min(1, "Số khách phải lớn hơn hoặc bằng 1").max(10, "Số khách không được vượt quá 10")
   ),
   max_guests: z.preprocess(
     (val) => Number(val),
-    z.number().min(1, "Số khách tối đa phải lớn hơn hoặc bằng 1")
+    z.number().min(1, "Số khách tối đa phải lớn hơn hoặc bằng 1").max(10, "Số khách tối đa không được vượt quá 10")
   ),
   beds: z.preprocess(
     (val) => Number(val),
-    z.number().min(1, "Số giường phải lớn hơn hoặc bằng 1")
+    z.number().min(1, "Số giường phải lớn hơn hoặc bằng 1").max(5, "Số giường không được vượt quá 5")
   ),
   bathrooms: z.preprocess(
     (val) => Number(val),
-    z.number().min(1, "Số phòng tắm phải lớn hơn hoặc bằng 1")
+    z.number().min(1, "Số phòng tắm phải lớn hơn hoặc bằng 1").max(3, "Số phòng tắm không được vượt quá 3")
   ),
   cancel_policy: z.string().min(1, "Chính sách hủy là bắt buộc"),
   status: z.string().min(1, "Trạng thái là bắt buộc"),
@@ -164,7 +164,7 @@ export default function CreateListing() {
     (state) => state.safetyFeature.safetyFeatures
   );
   const houseRules = useAppSelector((state) => state.houseRule.houseRules);
-  const vouchers = useAppSelector((state) => state.voucher.vouchers);
+  // const vouchers = useAppSelector((state) => state.voucher.vouchers);
 
   // 2. Fetch danh sách dịch vụ, tính năng an toàn, nội quy, voucher
   useEffect(() => {
@@ -686,7 +686,7 @@ export default function CreateListing() {
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Phụ phí sẽ được tính thêm vào giá gốc mỗi đêm vào cuối tuần
-                    (Thứ 6, Thứ 7, Chủ nhật)
+                    (Thứ 7, Chủ nhật)
                   </p>
                 </div>
               )}
@@ -1043,7 +1043,7 @@ export default function CreateListing() {
           </div>
 
           {/* Chọn Voucher */}
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
                 <svg
@@ -1120,7 +1120,7 @@ export default function CreateListing() {
                 </label>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Upload ảnh */}
           <div className="space-y-3">
