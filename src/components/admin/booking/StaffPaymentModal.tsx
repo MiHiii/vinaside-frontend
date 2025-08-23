@@ -26,6 +26,12 @@ interface Booking {
   services_total_amount?: number;
   additionalCost?: number;
   additionalCostReason?: string;
+  discount_amount?: number;
+  voucher_code?: string;
+  amount_after_discount?: number;
+  subtotal_amount?: number;
+  service_fee?: number;
+  tax_amount?: number;
   selected_services?: Array<{
     service_name?: string;
     quantity?: number;
@@ -262,9 +268,9 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
                 </div>
 
                 {/* Giá phòng cơ bản */}
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <div className="flex justify-between items-center py-2">
                   <span className="text-sm text-gray-600">
-                    Giá phòng cơ bản:
+                    Giá phòng cơ bản
                   </span>
                   <span className="text-sm font-medium">
                     {(booking?.total_price || 0).toLocaleString("vi-VN")}₫
@@ -274,12 +280,12 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
                 {/* Dịch vụ đã chọn */}
                 {booking?.selected_services &&
                   booking.selected_services.length > 0 && (
-                    <>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-sm text-gray-600">
-                          Dịch vụ đã chọn:
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-sm text-gray-600 font-medium">
+                          Dịch vụ bổ sung
                         </span>
-                        <span className="text-sm font-medium text-green-600">
+                        <span className="text-sm font-medium text-blue-600">
                           +
                           {(booking?.services_total_amount || 0).toLocaleString(
                             "vi-VN"
@@ -289,16 +295,16 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
                       </div>
 
                       {/* Chi tiết từng dịch vụ */}
-                      <div className="ml-4 space-y-1">
+                      <div className="ml-4 space-y-1 bg-gray-50 rounded-lg p-3">
                         {booking.selected_services.map((service, index) => (
                           <div
                             key={index}
-                            className="flex justify-between items-center text-xs text-gray-500"
+                            className="flex justify-between items-center text-xs text-gray-600"
                           >
                             <span>
                               • {service.service_name} (x{service.quantity})
                             </span>
-                            <span>
+                            <span className="font-medium">
                               {(service.total_price || 0).toLocaleString(
                                 "vi-VN"
                               )}
@@ -307,36 +313,88 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
                           </div>
                         ))}
                       </div>
-                    </>
+                    </div>
                   )}
 
-                {/* Chi phí phát sinh */}
-                {booking?.additionalCost && booking.additionalCost > 0 && (
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <div>
-                      <span className="text-sm text-gray-600">
-                        Chi phí phát sinh:
-                      </span>
-                      {booking.additionalCostReason && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          ({booking.additionalCostReason})
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-sm font-medium text-orange-600">
-                      +{booking.additionalCost.toLocaleString("vi-VN")}₫
+                {/* Voucher giảm giá */}
+                {booking?.discount_amount && booking.discount_amount > 0 && (
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-gray-600">
+                      Giảm giá{" "}
+                      {booking?.voucher_code ? `(${booking.voucher_code})` : ""}
+                    </span>
+                    <span className="text-sm font-medium text-green-600">
+                      -{(booking.discount_amount || 0).toLocaleString("vi-VN")}₫
                     </span>
                   </div>
                 )}
 
+                {/* Chi phí phát sinh */}
+                <div className="flex justify-between items-center py-2">
+                  <div>
+                    <span className="text-sm text-gray-600">
+                      Chi phí phát sinh
+                    </span>
+                    {booking?.additionalCostReason && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        ({booking.additionalCostReason})
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-orange-600">
+                    {booking?.additionalCost && booking.additionalCost > 0
+                      ? "+"
+                      : ""}
+                    {(booking?.additionalCost || 0).toLocaleString("vi-VN")}₫
+                  </span>
+                </div>
+
+                {/* Phân cách */}
+                <div className="border-t border-gray-200 pt-3 mt-3">
+                  {/* Tạm tính */}
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Tạm tính
+                    </span>
+                    <span className="text-sm font-medium text-gray-800">
+                      {(
+                        booking?.amount_after_discount ||
+                        booking?.subtotal_amount ||
+                        0
+                      ).toLocaleString("vi-VN")}
+                      ₫
+                    </span>
+                  </div>
+
+                  {/* Phí dịch vụ */}
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-gray-600">
+                      Phí dịch vụ (10%)
+                    </span>
+                    <span className="text-sm font-medium text-gray-600">
+                      +{(booking?.service_fee || 0).toLocaleString("vi-VN")}₫
+                    </span>
+                  </div>
+
+                  {/* Thuế VAT */}
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-gray-600">Thuế VAT (8%)</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      +{(booking?.tax_amount || 0).toLocaleString("vi-VN")}₫
+                    </span>
+                  </div>
+                </div>
+
                 {/* Tổng cộng */}
-                <div className="flex justify-between items-center py-2 border-t border-gray-200">
-                  <span className="text-sm font-semibold text-gray-800">
-                    Tổng cộng:
-                  </span>
-                  <span className="text-sm font-bold text-blue-600">
-                    {(booking?.final_amount || 0).toLocaleString("vi-VN")}₫
-                  </span>
+                <div className="border-t-2 border-blue-200 pt-3 mt-3 bg-blue-50 -mx-4 px-4 py-3 rounded-b-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-bold text-blue-800">
+                      Tổng cộng
+                    </span>
+                    <span className="text-lg font-bold text-blue-600">
+                      {(booking?.final_amount || 0).toLocaleString("vi-VN")}₫
+                    </span>
+                  </div>
                 </div>
 
                 {/* Đã thanh toán */}

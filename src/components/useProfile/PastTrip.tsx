@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
@@ -206,38 +206,6 @@ const PastTrip = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  // Helper function để tạo URL thanh toán
-  const createPaymentUrl = (
-    booking: BookingWithStatus,
-    outstandingAmount: number
-  ) => {
-    const listingId =
-      typeof booking.listingId === "object" && "_id" in booking.listingId
-        ? booking.listingId._id
-        : booking.listingId;
-
-    if (!listingId) return null;
-
-    // Format ngày tháng đúng định dạng YYYY-MM-DD
-    const formatDate = (dateString: string) => {
-      const date = new Date(dateString);
-      return date.toISOString().split("T")[0];
-    };
-
-    // Lấy propertyId từ booking (propertyId là trường riêng biệt trong BookingData)
-    const propertyId = booking.propertyId || "";
-
-    // Tạo URL với đầy đủ tham số
-    return `/payment?bookingId=${
-      booking._id
-    }&listingId=${listingId}&propertyId=${propertyId}&checkInDate=${formatDate(
-      booking.checkInDate
-    )}&checkOutDate=${formatDate(booking.check_out_date)}&guests=${
-      booking.guests || 1
-    }&infants=0&pets=0&total_price=${
-      booking.final_amount || outstandingAmount
-    }&final_amount=${outstandingAmount}&selectedServiceTotal=0`;
-  };
   const { myBookingHistory, loading, error } = useSelector(
     (state: RootState) => {
       return state.booking;
@@ -323,8 +291,10 @@ const PastTrip = () => {
     }
   }, [showCancelModal, selectedBookingForCancel]);
 
-  const bookings: BookingWithStatus[] =
-    (myBookingHistory as BookingWithStatus[]) || [];
+  const bookings: BookingWithStatus[] = useMemo(
+    () => (myBookingHistory as BookingWithStatus[]) || [],
+    [myBookingHistory]
+  );
 
   // Log tất cả bookings để debug
   useEffect(() => {
@@ -411,11 +381,19 @@ const PastTrip = () => {
               error
             );
             if (error && typeof error === "object" && "message" in error) {
+              const errorObj = error as {
+                message?: string;
+                response?: {
+                  status?: number;
+                  data?: unknown;
+                };
+                config?: unknown;
+              };
               console.error(`❌ Error details:`, {
-                message: (error as any).message,
-                status: (error as any).response?.status,
-                data: (error as any).response?.data,
-                config: (error as any).config,
+                message: errorObj.message,
+                status: errorObj.response?.status,
+                data: errorObj.response?.data,
+                config: errorObj.config,
               });
             }
             conflicts[booking._id] = false;
