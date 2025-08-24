@@ -366,7 +366,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({ isOpen, onClose, 
     let guestsData = [];
     try {
       // Thử endpoint chính trước
-      const guestsRes = await api.get('/users?role=guest');
+      const guestsRes = await api.get('/users/guests');
       console.log('Guests API response:', guestsRes);
       console.log('Guests response.data:', guestsRes.data);
       console.log('Guests response.data.data:', guestsRes.data.data);
@@ -394,7 +394,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({ isOpen, onClose, 
 
       // Thử endpoint public nếu endpoint chính thất bại
       try {
-        const publicGuestsRes = await api.get('/users/public?role=guest');
+        const publicGuestsRes = await api.get('/users/guest/public');
         console.log('Public guests API response:', publicGuestsRes);
 
         if (publicGuestsRes.data && publicGuestsRes.data.data && Array.isArray(publicGuestsRes.data.data)) {
