@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { Amenity } from '@/types/amenity';
 import toast from 'react-hot-toast';
+import { PermissionGuard } from '@/components/common/PermissionGuard';
 
 const statusOptions = [
   { value: '', label: 'Tất cả' },
@@ -108,10 +109,12 @@ export default function Amenities() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Danh sách tiện ích</h1>
         <Link to="/admin/amenities/create">
+          <PermissionGuard permission='amenity.create'>
           <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
             <Plus className="w-4 h-4" />
             Thêm tiện ích
           </button>
+          </PermissionGuard>
         </Link>
       </div>
       {/* Bộ lọc */}
@@ -205,6 +208,7 @@ export default function Amenities() {
                     <div className="flex items-center justify-center gap-2">
                       {/* <button title="Chi tiết" className="p-1 hover:bg-gray-200 rounded">
                         <Eye className="w-4 h-4 text-blue-600" />                     </button> */}
+                      <PermissionGuard permission='amenity.edit'>
                       <Link
                         to={`/admin/amenities/edit/${a._id}`}
                         title="Sửa"
@@ -212,6 +216,8 @@ export default function Amenities() {
                       >
                         <Edit className="w-4 h-4 text-yellow-600" />
                       </Link>
+                      </PermissionGuard>
+                      <PermissionGuard permission='amenity.delete'>
                       <button title="Xóa" className="p-1 hover:bg-gray-200 rounded" onClick={() => handleDelete(a._id)} disabled={deletingId === a._id}>
                         {deletingId === a._id ? (
                           <span className="text-xs text-gray-400">Đang xóa...</span>
@@ -219,6 +225,7 @@ export default function Amenities() {
                           <Trash2 className="w-4 h-4 text-red-600" />
                         )}
                       </button>
+                      </PermissionGuard>
                     </div>
                   </td>
                 </tr>

@@ -26,6 +26,7 @@ import type { Booking } from "@/types/booking.interface";
 import { Link } from "react-router-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import CancelBookingModal from "./CancelBookingModal";
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 interface BookingActionsProps {
   booking: Booking;
@@ -226,13 +227,16 @@ const BookingActions: React.FC<BookingActionsProps> = ({
             booking.status === BookingStatus.CONFIRMED) && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setShowCancelModal(true)}
-                className="flex items-center gap-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-md px-2 py-1.5 transition-colors duration-200"
-              >
-                <XCircle size={14} />
-                Hủy booking
-              </DropdownMenuItem>
+              <PermissionGuard permission='booking.cancel'>
+                <DropdownMenuItem
+                  onClick={() => setShowCancelModal(true)}
+                  className="flex items-center gap-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-md px-2 py-1.5 transition-colors duration-200"
+                >
+                  <XCircle size={14} />
+                  Hủy booking
+                </DropdownMenuItem>
+              </PermissionGuard>
+              
             </>
           )}
 

@@ -6,6 +6,7 @@ import SafetyFeatureDetailModal from "@/components/admin/safety-feature/SafetyFe
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { CreateSafetyFeatureDto } from "@/types/safety-feature";
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 const SafetyFeatureListPage = () => {
   const {
@@ -117,7 +118,9 @@ const SafetyFeatureListPage = () => {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Quản lý chính sách an toàn</h2>
-        <Button onClick={() => { setEditId(null); setShowForm(true); }}>Tạo mới chính sách an toàn</Button>
+        <PermissionGuard permission='safety_feature.create'>
+          <Button onClick={() => { setEditId(null); setShowForm(true); }}>Tạo mới chính sách an toàn</Button>
+        </PermissionGuard>
       </div>
       {/* Bộ lọc */}
       <div className="bg-white rounded-lg shadow p-4 mb-4 flex flex-col md:flex-row gap-4 md:gap-7 items-center w-full">

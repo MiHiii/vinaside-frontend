@@ -74,9 +74,9 @@ const UserTable: React.FC<UserTableProps> = ({ onEdit, users, roles }) => {
                     <Button size="sm" variant="default" onClick={() => handleDelete(user._id)}>
                       <Trash className="w-4 h-4" /> Xóa
                     </Button>
-                    <Button size="sm" variant="secondary" onClick={() => setChangePasswordUser(user)}>
+                    {/* <Button size="sm" variant="secondary" onClick={() => setChangePasswordUser(user)}>
                       Đổi mật khẩu
-                    </Button>
+                    </Button> */}
                   </TableCell>
                 </TableRow>
               );

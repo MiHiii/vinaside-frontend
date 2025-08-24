@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/services/api";
 import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from "@/constants/service";
@@ -244,7 +244,7 @@ const AddServiceModal: React.FC<AddServiceModalProps> = ({
                           e.stopPropagation();
                         }}
                       />
-                      <div>
+                      <div className="flex-1">
                         <Label
                           htmlFor={service._id}
                           className={`font-medium ${
@@ -269,60 +269,69 @@ const AddServiceModal: React.FC<AddServiceModalProps> = ({
                         >
                           {service.description}
                         </p>
-                        <p className="text-sm font-medium text-blue-600">
-                          {service.default_price?.toLocaleString()}₫ /{" "}
-                          {service.unit}
-                        </p>
-                        {service.allow_quantity && selectedServices[service._id] && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedServices((prev) => {
-                                  const current = prev[service._id] || 1;
-                                  const next = Math.max(SERVICE_CONSTANTS.MIN_QUANTITY, current - 1);
-                                  return { ...prev, [service._id]: next };
-                                });
-                              }}
-                            >
-                              -
-                            </Button>
-                            <span className="min-w-[20px] text-center text-sm font-medium">
-                              {selectedServices[service._id] || 1}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedServices((prev) => {
-                                  const current = prev[service._id] || 1;
-                                  if (current >= SERVICE_CONSTANTS.MAX_QUANTITY) {
-                                    toast.error(SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED);
-                                    return prev;
-                                  }
-                                  const next = current + 1;
-                                  return { ...prev, [service._id]: next };
-                                });
-                              }}
-                              disabled={(selectedServices[service._id] || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY}
-                            >
-                              +
-                            </Button>
-                            {(selectedServices[service._id] || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY && (
-                              <span className="text-xs text-gray-500">{SERVICE_MESSAGES.QUANTITY_LIMIT_HINT}</span>
-                            )}
-                          </div>
+                        <div className="space-y-1 mt-2">
+                          <p className="text-sm font-medium text-blue-600">
+                            Giá cơ bản:{" "}
+                            {service.default_price?.toLocaleString()}₫ /{" "}
+                            {service.unit}
+                          </p>
+                          {selectedServices[service._id] && (
+                            <>
+                              <p className="text-sm text-gray-600">
+                                Số lượng: {selectedServices[service._id]} x{" "}
+                                {service.default_price?.toLocaleString()}₫ ={" "}
+                                {(
+                                  service.default_price *
+                                  selectedServices[service._id]
+                                ).toLocaleString()}
+                                ₫
+                              </p>
+                              <p className="text-sm text-orange-600">
+                                Phí dịch vụ (10%):{" "}
+                                {Math.round(
+                                  service.default_price *
+                                    selectedServices[service._id] *
+                                    0.1
+                                ).toLocaleString()}
+                                ₫
+                              </p>
+                              <p className="text-sm text-red-600">
+                                Thuế VAT (8%):{" "}
+                                {Math.round(
+                                  service.default_price *
+                                    selectedServices[service._id] *
+                                    0.08
+                                ).toLocaleString()}
+                                ₫
+                              </p>
+                              <p className="text-sm font-semibold text-green-600 border-t border-gray-200 pt-1">
+                                Tổng cộng:{" "}
+                                {Math.round(
+                                  service.default_price *
+                                    selectedServices[service._id] *
+                                    1.18
+                                ).toLocaleString()}
+                                ₫
+                              </p>
+                            </>
+                          )}
+                        </div>
+                        {service.allow_quantity && (
+                          <p className="text-xs text-green-600 font-medium mt-1">
+                            ✓ Có thể chọn số lượng
+                          </p>
                         )}
-                        {service.allow_quantity && selectedServices[service._id] && (
-                          <div className="mt-2 flex items-center gap-2">
+                      </div>
+                    </div>
+
+                    {/* Quantity selector moved to the right side */}
+                    {service.allow_quantity &&
+                      selectedServices[service._id] && (
+                        <div className="flex items-center gap-2 ml-4">
+                          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                             <Button
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -335,45 +344,127 @@ const AddServiceModal: React.FC<AddServiceModalProps> = ({
                                   return { ...prev, [service._id]: next };
                                 });
                               }}
+                              disabled={
+                                (selectedServices[service._id] || 1) <=
+                                SERVICE_CONSTANTS.MIN_QUANTITY
+                              }
+                              className="w-8 h-8 p-0 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border-r border-gray-300"
                             >
                               -
                             </Button>
-                            <span className="min-w-[20px] text-center text-sm font-medium">
+                            <span className="min-w-[40px] text-center text-sm font-medium bg-white px-3 py-1">
                               {selectedServices[service._id] || 1}
                             </span>
                             <Button
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedServices((prev) => {
                                   const current = prev[service._id] || 1;
-                                  if (current >= SERVICE_CONSTANTS.MAX_QUANTITY) {
-                                    toast.error(SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED);
+                                  if (
+                                    current >= SERVICE_CONSTANTS.MAX_QUANTITY
+                                  ) {
+                                    toast.error(
+                                      SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED
+                                    );
                                     return prev;
                                   }
                                   const next = current + 1;
                                   return { ...prev, [service._id]: next };
                                 });
                               }}
-                              disabled={(selectedServices[service._id] || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY}
+                              disabled={
+                                (selectedServices[service._id] || 1) >=
+                                SERVICE_CONSTANTS.MAX_QUANTITY
+                              }
+                              className="w-8 h-8 p-0 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border-l border-gray-300"
                             >
                               +
                             </Button>
-                            {(selectedServices[service._id] || 1) >= SERVICE_CONSTANTS.MAX_QUANTITY && (
-                              <span className="text-xs text-gray-500">{SERVICE_MESSAGES.QUANTITY_LIMIT_HINT}</span>
-                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        </div>
+                      )}
                   </div>
+
+                  {/* Quantity limit hint below the service info */}
+                  {service.allow_quantity &&
+                    selectedServices[service._id] &&
+                    (selectedServices[service._id] || 1) >=
+                      SERVICE_CONSTANTS.MAX_QUANTITY && (
+                      <div className="mt-2 ml-8">
+                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                          ⚠️ {SERVICE_MESSAGES.QUANTITY_LIMIT_HINT}
+                        </span>
+                      </div>
+                    )}
                 </div>
               );
             })
           )}
         </div>
+
+        {/* Hiển thị tổng tiền cuối cùng bao gồm thuế và phí dịch vụ */}
+        {Object.keys(selectedServices).length > 0 && (
+          <div className="border-t border-gray-200 pt-4 bg-gray-50 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <DollarSign size={18} className="text-green-600" />
+              Tổng tiền dịch vụ (bao gồm thuế và phí)
+            </h4>
+            <div className="space-y-2">
+              {Object.entries(selectedServices).map(([serviceId, quantity]) => {
+                const service = availableServices.find(
+                  (s) => s._id === serviceId
+                );
+                if (!service) return null;
+
+                const subtotal = service.default_price * quantity;
+                const serviceFee = subtotal * 0.1;
+                const taxAmount = subtotal * 0.08;
+                const total = subtotal + serviceFee + taxAmount;
+
+                return (
+                  <div
+                    key={serviceId}
+                    className="flex justify-between items-center text-sm"
+                  >
+                    <span className="text-gray-600">
+                      {service.name} x{quantity}
+                    </span>
+                    <span className="font-medium">
+                      {total.toLocaleString()}₫
+                    </span>
+                  </div>
+                );
+              })}
+
+              <div className="border-t border-gray-300 pt-2 mt-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Tổng tiền dịch vụ:</span>
+                  <span className="font-medium text-blue-600">
+                    {Object.entries(selectedServices)
+                      .reduce((total, [serviceId, quantity]) => {
+                        const service = availableServices.find(
+                          (s) => s._id === serviceId
+                        );
+                        if (!service) return total;
+                        const subtotal = service.default_price * quantity;
+                        const serviceFee = subtotal * 0.1;
+                        const taxAmount = subtotal * 0.08;
+                        return total + subtotal + serviceFee + taxAmount;
+                      }, 0)
+                      .toLocaleString()}
+                    ₫
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  * Đã bao gồm 10% phí dịch vụ và 8% thuế VAT
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <DialogFooter>
           <Button

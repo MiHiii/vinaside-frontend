@@ -2,6 +2,7 @@ import { SafetyFeature } from "@/types/safety-feature";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 interface Props {
   safetyFeatures: SafetyFeature[];
@@ -62,13 +63,17 @@ const SafetyFeatureTable = ({
             </TableCell> */}
             <TableCell className="text-center p-2 space-x-1 md:space-x-2">
               {/* <Button size="sm" variant="outline" onClick={() => onShowDetail(f._id)}>Chi tiết</Button> */}
-              <Button size="sm" variant="default" onClick={() => onEdit(f._id)}>
-                <Pencil className="w-4 h-4" /> <span className="hidden md:inline">Sửa</span>
-              </Button>
-              {!f.isDeleted ? (
-                <Button size="sm" variant="default" onClick={() => onDelete(f._id)}>
-                  <Trash className="w-4 h-4" /> <span className="hidden md:inline">Xóa</span>
+              <PermissionGuard permission='safety_feature.edit'>
+                <Button size="sm" variant="default" onClick={() => onEdit(f._id)}>
+                  <Pencil className="w-4 h-4" /> <span className="hidden md:inline">Sửa</span>
                 </Button>
+              </PermissionGuard>
+              {!f.isDeleted ? (
+                <PermissionGuard permission='safety_feature.delete'>
+                  <Button size="sm" variant="default" onClick={() => onDelete(f._id)}>
+                    <Trash className="w-4 h-4" /> <span className="hidden md:inline">Xóa</span>
+                  </Button>
+                </PermissionGuard>
               ) : (
                 <Button size="sm" variant="secondary" onClick={() => onRestore(f._id)}>
                   <span className="hidden md:inline">Khôi phục</span>

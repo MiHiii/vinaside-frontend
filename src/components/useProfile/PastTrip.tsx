@@ -519,8 +519,30 @@ const PastTrip = () => {
   const handlePayRemainder = async (bookingId: string) => {
     setPayRemainderLoadingId(bookingId);
     try {
+      // Tìm booking để lấy thông tin dịch vụ
+      const booking = bookings.find((b) => b._id === bookingId);
+      if (!booking) {
+        toast.error("Không tìm thấy thông tin booking");
+        return;
+      }
+
+      // Tính tổng chi phí dịch vụ cần thanh toán
+      const servicesTotal =
+        booking.selected_services?.reduce((total, service) => {
+          const quantity = service.quantity || 1;
+          const price = service.service_price || 0;
+          return total + quantity * price;
+        }, 0) || 0;
+
+      console.log("💰 Sending payment for services:", {
+        bookingId,
+        servicesTotal,
+        selected_services: booking.selected_services,
+      });
+
       const res = await api.post(`/bookings/${bookingId}/payment/remaining`, {
         paymentMethod: "vnpay",
+        amount: servicesTotal, // Truyền số tiền chính xác
       });
       const paymentUrl = res.data?.data?.paymentUrl;
       if (paymentUrl) {
@@ -882,6 +904,17 @@ const PastTrip = () => {
     // Tính toán số tiền còn lại cần thanh toán
     const finalAmount = booking.final_amount || 0;
     const depositPaidAmount = booking.deposit_paid_amount || 0;
+
+    // Tính tổng chi phí dịch vụ đã thêm
+    const servicesTotal =
+      booking.selected_services?.reduce((total, service) => {
+        const quantity = service.quantity || 1;
+        const price = service.service_price || 0;
+        return total + quantity * price;
+      }, 0) || 0;
+
+    // Số tiền còn lại = Tổng tiền cuối cùng - Số tiền đã thanh toán
+    // Nếu có dịch vụ đã thêm, đảm bảo tính toán chính xác
     const outstandingAmount = finalAmount - depositPaidAmount;
 
     console.log("💰 Payment calculation:", {
@@ -889,6 +922,8 @@ const PastTrip = () => {
       finalAmount,
       depositPaidAmount,
       outstandingAmount,
+      servicesTotal,
+      selected_services: booking.selected_services,
       payment_status: booking.payment_status,
       status: booking.status,
     });
@@ -998,7 +1033,12 @@ const PastTrip = () => {
       });
 
       if (outstandingAmount > 0) {
-        statusDisplay = `Đã thanh toán ${depositPaidAmount.toLocaleString()}₫ - Còn lại ${outstandingAmount.toLocaleString()}₫`;
+        // Nếu có dịch vụ đã thêm, hiển thị thông tin chi tiết hơn
+        if (booking.selected_services && booking.selected_services.length > 0) {
+          statusDisplay = `Đã thanh toán ${depositPaidAmount.toLocaleString()}₫ - Còn lại ${outstandingAmount.toLocaleString()}₫`;
+        } else {
+          statusDisplay = `Đã thanh toán ${depositPaidAmount.toLocaleString()}₫ - Còn lại ${outstandingAmount.toLocaleString()}₫`;
+        }
         statusColor = "text-orange-600";
         showPaymentButton = false;
         showPayRemainderButton = true;
@@ -1116,18 +1156,27 @@ const PastTrip = () => {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <DollarSign size={18} />
-                <span>
-                  Tổng tiền: {booking.final_amount?.toLocaleString()}₫
-                </span>
-                {booking.services_total_amount &&
-                  booking.services_total_amount > 0 && (
-                    <span className="text-sm text-blue-600">
-                      (bao gồm {booking.services_total_amount.toLocaleString()}₫
-                      dịch vụ)
-                    </span>
-                  )}
+              <div className="space-y-2">
+                {/* Giá phòng cơ bản */}
+                <div className="flex items-center gap-2">
+                  <DollarSign size={18} />
+                  <span>Giá phòng: {(booking.total_price || 0).toLocaleString()}₫</span>
+                </div>
+
+                {/* Dịch vụ đã thêm */}
+                {booking.selected_services && booking.selected_services.length > 0 && (
+                  <div className="flex items-center gap-2 ml-6">
+                    <span className="text-sm text-blue-600">• Dịch vụ đã thêm: {servicesTotal.toLocaleString()}₫</span>
+                  </div>
+                )}
+
+                {/* Tổng tiền cuối cùng */}
+                <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
+                  <DollarSign size={18} className="text-green-600" />
+                  <span className="font-semibold text-green-600">
+                    Tổng tiền: {booking.final_amount?.toLocaleString()}₫
+                  </span>
+                </div>
               </div>
 
               {/* Hiển thị thông tin thanh toán */}
@@ -1140,13 +1189,14 @@ const PastTrip = () => {
                       {(booking.deposit_paid_amount || 0).toLocaleString()}₫
                     </span>
                   </div>
+
                   {/* Hiển thị chi phí phát sinh nếu có */}
-                  {booking.additionalCost && booking.additionalCost > 0 && (
+                  {(booking.additionalCost ?? 0) > 0 && (
                     <div className="flex items-center gap-2">
                       <DollarSign size={16} className="text-red-600" />
                       <span className="text-red-600 font-medium">
                         Chi phí phát sinh:{" "}
-                        {booking.additionalCost.toLocaleString()}₫
+                        {(booking.additionalCost ?? 0).toLocaleString()}₫
                         {booking.additionalCostReason && (
                           <span className="text-red-500 text-sm ml-2">
                             ({booking.additionalCostReason})
@@ -1155,6 +1205,16 @@ const PastTrip = () => {
                       </span>
                     </div>
                   )}
+
+                  {/* Hiển thị số tiền còn lại cần thanh toán */}
+                  <div className="flex items-center gap-2">
+                    <DollarSign size={16} className="text-orange-600" />
+                    <span className="text-orange-600 font-medium">
+                      Còn lại cần thanh toán:{" "}
+                      {outstandingAmount.toLocaleString()}₫
+                    </span>
+                  </div>
+
                   {/* Thông tin bổ sung cho từng trường hợp */}
                   {booking.payment_status === PaymentStatus.PARTIALLY_PAID &&
                     booking.selected_services &&
@@ -1162,7 +1222,8 @@ const PastTrip = () => {
                       <div className="flex items-center gap-2">
                         <Info size={14} className="text-blue-600" />
                         <span className="text-blue-600 text-sm">
-                          Thanh toán thêm cho dịch vụ mới
+                          Thanh toán thêm cho dịch vụ mới (Tổng:{" "}
+                          {outstandingAmount.toLocaleString()}₫)
                         </span>
                       </div>
                     )}
@@ -1183,8 +1244,11 @@ const PastTrip = () => {
               {booking.selected_services &&
                 booking.selected_services.length > 0 && (
                   <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-                    <div className="text-sm font-medium text-blue-800 mb-2">
-                      Dịch vụ đã thêm:
+                    <div className="text-sm font-medium text-blue-800 mb-2 flex justify-between items-center">
+                      <span>Dịch vụ đã thêm:</span>
+                      <span className="text-blue-600 font-semibold">
+                        Tổng: {servicesTotal.toLocaleString()}₫
+                      </span>
                     </div>
                     <div className="space-y-1">
                       {booking.selected_services.map(
@@ -1225,18 +1289,6 @@ const PastTrip = () => {
                 Xem chi tiết đặt chỗ
               </Button>
 
-              {(() => {
-                console.log("Rendering payment button:", {
-                  showPaymentButton,
-                  isBooked,
-                  bookingId: booking._id,
-                  payment_status: booking.payment_status,
-                  status: booking.status,
-                  outstandingAmount,
-                  statusDisplay,
-                });
-                return null;
-              })()}
               {showPaymentButton && !isBooked && (
                 <Button
                   variant="default"
@@ -1473,20 +1525,6 @@ const PastTrip = () => {
                   ⚠️ Phòng đã được đặt cho ngày này
                 </div>
               )}
-              {showPayRemainderButton && !isBooked && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => handlePayRemainder(booking._id)}
-                  disabled={payRemainderLoadingId === booking._id}
-                >
-                  <DollarSign size={16} />
-                  {payRemainderLoadingId === booking._id
-                    ? "Đang xử lý..."
-                    : `Trả nốt ${outstandingAmount.toLocaleString()}₫`}
-                </Button>
-              )}
 
               {booking.status === BookingStatus.COMPLETED && (
                 <Button
@@ -1680,17 +1718,6 @@ const PastTrip = () => {
         <div>
           {tab === "upcoming" && (
             <>
-              {(() => {
-                console.log(
-                  "Upcoming bookings:",
-                  upcomingBookings.map((b) => ({
-                    id: b._id,
-                    status: b.status,
-                    payment_status: b.payment_status,
-                  }))
-                );
-                return null;
-              })()}
               {upcomingBookings.length === 0 && ongoingBookings.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   Bạn chưa có chuyến đi nào sắp tới
@@ -2083,17 +2110,22 @@ const PastTrip = () => {
                           >
                             Phương thức hoàn tiền
                           </Label>
-                          <select
+                          <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                              </div>
+                              <span className="text-gray-700 font-medium">
+                                Chuyển khoản ngân hàng
+                              </span>
+                            </div>
+                          </div>
+                          <input
+                            type="hidden"
                             id="refundMethod"
                             name="refundMethod"
-                            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="bank_transfer">
-                              Chuyển khoản ngân hàng
-                            </option>
-                            <option value="wallet">Ví điện tử</option>
-                            <option value="credit_card">Thẻ tín dụng</option>
-                          </select>
+                            value="bank_transfer"
+                          />
                         </div>
 
                         <div className="mt-4">
@@ -2342,8 +2374,84 @@ const PastTrip = () => {
                             {service.default_price?.toLocaleString()}₫ /{" "}
                             {service.unit}
                           </p>
+                          {service.allow_quantity && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-gray-500">
+                                • Có thể chọn số lượng
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
+
+                      {/* Quantity selector cho dịch vụ có allow_quantity */}
+                      {service.allow_quantity &&
+                        selectedServices[service._id] && (
+                          <div className="flex items-center gap-2 ml-4">
+                            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedServices((prev) => {
+                                    const current = prev[service._id] || 1;
+                                    const next = Math.max(
+                                      SERVICE_CONSTANTS.MIN_QUANTITY,
+                                      current - 1
+                                    );
+                                    return { ...prev, [service._id]: next };
+                                  });
+                                }}
+                                disabled={
+                                  (selectedServices[service._id] || 1) <=
+                                  SERVICE_CONSTANTS.MIN_QUANTITY
+                                }
+                                className="w-8 h-8 p-0 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border-r border-gray-300"
+                              >
+                                -
+                              </Button>
+                              <span className="min-w-[40px] text-center text-sm font-medium bg-white px-3 py-1">
+                                {selectedServices[service._id] || 1}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedServices((prev) => {
+                                    const current = prev[service._id] || 1;
+                                    if (
+                                      current >= SERVICE_CONSTANTS.MAX_QUANTITY
+                                    ) {
+                                      toast.error(
+                                        SERVICE_MESSAGES.MAX_QUANTITY_EXCEEDED
+                                      );
+                                      return prev;
+                                    }
+                                    const next = current + 1;
+                                    return { ...prev, [service._id]: next };
+                                  });
+                                }}
+                                disabled={
+                                  (selectedServices[service._id] || 1) >=
+                                  SERVICE_CONSTANTS.MAX_QUANTITY
+                                }
+                                className="w-8 h-8 p-0 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border-l border-gray-300"
+                              >
+                                +
+                              </Button>
+                            </div>
+                            {(selectedServices[service._id] || 1) >=
+                              SERVICE_CONSTANTS.MAX_QUANTITY && (
+                              <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded">
+                                ⚠️ {SERVICE_MESSAGES.QUANTITY_LIMIT_HINT}
+                              </span>
+                            )}
+                          </div>
+                        )}
                     </div>
                   </div>
                 );
