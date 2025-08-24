@@ -76,10 +76,10 @@ interface EditPropertyFormData {
 }
 
 const editPropertySchema = z.object({
-  name: z.string().min(1, "Tên property là bắt buộc"),
-  description: z.string().optional(),
+  name: z.string().min(1, "Tên property là bắt buộc").max(255, "Tên property không được vượt quá 255 ký tự"),
+  description: z.string().min(1, "Mô tả là bắt buộc").max(255, "Mô tả không được vượt quá 255 ký tự"),
   location: z.object({
-    address: z.string().min(1, "Địa chỉ là bắt buộc"),
+    address: z.string().min(1, "Địa chỉ là bắt buộc").max(200, "Địa chỉ không được vượt quá 200 ký tự"),
     place_id: z.string().optional(),
     city: z.string().optional(),
     district: z.string().optional(),
@@ -89,9 +89,13 @@ const editPropertySchema = z.object({
   }),
   contactPhone: z
     .string()
-    .min(1, "Số điện thoại liên hệ là bắt buộc")
-    .regex(/^[0-9+\-\s()]+$/, "Số điện thoại không hợp lệ"),
-  contactEmail: z.string().email("Email không hợp lệ").optional(),
+    .min(10, 'Số điện thoại phải đủ 10 số')
+    .max(10, 'Số điện thoại phải đủ 10 số')
+    .regex(/^[0-9]{10}$/, 'Số điện thoại chỉ gồm 10 số'),
+  contactEmail: z.string()
+    .email('Email sai định dạng')
+    .max(255, 'Email không được vượt quá 255 ký tự')
+    .optional(),
   allowPets: z.boolean().optional(),
   status: z.string().optional(),
   isVerified: z.boolean().optional(),
@@ -212,19 +216,19 @@ export default function EditPropertyForm() {
     value: string | boolean
   ) => {
     // Validation cho các trường cụ thể
-    if (field === "name" && typeof value === "string" && value.length > 100) {
-      return; // Không cho phép vượt quá 100 ký tự
+    if (field === "name" && typeof value === "string" && value.length > 255) {
+      return; // Không cho phép vượt quá 255 ký tự
     }
     if (
       field === "description" &&
       typeof value === "string" &&
-      value.length > 1000
+      value.length > 255
     ) {
-      return; // Không cho phép vượt quá 1000 ký tự
+      return; // Không cho phép vượt quá 255 ký tự
     }
     if (field === "contactPhone" && typeof value === "string") {
-      // Chỉ cho phép số, dấu +, -, khoảng trắng, dấu ngoặc
-      if (!/^[0-9+\-\s()]*$/.test(value)) {
+      // Chỉ cho phép số, tối đa 10 số
+      if (!/^[0-9]*$/.test(value) || value.length > 10) {
         return;
       }
     }
@@ -428,14 +432,14 @@ export default function EditPropertyForm() {
                 >
                   Tên HomeStay *
                 </Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="Nhập tên HomeStay"
-                  maxLength={100}
-                  className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
+                                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    placeholder="Nhập tên HomeStay"
+                    maxLength={255}
+                    className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
                 {errors.name && (
                   <span className="text-red-500 text-sm font-medium">
                     {errors.name}
@@ -451,17 +455,17 @@ export default function EditPropertyForm() {
                 >
                   Mô tả
                 </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    handleInputChange("description", e.target.value)
-                  }
-                  placeholder="Mô tả chi tiết về HomeStay"
-                  rows={3}
-                  maxLength={1000}
-                  className="text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                />
+                                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      handleInputChange("description", e.target.value)
+                    }
+                    placeholder="Mô tả chi tiết về HomeStay"
+                    rows={3}
+                    maxLength={255}
+                    className="text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                  />
                 {errors.description && (
                   <span className="text-red-500 text-sm font-medium">
                     {errors.description}
@@ -614,15 +618,12 @@ export default function EditPropertyForm() {
                           getSuggestionItemProps,
                           loading,
                         }: {
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          getInputProps: (options: any) => any;
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          getInputProps: (options: Record<string, unknown>) => React.InputHTMLAttributes<HTMLInputElement>;
                           suggestions: Array<Suggestion>;
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           getSuggestionItemProps: (
                             suggestion: Suggestion,
-                            options?: any
-                          ) => any;
+                            options?: Record<string, unknown>
+                          ) => React.HTMLAttributes<HTMLDivElement>;
                           loading: boolean;
                         }) => (
                           <div>
@@ -639,7 +640,6 @@ export default function EditPropertyForm() {
                                   Đang tìm kiếm...
                                 </div>
                               )}
-                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                               {suggestions.map((suggestion: Suggestion) => {
                                 const className = suggestion.active
                                   ? "suggestion-item--active bg-blue-100 dark:bg-blue-900/50 px-4 py-3 cursor-pointer border-l-4 border-blue-500"
@@ -882,8 +882,8 @@ export default function EditPropertyForm() {
                     onChange={(e) =>
                       handleInputChange("contactPhone", e.target.value)
                     }
-                    placeholder="Số điện thoại (VD: +84 123 456 789)"
-                    maxLength={20}
+                    placeholder="Số điện thoại (VD: 0123456789)"
+                    maxLength={10}
                     className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -902,7 +902,7 @@ export default function EditPropertyForm() {
                       handleInputChange("contactEmail", e.target.value)
                     }
                     placeholder="Email (VD: contact@example.com)"
-                    maxLength={100}
+                    maxLength={255}
                     className="h-10 text-base border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
