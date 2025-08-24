@@ -269,7 +269,12 @@ export default function Messages() {
                     let lastDate: Date | null = null;
 
                     // Messages are now in chronological order (oldest to newest)
-                    messages.forEach((m: MessageWithUI, idx: number) => {
+                    const uniqueMessages = messages.filter(
+                      (m, index, self) =>
+                        index === self.findIndex((msg) => msg._id === m._id)
+                    );
+
+                    uniqueMessages.forEach((m: MessageWithUI, idx: number) => {
                       // Use safe date parsing to prevent "Invalid time value" errors
                       const sentAt = safeParseDate(m.sent_at);
 
@@ -285,7 +290,7 @@ export default function Messages() {
 
                       blocks.push(
                         <div
-                          key={m._id}
+                          key={`${m._id}-${idx}`}
                           className={`mb-3 flex ${
                             isMine ? "justify-end" : "justify-start"
                           } gap-2`}

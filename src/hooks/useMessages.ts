@@ -98,17 +98,41 @@ export const useMessages = () => {
 
   // Send message
   const sendMessage = useCallback(async () => {
-    if (!messageInput.trim() || !selectedConversation || isSending) return;
+    if (!messageInput.trim() || !selectedConversation || isSending) {
+      console.log("🚫 [useMessages] Cannot send message:", {
+        hasContent: !!messageInput.trim(),
+        hasConversation: !!selectedConversation,
+        isSending,
+      });
+      return;
+    }
+
+    const content = messageInput.trim();
+    setMessageInput("");
+    setIsSending(true);
+
+    console.log("📤 [useMessages] Sending message:", content);
+    console.log("📤 [useMessages] To conversation:", selectedConversation._id);
 
     try {
-      setIsSending(true);
       const messageData: CreateMessageDto = {
         conversation_id: selectedConversation._id,
-        content: messageInput.trim(),
+        content: content,
         reply_to_message_id: replyingTo?._id,
       };
 
       const newMessage = await messageService.sendMessage(messageData);
+      console.log("✅ [useMessages] Message sent successfully:", newMessage);
+
+      // Check if message already exists to prevent duplicates
+      const messageExists = messages.some((m) => m._id === newMessage._id);
+      if (messageExists) {
+        console.log(
+          "⚠️ [useMessages] Message already exists, skipping UI update"
+        );
+        setReplyingTo(null);
+        return;
+      }
 
       // Convert MessageResponse to MessageWithUI for consistency
       const messageWithUI: MessageWithUI = {
@@ -122,8 +146,16 @@ export const useMessages = () => {
         },
       };
 
-      setMessages((prev) => [...prev, messageWithUI]);
-      setMessageInput("");
+      setMessages((prev) => {
+        // Check for duplicates before adding
+        const exists = prev.some((m) => m._id === messageWithUI._id);
+        if (exists) {
+          console.log("⚠️ [useMessages] Message already in state, not adding");
+          return prev;
+        }
+        return [...prev, messageWithUI];
+      });
+
       setReplyingTo(null);
 
       // Only auto-scroll when sending a new message with controlled timing
@@ -137,7 +169,9 @@ export const useMessages = () => {
         }
       }, 200);
     } catch (error: any) {
-      console.error("Error sending message:", error);
+      console.error("❌ [useMessages] Error sending message:", error);
+      // Restore message input on error
+      setMessageInput(content);
     } finally {
       setIsSending(false);
     }
@@ -148,6 +182,7 @@ export const useMessages = () => {
     isSending,
     userRole,
     user,
+    messages,
   ]);
 
   // Toggle reaction
@@ -444,7 +479,19 @@ export const useMessages = () => {
             return prev;
           }
           console.log("➕ [useMessages] Adding new message to conversation");
-          return [...prev, message];
+
+          // Add message and sort by sent_at to maintain chronological order
+          const newMessages = [...prev, message].sort((a, b) => {
+            const dateA = new Date(a.sent_at).getTime();
+            const dateB = new Date(b.sent_at).getTime();
+            return dateA - dateB;
+          });
+
+          console.log(
+            "✅ [useMessages] Message added successfully, total messages:",
+            newMessages.length
+          );
+          return newMessages;
         });
       } else {
         console.log(

@@ -1,7 +1,8 @@
 import { io, Socket } from "socket.io-client";
 import { MessageWithUI, ConversationUpdateV2 } from "@/types/message";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "http://localhost:8080";
+const WS_URL =
+  import.meta.env.VITE_WS_URL || "http://localhost:8080/ws/messages";
 
 // Legacy notification types
 interface NotificationData {
@@ -30,6 +31,7 @@ class SocketService {
   private userId: string | null = null;
   private connectionAttempts: number = 0;
   private maxConnectionAttempts: number = 5;
+  private processedMessages: Set<string> = new Set(); // Track processed messages to prevent duplicates
 
   connect(token: string, userId: string) {
     console.log("🔌 [SocketService] Attempting to connect...");
@@ -58,6 +60,7 @@ class SocketService {
     this.connectionAttempts++;
 
     console.log("🔌 [SocketService] Creating new socket connection...");
+    console.log("🔍 [SocketService] WS_URL:", WS_URL);
 
     // Create new socket with proper configuration
     this.socket = io(WS_URL, {
@@ -78,6 +81,7 @@ class SocketService {
       console.log("✅ [CHECKLIST] Socket kết nối thành công");
       console.log("🔍 [SocketService] Socket ID:", this.socket?.id);
       console.log("🔍 [SocketService] User ID:", this.userId);
+      console.log("🔍 [SocketService] Connected to URL:", WS_URL);
 
       // Emit connection confirmation
       if (this.socket?.id) {
@@ -105,6 +109,7 @@ class SocketService {
     this.socket.on("connect_error", (error: Error) => {
       console.error("❌ [CHECKLIST] Socket connection error:", error);
       console.error("❌ [SocketService] Socket connection error:", error);
+      console.error("❌ [SocketService] Failed to connect to URL:", WS_URL);
 
       // Auto-reconnection logic
       if (this.connectionAttempts < this.maxConnectionAttempts) {
@@ -145,6 +150,22 @@ class SocketService {
           sender_avatar_url: data.senderAvatar || null,
         },
       };
+
+      // Prevent duplicate notifications by checking if we've already processed this message
+      const messageKey = `${message._id}-${message.sent_at}`;
+      if (this.processedMessages.has(messageKey)) {
+        console.log(
+          "⚠️ [SocketService] Duplicate message detected, skipping:",
+          messageKey
+        );
+        return;
+      }
+
+      this.processedMessages.add(messageKey);
+      // Clean up old message keys after 5 seconds to prevent memory leaks
+      setTimeout(() => {
+        this.processedMessages.delete(messageKey);
+      }, 5000);
 
       this.notifyMessageListeners(message);
     });
