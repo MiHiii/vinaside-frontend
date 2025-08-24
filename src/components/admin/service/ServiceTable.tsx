@@ -15,6 +15,41 @@ interface Props {
 
 const statusColor = (active: boolean) => (active ? 'text-green-600 font-semibold' : 'text-orange-500 font-semibold');
 
+// Custom Toggle Component
+const ToggleSwitch = ({
+  checked,
+  onChange,
+  disabled = false,
+  color = 'blue',
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+  color?: 'blue' | 'green';
+}) => {
+  const bgColor = checked ? (color === 'blue' ? 'bg-blue-500' : 'bg-green-500') : 'bg-gray-200';
+
+  return (
+    <button
+      type='button'
+      disabled={disabled}
+      onClick={onChange}
+      className={`
+        relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+        focus:outline-none focus:ring-2 focus:ring-offset-2
+        ${bgColor} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        ${color === 'blue' ? 'focus:ring-blue-500' : 'focus:ring-green-500'}
+      `}>
+      <span
+        className={`
+          inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+          ${checked ? 'translate-x-6' : 'translate-x-1'}
+        `}
+      />
+    </button>
+  );
+};
+
 const ServiceTable: React.FC<Props> = ({
   services,
   onEdit,
@@ -71,35 +106,25 @@ const ServiceTable: React.FC<Props> = ({
               <td className='text-center p-2'>{s.description}</td>
               <td className='text-center p-2'>{s.unit}</td>
               <td className='text-center p-2'>{s.default_price.toLocaleString()} đ</td>
-              <td
-                className={`text-center p-2 ${statusColor(s.is_active)} relative`}
-                onClick={(e) => e.stopPropagation()}>
-                {s.is_active ? 'Đang hoạt động' : 'Không hoạt động'}
-                <label className='ml-2 inline-flex items-center cursor-pointer relative align-middle'>
-                  <input
-                    type='checkbox'
-                    checked={s.is_active}
-                    onChange={() => onToggleStatus(s._id)}
-                    className='sr-only peer'
-                  />
-                  <div className='w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-green-500 transition-all'></div>
-                  <div className='dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition peer-checked:translate-x-5'></div>
-                </label>
+              <td className='text-center p-2' onClick={(e) => e.stopPropagation()}>
+                <div className='flex items-center justify-center gap-2'>
+                  <span className={`font-medium ${statusColor(s.is_active)}`}>
+                    {s.is_active ? 'Đang hoạt động' : 'Không hoạt động'}
+                  </span>
+                  <ToggleSwitch checked={s.is_active} onChange={() => onToggleStatus(s._id)} color='green' />
+                </div>
               </td>
-              <td className='text-center p-2 relative' onClick={(e) => e.stopPropagation()}>
-                <span className={`font-medium ${s.allow_quantity ? 'text-green-600' : 'text-gray-500'}`}>
-                  {s.allow_quantity ? 'Có' : 'Không'}
-                </span>
-                <label className='ml-2 inline-flex items-center cursor-pointer relative align-middle'>
-                  <input
-                    type='checkbox'
+              <td className='text-center p-2' onClick={(e) => e.stopPropagation()}>
+                <div className='flex items-center justify-center gap-2'>
+                  <span className={`font-medium ${s.allow_quantity ? 'text-green-600' : 'text-gray-500'}`}>
+                    {s.allow_quantity ? 'Có' : 'Không'}
+                  </span>
+                  <ToggleSwitch
                     checked={s.allow_quantity || false}
                     onChange={() => onToggleQuantity(s._id)}
-                    className='sr-only peer'
+                    color='blue'
                   />
-                  <div className='w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-blue-500 transition-all'></div>
-                  <div className='dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition peer-checked:translate-x-5'></div>
-                </label>
+                </div>
               </td>
               <td className='text-center p-2 space-x-2' onClick={(e) => e.stopPropagation()}>
                 <Button size='sm' variant='default' onClick={() => onEdit(s._id)}>
