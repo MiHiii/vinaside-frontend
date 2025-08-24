@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { useDispatch } from 'react-redux';
 import { resetUpload } from '@/store/slices/uploadSlice';
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 const HouseRuleListPage = () => {
   const dispatch = useDispatch();
@@ -91,7 +92,9 @@ const HouseRuleListPage = () => {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Quản lý quy tắc nhà</h2>
-        <Button onClick={handleCreate}>Thêm quy tắc nhà</Button>
+        <PermissionGuard permission='house_rule.create'>
+          <Button onClick={handleCreate}>Thêm quy tắc nhà</Button>
+        </PermissionGuard>
       </div>
       {/* Bộ lọc */}
       <div className="bg-white rounded-lg shadow p-4 mb-4 flex flex-col md:flex-row gap-4 md:gap-7 items-center w-full">

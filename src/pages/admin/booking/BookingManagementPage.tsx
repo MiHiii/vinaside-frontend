@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 
 import { Calendar, TrendingUp, CheckCircle, XCircle, Clock, RefreshCw, Eye, BarChart3, Plus } from 'lucide-react';
 import BookingStatistics from '@/components/admin/booking/BookingStatistics';
+import { PermissionGuard } from '@/components/common/PermissionGuard';
 
 const BookingManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -91,13 +92,14 @@ const BookingManagementPage: React.FC = () => {
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 Làm mới
               </Button>
-
-              <Button
-                onClick={() => setShowStaffBookingModal(true)}
-                className='flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white cursor-pointer'>
-                <Plus className='w-4 h-4' />
-                Tạo Booking
-              </Button>
+                <PermissionGuard permission='booking.create'>
+                  <Button
+                  onClick={() => setShowStaffBookingModal(true)}
+                  className='flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white cursor-pointer'>
+                  <Plus className='w-4 h-4' />
+                  Tạo Booking
+                  </Button>
+                </PermissionGuard>
             </div>
           </div>
         </div>

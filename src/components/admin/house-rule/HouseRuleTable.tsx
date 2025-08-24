@@ -2,6 +2,7 @@ import { HouseRule } from "@/types/house-rule";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 interface Props {
   houseRules: HouseRule[];
@@ -55,12 +56,16 @@ const HouseRuleTable = ({
               </label>
             </TableCell>
             <TableCell className="text-center p-2 space-x-1 md:space-x-2">
-              <Button size="sm" variant="default" onClick={() => onEdit(r._id)}>
-                <Pencil className="w-4 h-4" /> <span className="hidden md:inline">Sửa</span>
-              </Button>
-              <Button size="sm" variant="default" onClick={() => onDelete(r._id)}>
-                <Trash className="w-4 h-4" /> <span className="hidden md:inline">Xóa</span>
-              </Button>
+              <PermissionGuard permission='house_rule.edit'>
+                <Button size="sm" variant="default" onClick={() => onEdit(r._id)}>
+                  <Pencil className="w-4 h-4" /> <span className="hidden md:inline">Sửa</span>
+                </Button>
+              </PermissionGuard>
+              <PermissionGuard permission='house_rule.delete'>
+                <Button size="sm" variant="default" onClick={() => onDelete(r._id)}>
+                  <Trash className="w-4 h-4" /> <span className="hidden md:inline">Xóa</span>
+                </Button>
+              </PermissionGuard>
             </TableCell>
           </TableRow>
         ))}
