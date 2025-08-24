@@ -964,8 +964,9 @@ const BookingDetail: React.FC<{
               </div>
             )}
 
-            {/* Additional Cost Section */}
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            {/* Additional Cost Section - chỉ hiển thị khi booking chưa hoàn thành hoặc chưa hủy */}
+            {status !== BookingStatus.CANCELLED && status !== BookingStatus.COMPLETED && (
+              <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -1195,8 +1196,9 @@ const BookingDetail: React.FC<{
                       </div>
                     </div>
                   )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Voucher */}
             {voucher_code && (
@@ -1321,10 +1323,12 @@ const BookingDetail: React.FC<{
                     </div>
                   )}
 
-                  {/* Chi phí phát sinh */}
+                  {/* Chi phí phát sinh - chỉ hiển thị khi booking chưa hoàn thành hoặc chưa hủy */}
                   {adminBookingDetail?.additionalCost !== null &&
                     adminBookingDetail?.additionalCost !== undefined &&
-                    adminBookingDetail.additionalCost >= 0 && (
+                    adminBookingDetail.additionalCost >= 0 &&
+                    status !== BookingStatus.CANCELLED &&
+                    status !== BookingStatus.COMPLETED && (
                       <div className="flex justify-between items-center py-2">
                         <div>
                           <span className="text-gray-600">
