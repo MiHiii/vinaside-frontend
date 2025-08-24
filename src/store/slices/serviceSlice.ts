@@ -149,9 +149,12 @@ export const toggleServiceQuantity = createAsyncThunk(
   'service/toggleServiceQuantity',
   async (id: string, { rejectWithValue }) => {
     try {
+      console.log('toggleServiceQuantity - Calling API with ID:', id);
       const { data } = await serviceApi.toggleQuantity(id);
+      console.log('toggleServiceQuantity - API response:', data);
       return data.data;
     } catch (err: unknown) {
+      console.error('toggleServiceQuantity - API error:', err);
       const error = err as { response?: { data?: { message?: string } } };
       return rejectWithValue(error.response?.data?.message || 'Lỗi đổi trạng thái cho phép số lượng');
     }
@@ -280,8 +283,16 @@ const serviceSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+      .addCase(toggleServiceQuantity.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(toggleServiceQuantity.fulfilled, (state, action: PayloadAction<Service>) => {
+        state.loading = false;
         state.services = state.services.map((s) => (s._id === action.payload._id ? action.payload : s));
+        if (state.serviceDetail && state.serviceDetail._id === action.payload._id) {
+          state.serviceDetail = action.payload;
+        }
       })
       .addCase(toggleServiceQuantity.rejected, (state, action) => {
         state.loading = false;

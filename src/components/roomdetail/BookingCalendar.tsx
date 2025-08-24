@@ -1,7 +1,8 @@
-import React, { useRef, useEffect } from "react";
-import { CalendarIcon } from "lucide-react";
-import { format, isBefore, startOfToday } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+import React, { useRef, useEffect, useMemo } from 'react';
+import { CalendarIcon } from 'lucide-react';
+import { format, startOfToday } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { buildBookingGuards } from '@/utils/dateUtils';
 
 interface BookingCalendarProps {
   checkIn: Date | null;
@@ -30,6 +31,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  // Chuyển đổi bookedDates từ Date[] sang YMD[]
+  const bookedDatesYMD = useMemo(() => {
+    return bookedDates.map((date) => format(date, 'yyyy-MM-dd'));
+  }, [bookedDates]);
+
+  // Tạo booking guards
+  const guards = useMemo(() => buildBookingGuards(bookedDatesYMD), [bookedDatesYMD]);
+
   const handleSelect = (range: { from?: Date; to?: Date } | undefined) => {
     if (!range?.from || !range?.to) {
       setCheckIn(range?.from ?? null);
@@ -38,36 +47,18 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       return;
     }
 
-    // Kiểm tra ngày quá khứ
-    const today = startOfToday();
-    if (isBefore(range.from, today) || isBefore(range.to, today)) {
+    // Sử dụng guards để kiểm tra tính hợp lệ
+    if (!guards.isValidRange(range.from, range.to)) {
       setCheckIn(null);
       setCheckOut(null);
       setNights(0);
       return;
     }
 
-    // Kiểm tra có ngày nào trong range bị disable không
-    const current = new Date(range.from);
-    let invalid = false;
-    while (current <= range.to) {
-      if (
-        bookedDates.some((d) => d.toDateString() === current.toDateString())
-      ) {
-        invalid = true;
-        break;
-      }
-      current.setDate(current.getDate() + 1);
-    }
-    if (invalid) {
-      setCheckIn(null);
-      setCheckOut(null);
-      setNights(0);
-      return;
-    }
     setCheckIn(range.from);
     setCheckOut(range.to);
     setNights(calculateNights(range.from, range.to));
+
     // Auto close popover when both dates are selected
     if (range.from && range.to) {
       setDateOpen(false);
@@ -89,25 +80,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         setDateOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [dateOpen]);
 
   // Debug booked dates
-  console.log("BookingCalendar - bookedDates:", bookedDates);
-  console.log("BookingCalendar - bookedDates length:", bookedDates.length);
-
-  // Tạo mảng ngày bị disable bao gồm cả ngày quá khứ
-  const disabledDates = [
-    ...bookedDates,
-    ...Array.from({ length: startOfToday().getDate() - 1 }, (_, i) => {
-      const date = new Date();
-      date.setDate(i + 1);
-      return date;
-    }),
-  ];
-
-  console.log("BookingCalendar - disabledDates length:", disabledDates.length);
+  console.log('BookingCalendar - bookedDates:', bookedDates);
+  console.log('BookingCalendar - bookedDates length:', bookedDates.length);
 
   const selected = {
     from: checkIn ?? undefined,
@@ -115,86 +94,80 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   };
 
   return (
-    <div className="relative w-full ">
+    <div className='relative w-full '>
       <div
         ref={triggerRef}
-        className="border rounded-2xl p-3 cursor-pointer text-sm flex items-center justify-between transition min-h-[44px] w-full"
-        onClick={() => setDateOpen(!dateOpen)}
-      >
+        className='border rounded-2xl p-3 cursor-pointer text-sm flex items-center justify-between transition min-h-[44px] w-full'
+        onClick={() => setDateOpen(!dateOpen)}>
         <div>
-          <p className="text-xs text-gray-500">NHẬN PHÒNG</p>
-          <p className="text-base">
-            {checkIn ? format(checkIn, "dd/MM/yyyy") : "Thêm ngày"}
-          </p>
+          <p className='text-xs text-gray-500'>NHẬN PHÒNG</p>
+          <p className='text-base'>{checkIn ? format(checkIn, 'dd/MM/yyyy') : 'Thêm ngày'}</p>
         </div>
-        <div className="border-l px-2">
-          <p className="text-xs text-gray-500">TRẢ PHÒNG</p>
-          <p className="text-base">
-            {checkOut ? format(checkOut, "dd/MM/yyyy") : "Thêm ngày"}
-          </p>
+        <div className='border-l px-2'>
+          <p className='text-xs text-gray-500'>TRẢ PHÒNG</p>
+          <p className='text-base'>{checkOut ? format(checkOut, 'dd/MM/yyyy') : 'Thêm ngày'}</p>
         </div>
-        <CalendarIcon className="ml-2 h-4 w-4" />
+        <CalendarIcon className='ml-2 h-4 w-4' />
       </div>
 
       {dateOpen && (
         <div
           ref={popoverRef}
-          className="absolute left-0 top-full z-10 w-auto p-6 bg-white text-gray-900 shadow-lg rounded-xl border-0 -translate-x-18 mt-1"
-        >
+          className='absolute left-0 top-full z-10 w-auto p-6 bg-white text-gray-900 shadow-lg rounded-xl border-0 -translate-x-18 mt-1'>
           <Calendar
-            mode="range"
+            mode='range'
             selected={selected}
             onSelect={handleSelect}
             numberOfMonths={2}
-            disabled={disabledDates}
+            disabled={(day) => guards.isDisabled(day, selected)}
             fromDate={startOfToday()}
-            className="bg-white rounded-xl p-6"
+            className='bg-white rounded-xl p-6'
             classNames={{
-              months:
-                "flex flex-col sm:flex-row space-y-4 sm:space-x-8 sm:space-y-0",
-              month: "space-y-4",
-              caption: "flex justify-center pt-1 relative items-center",
-              caption_label: "text-sm font-medium",
-              nav: "space-x-1 flex items-center",
-              nav_button:
-                "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-              nav_button_previous: "absolute left-1",
-              nav_button_next: "absolute right-1",
-              table: "w-full border-collapse space-y-1",
-              head_row: "flex w-full justify-between",
-              head_cell:
-                "text-muted-foreground w-9 font-normal text-[0.8rem] text-center",
-              row: "flex w-full justify-between mt-2",
-              cell: "relative w-9 h-9 p-0 text-center text-sm focus-within:relative focus-within:z-20",
-              day: "h-9 w-9 p-0 font-normal rounded-full hover:bg-gray-100 mx-auto flex items-center justify-center",
+              months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-8 sm:space-y-0',
+              month: 'space-y-4',
+              caption: 'flex justify-center pt-1 relative items-center',
+              caption_label: 'text-sm font-medium',
+              nav: 'space-x-1 flex items-center',
+              nav_button: 'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100',
+              nav_button_previous: 'absolute left-1',
+              nav_button_next: 'absolute right-1',
+              table: 'w-full border-collapse space-y-1',
+              head_row: 'flex w-full justify-between',
+              head_cell: 'text-muted-foreground w-9 font-normal text-[0.8rem] text-center',
+              row: 'flex w-full justify-between mt-2',
+              cell: 'relative w-9 h-9 p-0 text-center text-sm focus-within:relative focus-within:z-20',
+              day: 'h-9 w-9 p-0 font-normal rounded-full hover:bg-gray-100 mx-auto flex items-center justify-center',
               day_selected:
-                "bg-black text-white hover:bg-black hover:text-white focus:bg-black focus:text-white rounded-full",
-              day_today: "bg-gray-100 text-gray-900 rounded-full",
-              day_outside: "hidden",
-              day_disabled: "text-gray-300 line-through opacity-50",
-              day_range_middle:
-                "aria-selected:bg-gray-100 aria-selected:text-gray-900",
-              day_hidden: "invisible",
+                'bg-black text-white hover:bg-black hover:text-white focus:bg-black focus:text-white rounded-full',
+              day_today: 'bg-gray-100 text-gray-900 rounded-full',
+              day_outside: 'hidden',
+              day_disabled: 'text-gray-300 line-through opacity-50',
+              day_range_middle: 'aria-selected:bg-gray-100 aria-selected:text-gray-900',
+              day_hidden: 'invisible',
               day_range_start:
-                "bg-black text-white rounded-full font-semibold hover:bg-black hover:text-white focus:bg-black focus:text-white",
+                'bg-black text-white rounded-full font-semibold hover:bg-black hover:text-white focus:bg-black focus:text-white',
               day_range_end:
-                "bg-black text-white rounded-full font-semibold hover:bg-black hover:text-white focus:bg-black focus:text-white",
+                'bg-black text-white rounded-full font-semibold hover:bg-black hover:text-white focus:bg-black focus:text-white',
             }}
-            modifiers={{ booked: bookedDates }}
+            modifiers={{
+              // Hiển thị gạch các ngày kín
+              booked: (day) => bookedDatesYMD.includes(guards.toYMD(day)),
+              // Ngày kín nhưng được phép chọn làm checkout
+              checkoutOK: (day) => guards.isCheckoutOK(day, selected),
+            }}
             modifiersClassNames={{
-              booked:
-                "text-red-500 line-through opacity-80 cursor-not-allowed bg-red-100 border border-red-200",
+              booked: 'text-red-500 line-through opacity-80 cursor-not-allowed bg-red-100 border border-red-200',
+              checkoutOK: 'text-red-500 opacity-100 cursor-pointer bg-red-50 border-2 border-dashed border-red-300',
             }}
           />
-          <div className="mt-4 text-right text-base text-gray-600">
+          <div className='mt-4 text-right text-base text-gray-600'>
             <button
               onClick={() => {
                 setCheckIn(null);
                 setCheckOut(null);
                 setNights(0);
               }}
-              className="hover:underline"
-            >
+              className='hover:underline'>
               Xóa ngày
             </button>
           </div>
