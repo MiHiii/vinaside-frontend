@@ -91,9 +91,18 @@ const ServiceListPage = () => {
 
   const handleToggleQuantity = async (id: string) => {
     try {
-      await toggleQuantity(id);
-      toast.success('Cập nhật cho phép số lượng thành công');
-    } catch {
+      console.log('handleToggleQuantity - Starting toggle for service ID:', id);
+      const result = await toggleQuantity(id);
+      console.log('handleToggleQuantity - Result:', result);
+
+      if (result.meta && result.meta.requestStatus === 'fulfilled') {
+        toast.success('Cập nhật cho phép số lượng thành công');
+      } else if (result.meta && result.meta.requestStatus === 'rejected') {
+        console.error('handleToggleQuantity - Request rejected:', result.payload);
+        toast.error((result.payload as string) || 'Có lỗi xảy ra khi cập nhật cho phép số lượng');
+      }
+    } catch (error) {
+      console.error('handleToggleQuantity - Error:', error);
       toast.error('Có lỗi xảy ra khi cập nhật cho phép số lượng');
     }
   };
