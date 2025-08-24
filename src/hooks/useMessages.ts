@@ -1,21 +1,30 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { useAppSelector } from '@/hooks/useRedux';
-import { RootState } from '@/store';
-import messageService from '@/services/message.service';
-import socketService from '@/services/socket.service';
-import { MessageWithUI, ConversationUI, CreateMessageDto, ReactionType, ConversationUpdateV2 } from '@/types/message';
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useAppSelector } from "@/hooks/useRedux";
+import { RootState } from "@/store";
+import messageService from "@/services/message.service";
+import socketService from "@/services/socket.service";
+import {
+  MessageWithUI,
+  ConversationUI,
+  CreateMessageDto,
+  ReactionType,
+  ConversationUpdateV2,
+} from "@/types/message";
 
 export const useMessages = () => {
   const { user, token } = useAppSelector((state: RootState) => state.auth);
 
   // States
   const [conversations, setConversations] = useState<ConversationUI[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<ConversationUI | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<ConversationUI | null>(null);
   const [messages, setMessages] = useState<MessageWithUI[]>([]);
-  const [messageInput, setMessageInput] = useState('');
+  const [messageInput, setMessageInput] = useState("");
   const [replyingTo, setReplyingTo] = useState<MessageWithUI | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
@@ -30,38 +39,22 @@ export const useMessages = () => {
 
   // Quick reactions
   const quickReactions: { emoji: string; type: ReactionType }[] = [
-    { emoji: '👍', type: 'like' },
-    { emoji: '❤️', type: 'love' },
-    { emoji: '😂', type: 'laugh' },
-    { emoji: '😮', type: 'wow' },
-    { emoji: '😢', type: 'sad' },
-    { emoji: '😡', type: 'angry' },
+    { emoji: "👍", type: "like" },
+    { emoji: "❤️", type: "love" },
+    { emoji: "😂", type: "laugh" },
+    { emoji: "😮", type: "wow" },
+    { emoji: "😢", type: "sad" },
+    { emoji: "😡", type: "angry" },
   ];
 
-  // Load conversations with debug logging
+  // Load conversations
   const loadConversations = useCallback(async () => {
     try {
       setIsLoadingConversations(true);
-      console.log('🔄 [useMessages] Loading conversations for userRole:', userRole);
-      console.log('🔄 [useMessages] Token exists:', !!token);
-      console.log('🔄 [useMessages] User ID:', myId);
-      console.log(
-        '🔄 [useMessages] localStorage token:',
-        localStorage.getItem('access_token')?.substring(0, 50) + '...',
-      );
-
       const data = await messageService.getConversations(userRole);
-      console.log('✅ [useMessages] Conversations loaded:', data);
       setConversations(data);
     } catch (error: any) {
-      console.error('❌ [useMessages] Error loading conversations:', error);
-      if (error?.response?.status === 401) {
-        console.error('❌ [useMessages] 401 Error details:', {
-          url: error?.config?.url,
-          headers: error?.config?.headers,
-          responseData: error?.response?.data,
-        });
-      }
+      console.error("Error loading conversations:", error);
     } finally {
       setIsLoadingConversations(false);
     }
@@ -71,25 +64,36 @@ export const useMessages = () => {
   const selectConversation = useCallback(
     async (conversation: ConversationUI) => {
       try {
-        console.log('🔄 [useMessages] Selecting conversation:', conversation._id);
         setSelectedConversation(conversation);
         setMessages([]);
         setHasMoreMessages(true);
         setIsLoading(true);
 
-        const data = await messageService.getConversationMessages(conversation._id, 50, 1, userRole);
-        console.log('✅ [useMessages] Messages loaded:', data.length);
-        setMessages(data.reverse());
+        const data = await messageService.getConversationMessages(
+          conversation._id,
+          50,
+          1,
+          userRole
+        );
+        // Don't reverse - keep messages in chronological order (oldest to newest)
+        setMessages(data);
 
         // Mark as read
         await messageService.markConversationAsRead(conversation._id);
+
+        // Remove auto-scroll - let user control scroll position
+        // setTimeout(() => {
+        //   if (messagesEndRef.current) {
+        //     messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        //   }
+        // }, 300);
       } catch (error: any) {
-        console.error('❌ [useMessages] Error selecting conversation:', error);
+        console.error("Error selecting conversation:", error);
       } finally {
         setIsLoading(false);
       }
     },
-    [userRole],
+    [userRole]
   );
 
   // Send message
@@ -98,7 +102,6 @@ export const useMessages = () => {
 
     try {
       setIsSending(true);
-      console.log('🔄 [useMessages] Sending message...');
       const messageData: CreateMessageDto = {
         conversation_id: selectedConversation._id,
         content: messageInput.trim(),
@@ -106,7 +109,6 @@ export const useMessages = () => {
       };
 
       const newMessage = await messageService.sendMessage(messageData);
-      console.log('✅ [useMessages] Message sent:', newMessage);
 
       // Convert MessageResponse to MessageWithUI for consistency
       const messageWithUI: MessageWithUI = {
@@ -115,56 +117,107 @@ export const useMessages = () => {
         ui: {
           mine: true,
           show_sender_meta: false,
-          sender_display_name: user?.name || 'You',
+          sender_display_name: user?.name || "You",
           sender_avatar_url: user?.avatar_url || null,
         },
       };
 
       setMessages((prev) => [...prev, messageWithUI]);
-      setMessageInput('');
+      setMessageInput("");
       setReplyingTo(null);
 
-      // Auto-scroll to bottom after sending message
+      // Only auto-scroll when sending a new message with controlled timing
       setTimeout(() => {
-        scrollToBottom();
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+            inline: "nearest",
+          });
+        }
       }, 200);
     } catch (error: any) {
-      console.error('❌ [useMessages] Error sending message:', error);
+      console.error("Error sending message:", error);
     } finally {
       setIsSending(false);
     }
-  }, [messageInput, selectedConversation, replyingTo, isSending, userRole, user]);
+  }, [
+    messageInput,
+    selectedConversation,
+    replyingTo,
+    isSending,
+    userRole,
+    user,
+  ]);
 
   // Toggle reaction
-  const toggleReaction = useCallback(async (messageId: string, type: ReactionType) => {
-    try {
-      console.log('🔄 [useMessages] Toggling reaction:', messageId, type);
-      const response = await messageService.toggleReaction(messageId, type);
-      console.log('✅ [useMessages] Reaction toggled:', response);
+  const toggleReaction = useCallback(
+    async (messageId: string, type: ReactionType) => {
+      try {
+        console.log("🎯 [useMessages] Toggling reaction:", messageId, type);
 
-      // Update message in local state - convert MessageResponse to MessageWithUI
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === messageId
-            ? {
-                ...response.message,
-                ui_for: msg.ui_for,
-                ui: msg.ui,
-              }
-            : msg,
-        ),
-      );
-    } catch (error: any) {
-      console.error('❌ [useMessages] Error toggling reaction:', error);
-    }
-  }, []);
+        // Optimistic update - update UI immediately for better UX
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === messageId
+              ? {
+                  ...msg,
+                  reactions: msg.reactions || [],
+                }
+              : msg
+          )
+        );
+
+        const response = await messageService.toggleReaction(messageId, type);
+        console.log("✅ [useMessages] Reaction toggle response:", response);
+
+        // Update message in local state with proper UI properties
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === messageId
+              ? {
+                  ...response.message,
+                  ui_for: msg.ui_for,
+                  ui: msg.ui,
+                }
+              : msg
+          )
+        );
+
+        // Also update conversation list to reflect reaction changes
+        setConversations((prev) =>
+          prev.map((conv) => {
+            if (conv.lastMessage?._id === messageId) {
+              return {
+                ...conv,
+                lastMessage: {
+                  ...conv.lastMessage,
+                  reactions: response.message.reactions,
+                },
+              };
+            }
+            return conv;
+          })
+        );
+
+        console.log("🔄 [useMessages] Updated message with new reactions");
+      } catch (error: any) {
+        console.error("❌ [useMessages] Error toggling reaction:", error);
+
+        // Revert optimistic update on error
+        console.log(
+          "🔄 [useMessages] Reverting optimistic update due to error"
+        );
+        // You could add a toast notification here to inform the user
+      }
+    },
+    []
+  );
 
   // Recall message
   const recallMessage = useCallback(async (messageId: string) => {
     try {
-      console.log('🔄 [useMessages] Recalling message:', messageId);
       const updatedMessage = await messageService.recallMessage(messageId);
-      console.log('✅ [useMessages] Message recalled:', updatedMessage);
 
       // Update message in local state - convert MessageResponse to MessageWithUI
       setMessages((prev) =>
@@ -175,24 +228,22 @@ export const useMessages = () => {
                 ui_for: msg.ui_for,
                 ui: msg.ui,
               }
-            : msg,
-        ),
+            : msg
+        )
       );
     } catch (error: any) {
-      console.error('❌ [useMessages] Error recalling message:', error);
+      console.error("Error recalling message:", error);
     }
   }, []);
 
   // Reply to message
   const replyToMessage = useCallback((message: MessageWithUI) => {
-    console.log('🔄 [useMessages] Setting reply to message:', message._id);
     setReplyingTo(message);
     setShowEmojiPicker(false);
   }, []);
 
   // Cancel reply
   const cancelReply = useCallback(() => {
-    console.log('🔄 [useMessages] Canceling reply');
     setReplyingTo(null);
   }, []);
 
@@ -202,38 +253,77 @@ export const useMessages = () => {
     setShowEmojiPicker(false);
   }, []);
 
-  const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessageInput(e.target.value);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, []);
+  const handleTextareaChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setMessageInput(e.target.value);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height =
+          textareaRef.current.scrollHeight + "px";
+      }
+    },
+    []
+  );
 
   // Scroll to bottom function
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+          inline: "nearest",
+        });
+      }
     }, 100);
   }, []);
 
-  // Auto-scroll when messages change
+  // Auto-scroll when new messages are received from other users
   useEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom();
-    }
-  }, [messages.length, scrollToBottom]);
-
-  // Auto-scroll when new message is added
-  useEffect(() => {
-    if (messages.length > 0 && messagesEndRef.current) {
+    if (messages.length > 0 && selectedConversation) {
       const lastMessage = messages[messages.length - 1];
-      if (lastMessage && lastMessage.sender_id === myId) {
-        // Auto-scroll for own messages
-        scrollToBottom();
+      // Only auto-scroll if the last message is from someone else (not the current user)
+      // and if we're already near the bottom of the conversation
+      if (lastMessage && lastMessage.sender_id !== myId) {
+        // Check if user is near the bottom before auto-scrolling
+        const scrollArea = document.querySelector(
+          "[data-radix-scroll-area-viewport]"
+        );
+        if (scrollArea) {
+          const { scrollTop, scrollHeight, clientHeight } = scrollArea;
+          const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+          if (isNearBottom) {
+            // Use a more controlled scroll approach
+            setTimeout(() => {
+              if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({
+                  behavior: "smooth",
+                  block: "end",
+                  inline: "nearest",
+                });
+              }
+            }, 50);
+          }
+        }
       }
     }
-  }, [messages, myId, scrollToBottom]);
+  }, [messages.length, selectedConversation, myId]);
+
+  // Scroll to bottom when conversation is selected and messages are loaded
+  useEffect(() => {
+    if (selectedConversation && messages.length > 0 && !isLoading) {
+      // Small delay to ensure messages are rendered
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+            inline: "nearest",
+          });
+        }
+      }, 150);
+    }
+  }, [selectedConversation?._id, messages.length, isLoading]);
 
   // Load more messages (pagination)
   const loadMoreMessages = useCallback(async () => {
@@ -241,71 +331,77 @@ export const useMessages = () => {
 
     try {
       setIsLoading(true);
-      console.log('🔄 [useMessages] Loading more messages...');
 
       const currentPage = Math.ceil(messages.length / 50) + 1;
       const newMessages = await messageService.getConversationMessages(
         selectedConversation._id,
         50,
         currentPage,
-        userRole as 'guest' | 'staff',
+        userRole as "guest" | "staff"
       );
-
-      console.log('✅ [useMessages] More messages loaded:', newMessages.length);
 
       if (newMessages.length < 50) {
         setHasMoreMessages(false);
       }
 
-      // Add new messages to the beginning (for pagination)
+      // Add new messages to the beginning (for pagination) - these are older messages
       setMessages((prev) => [...newMessages, ...prev]);
     } catch (error: any) {
-      console.error('❌ [useMessages] Error loading more messages:', error);
+      console.error("Error loading more messages:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedConversation, messages.length, isLoading, hasMoreMessages, userRole]);
+  }, [
+    selectedConversation,
+    messages.length,
+    isLoading,
+    hasMoreMessages,
+    userRole,
+  ]);
 
   // Setup Socket.IO connection and event listeners
   useEffect(() => {
-    console.log('🔌 [useMessages] Setting up Socket.IO connection...');
-
     if (!token || !myId) {
-      console.log('⚠️ [useMessages] No token or user ID, skipping socket setup');
+      console.log(
+        "🔴 [useMessages] Missing token or myId, skipping socket setup"
+      );
       return;
     }
+
+    console.log("🟢 [useMessages] Setting up socket connection...");
+    console.log("🔍 [useMessages] Token length:", token.length);
+    console.log("🔍 [useMessages] User ID:", myId);
+    console.log("🔍 [useMessages] User role:", userRole);
 
     // Connect to socket service
     socketService.connect(token, myId);
 
-    // Check if already connected
-    if (socketService.isConnected()) {
-      console.log('🔌 [useMessages] Socket already connected');
-      console.log('🔌 [useMessages] Socket status:', socketService.getSocketStatus());
-    }
-
-    // Join user room for general messages
-    socketService.joinUserRoom(myId);
-    console.log('🏠 [useMessages] Joined user room:', `user_${myId}`);
-
-    // Join admin room if user is admin
-    if (userRole === ('admin' as any)) {
-      socketService.joinAdminRoom();
-      console.log('🏠 [useMessages] Joined admin room');
-    }
+    // Note: Room joining is handled automatically by server based on auth token
+    console.log("✅ [CHECKLIST] Socket connection setup complete");
 
     // Connect to notifications
     socketService.connectNotification(token, myId);
-    console.log('🔔 [useMessages] Connected to notifications');
 
     // Setup event listeners
     const handleNewMessage = (message: MessageWithUI) => {
-      console.log('📨 [useMessages] New message received via socket:', message);
+      console.log("✅ [CHECKLIST] UI update khi nhận new message");
+      console.log(
+        "📨 [useMessages] Received new message:",
+        message._id,
+        "for conversation:",
+        message.conversation_id,
+        "from sender:",
+        message.sender_id,
+        "current user:",
+        myId
+      );
 
       // Update conversations list if message is for current user
       setConversations((prev) => {
         const updated = [...prev];
-        const convIndex = updated.findIndex((c) => c._id === message.conversation_id);
+        const convIndex = updated.findIndex(
+          (c) => c._id === message.conversation_id
+        );
 
         if (convIndex >= 0) {
           // Update existing conversation
@@ -315,7 +411,7 @@ export const useMessages = () => {
               _id: message._id,
               content: message.content,
               sender_id: message.sender_id,
-              sender_role: 'guest' as const,
+              sender_role: "guest" as const,
               sent_at: message.sent_at,
               is_read: message.is_read,
             },
@@ -326,8 +422,9 @@ export const useMessages = () => {
             },
           };
         } else {
-          // Add new conversation if not exists
-          console.log('🆕 [useMessages] New conversation detected, reloading conversations...');
+          console.log(
+            "🔄 [useMessages] Conversation not found, reloading conversations..."
+          );
           loadConversations();
         }
 
@@ -336,13 +433,29 @@ export const useMessages = () => {
 
       // Update messages if conversation is selected
       if (selectedConversation?._id === message.conversation_id) {
-        setMessages((prev) => [...prev, message]);
+        console.log(
+          "✅ [useMessages] Updating messages for selected conversation"
+        );
+        setMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          const messageExists = prev.some((m) => m._id === message._id);
+          if (messageExists) {
+            console.log("⚠️ [useMessages] Message already exists, skipping");
+            return prev;
+          }
+          console.log("➕ [useMessages] Adding new message to conversation");
+          return [...prev, message];
+        });
+      } else {
+        console.log(
+          "ℹ️ [useMessages] Message not for selected conversation:",
+          selectedConversation?._id
+        );
       }
     };
 
     const handleConversationUpdate = (data: ConversationUpdateV2) => {
-      console.log('💬 [useMessages] Conversation update received via socket:', data);
-
+      console.log("💬 [useMessages] Received conversation update:", data);
       // Reload conversations to get latest data
       loadConversations();
 
@@ -353,24 +466,65 @@ export const useMessages = () => {
     };
 
     const handleReactionUpdate = (message: MessageWithUI) => {
-      console.log('👍 [useMessages] Reaction update received via socket:', message);
+      console.log(
+        "🔄 [useMessages] Received reaction update for message:",
+        message._id
+      );
 
       // Update message in current conversation
       if (selectedConversation?._id === message.conversation_id) {
-        setMessages((prev) => prev.map((msg) => (msg._id === message._id ? message : msg)));
+        console.log(
+          "✅ [useMessages] Updating message reactions in current conversation"
+        );
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === message._id
+              ? {
+                  ...message,
+                  ui_for: msg.ui_for,
+                  ui: msg.ui,
+                }
+              : msg
+          )
+        );
+
+        // Also update conversation list if this message is the last message
+        setConversations((prev) =>
+          prev.map((conv) => {
+            if (
+              conv._id === message.conversation_id &&
+              conv.lastMessage?._id === message._id
+            ) {
+              return {
+                ...conv,
+                lastMessage: {
+                  ...conv.lastMessage,
+                  reactions: message.reactions,
+                },
+              };
+            }
+            return conv;
+          })
+        );
+      } else {
+        console.log(
+          "ℹ️ [useMessages] Reaction update not for current conversation"
+        );
       }
     };
 
     const handleMessageRecall = (message: MessageWithUI) => {
-      console.log('🗑️ [useMessages] Message recall received via socket:', message);
-
+      console.log("🗑️ [useMessages] Received message recall:", message._id);
       // Update message in current conversation
       if (selectedConversation?._id === message.conversation_id) {
-        setMessages((prev) => prev.map((msg) => (msg._id === message._id ? message : msg)));
+        setMessages((prev) =>
+          prev.map((msg) => (msg._id === message._id ? message : msg))
+        );
       }
     };
 
     // Register event listeners
+    console.log("📝 [useMessages] Registering socket event listeners...");
     socketService.onNewMessage(handleNewMessage);
     socketService.onConversationUpdate(handleConversationUpdate);
     socketService.onReactionUpdate(handleReactionUpdate);
@@ -378,34 +532,110 @@ export const useMessages = () => {
 
     // Cleanup function
     return () => {
-      console.log('🧹 [useMessages] Cleaning up socket listeners...');
+      console.log("🧹 [useMessages] Cleaning up socket event listeners");
       // Note: SocketService doesn't have off methods, listeners are cleaned up automatically
     };
-  }, [token, myId, userRole, selectedConversation?._id, loadConversations]);
+  }, [token, myId, userRole, loadConversations]); // Added loadConversations back but removed selectedConversation?._id
 
-  // Join conversation room when conversation is selected
-  useEffect(() => {
-    if (selectedConversation && socketService.isConnected()) {
-      console.log('🏠 [useMessages] Joining conversation room:', selectedConversation._id);
-      socketService.joinConversation(selectedConversation._id);
-
-      // Leave previous conversation room if any
-      return () => {
-        console.log('🚪 [useMessages] Leaving conversation room:', selectedConversation._id);
-        socketService.leaveConversation(selectedConversation._id);
-      };
-    }
-  }, [selectedConversation]);
+  // Note: Room joining is handled automatically by server based on auth token
+  // No need to manually join/leave conversation rooms
 
   // Initialize and load conversations
   useEffect(() => {
     if (token && user) {
-      console.log('🚀 [useMessages] Initializing with token and user...');
       loadConversations();
-    } else {
-      console.log('❌ [useMessages] Missing token or user:', { hasToken: !!token, hasUser: !!user });
     }
   }, [loadConversations, token, user]);
+
+  // Force socket reconnection when token changes
+  useEffect(() => {
+    if (token && myId && socketService.isConnected()) {
+      console.log(
+        "🔄 [useMessages] Force reconnecting socket due to token change"
+      );
+      // Force reconnect to ensure fresh connection with new token
+      socketService.forceReconnect(token, myId);
+    }
+  }, [token, myId]);
+
+  // Ensure socket connection on mount
+  useEffect(() => {
+    if (token && myId && !socketService.isConnected()) {
+      console.log("🔌 [useMessages] Socket not connected, connecting...");
+      socketService.connect(token, myId);
+    } else if (token && myId && socketService.isConnected()) {
+      console.log("✅ [useMessages] Socket already connected");
+    }
+  }, [token, myId]);
+
+  // Debug: Log socket status periodically
+  useEffect(() => {
+    if (!token || !myId) return;
+
+    const logInterval = setInterval(() => {
+      const status = socketService.getConnectionStatus();
+      console.log("🔍 [useMessages] Socket status check:", status);
+    }, 30000); // Log every 30 seconds
+
+    return () => clearInterval(logInterval);
+  }, [token, myId]);
+
+  // Polling fallback for realtime updates (if socket fails)
+  useEffect(() => {
+    if (!selectedConversation || !token) return;
+    console.log(
+      "🔄 [useMessages] Setting up polling fallback for conversation:",
+      selectedConversation._id
+    );
+
+    let lastMessageCount = messages.length;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const latestMessages = await messageService.getConversationMessages(
+          selectedConversation._id,
+          50,
+          1,
+          userRole
+        );
+
+        // Check if there are new messages
+        if (latestMessages.length > lastMessageCount) {
+          console.log("🔄 [useMessages] Polling found new messages");
+          setMessages(latestMessages);
+          lastMessageCount = latestMessages.length;
+        }
+      } catch (error) {
+        console.error("❌ [useMessages] Polling error:", error);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => {
+      console.log("🛑 [useMessages] Clearing polling interval");
+      clearInterval(pollInterval);
+    };
+  }, [selectedConversation?._id, token, userRole, messages.length]);
+
+  // Test function for debugging socket connection
+  const testSocketConnection = useCallback(() => {
+    if (!selectedConversation) {
+      console.log("⚠️ [useMessages] No conversation selected for testing");
+      return;
+    }
+
+    console.log("🧪 [useMessages] Testing socket connection...");
+    const status = socketService.getConnectionStatus();
+    console.log("🔍 [useMessages] Socket status:", status);
+
+    if (status.connected) {
+      console.log(
+        "✅ [useMessages] Socket is connected, emitting test message"
+      );
+      socketService.emitTestMessage(selectedConversation._id);
+    } else {
+      console.log("❌ [useMessages] Socket is not connected");
+    }
+  }, [selectedConversation]);
 
   return {
     // States
@@ -440,6 +670,7 @@ export const useMessages = () => {
     isSending,
     scrollToBottom,
     loadMoreMessages,
+    testSocketConnection, // Add test function
 
     // Setters
     setMessageInput,
