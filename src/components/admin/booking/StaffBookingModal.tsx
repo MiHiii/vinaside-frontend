@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,7 @@ import {
   CheckCircle,
   ChevronDown,
   RefreshCw,
+ 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/services/api';
@@ -34,6 +35,7 @@ import { format } from 'date-fns';
 import BookingCalendar from '@/components/roomdetail/BookingCalendar';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from '@/constants/service';
+import { buildBookingGuards } from '@/utils/dateUtils';
 
 interface Property {
   _id: string;
@@ -334,17 +336,12 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({ isOpen, onClose, 
 
       // Validate current selected dates against new booked dates
       if (checkIn && checkOut) {
-        const current = new Date(checkIn);
-        let hasConflict = false;
-        while (current <= checkOut) {
-          if (dates.some((dateStr: string) => new Date(dateStr).toDateString() === current.toDateString())) {
-            hasConflict = true;
-            break;
-          }
-          current.setDate(current.getDate() + 1);
-        }
+        // Chuyển đổi bookedDates sang YMD format
+        const bookedDatesYMD = bookedDatesArray.map((date: Date) => format(date, 'yyyy-MM-dd'));
+        const guards = buildBookingGuards(bookedDatesYMD);
 
-        if (hasConflict) {
+        // Sử dụng guards để kiểm tra tính hợp lệ
+        if (!guards.isValidRange(checkIn, checkOut)) {
           // Clear conflicting dates
           setCheckIn(null);
           setCheckOut(null);
@@ -365,7 +362,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({ isOpen, onClose, 
     let guestsData = [];
     try {
       // Thử endpoint chính trước
-      const guestsRes = await api.get('/users?role=guest');
+      const guestsRes = await api.get('/users/guests');
       console.log('Guests API response:', guestsRes);
       console.log('Guests response.data:', guestsRes.data);
       console.log('Guests response.data.data:', guestsRes.data.data);
@@ -393,7 +390,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({ isOpen, onClose, 
 
       // Thử endpoint public nếu endpoint chính thất bại
       try {
-        const publicGuestsRes = await api.get('/users/public?role=guest');
+        const publicGuestsRes = await api.get('/users/guest/public');
         console.log('Public guests API response:', publicGuestsRes);
 
         if (publicGuestsRes.data && publicGuestsRes.data.data && Array.isArray(publicGuestsRes.data.data)) {
@@ -738,15 +735,12 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({ isOpen, onClose, 
         if (payload.payment_method === 'vnpay' && bookingId && payload.propertyId) {
           try {
             console.log('Creating VNPay payment for booking:', bookingId);
-            const paymentResponse = await api.post(
-              `/bookings/${payload.propertyId}/${bookingId}/payment/remaining/staff`,
-              {
-                paymentMethod: 'vnpay',
-                returnUrl: `${window.location.origin}/admin/bookings?payment=success&bookingId=${bookingId}`,
-                cancelUrl: `${window.location.origin}/admin/bookings?payment=cancel&bookingId=${bookingId}`,
-                note: 'Admin tạo booking với VNPay',
-              },
-            );
+            const paymentResponse = await api.post(`/bookings/${bookingId}/payment/staff`, {
+              paymentMethod: 'vnpay',
+              returnUrl: `${window.location.origin}/admin/bookings?payment=success&bookingId=${bookingId}`,
+              cancelUrl: `${window.location.origin}/admin/bookings?payment=cancel&bookingId=${bookingId}`,
+              note: 'Admin tạo booking với VNPay',
+            });
 
             const paymentUrl = paymentResponse.data?.data?.paymentUrl || paymentResponse.data?.paymentUrl;
             if (paymentUrl) {
@@ -2065,7 +2059,7 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({ isOpen, onClose, 
                         <SelectItem
                           value='paid'
                           className='rounded-lg py-3 px-4 hover:bg-green-50 hover:text-green-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-green-100 data-[state=checked]:text-green-800'>
-                          Đã thanh toán
+                          Thanh toán toàn bộ
                         </SelectItem>
                         <SelectItem
                           value='partially_paid'
