@@ -293,12 +293,12 @@ export default function SearchResultPage() {
   const mapSrc = `https://www.google.com/maps?q=${mapCoords.lat},${mapCoords.lng}&output=embed`;
 
   return (
-    <div className="flex flex-col lg:flex-row w-[93%] mx-auto p-4 lg:p-8 gap-2 lg:gap-6">
+    <div className="flex flex-col xl:flex-row w-full max-w-[1550px] mx-auto p-3 sm:p-4 lg:p-6 xl:p-8 gap-4 lg:gap-6 xl:gap-8">
       {/* Cột bên trái - Danh sách phòng dạng grid */}
-      <div className="flex-1 order-2 lg:order-1">
+      <div className="flex-1 order-2 xl:order-1 min-w-0">
         {/* Header với thông tin tìm kiếm */}
-        <div className="mb-4">
-          <div className="text-sm  font-semibold text-muted-foreground">
+        <div className="mb-4 lg:mb-6">
+          <div className="text-sm lg:text-base font-semibold text-muted-foreground">
             {(() => {
               // Nếu chỉ có sortBy (click vào các section top listings)
               if (sortBy && !hasSearchCriteria) {
@@ -373,7 +373,7 @@ export default function SearchResultPage() {
             })()}
           </div>
           {(hasSearchCriteria || sortBy) && (
-            <p className="text-muted-foreground mt-1 text-xs">
+            <p className="text-muted-foreground mt-1 text-xs lg:text-sm">
               {getSearchDescription()}
             </p>
           )}
@@ -382,10 +382,10 @@ export default function SearchResultPage() {
         {/* Kết quả tìm kiếm dạng grid giống homepage */}
         <div className="mb-8">
           {displayLoading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-2">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div key={idx} className="min-w-[280px] max-w-[280px]">
-                  <Skeleton className="h-[220px] w-full rounded-2xl mb-2" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div key={idx} className="w-full">
+                  <Skeleton className="h-[200px] sm:h-[220px] w-full rounded-2xl mb-2" />
                   <div className="p-3 pb-2">
                     <Skeleton className="h-5 w-2/3 mb-2" />
                     <Skeleton className="h-4 w-1/3 mb-1" />
@@ -397,7 +397,7 @@ export default function SearchResultPage() {
           )}
 
           {displayError && (
-            <div className="text-center py-8">
+            <div className="text-center py-8 lg:py-12">
               <p className="text-red-500 text-lg">{displayError}</p>
               <p className="text-muted-foreground mt-2">
                 Vui lòng thử lại với tiêu chí tìm kiếm khác
@@ -406,12 +406,12 @@ export default function SearchResultPage() {
           )}
 
           {!displayLoading && !displayError && displayListings.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-12 lg:py-16">
               <div className="text-6xl mb-4">🏠</div>
-              <h3 className="text-xl font-semibold text-card-foreground mb-2">
+              <h3 className="text-xl lg:text-2xl font-semibold text-card-foreground mb-2">
                 Không tìm thấy kết quả phù hợp
               </h3>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-4 lg:mb-6">
                 Hãy thử điều chỉnh tiêu chí tìm kiếm của bạn
               </p>
               <Button onClick={() => navigate("/")}>Quay về trang chủ</Button>
@@ -419,7 +419,7 @@ export default function SearchResultPage() {
           )}
 
           {!displayLoading && !displayError && displayListings.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-3 lg:gap-4">
               {displayListings.map((property: any) => (
                 <PropertyCard
                   key={property._id}
@@ -433,8 +433,8 @@ export default function SearchResultPage() {
       </div>
 
       {/* Cột bên phải - Bản đồ (ẩn trên mobile) */}
-      <div className="mt-8 hidden lg:block w-[45%] flex-shrink-0 order-1 lg:order-2">
-        <div className="w-full h-[770px] rounded-2xl overflow-hidden">
+      <div className="mt-10 lg:mt-8 xl:mt-10 hidden xl:block w-full xl:w-[460px] 2xl:w-[690px] flex-shrink-0 order-1 xl:order-2">
+        <div className="w-full h-[600px] lg:h-[700px] xl:h-[750px] rounded-2xl overflow-hidden sticky top-4">
           <iframe
             title="Google Map"
             src={mapSrc}
@@ -457,7 +457,7 @@ type PropertyCardProps = {
 function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
   const imageUrl = property.images?.[0]?.startsWith("http")
     ? property.images[0]
-    : `/placeholder.svg?height=220&width=280&query=property%20image%20of%20${property.title}`; // Fallback to placeholder
+    : `/placeholder.svg?height=200&width=300&query=property%20image%20of%20${property.title}`; // Fallback to placeholder
 
   // Lấy city từ property
   const city = getPropertyCity(property);
@@ -465,34 +465,34 @@ function PropertyCard({ property, onViewDetail }: PropertyCardProps) {
   return (
     <Card
       onClick={() => onViewDetail(property._id)}
-      className="min-w-[280px] max-w-[280px] rounded-xl bg-card border-none hover:shadow-md transition-all duration-300 cursor-pointer"
+      className="w-full rounded-xl bg-card border-none hover:shadow-md transition-all duration-300 cursor-pointer group"
     >
       <div className="relative">
         <img
           src={imageUrl || "/placeholder.svg"}
           alt={property.title}
-          className="h-[220px] w-full object-cover rounded-2xl"
+          className="h-[180px] sm:h-[200px] lg:h-[220px] w-full object-cover rounded-t-xl group-hover:scale-105 transition-transform duration-300"
         />
         {/* Assuming ButtonWishlist is a client component and handles its own state */}
         <ButtonWishlist liked={property.is_wishlisted} roomId={property._id} />
       </div>
       <CardContent className="p-3 pb-2">
-        <div className="flex justify-between items-center gap-2 mb-1">
-          <h3 className="font-medium text-[15px] truncate text-card-foreground">
+        <div className="flex justify-between items-start gap-2 mb-1">
+          <h3 className="font-medium text-sm sm:text-[15px] leading-tight line-clamp-2 text-card-foreground flex-1">
             {property.title}
           </h3>
-          <div className="flex items-center gap-1 text-sm font-medium text-card-foreground">
+          <div className="flex items-center gap-1 text-xs sm:text-sm font-medium text-card-foreground flex-shrink-0">
             <span>★</span>
             <span>{property.average_rating?.toFixed(1) ?? "--"}</span>
           </div>
         </div>
         {/* Hiển thị city nếu có */}
         {city && (
-          <div className="text-sm text-muted-foreground mb-1 font-medium">
+          <div className="text-xs sm:text-sm text-muted-foreground mb-1 font-medium">
             {city}
           </div>
         )}
-        <div className="text-sm text-gray-500 text-muted-foreground font-medium mb-1">
+        <div className="text-xs sm:text-sm text-gray-500 text-muted-foreground font-medium">
           {property.price_per_night?.toLocaleString()}₫ /đêm
         </div>
       </CardContent>
