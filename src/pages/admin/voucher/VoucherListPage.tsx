@@ -6,6 +6,7 @@ import VoucherDetailModal from "@/components/admin/voucher/VoucherDetailModal";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { CreateVoucherDto } from "@/types/voucher";
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 const VoucherListPage = () => {
   const {
@@ -115,7 +116,9 @@ const VoucherListPage = () => {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Quản lý Voucher</h2>
-        <Button onClick={() => { setEditId(null); setShowForm(true); }}>Tạo voucher mới</Button>
+        <PermissionGuard permission="voucher.create">
+          <Button onClick={() => { setEditId(null); setShowForm(true); }}>Tạo voucher mới</Button>
+        </PermissionGuard>
       </div>
       {/* Bộ lọc */}
       <div className="bg-white rounded-lg shadow p-4 mb-4 flex flex-col md:flex-row gap-4 md:gap-7 items-center w-full">

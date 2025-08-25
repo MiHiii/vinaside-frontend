@@ -12,7 +12,6 @@ import BookingDetail from "@/components/admin/booking/BookingDetail";
 import BookingFilter from "@/components/admin/booking/BookingFilter";
 import StaffBookingModal from "@/components/admin/booking/StaffBookingModal";
 import { Button } from "@/components/ui/button";
-
 import {
   Calendar,
   TrendingUp,
@@ -25,6 +24,7 @@ import {
   Plus,
 } from "lucide-react";
 import BookingStatistics from "@/components/admin/booking/BookingStatistics";
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 const BookingManagementPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -120,14 +120,16 @@ const BookingManagementPage: React.FC = () => {
                 <span className="sm:hidden">Mới</span>
               </Button>
 
-              <Button
-                onClick={() => setShowStaffBookingModal(true)}
-                className="flex items-center gap-1.5 sm:gap-2 bg-sky-600 hover:bg-sky-700 text-white cursor-pointer text-xs sm:text-sm"
-              >
-                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Tạo Booking</span>
-                <span className="sm:hidden">Tạo</span>
-              </Button>
+              <PermissionGuard permission="booking.create">
+                <Button
+                  onClick={() => setShowStaffBookingModal(true)}
+                  className="flex items-center gap-1.5 sm:gap-2 bg-sky-600 hover:bg-sky-700 text-white cursor-pointer text-xs sm:text-sm"
+                >
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Tạo Booking</span>
+                  <span className="sm:hidden">Tạo</span>
+                </Button>
+              </PermissionGuard>
             </div>
           </div>
         </div>

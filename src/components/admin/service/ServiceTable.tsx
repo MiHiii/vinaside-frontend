@@ -2,6 +2,7 @@ import { Service } from '@/types/services';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PermissionGuard } from '@/components/common/PermissionGuard';
 
 interface Props {
   services: Service[];
@@ -127,13 +128,17 @@ const ServiceTable: React.FC<Props> = ({
                 </div>
               </td>
               <td className='text-center p-2 space-x-2' onClick={(e) => e.stopPropagation()}>
-                <Button size='sm' variant='default' onClick={() => onEdit(s._id)}>
-                  <Pencil className='w-4 h-4' /> Sửa
-                </Button>
-                {!s.isDeleted ? (
-                  <Button size='sm' variant='default' onClick={() => onDelete(s._id)}>
-                    <Trash className='w-4 h-4' /> Xóa
+                <PermissionGuard permission='service.update'>
+                  <Button size='sm' variant='default' onClick={() => onEdit(s._id)}>
+                    <Pencil className='w-4 h-4' /> Sửa
                   </Button>
+                </PermissionGuard>
+                {!s.isDeleted ? (
+                  <PermissionGuard permission='service.delete'>
+                    <Button size='sm' variant='default' onClick={() => onDelete(s._id)}>
+                      <Trash className='w-4 h-4' /> Xóa
+                    </Button>
+                  </PermissionGuard>
                 ) : (
                   <Button size='sm' variant='secondary' onClick={() => onRestore(s._id)}>
                     Khôi phục

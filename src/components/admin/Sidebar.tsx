@@ -1,15 +1,10 @@
 import {
   Home,
   ListChecks,
-  AppWindow,
   MessageCircle,
   Users,
   Settings,
-  Lock,
-  LifeBuoy,
-  User,
   ShieldCheck,
-  AlertTriangle,
   ChevronDown,
   ChevronRight,
   Building2,
@@ -155,13 +150,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const { user } = useAppSelector((state) => state.auth);
   console.log("Sidebar user:", user);
   console.log("Sidebar user.permissions:", user?.permissions);
-  const [openSecured, setOpenSecured] = useState(false);
-  const [openAuth, setOpenAuth] = useState(false);
-  const [openErrors, setOpenErrors] = useState(false);
   const [openUsers, setOpenUsers] = useState(false);
   const [openSystem, setOpenSystem] = useState(false);
   const [openReviews, setOpenReviews] = useState(false);
-  const [activeCollapseId, setActiveCollapseId] = useState<string | null>(null);
+  const [/*activeCollapseId*/, setActiveCollapseId] = useState<string | null>(null);
 
   // Chỉ render Sidebar khi đã có user và permissions
   if (!user || !user.permissions) {
@@ -171,21 +163,6 @@ export function Sidebar({ collapsed }: SidebarProps) {
       </div>
     );
   }
-
-  const toggleSecured = (open: boolean) => {
-    setOpenSecured(open);
-    setActiveCollapseId(open ? "secured" : null);
-  };
-
-  const toggleAuth = (open: boolean) => {
-    setOpenAuth(open);
-    setActiveCollapseId(open ? "auth" : null);
-  };
-
-  const toggleErrors = (open: boolean) => {
-    setOpenErrors(open);
-    setActiveCollapseId(open ? "errors" : null);
-  };
 
   const toggleUsers = (open: boolean) => {
     setOpenUsers(open);
@@ -380,7 +357,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
               </div>
             </SidebarCollapse>
           </PermissionGuard>
-          <PermissionGuard permission="amenity.view">
+          
             <SidebarCollapse
               icon={<Settings className="h-4 w-4" />}
               label="Quản lý hệ thống"
@@ -395,20 +372,25 @@ export function Sidebar({ collapsed }: SidebarProps) {
               collapsed={collapsed}
             >
               <div className="pl-7 space-y-1">
-                <SidebarItem
-                  to="/admin/amenities"
-                  icon={<ListChecks className="h-4 w-4" />}
-                  label="Tiện ích"
-                  active={pathname.startsWith("/admin/amenities")}
-                  collapsed={collapsed}
-                />
-                <SidebarItem
-                  to="/admin/house-rules"
-                  icon={<BookOpen className="h-4 w-4" />}
-                  label="Quản lý quy tắc nhà"
-                  active={pathname === "/admin/house-rules"}
-                  collapsed={collapsed}
-                />
+                <PermissionGuard permission="amenity.view">
+                  <SidebarItem
+                    to="/admin/amenities"
+                    icon={<ListChecks className="h-4 w-4" />}
+                    label="Tiện ích"
+                    active={pathname.startsWith("/admin/amenities")}
+                    collapsed={collapsed}
+                  />
+                </PermissionGuard>
+                <PermissionGuard permission="house_rule.view">
+                  <SidebarItem
+                    to="/admin/house-rules"
+                    icon={<BookOpen className="h-4 w-4" />}
+                    label="Quản lý quy tắc nhà"
+                    active={pathname === "/admin/house-rules"}
+                    collapsed={collapsed}
+                  />
+                </PermissionGuard>
+                <PermissionGuard permission="safety_feature.view">
                 <SidebarItem
                   to="/admin/safety-features"
                   icon={<ShieldCheck className="h-4 w-4" />}
@@ -416,9 +398,9 @@ export function Sidebar({ collapsed }: SidebarProps) {
                   active={pathname === "/admin/safety-features"}
                   collapsed={collapsed}
                 />
+                </PermissionGuard>
               </div>
             </SidebarCollapse>
-          </PermissionGuard>
         </SidebarSection>
 
         {/* Other */}

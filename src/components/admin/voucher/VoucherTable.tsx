@@ -10,6 +10,7 @@ import {
 import { Pencil, Trash } from "lucide-react";
 import { Voucher } from "@/types/voucher";
 import { useNavigate } from "react-router-dom";
+import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 interface Props {
   vouchers: Voucher[];
@@ -103,21 +104,25 @@ const VoucherTable: React.FC<Props> = ({
                 className="text-center space-x-2"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={() => onEdit(v._id)}
-                >
-                  <Pencil className="w-4 h-4" /> Sửa
-                </Button>
-                {!v.isDeleted ? (
+                <PermissionGuard permission="voucher.edit">
                   <Button
                     size="sm"
                     variant="default"
-                    onClick={() => onDelete(v._id)}
+                    onClick={() => onEdit(v._id)}
                   >
-                    <Trash className="w-4 h-4" /> Xóa
+                    <Pencil className="w-4 h-4" /> Sửa
                   </Button>
+                </PermissionGuard>
+                {!v.isDeleted ? (
+                  <PermissionGuard permission="voucher.delete">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => onDelete(v._id)}
+                    >
+                      <Trash className="w-4 h-4" /> Xóa
+                    </Button>
+                  </PermissionGuard>
                 ) : (
                   <Button
                     size="sm"
