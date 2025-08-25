@@ -1142,9 +1142,18 @@ const PastTrip = () => {
               ) : (
                 <h3 className="text-xl font-semibold">{title}</h3>
               )}
-              <span className={`${statusColor} font-medium`}>
-                {statusDisplay}
-              </span>
+              {(() => {
+                const statusInfo = getStatusDisplay(
+                  booking.status || "",
+                  booking.payment_status,
+                  new Date(booking.check_out_date)
+                );
+                return (
+                  <span className={`font-medium ${statusInfo.color}`}>
+                    {statusInfo.text}
+                  </span>
+                );
+              })()}
             </div>
 
             <div className="space-y-2 text-gray-600">
@@ -1160,15 +1169,20 @@ const PastTrip = () => {
                 {/* Giá phòng cơ bản */}
                 <div className="flex items-center gap-2">
                   <DollarSign size={18} />
-                  <span>Giá phòng: {(booking.total_price || 0).toLocaleString()}₫</span>
+                  <span>
+                    Giá phòng: {(booking.total_price || 0).toLocaleString()}₫
+                  </span>
                 </div>
 
                 {/* Dịch vụ đã thêm */}
-                {booking.selected_services && booking.selected_services.length > 0 && (
-                  <div className="flex items-center gap-2 ml-6">
-                    <span className="text-sm text-blue-600">• Dịch vụ đã thêm: {servicesTotal.toLocaleString()}₫</span>
-                  </div>
-                )}
+                {booking.selected_services &&
+                  booking.selected_services.length > 0 && (
+                    <div className="flex items-center gap-2 ml-6">
+                      <span className="text-sm text-blue-600">
+                        • Dịch vụ đã thêm: {servicesTotal.toLocaleString()}₫
+                      </span>
+                    </div>
+                  )}
 
                 {/* Tổng tiền cuối cùng */}
                 <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
@@ -1628,6 +1642,7 @@ const PastTrip = () => {
     checkOutDate?: Date
   ) => {
     const now = new Date(); // Local now for accurate comparison
+
     // Nếu status là CONFIRMED hoặc PAID và đã qua ngày checkout, coi là hoàn thành
     if (
       (status === BookingStatus.CONFIRMED ||
@@ -1640,6 +1655,29 @@ const PastTrip = () => {
         color: "text-green-600 bg-green-50 border-green-200",
       };
     }
+
+    // Kiểm tra trạng thái thanh toán kết hợp với trạng thái booking
+    if (status === BookingStatus.CONFIRMED) {
+      // Nếu đã xác nhận nhưng chưa thanh toán hoặc thanh toán thất bại
+      if (
+        paymentStatus === PaymentStatus.PENDING ||
+        paymentStatus === PaymentStatus.FAILED ||
+        paymentStatus === PaymentStatus.PARTIALLY_PAID
+      ) {
+        return {
+          text: "Đang chờ thanh toán",
+          color: "text-orange-600 bg-orange-50 border-orange-200",
+        };
+      }
+      // Nếu đã xác nhận và đã thanh toán
+      if (paymentStatus === PaymentStatus.PAID) {
+        return {
+          text: "Đã xác nhận",
+          color: "text-green-600 bg-green-50 border-green-200",
+        };
+      }
+    }
+
     switch (status) {
       case BookingStatus.COMPLETED:
         return {
