@@ -58,7 +58,7 @@ export function ChatWidget() {
       {/* Cửa sổ Chat */}
       <div
         className={cn(
-          "fixed bottom-20 right-4 w-full max-w-[600px] h-[700px] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col transition-all duration-300 ease-in-out z-40",
+          "fixed bottom-20 right-4 w-full max-w-[540px] h-[630px] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col transition-all duration-300 ease-in-out z-40",
           isOpen
             ? "opacity-100 translate-y-0 scale-100"
             : "opacity-0 translate-y-4 scale-95 pointer-events-none"
