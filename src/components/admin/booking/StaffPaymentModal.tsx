@@ -182,9 +182,9 @@ const StaffPaymentModal: React.FC<StaffPaymentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden">
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6">
-          <DialogHeader>
+      <DialogContent className="max-w-2xl p-0 overflow-hidden max-h-[90vh] sm:max-h-[85vh]">
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 overflow-y-auto max-h-[calc(90vh-2rem)] sm:max-h-[calc(85vh-2rem)] pb-8 scroll-smooth overscroll-contain [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
+          <DialogHeader className="bg-gradient-to-r from-green-50 to-blue-50 pt-0 pb-4">
             <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-green-700">
               <DollarSign className="w-7 h-7 text-green-600 animate-bounce" />
               Xác nhận thanh toán
