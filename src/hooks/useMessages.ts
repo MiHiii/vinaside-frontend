@@ -11,7 +11,9 @@ import {
   ConversationUpdateV2,
 } from "@/types/message";
 
-export const useMessages = () => {
+export const useMessages = (
+  userRole: "guest" | "staff" | "admin" = "guest"
+) => {
   const { user, token } = useAppSelector((state: RootState) => state.auth);
 
   // States
@@ -29,12 +31,14 @@ export const useMessages = () => {
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [readStatus, setReadStatus] = useState<{
+    [conversationId: string]: boolean;
+  }>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
 
-  const userRole = messageService.getUserRole();
   const myId = user?._id;
 
   // Quick reactions
@@ -47,18 +51,38 @@ export const useMessages = () => {
     { emoji: "😡", type: "angry" },
   ];
 
-  // Load conversations
+  // Load conversations based on user role
   const loadConversations = useCallback(async () => {
     try {
       setIsLoadingConversations(true);
-      const data = await messageService.getConversations(userRole);
+      console.log("🔄 [useMessages] Loading conversations for role:", userRole);
+      console.log("🔍 [useMessages] User from Redux:", user);
+      console.log("🔍 [useMessages] User role from Redux:", user?.role);
+
+      // Determine the correct ui_for parameter based on user role
+      let ui_for: "guest" | "staff" | "admin";
+
+      if (userRole === "admin") {
+        ui_for = "admin"; // Admin sees all conversations
+      } else if (userRole === "staff") {
+        ui_for = "staff"; // Staff sees assigned properties
+      } else {
+        ui_for = "guest"; // Guest sees only their conversations
+      }
+
+      console.log("📥 [useMessages] Calling API with ui_for:", ui_for);
+      console.log("📥 [useMessages] User role passed to hook:", userRole);
+      console.log("📥 [useMessages] Actual user role from Redux:", user?.role);
+
+      const data = await messageService.getConversations(ui_for);
+      console.log("✅ [useMessages] Loaded", data.length, "conversations");
       setConversations(data);
     } catch (error: any) {
-      console.error("Error loading conversations:", error);
+      console.error("❌ [useMessages] Error loading conversations:", error);
     } finally {
       setIsLoadingConversations(false);
     }
-  }, [userRole, token, myId]);
+  }, [userRole, token, myId, user]);
 
   // Select conversation and load messages
   const selectConversation = useCallback(
@@ -69,17 +93,70 @@ export const useMessages = () => {
         setHasMoreMessages(true);
         setIsLoading(true);
 
+        // Determine the correct ui_for parameter based on user role
+        let ui_for: "guest" | "staff" | "admin";
+
+        if (userRole === "admin") {
+          ui_for = "admin";
+        } else if (userRole === "staff") {
+          ui_for = "staff";
+        } else {
+          ui_for = "guest";
+        }
+
+        console.log(
+          "📨 [useMessages] Loading messages for conversation:",
+          conversation._id,
+          "with ui_for:",
+          ui_for
+        );
+
         const data = await messageService.getConversationMessages(
           conversation._id,
           50,
           1,
-          userRole
+          ui_for
         );
         // Don't reverse - keep messages in chronological order (oldest to newest)
         setMessages(data);
 
         // Mark as read
-        await messageService.markConversationAsRead(conversation._id);
+        try {
+          const readResponse = await messageService.markConversationAsRead(
+            conversation._id
+          );
+          if (readResponse.ok) {
+            setReadStatus((prev) => ({
+              ...prev,
+              [conversation._id]: true,
+            }));
+
+            // Update unread count in conversations list
+            setConversations((prev) =>
+              prev.map((conv) =>
+                conv._id === conversation._id
+                  ? {
+                      ...conv,
+                      display: {
+                        ...conv.display,
+                        unreadCount: 0,
+                      },
+                    }
+                  : conv
+              )
+            );
+
+            console.log(
+              "✅ [useMessages] Conversation marked as read:",
+              conversation._id
+            );
+          }
+        } catch (error) {
+          console.error(
+            "❌ [useMessages] Error marking conversation as read:",
+            error
+          );
+        }
 
         // Remove auto-scroll - let user control scroll position
         // setTimeout(() => {
@@ -88,7 +165,7 @@ export const useMessages = () => {
         //   }
         // }, 300);
       } catch (error: any) {
-        console.error("Error selecting conversation:", error);
+        console.error("❌ [useMessages] Error selecting conversation:", error);
       } finally {
         setIsLoading(false);
       }
@@ -98,17 +175,42 @@ export const useMessages = () => {
 
   // Send message
   const sendMessage = useCallback(async () => {
-    if (!messageInput.trim() || !selectedConversation || isSending) return;
+    if (!messageInput.trim() || !selectedConversation || isSending) {
+      console.log("🚫 [useMessages] Cannot send message:", {
+        hasContent: !!messageInput.trim(),
+        hasConversation: !!selectedConversation,
+        isSending,
+      });
+      return;
+    }
+
+    const content = messageInput.trim();
+    setMessageInput("");
+    setIsSending(true);
+
+    console.log("📤 [useMessages] Sending message:", content);
+    console.log("📤 [useMessages] To conversation:", selectedConversation._id);
 
     try {
-      setIsSending(true);
       const messageData: CreateMessageDto = {
         conversation_id: selectedConversation._id,
-        content: messageInput.trim(),
+        content: content,
         reply_to_message_id: replyingTo?._id,
       };
 
       const newMessage = await messageService.sendMessage(messageData);
+      console.log("✅ [useMessages] Message sent successfully:", newMessage);
+
+      // Check if message already exists to prevent duplicates (optimized)
+      const messageExists = messages.some((m) => m._id === newMessage._id);
+      if (messageExists) {
+        console.log(
+          "⚠️ [useMessages] Message already exists, skipping UI update"
+        );
+        setReplyingTo(null);
+        setIsSending(false);
+        return;
+      }
 
       // Convert MessageResponse to MessageWithUI for consistency
       const messageWithUI: MessageWithUI = {
@@ -122,8 +224,16 @@ export const useMessages = () => {
         },
       };
 
-      setMessages((prev) => [...prev, messageWithUI]);
-      setMessageInput("");
+      setMessages((prev) => {
+        // Check for duplicates before adding
+        const exists = prev.some((m) => m._id === messageWithUI._id);
+        if (exists) {
+          console.log("⚠️ [useMessages] Message already in state, not adding");
+          return prev;
+        }
+        return [...prev, messageWithUI];
+      });
+
       setReplyingTo(null);
 
       // Only auto-scroll when sending a new message with controlled timing
@@ -137,7 +247,9 @@ export const useMessages = () => {
         }
       }, 200);
     } catch (error: any) {
-      console.error("Error sending message:", error);
+      console.error("❌ [useMessages] Error sending message:", error);
+      // Restore message input on error
+      setMessageInput(content);
     } finally {
       setIsSending(false);
     }
@@ -148,6 +260,7 @@ export const useMessages = () => {
     isSending,
     userRole,
     user,
+    messages,
   ]);
 
   // Toggle reaction
@@ -332,12 +445,23 @@ export const useMessages = () => {
     try {
       setIsLoading(true);
 
+      // Determine the correct ui_for parameter based on user role
+      let ui_for: "guest" | "staff" | "admin";
+
+      if (userRole === "admin") {
+        ui_for = "admin";
+      } else if (userRole === "staff") {
+        ui_for = "staff";
+      } else {
+        ui_for = "guest";
+      }
+
       const currentPage = Math.ceil(messages.length / 50) + 1;
       const newMessages = await messageService.getConversationMessages(
         selectedConversation._id,
         50,
         currentPage,
-        userRole as "guest" | "staff"
+        ui_for
       );
 
       if (newMessages.length < 50) {
@@ -347,7 +471,7 @@ export const useMessages = () => {
       // Add new messages to the beginning (for pagination) - these are older messages
       setMessages((prev) => [...newMessages, ...prev]);
     } catch (error: any) {
-      console.error("Error loading more messages:", error);
+      console.error("❌ [useMessages] Error loading more messages:", error);
     } finally {
       setIsLoading(false);
     }
@@ -373,8 +497,8 @@ export const useMessages = () => {
     console.log("🔍 [useMessages] User ID:", myId);
     console.log("🔍 [useMessages] User role:", userRole);
 
-    // Connect to socket service
-    socketService.connect(token, myId);
+    // Connect to socket service with user role
+    socketService.connect(token, myId, userRole);
 
     // Note: Room joining is handled automatically by server based on auth token
     console.log("✅ [CHECKLIST] Socket connection setup complete");
@@ -385,6 +509,7 @@ export const useMessages = () => {
     // Setup event listeners
     const handleNewMessage = (message: MessageWithUI) => {
       console.log("✅ [CHECKLIST] UI update khi nhận new message");
+      console.log("📨 [useMessages] Full message object:", message);
       console.log(
         "📨 [useMessages] Received new message:",
         message._id,
@@ -393,7 +518,9 @@ export const useMessages = () => {
         "from sender:",
         message.sender_id,
         "current user:",
-        myId
+        myId,
+        "sender_role:",
+        (message as any).sender_role
       );
 
       // Update conversations list if message is for current user
@@ -404,6 +531,32 @@ export const useMessages = () => {
         );
 
         if (convIndex >= 0) {
+          // Determine if this message is from current user
+          const isFromCurrentUser = message.sender_id === myId;
+
+          // Get sender role from message
+          const senderRole =
+            (message as any).sender_role || message.ui_for || "guest";
+
+          // Create subtitle based on sender
+          let subtitle = "";
+          if (isFromCurrentUser) {
+            subtitle = `Bạn: ${message.content}`;
+          } else {
+            if (senderRole === "staff") {
+              subtitle = `Nhân viên: ${message.content}`;
+            } else if (senderRole === "admin") {
+              subtitle = `Admin: ${message.content}`;
+            } else {
+              subtitle = message.content;
+            }
+          }
+
+          // Only increment unread count if message is not from current user
+          const newUnreadCount = isFromCurrentUser
+            ? updated[convIndex].display.unreadCount || 0
+            : (updated[convIndex].display.unreadCount || 0) + 1;
+
           // Update existing conversation
           updated[convIndex] = {
             ...updated[convIndex],
@@ -411,16 +564,27 @@ export const useMessages = () => {
               _id: message._id,
               content: message.content,
               sender_id: message.sender_id,
-              sender_role: "guest" as const,
+              sender_role: senderRole,
               sent_at: message.sent_at,
               is_read: message.is_read,
             },
             messageCount: (updated[convIndex].messageCount || 0) + 1,
             display: {
               ...updated[convIndex].display,
-              unreadCount: (updated[convIndex].display.unreadCount || 0) + 1,
+              subtitle: subtitle,
+              unreadCount: newUnreadCount,
             },
           };
+
+          console.log("✅ [useMessages] Updated conversation in sidebar:", {
+            conversationId: message.conversation_id,
+            lastMessageContent: message.content,
+            senderRole: senderRole,
+            isFromCurrentUser: isFromCurrentUser,
+            subtitle: subtitle,
+            unreadCount: newUnreadCount,
+            messageId: message._id,
+          });
         } else {
           console.log(
             "🔄 [useMessages] Conversation not found, reloading conversations..."
@@ -428,7 +592,18 @@ export const useMessages = () => {
           loadConversations();
         }
 
-        return updated;
+        // Sort conversations by last message time (newest first)
+        const sorted = updated.sort((a, b) => {
+          const timeA = a.lastMessage?.sent_at
+            ? new Date(a.lastMessage.sent_at).getTime()
+            : 0;
+          const timeB = b.lastMessage?.sent_at
+            ? new Date(b.lastMessage.sent_at).getTime()
+            : 0;
+          return timeB - timeA;
+        });
+
+        return sorted;
       });
 
       // Update messages if conversation is selected
@@ -444,7 +619,19 @@ export const useMessages = () => {
             return prev;
           }
           console.log("➕ [useMessages] Adding new message to conversation");
-          return [...prev, message];
+
+          // Add message and sort by sent_at to maintain chronological order
+          const newMessages = [...prev, message].sort((a, b) => {
+            const dateA = new Date(a.sent_at).getTime();
+            const dateB = new Date(b.sent_at).getTime();
+            return dateA - dateB;
+          });
+
+          console.log(
+            "✅ [useMessages] Message added successfully, total messages:",
+            newMessages.length
+          );
+          return newMessages;
         });
       } else {
         console.log(
@@ -456,12 +643,82 @@ export const useMessages = () => {
 
     const handleConversationUpdate = (data: ConversationUpdateV2) => {
       console.log("💬 [useMessages] Received conversation update:", data);
-      // Reload conversations to get latest data
-      loadConversations();
+
+      // Update conversation directly in state for real-time updates
+      setConversations((prev) => {
+        const updated = [...prev];
+        const convIndex = updated.findIndex(
+          (c) => c._id === data.conversationId
+        );
+
+        if (convIndex >= 0) {
+          // Update existing conversation with new data
+          updated[convIndex] = {
+            ...updated[convIndex],
+            lastMessage: data.lastMessage
+              ? {
+                  _id: data.lastMessage._id || "",
+                  content: data.lastMessage.content || "",
+                  sender_id: data.lastMessage.sender_id || "",
+                  sender_role: data.lastMessage.sender_role || "guest",
+                  sent_at: data.lastMessage.sent_at || new Date().toISOString(),
+                  is_read: data.lastMessage.is_read || "sent",
+                }
+              : updated[convIndex].lastMessage,
+            display: {
+              ...updated[convIndex].display,
+              subtitle: data.lastMessage?.content
+                ? data.lastMessage.sender_role === "guest"
+                  ? `Bạn: ${data.lastMessage.content}`
+                  : data.lastMessage.sender_role === "staff"
+                  ? `Nhân viên: ${data.lastMessage.content}`
+                  : data.lastMessage.sender_role === "admin"
+                  ? `Admin: ${data.lastMessage.content}`
+                  : data.lastMessage.content
+                : updated[convIndex].display.subtitle,
+              unreadCount: data.unreadCount || 0,
+            },
+          };
+
+          console.log(
+            "✅ [useMessages] Updated conversation from conversation_update:",
+            {
+              conversationId: data.conversationId,
+              lastMessageContent: data.lastMessage?.content,
+              unreadCount: data.unreadCount,
+            }
+          );
+        } else {
+          console.log(
+            "🔄 [useMessages] Conversation not found in state, reloading conversations..."
+          );
+          // If conversation not found, reload all conversations
+          setTimeout(() => loadConversations(), 100);
+        }
+
+        // Sort conversations by last message time (newest first)
+        return updated.sort((a, b) => {
+          const timeA = a.lastMessage?.sent_at
+            ? new Date(a.lastMessage.sent_at).getTime()
+            : 0;
+          const timeB = b.lastMessage?.sent_at
+            ? new Date(b.lastMessage.sent_at).getTime()
+            : 0;
+          return timeB - timeA;
+        });
+      });
 
       // If this conversation is selected, reload messages
       if (selectedConversation?._id === data.conversationId) {
-        loadConversations(); // Changed from loadMessages to loadConversations
+        console.log(
+          "🔄 [useMessages] Reloading messages for selected conversation"
+        );
+        // Reload messages for the selected conversation
+        setTimeout(() => {
+          if (selectedConversation) {
+            selectConversation(selectedConversation);
+          }
+        }, 100);
       }
     };
 
@@ -523,10 +780,34 @@ export const useMessages = () => {
       }
     };
 
+    // Handle conversation list update from Backend
+    const handleConversationListUpdate = (data: any) => {
+      console.log("📋 [useMessages] Received conversation list update:", data);
+
+      if (data.conversations && Array.isArray(data.conversations)) {
+        console.log(
+          "✅ [useMessages] Updating conversations list with",
+          data.conversations.length,
+          "conversations"
+        );
+
+        // Update conversations list with new data from Backend
+        setConversations(data.conversations);
+
+        console.log("✅ [useMessages] Conversations list updated successfully");
+      } else {
+        console.log(
+          "⚠️ [useMessages] Invalid conversation_list_update data, reloading conversations"
+        );
+        loadConversations();
+      }
+    };
+
     // Register event listeners
     console.log("📝 [useMessages] Registering socket event listeners...");
     socketService.onNewMessage(handleNewMessage);
     socketService.onConversationUpdate(handleConversationUpdate);
+    socketService.onConversationListUpdate(handleConversationListUpdate);
     socketService.onReactionUpdate(handleReactionUpdate);
     socketService.onMessageRecall(handleMessageRecall);
 
@@ -543,6 +824,12 @@ export const useMessages = () => {
   // Initialize and load conversations
   useEffect(() => {
     if (token && user) {
+      console.log(
+        "🚀 [useMessages] Initializing conversations for user:",
+        user.name,
+        "role:",
+        userRole
+      );
       loadConversations();
     }
   }, [loadConversations, token, user]);
@@ -554,19 +841,19 @@ export const useMessages = () => {
         "🔄 [useMessages] Force reconnecting socket due to token change"
       );
       // Force reconnect to ensure fresh connection with new token
-      socketService.forceReconnect(token, myId);
+      socketService.forceReconnect(token, myId, userRole);
     }
-  }, [token, myId]);
+  }, [token, myId, userRole]);
 
   // Ensure socket connection on mount
   useEffect(() => {
     if (token && myId && !socketService.isConnected()) {
       console.log("🔌 [useMessages] Socket not connected, connecting...");
-      socketService.connect(token, myId);
+      socketService.connect(token, myId, userRole);
     } else if (token && myId && socketService.isConnected()) {
       console.log("✅ [useMessages] Socket already connected");
     }
-  }, [token, myId]);
+  }, [token, myId, userRole]);
 
   // Debug: Log socket status periodically
   useEffect(() => {
@@ -592,11 +879,22 @@ export const useMessages = () => {
 
     const pollInterval = setInterval(async () => {
       try {
+        // Determine the correct ui_for parameter based on user role
+        let ui_for: "guest" | "staff" | "admin";
+
+        if (userRole === "admin") {
+          ui_for = "admin";
+        } else if (userRole === "staff") {
+          ui_for = "staff";
+        } else {
+          ui_for = "guest";
+        }
+
         const latestMessages = await messageService.getConversationMessages(
           selectedConversation._id,
           50,
           1,
-          userRole
+          ui_for
         );
 
         // Check if there are new messages
@@ -656,6 +954,7 @@ export const useMessages = () => {
     messagesEndRef,
     textareaRef,
     topSentinelRef,
+    readStatus,
 
     // Actions
     loadConversations,

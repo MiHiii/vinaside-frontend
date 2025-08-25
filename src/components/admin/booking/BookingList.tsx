@@ -302,17 +302,17 @@ const BookingList: React.FC = () => {
 
   return (
     <div className="p-0">
-      <div className="max-w-[1580px] mx-auto">
+      <div className="max-w-full mx-auto">
         {/* Filter Section */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="flex items-center gap-4 mb-4">
             <Search className="h-5 w-5 text-gray-600" />
             <h3 className="text-lg font-medium text-gray-900">Bộ lọc</h3>
           </div>
 
-          <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-start sm:items-center">
             {/* Property Filter */}
-            <div>
+            <div className="w-full sm:w-auto min-w-0">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Homestay
               </label>
@@ -325,7 +325,7 @@ const BookingList: React.FC = () => {
                 onChange={(e) =>
                   applyImmediateFiltersChange({ propertyId: e.target.value })
                 }
-                className="max-w-2xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto min-w-[200px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả homestay</option>
                 {properties.map((property) => (
@@ -337,7 +337,7 @@ const BookingList: React.FC = () => {
             </div>
 
             {/* Status Filter */}
-            <div>
+            <div className="w-full sm:w-auto min-w-0">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Trạng thái
               </label>
@@ -350,7 +350,7 @@ const BookingList: React.FC = () => {
                 onChange={(e) =>
                   applyImmediateFiltersChange({ status: e.target.value })
                 }
-                className="max-w-4xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto min-w-[180px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả trạng thái</option>
                 <option value="pending">Chờ xác nhận</option>
@@ -362,7 +362,7 @@ const BookingList: React.FC = () => {
             </div>
 
             {/* Payment Status Filter */}
-            <div>
+            <div className="w-full sm:w-auto min-w-0">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Trạng thái thanh toán
               </label>
@@ -375,7 +375,7 @@ const BookingList: React.FC = () => {
                 onChange={(e) =>
                   applyImmediateFiltersChange({ paymentStatus: e.target.value })
                 }
-                className="max-w-2xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto min-w-[180px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả</option>
                 <option value="unpaid">Chưa thanh toán</option>
@@ -388,7 +388,7 @@ const BookingList: React.FC = () => {
             </div>
 
             {/* Keyword */}
-            <div>
+            <div className="w-full sm:w-auto min-w-0 flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Từ khóa
               </label>
@@ -406,11 +406,11 @@ const BookingList: React.FC = () => {
                     keyword: e.target.value,
                   })
                 }
-                className="max-w-2xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             {/* Clear Filters */}
-            <div className="mt-7 flex items-center gap-2">
+            <div className="w-full sm:w-auto flex items-center gap-2 mt-2 sm:mt-7">
               <Button
                 onClick={applySearch}
                 variant="outline"
@@ -442,11 +442,11 @@ const BookingList: React.FC = () => {
 
         {/* Table Section */}
         <div className="bg-white rounded-2xl border border-white/20 shadow-xl overflow-hidden">
-          <div className="p-6 border-b border-gray-200/50">
-            <div className="flex items-center justify-between gap-3">
+          <div className="p-4 sm:p-6 border-b border-gray-200/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-1 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full"></div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   Danh sách Booking
                 </h2>
               </div>
@@ -486,53 +486,54 @@ const BookingList: React.FC = () => {
                 }}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                className="flex items-center gap-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 w-full sm:w-auto"
                 title="Xuất CSV"
               >
                 <Download className="w-4 h-4" />
-                Xuất báo cáo
+                <span className="hidden sm:inline">Xuất báo cáo</span>
+                <span className="sm:hidden">Xuất CSV</span>
               </Button>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <Table className="border-none">
+            <Table className="border-none min-w-[1200px]">
               <TableHeader>
                 <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-none">
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-12">
                     STT
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-32">
                     Khách hàng
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-32">
                     Phòng
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-32">
                     HomeStay
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-24">
                     Ngày vào
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-24">
                     Ngày ra
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-16">
                     Khách
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-24">
                     Trạng thái
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-24">
                     Thanh toán
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-24">
                     Phương thức
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-24">
                     Tổng tiền
                   </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-2">
+                  <TableHead className="text-center font-semibold text-gray-700 py-2 px-1 sm:px-2 w-20">
                     Thao tác
                   </TableHead>
                 </TableRow>
@@ -618,30 +619,30 @@ const BookingList: React.FC = () => {
 
                     return (
                       <TableRow key={b._id} className={rowClassName}>
-                        <TableCell className="text-center py-2 px-2">
-                          <div className="">
+                        <TableCell className="text-center py-2 px-1 sm:px-2">
+                          <div className="text-xs sm:text-sm">
                             {(currentPage - 1) * itemsPerPage + idx + 1}
                           </div>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
                             <div className="">
                               <div className="flex items-center">
-                                <div className="w-8 h-8 flex items-center justify-center">
-                                  <Users className="w-5 h-5 text-gray-600" />
+                                <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
+                                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                                 </div>
-                                <div>
-                                  <div className="font-semibold text-gray-900 hover:text-gray-500 transition-colors">
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold text-gray-900 hover:text-gray-500 transition-colors text-xs sm:text-sm truncate">
                                     {guestName}
                                   </div>
-                                  <div className="text-sm text-gray-500">
+                                  <div className="text-xs text-gray-500 truncate">
                                     {guestEmail}
                                   </div>
                                   {b.guest_phone && (
-                                    <div className="text-xs text-gray-400">
+                                    <div className="text-xs text-gray-400 truncate">
                                       {b.guest_phone}
                                     </div>
                                   )}
@@ -650,42 +651,42 @@ const BookingList: React.FC = () => {
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
-                              <div className="font-medium text-gray-900 truncate max-w-[140px]">
+                            <div className="p-1 sm:p-2">
+                              <div className="font-medium text-gray-900 truncate text-xs sm:text-sm max-w-[120px] sm:max-w-[140px]">
                                 {roomName}
                               </div>
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
-                              <div className="flex items-center gap-2">
-                                <Building2 className="w-4 h-4 text-gray-600" />
-                                <span className="font-medium text-gray-900">
+                            <div className="p-1 sm:p-2">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 flex-shrink-0" />
+                                <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">
                                   {propertyName}
                                 </span>
                               </div>
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-gray-600" />
-                                <span className="font-medium text-gray-900">
+                            <div className="p-1 sm:p-2">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 flex-shrink-0" />
+                                <span className="font-medium text-gray-900 text-xs sm:text-sm">
                                   {new Date(b.checkInDate).toLocaleDateString(
                                     "vi-VN"
                                   )}
@@ -694,15 +695,15 @@ const BookingList: React.FC = () => {
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-gray-600" />
-                                <span className="font-medium text-gray-900">
+                            <div className="p-1 sm:p-2">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 flex-shrink-0" />
+                                <span className="font-medium text-gray-900 text-xs sm:text-sm">
                                   {new Date(
                                     b.check_out_date
                                   ).toLocaleDateString("vi-VN")}
@@ -711,58 +712,58 @@ const BookingList: React.FC = () => {
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
-                              <div className="flex items-center gap-2">
-                                <Users className="w-4 h-4 text-gray-600" />
-                                <span className="font-medium text-gray-900">
+                            <div className="p-1 sm:p-2">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 flex-shrink-0" />
+                                <span className="font-medium text-gray-900 text-xs sm:text-sm">
                                   {b.guests}
                                 </span>
                               </div>
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
+                            <div className="p-1 sm:p-2">
                               <Badge
-                                className={`${bookingStatus.color} font-medium`}
+                                className={`${bookingStatus.color} font-medium text-xs`}
                               >
                                 {bookingStatus.label}
                               </Badge>
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
+                            <div className="p-1 sm:p-2">
                               <Badge
-                                className={`${paymentStatus.color} font-medium`}
+                                className={`${paymentStatus.color} font-medium text-xs`}
                               >
                                 {paymentStatus.label}
                               </Badge>
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
-                              <div className="flex items-center gap-2">
-                                <CreditCard className="w-4 h-4 text-gray-600" />
-                                <span className="font-medium text-gray-900">
+                            <div className="p-1 sm:p-2">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 flex-shrink-0" />
+                                <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">
                                   {(
                                     b.payment_method as string
                                   )?.toUpperCase() || "N/A"}
@@ -771,20 +772,20 @@ const BookingList: React.FC = () => {
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
                           <Link
                             to={`/admin/bookings/${propertyId}/${b._id}`}
                             className="block group"
                           >
-                            <div className="p-2">
-                              <div className="font-bold text-gray-700 text-sm">
+                            <div className="p-1 sm:p-2">
+                              <div className="font-bold text-gray-700 text-xs sm:text-sm">
                                 {(b.final_amount || 0).toLocaleString()}₫
                               </div>
                             </div>
                           </Link>
                         </TableCell>
-                        <TableCell className="py-2 px-2">
-                          <div className="p-2">
+                        <TableCell className="py-2 px-1 sm:px-2">
+                          <div className="p-1 sm:p-2">
                             <BookingActions
                               booking={b}
                               propertyId={propertyId}
@@ -823,8 +824,8 @@ const BookingList: React.FC = () => {
 
           {/* Pagination */}
           {totalPages > 0 && allBookings.length > 0 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200/50">
-              <div className="text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200/50 gap-3">
+              <div className="text-sm text-gray-600 text-center sm:text-left">
                 Hiển thị {startItem} đến {endItem} trong tổng số {adminTotal}{" "}
                 booking
                 {totalPages > 1 && ` (Trang ${currentPage} / ${totalPages})`}
