@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,17 +50,14 @@ import {
   CheckCircle,
   ChevronDown,
   RefreshCw,
-
- 
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { api } from '@/services/api';
-import { format } from 'date-fns';
-import BookingCalendar from '@/components/roomdetail/BookingCalendar';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from '@/constants/service';
-import { buildBookingGuards } from '@/utils/dateUtils';
-
+} from "lucide-react";
+import { toast } from "sonner";
+import { api } from "@/services/api";
+import { format } from "date-fns";
+import BookingCalendar from "@/components/roomdetail/BookingCalendar";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from "@/constants/service";
+import { buildBookingGuards } from "@/utils/dateUtils";
 
 interface Property {
   _id: string;
@@ -324,9 +320,10 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
       }, 0);
 
       // Calculate additional costs - chỉ tính khi booking chưa hoàn thành hoặc chưa hủy
-      const additionalCosts = (formData.status !== 'completed' && formData.status !== 'cancelled') 
-        ? (formData.additionalCost || 0) 
-        : 0;
+      const additionalCosts =
+        formData.status !== "completed" && formData.status !== "cancelled"
+          ? formData.additionalCost || 0
+          : 0;
 
       // Calculate subtotal before voucher discount
       const subtotalBeforeDiscount =
@@ -787,16 +784,30 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
           delete payload.guestId;
         }
 
-        // CRITICAL FIX: Set create_payment_url EARLY if VNPay is selected
+        // CRITICAL FIX: Set create_payment_url EARLY if VNPay is selected AND cần thanh toán ngay
         console.log("🎯 === PAYMENT METHOD CHECK ===");
         console.log("formData.payment_method:", formData.payment_method);
-        if (formData.payment_method === "vnpay") {
+        console.log("formData.payment_status:", formData.payment_status);
+
+        if (
+          formData.payment_method === "vnpay" &&
+          (formData.payment_status === "paid" ||
+            formData.payment_status === "partially_paid")
+        ) {
           payload.create_payment_url = true;
           console.log(
-            "✅ DEBUG: Early set create_payment_url = true for VNPay"
+            "✅ DEBUG: Early set create_payment_url = true for VNPay (immediate payment)"
+          );
+        } else if (
+          formData.payment_method === "vnpay" &&
+          formData.payment_status === "unpaid"
+        ) {
+          payload.create_payment_url = false;
+          console.log(
+            "✅ DEBUG: VNPay selected but unpaid - NO payment URL needed"
           );
         } else {
-          console.log("❌ Not VNPay, payment_method:", formData.payment_method);
+          console.log("❌ Not VNPay or no immediate payment needed");
         }
 
         // Xóa các field rỗng để tránh validation issues
@@ -2420,13 +2431,19 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             0
                           );
 
-
                           // Chỉ tính chi phí phát sinh khi booking chưa hoàn thành hoặc chưa hủy
-                          const additionalCost = (formData.status !== 'completed' && formData.status !== 'cancelled') 
-                            ? (formData.additionalCost || 0) 
-                            : 0;
-                          const subtotal = basePrice + weekendSurcharge + servicesTotal + additionalCost;
-                          const discountAmount = subtotal * (selectedVoucher.discount_percent / 100);
+                          const additionalCost =
+                            formData.status !== "completed" &&
+                            formData.status !== "cancelled"
+                              ? formData.additionalCost || 0
+                              : 0;
+                          const subtotal =
+                            basePrice +
+                            weekendSurcharge +
+                            servicesTotal +
+                            additionalCost;
+                          const discountAmount =
+                            subtotal * (selectedVoucher.discount_percent / 100);
                           return (
                             <div className="flex justify-between items-center py-2">
                               <span className="text-gray-600">
@@ -2440,22 +2457,26 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                           );
                         })()}
 
-
                       {/* Chi phí phát sinh - chỉ hiển thị khi booking chưa hoàn thành hoặc chưa hủy */}
-                      {formData.status !== 'completed' && formData.status !== 'cancelled' && (
-                        <div className='flex justify-between items-center py-2'>
-                          <div>
-                            <span className='text-gray-600'>Chi phí phát sinh</span>
-                            {formData.additionalCostReason && (
-                              <div className='text-xs text-gray-500 mt-1'>({formData.additionalCostReason})</div>
-                            )}
+                      {formData.status !== "completed" &&
+                        formData.status !== "cancelled" && (
+                          <div className="flex justify-between items-center py-2">
+                            <div>
+                              <span className="text-gray-600">
+                                Chi phí phát sinh
+                              </span>
+                              {formData.additionalCostReason && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  ({formData.additionalCostReason})
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-medium text-orange-600">
+                              {formData.additionalCost > 0 ? "+" : ""}
+                              {(formData.additionalCost || 0).toLocaleString()}₫
+                            </span>
                           </div>
-                          <span className='font-medium text-orange-600'>
-                            {formData.additionalCost > 0 ? '+' : ''}
-                            {(formData.additionalCost || 0).toLocaleString()}₫
-                          </span>
-                        </div>
-                      )}
+                        )}
 
                       {/* Phân cách */}
                       <div className="border-t border-gray-200 pt-3 mt-3">
@@ -2504,13 +2525,17 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             0
                           );
 
-
                           // Chỉ tính chi phí phát sinh khi booking chưa hoàn thành hoặc chưa hủy
-                          const additionalCost = (formData.status !== 'completed' && formData.status !== 'cancelled') 
-                            ? (formData.additionalCost || 0) 
-                            : 0;
-                          const subtotal = basePrice + weekendSurcharge + servicesTotal + additionalCost;
-
+                          const additionalCost =
+                            formData.status !== "completed" &&
+                            formData.status !== "cancelled"
+                              ? formData.additionalCost || 0
+                              : 0;
+                          const subtotal =
+                            basePrice +
+                            weekendSurcharge +
+                            servicesTotal +
+                            additionalCost;
 
                           const selectedVoucher = validVouchers.find(
                             (v) => v.code === formData.voucherCode
@@ -2608,13 +2633,15 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                           Đã xác nhận
                         </SelectItem>
                         <SelectItem
-                          value='completed'
-                          className='rounded-lg py-3 px-4 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-800'>
+                          value="completed"
+                          className="rounded-lg py-3 px-4 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-800"
+                        >
                           Đã hoàn thành
                         </SelectItem>
                         <SelectItem
-                          value='cancelled'
-                          className='rounded-lg py-3 px-4 hover:bg-red-50 hover:text-red-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-red-100 data-[state=checked]:text-red-800'>
+                          value="cancelled"
+                          className="rounded-lg py-3 px-4 hover:bg-red-50 hover:text-red-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-red-100 data-[state=checked]:text-red-800"
+                        >
                           Đã hủy
                         </SelectItem>
                       </SelectContent>
@@ -2716,64 +2743,66 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                 </div>
 
                 {/* VNPay Payment Notice */}
-                {formData.payment_method === "vnpay" && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <DollarSign className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-blue-800 mb-2">
-                          Thanh toán VNPay
-                        </h4>
-                        <p className="text-sm text-blue-700 mb-3">
-                          Khi tạo booking, bạn sẽ được tự động chuyển hướng đến
-                          trang thanh toán VNPay để hoàn tất giao dịch.
-                        </p>
-                        <div className="bg-blue-100 rounded-lg p-3">
-                          <div className="text-xs text-blue-600 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                              <span>
-                                Loại thanh toán:{" "}
-                                <strong>
-                                  {formData.payment_status === "paid"
-                                    ? "Toàn bộ"
-                                    : formData.payment_status ===
-                                      "partially_paid"
-                                    ? "Một phần (50%)"
-                                    : "Toàn bộ"}
-                                </strong>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                              <span>
-                                Số tiền:{" "}
-                                <strong>
-                                  {formData.payment_status === "partially_paid"
-                                    ? Math.round(
-                                        (calculatedPrice || 0) * 0.5
-                                      ).toLocaleString()
-                                    : (
-                                        calculatedPrice || 0
-                                      ).toLocaleString()}{" "}
-                                  VND
-                                </strong>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                              <span>
-                                Chuyển hướng tự động sau khi tạo booking
-                              </span>
+                {formData.payment_method === "vnpay" &&
+                  formData.payment_status !== "unpaid" && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <DollarSign className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-blue-800 mb-2">
+                            Thanh toán VNPay
+                          </h4>
+                          <p className="text-sm text-blue-700 mb-3">
+                            Khi tạo booking, bạn sẽ được tự động chuyển hướng
+                            đến trang thanh toán VNPay để hoàn tất giao dịch.
+                          </p>
+                          <div className="bg-blue-100 rounded-lg p-3">
+                            <div className="text-xs text-blue-600 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                <span>
+                                  Loại thanh toán:{" "}
+                                  <strong>
+                                    {formData.payment_status === "paid"
+                                      ? "Toàn bộ"
+                                      : formData.payment_status ===
+                                        "partially_paid"
+                                      ? "Một phần (50%)"
+                                      : "Toàn bộ"}
+                                  </strong>
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                <span>
+                                  Số tiền:{" "}
+                                  <strong>
+                                    {formData.payment_status ===
+                                    "partially_paid"
+                                      ? Math.round(
+                                          (calculatedPrice || 0) * 0.5
+                                        ).toLocaleString()
+                                      : (
+                                          calculatedPrice || 0
+                                        ).toLocaleString()}{" "}
+                                    VND
+                                  </strong>
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                <span>
+                                  Chuyển hướng tự động sau khi tạo booking
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* <div className="space-y-2">
                 <Label htmlFor="note" className="text-sm font-medium text-gray-700">
@@ -2819,7 +2848,8 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                 }}
                 disabled={loading}
                 className={`h-14 px-10 font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-base flex items-center gap-3 ${
-                  formData.payment_method === "vnpay"
+                  formData.payment_method === "vnpay" &&
+                  formData.payment_status !== "unpaid"
                     ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
                     : "bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white"
                 }`}
@@ -2828,7 +2858,8 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
                     <span>
-                      {formData.payment_method === "vnpay"
+                      {formData.payment_method === "vnpay" &&
+                      formData.payment_status !== "unpaid"
                         ? "Đang tạo & chuyển VNPay..."
                         : "Đang tạo..."}
                     </span>
@@ -2836,14 +2867,16 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                 ) : (
                   <>
                     <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                      {formData.payment_method === "vnpay" ? (
+                      {formData.payment_method === "vnpay" &&
+                      formData.payment_status !== "unpaid" ? (
                         <DollarSign className="w-3 h-3 text-white" />
                       ) : (
                         <CheckCircle className="w-3 h-3 text-white" />
                       )}
                     </div>
                     <span>
-                      {formData.payment_method === "vnpay"
+                      {formData.payment_method === "vnpay" &&
+                      formData.payment_status !== "unpaid"
                         ? "Tạo Booking & Thanh toán VNPay"
                         : "Tạo Booking"}
                     </span>
