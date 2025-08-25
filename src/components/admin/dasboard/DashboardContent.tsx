@@ -492,8 +492,7 @@ export default function DashboardContent() {
                         </div>
                         <div>
                           <p className="font-medium text-sm">
-                            {voucher.voucherCode}: {voucher.totalDiscount}%
-                            discount
+                            {voucher.voucherCode}
                           </p>
                           <p className="text-xs text-gray-500">
                             {voucher.usageCount} lần sử dụng
@@ -502,7 +501,10 @@ export default function DashboardContent() {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-sm text-purple-600">
-                          {voucher.totalDiscount}%
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(voucher.totalDiscount)}
                         </p>
                       </div>
                     </div>
