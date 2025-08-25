@@ -59,12 +59,44 @@ export const createUser = createAsyncThunk(
 export const updateUser = createAsyncThunk(
   "users/update",
   async (
-    { id, userData }: { id: string; userData: Partial<User> },
-    { dispatch }
+    { id, userData }: { id: string; userData: Partial<User> }
   ) => {
-    await api.patch(`/users/${id}`, userData);
-    dispatch(fetchUsers({}));
-    return { id, ...userData };
+    console.log('=== UPDATE USER THUNK ===');
+    console.log('Sending update request:', { id, userData });
+    
+    const response = await api.patch(`/users/${id}`, userData);
+    console.log('API response:', response.data);
+    console.log('API response.data:', response.data?.data);
+    console.log('API response.data.data:', response.data?.data?.data);
+    
+    // Backend trả về: { data: { data: user } } - có 2 lớp data!
+    let updatedUser;
+    if (response.data?.data?.data) {
+      // Cấu trúc: response.data.data.data (user object)
+      updatedUser = response.data.data.data;
+    } else if (response.data?.data) {
+      // Cấu trúc: response.data.data (user object)
+      updatedUser = response.data.data;
+    } else {
+      // Fallback: sử dụng data đã gửi
+      updatedUser = { id, ...userData };
+    }
+    
+    // Đảm bảo có _id để tìm user trong state
+    if (!updatedUser._id && updatedUser.id) {
+      updatedUser._id = updatedUser.id;
+    }
+    
+    // Nếu vẫn không có _id, sử dụng id từ parameter
+    if (!updatedUser._id) {
+      updatedUser._id = id;
+    }
+    
+    console.log('Final updatedUser to return:', updatedUser);
+    console.log('=== END UPDATE USER THUNK ===');
+    
+    // Không gọi fetchUsers ngay lập tức, để state được cập nhật trước
+    return updatedUser;
   }
 );
 
@@ -254,12 +286,90 @@ const userSlice = createSlice({
         state.staffLoading = false;
         state.staffError = action.payload as string;
       })
-      // fetchUserRoles
-      .addCase(fetchUserRoles.fulfilled, (state, action) => {
-        state.userRoles[action.payload.userId] = action.payload.roles;
-      });
-    // createUser, updateUser, deleteUser: chỉ refetch users, không cần update state trực tiếp
-  },
+             // fetchUserRoles
+       .addCase(fetchUserRoles.fulfilled, (state, action) => {
+         state.userRoles[action.payload.userId] = action.payload.roles;
+       })
+       
+       // createUser
+       .addCase(createUser.pending, (state) => {
+         state.loading = true;
+       })
+       .addCase(createUser.fulfilled, (state) => {
+         state.loading = false;
+       })
+       .addCase(createUser.rejected, (state, action) => {
+         state.loading = false;
+         state.error = action.payload as string || "Lỗi tạo user";
+       })
+       
+       // updateUser
+       .addCase(updateUser.pending, (state) => {
+         state.loading = true;
+       })
+       .addCase(updateUser.fulfilled, (state, action) => {
+         state.loading = false;
+         // Cập nhật user trong state
+         const updatedUser = action.payload;
+         console.log('=== UPDATE USER STATE ===');
+         console.log('UpdatedUser payload:', updatedUser);
+         
+         // Tìm user theo _id
+         const index = state.users.findIndex(user => user._id === updatedUser._id);
+         
+         if (index !== -1) {
+           console.log('Found user at index:', index);
+           console.log('Current user before update:', { ...state.users[index] });
+           
+           // Cập nhật từng trường một cách rõ ràng
+           if (updatedUser.name !== undefined) {
+             console.log('Updating name from', state.users[index].name, 'to', updatedUser.name);
+             state.users[index].name = updatedUser.name;
+           }
+           if (updatedUser.email !== undefined) {
+             console.log('Updating email from', state.users[index].email, 'to', updatedUser.email);
+             state.users[index].email = updatedUser.email;
+           }
+           if (updatedUser.phone !== undefined) {
+             console.log('Updating phone from', state.users[index].phone, 'to', updatedUser.phone);
+             state.users[index].phone = updatedUser.phone;
+           }
+           if (updatedUser.avatar_url !== undefined) {
+             console.log('Updating avatar_url from', state.users[index].avatar_url, 'to', updatedUser.avatar_url);
+             state.users[index].avatar_url = updatedUser.avatar_url;
+           }
+           if (updatedUser.customRoles !== undefined) {
+             console.log('Updating customRoles from', state.users[index].customRoles, 'to', updatedUser.customRoles);
+             state.users[index].customRoles = updatedUser.customRoles;
+           }
+           
+           console.log('User after update:', { ...state.users[index] });
+           console.log('=== END UPDATE USER STATE ===');
+         } else {
+           console.log('User not found in state for update');
+           console.log('Available user IDs:', state.users.map(u => u._id));
+           console.log('Looking for ID:', updatedUser._id);
+         }
+       })
+       .addCase(updateUser.rejected, (state, action) => {
+         state.loading = false;
+         state.error = action.payload as string || "Lỗi cập nhật user";
+       })
+       
+       // deleteUser
+       .addCase(deleteUser.pending, (state) => {
+         state.loading = true;
+       })
+       .addCase(deleteUser.fulfilled, (state, action) => {
+         state.loading = false;
+         // Xóa user khỏi state
+         state.users = state.users.filter(user => user._id !== action.payload);
+       })
+       .addCase(deleteUser.rejected, (state, action) => {
+         state.loading = false;
+         state.error = action.payload as string || "Lỗi xóa user";
+       });
+   },
 });
 
 export default userSlice.reducer;

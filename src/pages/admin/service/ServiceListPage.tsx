@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import ServiceFormModal from '@/components/admin/service/ServiceFormModal';
 import ServiceDetailModal from '@/components/admin/service/ServiceDetailModal';
 import { CreateServiceDto } from '@/types/services';
+import { PermissionGuard } from '@/components/common/PermissionGuard';
 
 const ServiceListPage = () => {
   const {
@@ -129,13 +130,15 @@ const ServiceListPage = () => {
     <div>
       <div className='flex justify-between items-center mb-4'>
         <h2 className='text-2xl font-bold'>Quản lý dịch vụ</h2>
-        <Button
-          onClick={() => {
-            setEditId(null);
-            setShowForm(true);
-          }}>
-          Tạo dịch vụ mới
-        </Button>
+        <PermissionGuard permission='service.create'>
+          <Button
+            onClick={() => {
+              setEditId(null);
+              setShowForm(true);
+            }}>
+            Tạo dịch vụ mới
+          </Button>
+        </PermissionGuard>
       </div>
       {/* Bộ lọc */}
       <div className='bg-white rounded-lg shadow p-4 mb-4 flex flex-col md:flex-row gap-4 md:gap-7 items-center w-full'>

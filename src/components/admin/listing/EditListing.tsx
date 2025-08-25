@@ -31,42 +31,31 @@ import { Property } from "@/types/property";
 import { z } from "zod";
 
 const listingSchema = z.object({
-  title: z.string().min(1, "Tiêu đề là bắt buộc"),
+  title: z.string().min(1, "Tiêu đề là bắt buộc").max(255, "Tiêu đề không được vượt quá 255 ký tự"),
+  description: z.string().min(1, "Mô tả là bắt buộc").max(255, "Mô tả không được vượt quá 255 ký tự"),
   propertyId: z.string().min(1, "Phải chọn bất động sản"),
   price_per_night: z.preprocess(
     (val) => Number(val),
     z
       .number()
       .min(10000, "Giá/đêm phải từ 10.000 VNĐ")
-      .max(5000000, "Giá/đêm không được vượt quá 5.000.000 VNĐ")
+      .max(10000000, "Giá/đêm không được vượt quá 10.000.000 VNĐ")
   ),
   guests: z.preprocess(
     (val) => Number(val),
-    z
-      .number()
-      .min(1, "Số khách phải từ 1")
-      .max(20, "Số khách không được vượt quá 20")
+    z.number().min(1, "Số khách phải lớn hơn hoặc bằng 1").max(10, "Số khách không được vượt quá 10")
   ),
   max_guests: z.preprocess(
     (val) => Number(val),
-    z
-      .number()
-      .min(1, "Số khách tối đa phải từ 1")
-      .max(50, "Số khách tối đa không được vượt quá 50")
+    z.number().min(1, "Số khách tối đa phải lớn hơn hoặc bằng 1").max(10, "Số khách tối đa không được vượt quá 10")
   ),
   beds: z.preprocess(
     (val) => Number(val),
-    z
-      .number()
-      .min(1, "Số giường phải từ 1")
-      .max(20, "Số giường không được vượt quá 20")
+    z.number().min(1, "Số giường phải lớn hơn hoặc bằng 1").max(5, "Số giường không được vượt quá 5")
   ),
   bathrooms: z.preprocess(
     (val) => Number(val),
-    z
-      .number()
-      .min(1, "Số phòng tắm phải từ 1")
-      .max(10, "Số phòng tắm không được vượt quá 10")
+    z.number().min(1, "Số phòng tắm phải lớn hơn hoặc bằng 1").max(3, "Số phòng tắm không được vượt quá 3")
   ),
   status: z.string().min(1, "Trạng thái là bắt buộc"),
   cancel_policy: z.string().min(1, "Chính sách hủy là bắt buộc"),
@@ -100,7 +89,7 @@ export default function EditListing() {
     (state) => state.safetyFeature.safetyFeatures
   );
   const houseRules = useAppSelector((state) => state.houseRule.houseRules);
-  const vouchers = useAppSelector((state) => state.voucher.vouchers);
+  // const vouchers = useAppSelector((state) => state.voucher.vouchers);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -158,10 +147,10 @@ export default function EditListing() {
       if (isNaN(numValue) || numValue < 0) return; // Không cho phép số âm hoặc NaN
 
       // Validation cho từng trường cụ thể
-      if (name === "guests" && (numValue < 1 || numValue > 20)) return;
-      if (name === "max_guests" && (numValue < 1 || numValue > 50)) return;
-      if (name === "beds" && (numValue < 1 || numValue > 20)) return;
-      if (name === "bathrooms" && (numValue < 1 || numValue > 10)) return;
+      if (name === "guests" && (numValue < 1 || numValue > 10)) return;
+      if (name === "max_guests" && (numValue < 1 || numValue > 10)) return;
+      if (name === "beds" && (numValue < 1 || numValue > 5)) return;
+      if (name === "bathrooms" && (numValue < 1 || numValue > 3)) return;
     }
 
     setForm((prev) => {
@@ -200,9 +189,9 @@ export default function EditListing() {
   const handleHouseRulesChange = (ids: string[]) => {
     setForm((prev) => (prev ? { ...prev, house_rules_selected: ids } : prev));
   };
-  const handleVouchersChange = (ids: string[]) => {
-    setForm((prev) => (prev ? { ...prev, voucher_ids: ids } : prev));
-  };
+  // const handleVouchersChange = (ids: string[]) => {
+  //   setForm((prev) => (prev ? { ...prev, voucher_ids: ids } : prev));
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -293,6 +282,7 @@ export default function EditListing() {
               placeholder="Nhập tiêu đề phòng"
               value={form.title || ""}
               onChange={handleChange}
+              maxLength={255}
               className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
             {errors.title && (
@@ -316,6 +306,7 @@ export default function EditListing() {
               value={form.description || ""}
               onChange={handleTextareaChange}
               rows={3}
+              maxLength={255}
               className="text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
             {errors.description && (
@@ -337,7 +328,7 @@ export default function EditListing() {
                 name="guests"
                 type="number"
                 min={1}
-                max={20}
+                max={10}
                 value={form.guests || 1}
                 onChange={handleChange}
                 className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -360,7 +351,7 @@ export default function EditListing() {
                 name="max_guests"
                 type="number"
                 min={1}
-                max={50}
+                max={10}
                 value={form.max_guests || 1}
                 onChange={handleChange}
                 className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -385,7 +376,7 @@ export default function EditListing() {
                 name="beds"
                 type="number"
                 min={1}
-                max={20}
+                max={5}
                 value={form.beds || 1}
                 onChange={handleChange}
                 className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -408,10 +399,10 @@ export default function EditListing() {
                 name="bathrooms"
                 type="number"
                 min={1}
-                max={10}
+                max={3}
                 value={form.bathrooms || 1}
                 onChange={handleChange}
-                className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="h-10 text-base border border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200 bg-white dark:text-gray-700 text-gray-900 dark:text-white"
               />
               {errors.bathrooms && (
                 <span className="text-red-500 text-sm font-medium">
@@ -627,7 +618,7 @@ export default function EditListing() {
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Phụ phí sẽ được tính thêm vào giá gốc mỗi đêm vào cuối tuần
-                    (Thứ 6, Thứ 7, Chủ nhật)
+                    (Thứ 7, Chủ nhật)
                   </p>
                 </div>
               )}
@@ -918,7 +909,7 @@ export default function EditListing() {
               ))}
             </div>
           </div>
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
@@ -988,7 +979,7 @@ export default function EditListing() {
                 </label>
               ))}
             </div>
-          </div>
+          </div> */}
           <label className="block font-medium">
             Ảnh đại diện
             {form.images && form.images.length > 0 ? (
