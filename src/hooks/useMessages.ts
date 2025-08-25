@@ -130,6 +130,22 @@ export const useMessages = (
               ...prev,
               [conversation._id]: true,
             }));
+
+            // Update unread count in conversations list
+            setConversations((prev) =>
+              prev.map((conv) =>
+                conv._id === conversation._id
+                  ? {
+                      ...conv,
+                      display: {
+                        ...conv.display,
+                        unreadCount: 0,
+                      },
+                    }
+                  : conv
+              )
+            );
+
             console.log(
               "✅ [useMessages] Conversation marked as read:",
               conversation._id
@@ -185,13 +201,14 @@ export const useMessages = (
       const newMessage = await messageService.sendMessage(messageData);
       console.log("✅ [useMessages] Message sent successfully:", newMessage);
 
-      // Check if message already exists to prevent duplicates
+      // Check if message already exists to prevent duplicates (optimized)
       const messageExists = messages.some((m) => m._id === newMessage._id);
       if (messageExists) {
         console.log(
           "⚠️ [useMessages] Message already exists, skipping UI update"
         );
         setReplyingTo(null);
+        setIsSending(false);
         return;
       }
 
@@ -492,6 +509,7 @@ export const useMessages = (
     // Setup event listeners
     const handleNewMessage = (message: MessageWithUI) => {
       console.log("✅ [CHECKLIST] UI update khi nhận new message");
+      console.log("📨 [useMessages] Full message object:", message);
       console.log(
         "📨 [useMessages] Received new message:",
         message._id,
@@ -500,7 +518,9 @@ export const useMessages = (
         "from sender:",
         message.sender_id,
         "current user:",
-        myId
+        myId,
+        "sender_role:",
+        (message as any).sender_role
       );
 
       // Update conversations list if message is for current user
@@ -511,6 +531,32 @@ export const useMessages = (
         );
 
         if (convIndex >= 0) {
+          // Determine if this message is from current user
+          const isFromCurrentUser = message.sender_id === myId;
+
+          // Get sender role from message
+          const senderRole =
+            (message as any).sender_role || message.ui_for || "guest";
+
+          // Create subtitle based on sender
+          let subtitle = "";
+          if (isFromCurrentUser) {
+            subtitle = `Bạn: ${message.content}`;
+          } else {
+            if (senderRole === "staff") {
+              subtitle = `Nhân viên: ${message.content}`;
+            } else if (senderRole === "admin") {
+              subtitle = `Admin: ${message.content}`;
+            } else {
+              subtitle = message.content;
+            }
+          }
+
+          // Only increment unread count if message is not from current user
+          const newUnreadCount = isFromCurrentUser
+            ? updated[convIndex].display.unreadCount || 0
+            : (updated[convIndex].display.unreadCount || 0) + 1;
+
           // Update existing conversation
           updated[convIndex] = {
             ...updated[convIndex],
@@ -518,16 +564,27 @@ export const useMessages = (
               _id: message._id,
               content: message.content,
               sender_id: message.sender_id,
-              sender_role: userRole as "guest" | "staff" | "admin",
+              sender_role: senderRole,
               sent_at: message.sent_at,
               is_read: message.is_read,
             },
             messageCount: (updated[convIndex].messageCount || 0) + 1,
             display: {
               ...updated[convIndex].display,
-              unreadCount: (updated[convIndex].display.unreadCount || 0) + 1,
+              subtitle: subtitle,
+              unreadCount: newUnreadCount,
             },
           };
+
+          console.log("✅ [useMessages] Updated conversation in sidebar:", {
+            conversationId: message.conversation_id,
+            lastMessageContent: message.content,
+            senderRole: senderRole,
+            isFromCurrentUser: isFromCurrentUser,
+            subtitle: subtitle,
+            unreadCount: newUnreadCount,
+            messageId: message._id,
+          });
         } else {
           console.log(
             "🔄 [useMessages] Conversation not found, reloading conversations..."
@@ -535,7 +592,18 @@ export const useMessages = (
           loadConversations();
         }
 
-        return updated;
+        // Sort conversations by last message time (newest first)
+        const sorted = updated.sort((a, b) => {
+          const timeA = a.lastMessage?.sent_at
+            ? new Date(a.lastMessage.sent_at).getTime()
+            : 0;
+          const timeB = b.lastMessage?.sent_at
+            ? new Date(b.lastMessage.sent_at).getTime()
+            : 0;
+          return timeB - timeA;
+        });
+
+        return sorted;
       });
 
       // Update messages if conversation is selected
@@ -575,12 +643,82 @@ export const useMessages = (
 
     const handleConversationUpdate = (data: ConversationUpdateV2) => {
       console.log("💬 [useMessages] Received conversation update:", data);
-      // Reload conversations to get latest data
-      loadConversations();
+
+      // Update conversation directly in state for real-time updates
+      setConversations((prev) => {
+        const updated = [...prev];
+        const convIndex = updated.findIndex(
+          (c) => c._id === data.conversationId
+        );
+
+        if (convIndex >= 0) {
+          // Update existing conversation with new data
+          updated[convIndex] = {
+            ...updated[convIndex],
+            lastMessage: data.lastMessage
+              ? {
+                  _id: data.lastMessage._id || "",
+                  content: data.lastMessage.content || "",
+                  sender_id: data.lastMessage.sender_id || "",
+                  sender_role: data.lastMessage.sender_role || "guest",
+                  sent_at: data.lastMessage.sent_at || new Date().toISOString(),
+                  is_read: data.lastMessage.is_read || "sent",
+                }
+              : updated[convIndex].lastMessage,
+            display: {
+              ...updated[convIndex].display,
+              subtitle: data.lastMessage?.content
+                ? data.lastMessage.sender_role === "guest"
+                  ? `Bạn: ${data.lastMessage.content}`
+                  : data.lastMessage.sender_role === "staff"
+                  ? `Nhân viên: ${data.lastMessage.content}`
+                  : data.lastMessage.sender_role === "admin"
+                  ? `Admin: ${data.lastMessage.content}`
+                  : data.lastMessage.content
+                : updated[convIndex].display.subtitle,
+              unreadCount: data.unreadCount || 0,
+            },
+          };
+
+          console.log(
+            "✅ [useMessages] Updated conversation from conversation_update:",
+            {
+              conversationId: data.conversationId,
+              lastMessageContent: data.lastMessage?.content,
+              unreadCount: data.unreadCount,
+            }
+          );
+        } else {
+          console.log(
+            "🔄 [useMessages] Conversation not found in state, reloading conversations..."
+          );
+          // If conversation not found, reload all conversations
+          setTimeout(() => loadConversations(), 100);
+        }
+
+        // Sort conversations by last message time (newest first)
+        return updated.sort((a, b) => {
+          const timeA = a.lastMessage?.sent_at
+            ? new Date(a.lastMessage.sent_at).getTime()
+            : 0;
+          const timeB = b.lastMessage?.sent_at
+            ? new Date(b.lastMessage.sent_at).getTime()
+            : 0;
+          return timeB - timeA;
+        });
+      });
 
       // If this conversation is selected, reload messages
       if (selectedConversation?._id === data.conversationId) {
-        loadConversations(); // Changed from loadMessages to loadConversations
+        console.log(
+          "🔄 [useMessages] Reloading messages for selected conversation"
+        );
+        // Reload messages for the selected conversation
+        setTimeout(() => {
+          if (selectedConversation) {
+            selectConversation(selectedConversation);
+          }
+        }, 100);
       }
     };
 
@@ -642,10 +780,34 @@ export const useMessages = (
       }
     };
 
+    // Handle conversation list update from Backend
+    const handleConversationListUpdate = (data: any) => {
+      console.log("📋 [useMessages] Received conversation list update:", data);
+
+      if (data.conversations && Array.isArray(data.conversations)) {
+        console.log(
+          "✅ [useMessages] Updating conversations list with",
+          data.conversations.length,
+          "conversations"
+        );
+
+        // Update conversations list with new data from Backend
+        setConversations(data.conversations);
+
+        console.log("✅ [useMessages] Conversations list updated successfully");
+      } else {
+        console.log(
+          "⚠️ [useMessages] Invalid conversation_list_update data, reloading conversations"
+        );
+        loadConversations();
+      }
+    };
+
     // Register event listeners
     console.log("📝 [useMessages] Registering socket event listeners...");
     socketService.onNewMessage(handleNewMessage);
     socketService.onConversationUpdate(handleConversationUpdate);
+    socketService.onConversationListUpdate(handleConversationListUpdate);
     socketService.onReactionUpdate(handleReactionUpdate);
     socketService.onMessageRecall(handleMessageRecall);
 

@@ -99,6 +99,17 @@ function getSenderDisplayName(
   return "Unknown User";
 }
 
+// Helper function to normalize sender_id (handle both string and object)
+function normalizeSenderId(senderId: any): string {
+  if (typeof senderId === "string") {
+    return senderId;
+  }
+  if (typeof senderId === "object" && senderId !== null) {
+    return senderId._id || senderId.id || "";
+  }
+  return "";
+}
+
 // Helper function to get sender avatar URL
 function getSenderAvatarUrl(
   message: MessageWithUI,
@@ -112,7 +123,7 @@ function getSenderAvatarUrl(
   // Then try to find from conversation participants
   if (conversation?.participants && message.sender_id) {
     const participant = conversation.participants.find(
-      (p) => p._id === message.sender_id
+      (p) => p._id === normalizeSenderId(message.sender_id)
     );
     if (participant?.avatar_url) {
       return participant.avatar_url;
@@ -291,7 +302,33 @@ export default function AdminMessages() {
             "📨 [AdminMessages] Using cached messages:",
             cachedMessages.length
           );
-          setMessages(cachedMessages);
+
+          // Process cached messages to ensure ui.mine is set correctly
+          const processedCachedMessages = cachedMessages.map((message: any) => {
+            const normalizedSenderId = normalizeSenderId(message.sender_id);
+            const isMine = normalizedSenderId === myId;
+
+            return {
+              ...message,
+              ui: {
+                ...message.ui,
+                mine: isMine,
+                show_sender_meta: message.ui?.show_sender_meta ?? !isMine,
+              },
+            };
+          });
+
+          console.log(
+            "📨 [AdminMessages] Processed cached messages with ownership:",
+            processedCachedMessages.map((m) => ({
+              id: m._id,
+              senderId: m.sender_id,
+              uiMine: m.ui?.mine,
+              isMine: normalizeSenderId(m.sender_id) === myId,
+            }))
+          );
+
+          setMessages(processedCachedMessages);
           setIsLoadingMessages(false);
 
           // Mark as read
@@ -328,7 +365,33 @@ export default function AdminMessages() {
         console.log("📥 [AdminMessages] Messages data received:", data);
         console.log("📥 [AdminMessages] Messages count:", data.length);
         console.log("📥 [AdminMessages] First message:", data[0]);
-        setMessages(data);
+
+        // Process messages to ensure ui.mine is set correctly
+        const processedMessages = data.map((message: any) => {
+          const normalizedSenderId = normalizeSenderId(message.sender_id);
+          const isMine = normalizedSenderId === myId;
+
+          return {
+            ...message,
+            ui: {
+              ...message.ui,
+              mine: isMine,
+              show_sender_meta: message.ui?.show_sender_meta ?? !isMine,
+            },
+          };
+        });
+
+        console.log(
+          "📥 [AdminMessages] Processed messages with ownership:",
+          processedMessages.map((m) => ({
+            id: m._id,
+            senderId: m.sender_id,
+            uiMine: m.ui?.mine,
+            isMine: normalizeSenderId(m.sender_id) === myId,
+          }))
+        );
+
+        setMessages(processedMessages);
 
         // Mark as read
         try {
@@ -395,6 +458,14 @@ export default function AdminMessages() {
           sender_avatar_url: user?.avatar_url || null,
         },
       };
+
+      console.log("📤 [AdminMessages] Created messageWithUI:", {
+        messageId: messageWithUI._id,
+        senderId: messageWithUI.sender_id,
+        myId: myId,
+        uiMine: messageWithUI.ui.mine,
+        senderDisplayName: messageWithUI.ui.sender_display_name,
+      });
 
       // Add the message to state with a temporary ID - when the socket update arrives,
       // it will either replace or keep this one
@@ -551,10 +622,32 @@ export default function AdminMessages() {
           setMessages((prev) => {
             const messageExists = prev.some((m) => m._id === message._id);
             if (messageExists) {
-              // Update existing message instead of ignoring
-              return prev.map((m) =>
-                m._id === message._id ? { ...m, ...message } : m
-              );
+              // Update existing message but preserve ui.mine if it was set correctly
+              return prev.map((m) => {
+                if (m._id === message._id) {
+                  const existingMessage = m;
+                  const updatedMessage = { ...existingMessage, ...message };
+
+                  // Preserve ui.mine if it was correctly set in the existing message
+                  if (
+                    existingMessage.ui?.mine !== undefined &&
+                    existingMessage.ui.mine === true &&
+                    message.ui?.mine === false
+                  ) {
+                    updatedMessage.ui = {
+                      ...updatedMessage.ui,
+                      mine: true,
+                    };
+                    console.log(
+                      "🔒 [AdminMessages] Preserving ui.mine for existing message:",
+                      message._id
+                    );
+                  }
+
+                  return updatedMessage;
+                }
+                return m;
+              });
             }
 
             const newMessages = [...prev, message].sort((a, b) => {
@@ -1157,7 +1250,30 @@ export default function AdminMessages() {
                             lastDate = sentAt;
                           }
 
-                          const isMine = m.ui?.mine ?? m.sender_id === myId;
+                          // Normalize sender_id for comparison
+                          const normalizedSenderId = normalizeSenderId(
+                            m.sender_id
+                          );
+
+                          // Debug logging for message ownership
+                          console.log(
+                            "🔍 [AdminMessages] Message ownership check:",
+                            {
+                              messageId: m._id,
+                              originalSenderId: m.sender_id,
+                              normalizedSenderId: normalizedSenderId,
+                              myId: myId,
+                              uiMine: m.ui?.mine,
+                              senderIdType: typeof m.sender_id,
+                              myIdType: typeof myId,
+                              isEqual: normalizedSenderId === myId,
+                              finalIsMine:
+                                m.ui?.mine ?? normalizedSenderId === myId,
+                            }
+                          );
+
+                          const isMine =
+                            m.ui?.mine ?? normalizedSenderId === myId;
                           const showSenderMeta =
                             m.ui?.show_sender_meta ?? !isMine;
 

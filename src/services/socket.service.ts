@@ -190,7 +190,7 @@ class SocketService {
         is_recalled: data.message?.is_recalled || data.is_recalled || false,
         ui_for: (this.userRole || "guest") as "guest" | "staff" | "admin",
         ui: {
-          mine: false,
+          mine: undefined as any, // Let processMessageUI determine the correct value
           show_sender_meta: true,
           sender_display_name:
             data.senderName || data.sender_display_name || "Unknown",
@@ -200,6 +200,10 @@ class SocketService {
       };
 
       // Process message using helper function
+      console.log(
+        "🔍 [SocketService] Processing message with userId:",
+        this.userId
+      );
       const message = processMessageUI(rawMessage, this.userId || "");
 
       // Prevent duplicate notifications
@@ -260,20 +264,30 @@ class SocketService {
       this.notifyConversationUpdateListeners(conversationUpdate);
     };
 
-    // Listen for all conversation update events
+    // Listen for conversation update events (excluding conversation_list_update)
     const conversationEvents = [
       "conversation_update_v2",
       "conversation_updated",
       "admin_conversation_update",
       "staff_conversation_update",
       "admin_broadcast_conversation_update",
-      "conversation_list_update",
     ];
 
     conversationEvents.forEach((eventName) => {
       this.socket!.on(eventName, (data: any) => {
         handleConversationUpdate(eventName, data);
       });
+    });
+
+    // Handle conversation_list_update separately
+    this.socket!.on("conversation_list_update", (data: any) => {
+      console.log(
+        "✅ [SocketService] Received 'conversation_list_update' event:",
+        data
+      );
+
+      // Notify conversation list update listeners with full data
+      this.notifyConversationListUpdateListeners(data);
     });
 
     // Reaction update handler
@@ -292,7 +306,7 @@ class SocketService {
         reactions: data.reactions || [],
         ui_for: (this.userRole || "guest") as "guest" | "staff" | "admin",
         ui: {
-          mine: false,
+          mine: undefined as any, // Let processMessageUI determine the correct value
           show_sender_meta: true,
           sender_display_name: "Unknown",
           sender_avatar_url: null,
@@ -325,7 +339,7 @@ class SocketService {
         is_recalled: true,
         ui_for: (this.userRole || "guest") as "guest" | "staff" | "admin",
         ui: {
-          mine: false,
+          mine: undefined as any, // Let processMessageUI determine the correct value
           show_sender_meta: true,
           sender_display_name: "Unknown",
           sender_avatar_url: null,

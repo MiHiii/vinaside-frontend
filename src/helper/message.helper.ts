@@ -93,6 +93,18 @@ export function processMessageUI(
       ? message.ui.mine
       : senderInfo.id === currentUserId;
 
+  // Debug logging for ownership determination
+  console.log("🔍 [MessageHelper] Ownership determination:", {
+    messageId: message._id,
+    originalSenderId: message.sender_id,
+    processedSenderId: senderInfo.id,
+    currentUserId: currentUserId,
+    uiMine: message.ui?.mine,
+    senderInfoId: senderInfo.id,
+    isEqual: senderInfo.id === currentUserId,
+    finalIsMine: isMine,
+  });
+
   // Process UI data
   const ui = message.ui || {};
 
