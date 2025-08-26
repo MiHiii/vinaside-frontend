@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -51,17 +50,15 @@ import {
   CheckCircle,
   ChevronDown,
   RefreshCw,
-
- 
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { api } from '@/services/api';
-import { format } from 'date-fns';
-import BookingCalendar from '@/components/roomdetail/BookingCalendar';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from '@/constants/service';
-import { buildBookingGuards } from '@/utils/dateUtils';
-
+} from "lucide-react";
+import { toast } from "sonner";
+import { api } from "@/services/api";
+import { format } from "date-fns";
+import BookingCalendar from "@/components/roomdetail/BookingCalendar";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SERVICE_CONSTANTS, SERVICE_MESSAGES } from "@/constants/service";
+import { buildBookingGuards } from "@/utils/dateUtils";
+import VoucherListForUser from "@/components/payment/VoucherListForUser";
 
 interface Property {
   _id: string;
@@ -324,9 +321,10 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
       }, 0);
 
       // Calculate additional costs - chỉ tính khi booking chưa hoàn thành hoặc chưa hủy
-      const additionalCosts = (formData.status !== 'completed' && formData.status !== 'cancelled') 
-        ? (formData.additionalCost || 0) 
-        : 0;
+      const additionalCosts =
+        formData.status !== "completed" && formData.status !== "cancelled"
+          ? formData.additionalCost || 0
+          : 0;
 
       // Calculate subtotal before voucher discount
       const subtotalBeforeDiscount =
@@ -365,6 +363,55 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
     formData.voucherCode,
     services,
     validVouchers,
+  ]);
+
+  // Subtotal before voucher discount for voucher component
+  const subtotalBeforeDiscount = useMemo(() => {
+    if (!selectedListing || nights <= 0 || !checkIn || !checkOut) return 0;
+
+    const basePrice =
+      formData.price_per_night || selectedListing.price_per_night;
+
+    // Weekend surcharge
+    let weekendSurcharge = 0;
+    if (
+      selectedListing.has_weekend_surcharge &&
+      selectedListing.weekend_surcharge_percent
+    ) {
+      const current = new Date(checkIn);
+      while (current < checkOut) {
+        const dayOfWeek = current.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          weekendSurcharge +=
+            basePrice * (selectedListing.weekend_surcharge_percent / 100);
+        }
+        current.setDate(current.getDate() + 1);
+      }
+    }
+
+    const totalPrice = basePrice * nights + weekendSurcharge;
+
+    const servicesTotal = formData.services.reduce((sum, service) => {
+      const serviceData = services.find((s) => s._id === service.serviceId);
+      return sum + (serviceData?.default_price || 0) * service.quantity;
+    }, 0);
+
+    const additionalCosts =
+      formData.status !== "completed" && formData.status !== "cancelled"
+        ? formData.additionalCost || 0
+        : 0;
+
+    return totalPrice + servicesTotal + additionalCosts;
+  }, [
+    selectedListing,
+    nights,
+    checkIn,
+    checkOut,
+    formData.services,
+    services,
+    formData.status,
+    formData.additionalCost,
+    formData.price_per_night,
   ]);
 
   const loadBookedDates = async () => {
@@ -2103,49 +2150,38 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="voucherCode"
-                    className="text-sm font-medium text-gray-700"
-                  >
+                  <Label className="text-sm font-medium text-gray-700">
                     Mã voucher
                   </Label>
-                  <Select
-                    value={formData.voucherCode || "none"}
-                    onValueChange={(value) =>
+                  <VoucherListForUser
+                    totalAmount={subtotalBeforeDiscount}
+                    disabled={formData.payment_status === "partially_paid"}
+                    onVoucherSelect={(voucher) => {
                       setFormData((prev) => ({
                         ...prev,
-                        voucherCode: value === "none" ? "" : value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="h-11 border border-gray-300 hover:border-gray-400 focus:border-gray-500 transition-colors rounded-lg">
-                      <SelectValue placeholder="Chọn mã voucher..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-white shadow-xl border border-gray-200/50">
-                      <SelectItem
-                        value="none"
-                        className="rounded-lg py-3 px-4 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-gray-100 data-[state=checked]:text-gray-800"
-                      >
-                        Không sử dụng voucher
-                      </SelectItem>
-                      {Array.isArray(validVouchers) &&
-                        validVouchers
-                          .filter(
-                            (voucher) => voucher.is_active && !voucher.isDeleted
-                          )
-                          .map((voucher) => (
-                            <SelectItem
-                              key={voucher._id}
-                              value={voucher.code}
-                              className="rounded-lg py-3 px-4 hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-purple-100 data-[state=checked]:text-purple-800"
-                            >
-                              {voucher.code} - Giảm {voucher.discount_percent}%
-                              {voucher.description &&
-                                ` - ${voucher.description}`}
-                            </SelectItem>
-                          ))}
-                    </SelectContent>
-                  </Select>
+                        voucherCode: voucher?.code || "",
+                      }));
+                      // Đồng bộ danh sách voucher khả dụng để phần tính giá sử dụng được
+                      if (voucher) {
+                        const exists = validVouchers.some(
+                          (v) => v.code === voucher.code
+                        );
+                        if (!exists) {
+                          setValidVouchers((prev) => [
+                            ...prev,
+                            {
+                              _id: (voucher as any)._id || voucher.code,
+                              code: voucher.code,
+                              discount_percent: voucher.discount_percent,
+                              is_active: voucher.is_active,
+                              isDeleted: false,
+                              description: voucher.description,
+                            },
+                          ]);
+                        }
+                      }
+                    }}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -2420,13 +2456,19 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             0
                           );
 
-
                           // Chỉ tính chi phí phát sinh khi booking chưa hoàn thành hoặc chưa hủy
-                          const additionalCost = (formData.status !== 'completed' && formData.status !== 'cancelled') 
-                            ? (formData.additionalCost || 0) 
-                            : 0;
-                          const subtotal = basePrice + weekendSurcharge + servicesTotal + additionalCost;
-                          const discountAmount = subtotal * (selectedVoucher.discount_percent / 100);
+                          const additionalCost =
+                            formData.status !== "completed" &&
+                            formData.status !== "cancelled"
+                              ? formData.additionalCost || 0
+                              : 0;
+                          const subtotal =
+                            basePrice +
+                            weekendSurcharge +
+                            servicesTotal +
+                            additionalCost;
+                          const discountAmount =
+                            subtotal * (selectedVoucher.discount_percent / 100);
                           return (
                             <div className="flex justify-between items-center py-2">
                               <span className="text-gray-600">
@@ -2440,22 +2482,26 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                           );
                         })()}
 
-
                       {/* Chi phí phát sinh - chỉ hiển thị khi booking chưa hoàn thành hoặc chưa hủy */}
-                      {formData.status !== 'completed' && formData.status !== 'cancelled' && (
-                        <div className='flex justify-between items-center py-2'>
-                          <div>
-                            <span className='text-gray-600'>Chi phí phát sinh</span>
-                            {formData.additionalCostReason && (
-                              <div className='text-xs text-gray-500 mt-1'>({formData.additionalCostReason})</div>
-                            )}
+                      {formData.status !== "completed" &&
+                        formData.status !== "cancelled" && (
+                          <div className="flex justify-between items-center py-2">
+                            <div>
+                              <span className="text-gray-600">
+                                Chi phí phát sinh
+                              </span>
+                              {formData.additionalCostReason && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  ({formData.additionalCostReason})
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-medium text-orange-600">
+                              {formData.additionalCost > 0 ? "+" : ""}
+                              {(formData.additionalCost || 0).toLocaleString()}₫
+                            </span>
                           </div>
-                          <span className='font-medium text-orange-600'>
-                            {formData.additionalCost > 0 ? '+' : ''}
-                            {(formData.additionalCost || 0).toLocaleString()}₫
-                          </span>
-                        </div>
-                      )}
+                        )}
 
                       {/* Phân cách */}
                       <div className="border-t border-gray-200 pt-3 mt-3">
@@ -2504,13 +2550,17 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             0
                           );
 
-
                           // Chỉ tính chi phí phát sinh khi booking chưa hoàn thành hoặc chưa hủy
-                          const additionalCost = (formData.status !== 'completed' && formData.status !== 'cancelled') 
-                            ? (formData.additionalCost || 0) 
-                            : 0;
-                          const subtotal = basePrice + weekendSurcharge + servicesTotal + additionalCost;
-
+                          const additionalCost =
+                            formData.status !== "completed" &&
+                            formData.status !== "cancelled"
+                              ? formData.additionalCost || 0
+                              : 0;
+                          const subtotal =
+                            basePrice +
+                            weekendSurcharge +
+                            servicesTotal +
+                            additionalCost;
 
                           const selectedVoucher = validVouchers.find(
                             (v) => v.code === formData.voucherCode
@@ -2608,13 +2658,15 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                           Đã xác nhận
                         </SelectItem>
                         <SelectItem
-                          value='completed'
-                          className='rounded-lg py-3 px-4 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-800'>
+                          value="completed"
+                          className="rounded-lg py-3 px-4 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-blue-100 data-[state=checked]:text-blue-800"
+                        >
                           Đã hoàn thành
                         </SelectItem>
                         <SelectItem
-                          value='cancelled'
-                          className='rounded-lg py-3 px-4 hover:bg-red-50 hover:text-red-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-red-100 data-[state=checked]:text-red-800'>
+                          value="cancelled"
+                          className="rounded-lg py-3 px-4 hover:bg-red-50 hover:text-red-700 transition-all duration-200 cursor-pointer data-[state=checked]:bg-red-100 data-[state=checked]:text-red-800"
+                        >
                           Đã hủy
                         </SelectItem>
                       </SelectContent>
