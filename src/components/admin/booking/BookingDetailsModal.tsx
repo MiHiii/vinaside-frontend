@@ -13,7 +13,6 @@ import { BookingDetail } from "@/store/slices/bookingSlice";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
-  Users,
   DollarSign,
   MapPin,
   Mail,
@@ -175,7 +174,7 @@ export default function BookingDetailsModal({
         </DialogHeader>
 
         <div className="space-y-6">
-          {bookingDetails.map((booking, index) => (
+          {bookingDetails.map((booking) => (
             <Card key={booking._id} className="border border-gray-200">
               <CardContent className="p-6">
                 {/* Header */}

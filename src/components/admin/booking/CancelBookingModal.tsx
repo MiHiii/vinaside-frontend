@@ -12,18 +12,18 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { api } from "@/services/api";
-import { 
-  AlertCircle, 
-  FileText, 
-  Banknote, 
-  User, 
-  Building, 
-  CreditCard, 
+import {
+  AlertCircle,
+  FileText,
+  Banknote,
+  User,
+  Building,
+  CreditCard,
   Wallet,
   Info,
   DollarSign,
   XCircle,
-  Shield
+  Shield,
 } from "lucide-react";
 import type { Booking } from "@/types/booking.interface";
 
@@ -59,7 +59,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.cancellationReason.trim()) {
       toast.error("Vui lòng nhập lý do hủy phòng!");
       return;
@@ -67,39 +67,38 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
 
     setLoading(true);
 
-         try {
-               // Gọi API hủy booking với đầy đủ thông tin
-        let propertyId = '';
-        
-        if (typeof booking.propertyId === 'string') {
-          propertyId = booking.propertyId;
-        } else if (booking.propertyId && typeof booking.propertyId === 'object') {
-          const property = booking.propertyId as { _id?: string };
-          propertyId = property._id || '';
-        }
-          
-        if (!propertyId) {
-          toast.error("Không tìm thấy Property ID!");
-          return;
-        }
+    try {
+      // Gọi API hủy booking với đầy đủ thông tin
+      let propertyId = "";
 
-        console.log('Debug - Property ID:', propertyId);
-        console.log('Debug - Booking propertyId:', booking.propertyId);
+      if (typeof booking.propertyId === "string") {
+        propertyId = booking.propertyId;
+      } else if (booking.propertyId && typeof booking.propertyId === "object") {
+        const property = booking.propertyId as { _id?: string };
+        propertyId = property._id || "";
+      }
 
-        await api.patch(
-            `/bookings/admin/${propertyId}/${booking._id}/cancel`,
-          {
-             // Backend cần propertyId trong body để @RequirePropertyStaff decorator
-            cancellationReason: formData.cancellationReason,
-            accountName: formData.accountName,
-            bankName: formData.bankName,
-            accountNumber: formData.accountNumber,
-            refundMethod: formData.refundMethod,
-            refundNote: formData.refundNote,
-          }
-        );
+      if (!propertyId) {
+        toast.error("Không tìm thấy Property ID!");
+        return;
+      }
 
-      toast.success("Hủy booking thành công!");
+      console.log("Debug - Property ID:", propertyId);
+      console.log("Debug - Booking propertyId:", booking.propertyId);
+
+      await api.patch(`/bookings/admin/${propertyId}/${booking._id}/cancel`, {
+        // Backend cần propertyId trong body để @RequirePropertyStaff decorator
+        cancellationReason: formData.cancellationReason,
+        accountName: formData.accountName,
+        bankName: formData.bankName,
+        accountNumber: formData.accountNumber,
+        refundMethod: formData.refundMethod,
+        refundNote: formData.refundNote,
+      });
+
+      toast.success(
+        "Hủy booking thành công! Booking đã chuyển sang trạng thái 'Đang hoàn tiền'"
+      );
       onSuccess();
       onClose();
     } catch (error: unknown) {
@@ -116,185 +115,253 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white via-red-50 to-orange-50 border-0 shadow-2xl">
-                 <DialogHeader className="text-center pb-6">
-           <DialogTitle className="text-2xl font-bold text-gray-900 mb-2">
+        <DialogHeader className="text-center pb-6">
+          <DialogTitle className="text-2xl font-bold text-gray-900 mb-2">
             Hủy booking
           </DialogTitle>
           <p className="text-gray-600 text-lg">
-            Vui lòng điền thông tin chi tiết về việc hủy phòng và hoàn tiền
+            Vui lòng điền thông tin chi tiết về việc hủy phòng. Sau khi hủy,
+            booking sẽ chuyển sang trạng thái "Đang hoàn tiền"
           </p>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-                     {/* Booking Info - Card hiển thị thông tin booking */}
-           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-             <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-6 py-4">
-               <h3 className="font-bold text-white text-lg flex items-center gap-3">
-                 <Info className="w-6 h-6" />
-                 Thông tin booking
-               </h3>
-             </div>
-             <div className="p-6">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                 <div>
-                   <span className="text-gray-500">Khách hàng:</span>
-                   <p className="font-medium text-gray-900">{typeof booking.guest_name === 'string' ? booking.guest_name : 'Khách hàng'}</p>
-                 </div>
-                 <div>
-                   <span className="text-gray-500">Check-in:</span>
-                   <p className="font-medium text-gray-900">
-                     {new Date(booking.checkInDate).toLocaleDateString()}
-                   </p>
-                 </div>
-                 <div>
-                   <span className="text-gray-500">Check-out:</span>
-                   <p className="font-medium text-gray-900">
-                     {new Date(booking.check_out_date).toLocaleDateString()}
-                   </p>
-                 </div>
-                 <div>
-                   <span className="text-gray-500">Số tiền đã thanh toán:</span>
-                   <p className="font-medium text-green-600">
-                     {(booking.deposit_paid_amount || 0).toLocaleString()} VND
-                   </p>
-                 </div>
-               </div>
-             </div>
-           </div>
+          {/* Booking Info - Card hiển thị thông tin booking */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-6 py-4">
+              <h3 className="font-bold text-white text-lg flex items-center gap-3">
+                <Info className="w-6 h-6" />
+                Thông tin booking
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Khách hàng:</span>
+                  <p className="font-medium text-gray-900">
+                    {typeof booking.guest_name === "string"
+                      ? booking.guest_name
+                      : "Khách hàng"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Check-in:</span>
+                  <p className="font-medium text-gray-900">
+                    {new Date(booking.checkInDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Check-out:</span>
+                  <p className="font-medium text-gray-900">
+                    {new Date(booking.check_out_date).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Số tiền đã thanh toán:</span>
+                  <p className="font-medium text-green-600">
+                    {(booking.deposit_paid_amount || 0).toLocaleString()} VND
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-           {/* Cancellation Policy & Refund Info - Card mới */}
-           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-             <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4">
-               <h3 className="font-bold text-white text-lg flex items-center gap-3">
-                 <Shield className="w-6 h-6" />
-                 Chính sách hủy & Hoàn tiền
-               </h3>
-             </div>
-             <div className="p-6">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {/* Chính sách hủy */}
-                 <div className="space-y-3">
-                   <div className="flex items-center gap-2">
-                     <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                     <span className="text-sm font-semibold text-gray-700">Chính sách hủy:</span>
-                   </div>
-                   <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-                     {(() => {
-                       const policy = booking.cancel_policy?.toLowerCase() || 'flexible';
-                       const checkInDate = new Date(booking.checkInDate);
-                       const today = new Date();
-                       const daysBeforeCheckIn = Math.ceil((checkInDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                       
-                       switch (policy) {
-                         case 'flexible':
-                           return (
-                             <div className="text-emerald-800">
-                               <p className="font-semibold text-sm mb-2">🎯 Flexible (Linh hoạt)</p>
-                               <p className="text-xs leading-relaxed">
-                                 Hủy trước ngày check-in: <span className="font-bold">Hoàn 100%</span><br/>
-                                 Hủy trong ngày check-in: <span className="font-bold">Hoàn 100%</span><br/>
-                                 <span className="text-emerald-600">📅 Còn {daysBeforeCheckIn} ngày đến check-in</span>
-                               </p>
-                             </div>
-                           );
-                         case 'moderate':
-                           return (
-                             <div className="text-amber-800">
-                               <p className="font-semibold text-sm mb-2">⚖️ Moderate (Vừa phải)</p>
-                               <p className="text-xs leading-relaxed">
-                                 Hủy trước 7 ngày: <span className="font-bold">Hoàn 100%</span><br/>
-                                 Hủy trong 7 ngày: <span className="font-bold">Hoàn 50%</span><br/>
-                                 Hủy trong ngày check-in: <span className="font-bold">Không hoàn tiền</span><br/>
-                                 <span className="text-amber-600">📅 Còn {daysBeforeCheckIn} ngày đến check-in</span>
-                               </p>
-                             </div>
-                           );
-                         case 'strict':
-                           return (
-                             <div className="text-red-800">
-                               <p className="font-semibold text-sm mb-2">🚫 Strict (Nghiêm ngặt)</p>
-                               <p className="text-xs leading-relaxed">
-                                 Hủy trước 7 ngày: <span className="font-bold">Hoàn 50%</span><br/>
-                                 Hủy trong 7 ngày: <span className="font-bold">Không hoàn tiền</span><br/>
-                                 <span className="text-red-600">📅 Còn {daysBeforeCheckIn} ngày đến check-in</span>
-                               </p>
-                             </div>
-                           );
-                         default:
-                           return (
-                             <div className="text-gray-800">
-                               <p className="font-semibold text-sm mb-2">❓ Không xác định</p>
-                               <p className="text-xs">Vui lòng liên hệ để biết thêm chi tiết</p>
-                             </div>
-                           );
-                       }
-                     })()}
-                   </div>
-                 </div>
+          {/* Cancellation Policy & Refund Info - Card mới */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4">
+              <h3 className="font-bold text-white text-lg flex items-center gap-3">
+                <Shield className="w-6 h-6" />
+                Chính sách hủy & Hoàn tiền
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Chính sách hủy */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                    <span className="text-sm font-semibold text-gray-700">
+                      Chính sách hủy:
+                    </span>
+                  </div>
+                  <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                    {(() => {
+                      const policy =
+                        booking.cancel_policy?.toLowerCase() || "flexible";
+                      const checkInDate = new Date(booking.checkInDate);
+                      const today = new Date();
+                      const daysBeforeCheckIn = Math.ceil(
+                        (checkInDate.getTime() - today.getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      );
 
-                 {/* Thông tin hoàn tiền dự kiến */}
-                 <div className="space-y-3">
-                   <div className="flex items-center gap-2">
-                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                     <span className="text-sm font-semibold text-gray-700">Hoàn tiền dự kiến:</span>
-                   </div>
-                   <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                     {(() => {
-                       const policy = booking.cancel_policy?.toLowerCase() || 'flexible';
-                       const checkInDate = new Date(booking.checkInDate);
-                       const today = new Date();
-                       const daysBeforeCheckIn = Math.ceil((checkInDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                       const paidAmount = booking.deposit_paid_amount || 0;
-                       
-                       let refundPercent = 0;
-                       let refundAmount = 0;
-                       
-                       switch (policy) {
-                         case 'flexible':
-                           refundPercent = 100;
-                           break;
-                         case 'moderate':
-                           if (daysBeforeCheckIn > 7) {
-                             refundPercent = 100;
-                           } else if (daysBeforeCheckIn >= 0) {
-                             refundPercent = 50;
-                           } else {
-                             refundPercent = 0;
-                           }
-                           break;
-                         case 'strict':
-                           if (daysBeforeCheckIn > 7) {
-                             refundPercent = 50;
-                           } else {
-                             refundPercent = 0;
-                           }
-                           break;
-                         default:
-                           refundPercent = 0;
-                       }
-                       
-                       refundAmount = Math.round((paidAmount * refundPercent) / 100);
-                       
-                       return (
-                         <div className="text-blue-800">
-                           <div className="mb-3">
-                             <p className="text-xs text-blue-600 mb-1">Còn {daysBeforeCheckIn} ngày đến check-in</p>
-                             <p className="text-xs text-blue-600 mb-1">Số tiền đã thanh toán: <span className="font-bold">{paidAmount.toLocaleString()} VND</span></p>
-                           </div>
-                           <div className="bg-white rounded-lg p-3 border border-blue-300">
-                             <p className="text-sm font-semibold mb-2">Tỷ lệ hoàn tiền: <span className="text-lg text-blue-600">{refundPercent}%</span></p>
-                             <p className="text-lg font-bold text-blue-700">
-                               Số tiền được hoàn: <span className="text-xl">{refundAmount.toLocaleString()} VND</span>
-                             </p>
-                           </div>
-                         </div>
-                       );
-                     })()}
-                   </div>
-                 </div>
-               </div>
-             </div>
-           </div>
+                      switch (policy) {
+                        case "flexible":
+                          return (
+                            <div className="text-emerald-800">
+                              <p className="font-semibold text-sm mb-2">
+                                🎯 Flexible (Linh hoạt)
+                              </p>
+                              <p className="text-xs leading-relaxed">
+                                Hủy trước ngày check-in:{" "}
+                                <span className="font-bold">Hoàn 100%</span>
+                                <br />
+                                Hủy trong ngày check-in:{" "}
+                                <span className="font-bold">Hoàn 100%</span>
+                                <br />
+                                <span className="text-emerald-600">
+                                  📅 Còn {daysBeforeCheckIn} ngày đến check-in
+                                </span>
+                              </p>
+                            </div>
+                          );
+                        case "moderate":
+                          return (
+                            <div className="text-amber-800">
+                              <p className="font-semibold text-sm mb-2">
+                                ⚖️ Moderate (Vừa phải)
+                              </p>
+                              <p className="text-xs leading-relaxed">
+                                Hủy trước 7 ngày:{" "}
+                                <span className="font-bold">Hoàn 100%</span>
+                                <br />
+                                Hủy trong 7 ngày:{" "}
+                                <span className="font-bold">Hoàn 50%</span>
+                                <br />
+                                Hủy trong ngày check-in:{" "}
+                                <span className="font-bold">
+                                  Không hoàn tiền
+                                </span>
+                                <br />
+                                <span className="text-amber-600">
+                                  📅 Còn {daysBeforeCheckIn} ngày đến check-in
+                                </span>
+                              </p>
+                            </div>
+                          );
+                        case "strict":
+                          return (
+                            <div className="text-red-800">
+                              <p className="font-semibold text-sm mb-2">
+                                🚫 Strict (Nghiêm ngặt)
+                              </p>
+                              <p className="text-xs leading-relaxed">
+                                Hủy trước 7 ngày:{" "}
+                                <span className="font-bold">Hoàn 50%</span>
+                                <br />
+                                Hủy trong 7 ngày:{" "}
+                                <span className="font-bold">
+                                  Không hoàn tiền
+                                </span>
+                                <br />
+                                <span className="text-red-600">
+                                  📅 Còn {daysBeforeCheckIn} ngày đến check-in
+                                </span>
+                              </p>
+                            </div>
+                          );
+                        default:
+                          return (
+                            <div className="text-gray-800">
+                              <p className="font-semibold text-sm mb-2">
+                                ❓ Không xác định
+                              </p>
+                              <p className="text-xs">
+                                Vui lòng liên hệ để biết thêm chi tiết
+                              </p>
+                            </div>
+                          );
+                      }
+                    })()}
+                  </div>
+                </div>
+
+                {/* Thông tin hoàn tiền dự kiến */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm font-semibold text-gray-700">
+                      Hoàn tiền dự kiến:
+                    </span>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    {(() => {
+                      const policy =
+                        booking.cancel_policy?.toLowerCase() || "flexible";
+                      const checkInDate = new Date(booking.checkInDate);
+                      const today = new Date();
+                      const daysBeforeCheckIn = Math.ceil(
+                        (checkInDate.getTime() - today.getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      );
+                      const paidAmount = booking.deposit_paid_amount || 0;
+
+                      let refundPercent = 0;
+                      let refundAmount = 0;
+
+                      switch (policy) {
+                        case "flexible":
+                          refundPercent = 100;
+                          break;
+                        case "moderate":
+                          if (daysBeforeCheckIn > 7) {
+                            refundPercent = 100;
+                          } else if (daysBeforeCheckIn >= 0) {
+                            refundPercent = 50;
+                          } else {
+                            refundPercent = 0;
+                          }
+                          break;
+                        case "strict":
+                          if (daysBeforeCheckIn > 7) {
+                            refundPercent = 50;
+                          } else {
+                            refundPercent = 0;
+                          }
+                          break;
+                        default:
+                          refundPercent = 0;
+                      }
+
+                      refundAmount = Math.round(
+                        (paidAmount * refundPercent) / 100
+                      );
+
+                      return (
+                        <div className="text-blue-800">
+                          <div className="mb-3">
+                            <p className="text-xs text-blue-600 mb-1">
+                              Còn {daysBeforeCheckIn} ngày đến check-in
+                            </p>
+                            <p className="text-xs text-blue-600 mb-1">
+                              Số tiền đã thanh toán:{" "}
+                              <span className="font-bold">
+                                {paidAmount.toLocaleString()} VND
+                              </span>
+                            </p>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-blue-300">
+                            <p className="text-sm font-semibold mb-2">
+                              Tỷ lệ hoàn tiền:{" "}
+                              <span className="text-lg text-blue-600">
+                                {refundPercent}%
+                              </span>
+                            </p>
+                            <p className="text-lg font-bold text-blue-700">
+                              Số tiền được hoàn:{" "}
+                              <span className="text-xl">
+                                {refundAmount.toLocaleString()} VND
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Cancellation Reason - Card đẹp */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -302,7 +369,9 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
               <h3 className="font-bold text-white text-lg flex items-center gap-3">
                 <AlertCircle className="w-6 h-6" />
                 Lý do hủy phòng
-                <span className="text-red-200 text-sm font-normal">(bắt buộc)</span>
+                <span className="text-red-200 text-sm font-normal">
+                  (bắt buộc)
+                </span>
               </h3>
             </div>
             <div className="p-6">
@@ -321,7 +390,8 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
                 <div className="flex items-center gap-2 mt-3 text-red-600">
                   <Info className="w-4 h-4" />
                   <span className="text-sm font-medium">
-                    💡 Thông tin này sẽ giúp chúng tôi cải thiện chất lượng dịch vụ
+                    💡 Thông tin này sẽ giúp chúng tôi cải thiện chất lượng dịch
+                    vụ
                   </span>
                 </div>
               </div>
@@ -334,13 +404,18 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
               <h3 className="font-bold text-white text-lg flex items-center gap-3">
                 <DollarSign className="w-6 h-6" />
                 Thông tin hoàn tiền
-                <span className="text-blue-200 text-sm font-normal">(tùy chọn)</span>
+                <span className="text-blue-200 text-sm font-normal">
+                  (tùy chọn)
+                </span>
               </h3>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <Label htmlFor="accountName" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Label
+                    htmlFor="accountName"
+                    className="text-sm font-semibold text-gray-700 flex items-center gap-2"
+                  >
                     <User className="w-4 h-4 text-blue-600" />
                     Tên chủ tài khoản
                   </Label>
@@ -358,7 +433,10 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="bankName" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Label
+                    htmlFor="bankName"
+                    className="text-sm font-semibold text-gray-700 flex items-center gap-2"
+                  >
                     <Building className="w-4 h-4 text-blue-600" />
                     Tên ngân hàng
                   </Label>
@@ -376,7 +454,10 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="accountNumber" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Label
+                    htmlFor="accountNumber"
+                    className="text-sm font-semibold text-gray-700 flex items-center gap-2"
+                  >
                     <CreditCard className="w-4 h-4 text-blue-600" />
                     Số tài khoản
                   </Label>
@@ -394,19 +475,24 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="refundMethod" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Label
+                    htmlFor="refundMethod"
+                    className="text-sm font-semibold text-gray-700 flex items-center gap-2"
+                  >
                     <Wallet className="w-4 h-4 text-blue-600" />
                     Phương thức hoàn tiền
                   </Label>
-                                     <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                     <div className="flex items-center gap-2 text-blue-800">
-                       <Banknote className="w-4 h-4 text-blue-600" />
-                       <span className="font-medium">Chuyển khoản ngân hàng</span>
-                     </div>
-                     <p className="text-sm text-blue-600 mt-1">
-                       Thông tin hoàn tiền sẽ được chuyển qua tài khoản ngân hàng
-                     </p>
-                   </div>
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center gap-2 text-blue-800">
+                      <Banknote className="w-4 h-4 text-blue-600" />
+                      <span className="font-medium">
+                        Chuyển khoản ngân hàng
+                      </span>
+                    </div>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Thông tin hoàn tiền sẽ được chuyển qua tài khoản ngân hàng
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -418,7 +504,9 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
               <h3 className="font-bold text-white text-lg flex items-center gap-3">
                 <FileText className="w-6 h-6" />
                 Ghi chú hoàn tiền
-                <span className="text-purple-200 text-sm font-normal">(tùy chọn)</span>
+                <span className="text-purple-200 text-sm font-normal">
+                  (tùy chọn)
+                </span>
               </h3>
             </div>
             <div className="p-6">
@@ -436,7 +524,8 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
                 <div className="flex items-center gap-2 mt-3 text-purple-600">
                   <Info className="w-4 h-4" />
                   <span className="text-sm font-medium">
-                    💡 Ghi chú này sẽ được lưu lại để tham khảo khi xử lý hoàn tiền
+                    💡 Ghi chú này sẽ được lưu lại để tham khảo khi xử lý hoàn
+                    tiền
                   </span>
                 </div>
               </div>
@@ -457,8 +546,9 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
               </div>
             </div>
             <p className="text-amber-700 leading-relaxed">
-              Sau khi xác nhận, booking sẽ được hủy và thông tin hoàn tiền sẽ được lưu lại. 
-              Vui lòng kiểm tra kỹ thông tin trước khi xác nhận.
+              Sau khi xác nhận, booking sẽ được hủy và chuyển sang trạng thái
+              "Đang hoàn tiền". Bạn có thể thực hiện hoàn tiền sau bằng cách bấm
+              "Hoàn tiền booking" trong menu actions.
             </p>
           </div>
         </form>
@@ -468,7 +558,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
           <div className="text-sm text-gray-500 font-mono">
             Booking ID: {booking._id}
           </div>
-          
+
           <div className="flex items-center gap-4">
             <Button
               type="button"

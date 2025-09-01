@@ -42,6 +42,7 @@ export interface BookingData {
     refundMethod?: string;
     refundNote?: string;
     cancellationReason?: string;
+    refundImageUrls?: string[]; // Thêm field ảnh hoàn trả
   };
   // Additional cost fields
   additionalCost?: number;
