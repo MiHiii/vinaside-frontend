@@ -26,6 +26,7 @@ import type { Booking } from "@/types/booking.interface";
 import { Link } from "react-router-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import CancelBookingModal from "./CancelBookingModal";
+import RefundBookingModal from "./RefundBookingModal";
 import { PermissionGuard } from "@/components/common/PermissionGuard";
 
 interface BookingActionsProps {
@@ -49,6 +50,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
     variant: "default" as "default" | "destructive",
   });
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
 
   const showConfirm = (
     title: string,
@@ -122,27 +124,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
     }
   };
 
-
-
-  const handleRefundBooking = async () => {
-    try {
-      await dispatch(
-        updateAdminBookingStatus({
-          propertyId,
-          id: booking._id,
-          data: { payment_status: PaymentStatus.REFUNDED },
-        })
-      ).unwrap();
-      toast.success("Hoàn tiền booking thành công!");
-      onSuccess?.();
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Có lỗi xảy ra khi hoàn tiền booking";
-      toast.error(errorMessage);
-    }
-  };
+  // Removed handleRefundBooking - now using RefundBookingModal
 
   // Kiểm tra có thể hoàn thành booking không
   const canComplete = (() => {
@@ -227,7 +209,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
             booking.status === BookingStatus.CONFIRMED) && (
             <>
               <DropdownMenuSeparator />
-              <PermissionGuard permission='booking.cancel'>
+              <PermissionGuard permission="booking.cancel">
                 <DropdownMenuItem
                   onClick={() => setShowCancelModal(true)}
                   className="flex items-center gap-2 text-orange-600 hover:bg-orange-50 hover:text-orange-700 rounded-md px-2 py-1.5 transition-colors duration-200"
@@ -236,7 +218,6 @@ const BookingActions: React.FC<BookingActionsProps> = ({
                   Hủy booking
                 </DropdownMenuItem>
               </PermissionGuard>
-              
             </>
           )}
 
@@ -244,14 +225,7 @@ const BookingActions: React.FC<BookingActionsProps> = ({
           {booking.status === BookingStatus.CANCELLED &&
             booking.payment_status === PaymentStatus.REFUNDING && (
               <DropdownMenuItem
-                onClick={() =>
-                  showConfirm(
-                    "Hoàn tiền booking",
-                    `Bạn có chắc chắn muốn hoàn tiền booking cho khách hàng "${booking.guest_name}"?`,
-                    handleRefundBooking,
-                    "Hoàn tiền"
-                  )
-                }
+                onClick={() => setShowRefundModal(true)}
                 className="flex items-center gap-2 text-purple-600 hover:bg-purple-50 hover:text-purple-700 rounded-md px-2 py-1.5 transition-colors duration-200"
               >
                 <RefreshCw size={14} />
@@ -319,6 +293,16 @@ const BookingActions: React.FC<BookingActionsProps> = ({
         onSuccess={() => {
           onSuccess?.();
           setShowCancelModal(false);
+        }}
+      />
+
+      <RefundBookingModal
+        isOpen={showRefundModal}
+        onClose={() => setShowRefundModal(false)}
+        booking={booking}
+        onSuccess={() => {
+          onSuccess?.();
+          setShowRefundModal(false);
         }}
       />
     </>

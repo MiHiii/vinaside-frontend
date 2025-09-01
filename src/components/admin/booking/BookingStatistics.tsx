@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import { fetchBookingStatisticsOverview } from "@/store/slices/bookingSlice";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -143,7 +143,6 @@ export default function BookingStatisticsAdmin({
     if (dateRange?.from && dateRange?.to) {
       const from = dateRange.from;
       const to = dateRange.to;
-      const today = new Date();
       const diffTime = Math.abs(to.getTime() - from.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -403,7 +402,7 @@ export default function BookingStatisticsAdmin({
 
       {/* Charts Section */}
       <BookingCharts
-        statisticsOverview={statisticsOverview}
+        statisticsOverview={statisticsOverview || {}}
         onVoucherClick={handleVoucherClick}
         onServiceClick={handleServiceClick}
       />

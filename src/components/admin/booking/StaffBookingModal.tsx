@@ -1446,33 +1446,6 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                                 <RefreshCw className="w-3 h-3 mr-1" />
                                 Tải lại
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  console.log("=== DEBUG GUESTS ===");
-                                  console.log("Guests array:", guests);
-                                  console.log("Guests length:", guests.length);
-                                  console.log(
-                                    "Search value:",
-                                    guestSearchValue
-                                  );
-                                  if (guests.length > 0) {
-                                    console.log("First guest:", guests[0]);
-                                    console.log("Guest name:", guests[0].name);
-                                    console.log(
-                                      "Guest email:",
-                                      guests[0].email
-                                    );
-                                  }
-                                  toast.info(
-                                    `Có ${guests.length} guests trong danh sách`
-                                  );
-                                }}
-                                className="h-6 px-2 text-xs bg-yellow-50 hover:bg-yellow-100 border-yellow-300 hover:border-yellow-400 text-yellow-700"
-                              >
-                                Debug
-                              </Button>
                             </div>
                           </div>
                         </div>
@@ -2731,9 +2704,6 @@ const StaffBookingModal: React.FC<StaffBookingModalProps> = ({
                             <DollarSign className="w-4 h-4" />
                             <div>
                               <div>VNPay</div>
-                              <div className="text-xs text-blue-600 font-medium">
-                                Tự động chuyển đến VNPay
-                              </div>
                             </div>
                           </div>
                         </SelectItem>

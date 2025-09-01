@@ -14,17 +14,48 @@ import {
 } from "recharts";
 import { Tag, Package, TrendingUp, DollarSign, Calendar } from "lucide-react";
 
-const COLORS = [
-  "#FF6384", // đỏ hồng
-  "#36A2EB", // xanh dương sáng
-  "#FFCE56", // vàng
-  "#4BC0C0", // xanh ngọc
-  "#9966FF", // tím
-  "#FF9F40", // cam
-];
+// COLORS array removed as it's not being used
+
+interface StatisticsOverview {
+  statusBreakdown?: {
+    pending?: number;
+    confirmed?: number;
+    completed?: number;
+    cancelled?: number;
+    rejected?: number;
+  };
+  paymentStatusBreakdown?: {
+    unpaid?: number;
+    partially_paid?: number;
+    paid?: number;
+    refunding?: number;
+    refunded?: number;
+    failed?: number;
+  };
+  chartData?: Array<{
+    label?: string;
+    date?: string;
+    day?: string;
+    revenue?: number;
+    bookings?: number;
+    occupancyRate?: number;
+  }>;
+  topVouchersUsed?: Array<{
+    voucherCode: string;
+    usageCount: number;
+    totalDiscount: number;
+    averageDiscount: number;
+  }>;
+  topServicesUsed?: Array<{
+    serviceId: string;
+    serviceName: string;
+    usageCount: number;
+    totalRevenue: number;
+  }>;
+}
 
 interface BookingChartsProps {
-  statisticsOverview: any;
+  statisticsOverview: StatisticsOverview;
   onVoucherClick: (voucherCode: string) => void;
   onServiceClick: (serviceId: string) => void;
 }
@@ -105,7 +136,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
     if (!statisticsOverview?.chartData) return [];
 
     // Transform API data (label/revenue/bookings) to chart-ready structure
-    return statisticsOverview.chartData.map((item: any) => ({
+    return statisticsOverview.chartData.map((item) => ({
       date: item.label || item.date || item.day,
       totalRevenue: item.revenue || 0,
       bookings: item.bookings || 0,
@@ -178,7 +209,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
                   contentStyle={{ fontSize: 12, padding: 8 }}
                   labelStyle={{ fontSize: 12, color: "#111827" }}
                   itemStyle={{ fontSize: 12 }}
-                  labelFormatter={(value: any) => {
+                  labelFormatter={(value: string | number) => {
                     return new Date(value).toLocaleDateString("vi-VN", {
                       weekday: "long",
                       month: "long",
@@ -186,7 +217,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
                       year: "numeric",
                     });
                   }}
-                  formatter={(value: any, name: string) => [
+                  formatter={(value: number, name: string) => [
                     name === "totalRevenue" ? formatCurrency(value) : value,
                     name === "totalRevenue"
                       ? "Doanh thu"
@@ -249,7 +280,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
                   contentStyle={{ fontSize: 12 }}
                   itemStyle={{ fontSize: 12 }}
                   labelStyle={{ fontSize: 12 }}
-                  formatter={(value: any) => [value, "Số lượng"]}
+                  formatter={(value: number) => [value, "Số lượng"]}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -286,7 +317,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
                   contentStyle={{ fontSize: 12 }}
                   itemStyle={{ fontSize: 12 }}
                   labelStyle={{ fontSize: 12 }}
-                  formatter={(value: any) => [value, "Số lượng"]}
+                  formatter={(value: number) => [value, "Số lượng"]}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -308,11 +339,11 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
             <div className="space-y-3">
               {(statisticsOverview?.topVouchersUsed || [])
                 .slice(0, 5)
-                .map((voucher: any, index: number) => (
+                .map((voucher, index: number) => (
                   <div
                     key={voucher.voucherCode}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => onVoucherClick(voucher.voucherId)}
+                    onClick={() => onVoucherClick(voucher.voucherCode)}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -322,11 +353,8 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
                       </div>
                       <div>
                         <p className="font-medium text-sm">
-                          {voucher.voucherCode}:{" "}
-                          {voucher.discountPercent ||
-                            voucher.averageDiscountPercent ||
-                            0}
-                          % discount
+                          {voucher.voucherCode}: {voucher.averageDiscount || 0}%
+                          discount
                         </p>
                         <p className="text-xs text-gray-500">
                           {voucher.usageCount} lần sử dụng
@@ -335,10 +363,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-sm text-purple-600">
-                        {voucher.discountPercent ||
-                          voucher.averageDiscountPercent ||
-                          0}
-                        %
+                        {voucher.averageDiscount || 0}%
                       </p>
                     </div>
                   </div>
@@ -359,7 +384,7 @@ const BookingCharts: React.FC<BookingChartsProps> = ({
             <div className="space-y-3">
               {(statisticsOverview?.topServicesUsed || [])
                 .slice(0, 5)
-                .map((service: any, index: number) => (
+                .map((service, index: number) => (
                   <div
                     key={service.serviceId}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
