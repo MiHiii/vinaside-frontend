@@ -14,6 +14,7 @@ import { useSelector } from "react-redux";
 import { useServices } from "@/hooks/useServices";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import CancelBookingModal from "./CancelBookingModal";
+import RefundBookingModal from "./RefundBookingModal";
 
 // import {
 //   Table,
@@ -90,6 +91,7 @@ const BookingDetail: React.FC<{
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
   const [confirmConfig, setConfirmConfig] = useState({
     title: "",
@@ -201,26 +203,7 @@ const BookingDetail: React.FC<{
     }
   };
 
-  const handleRefundBooking = async () => {
-    try {
-      await dispatch(
-        updateAdminBookingStatus({
-          propertyId,
-          id: bookingId,
-          data: { payment_status: PaymentStatus.REFUNDED },
-        })
-      ).unwrap();
-      toast.success("Hoàn tiền booking thành công!");
-      // Refresh booking data
-      dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Có lỗi xảy ra khi hoàn tiền booking";
-      toast.error(errorMessage);
-    }
-  };
+
 
   // Handler for navigating to listing detail
   const handleNavigateToListing = () => {
@@ -592,14 +575,7 @@ const BookingDetail: React.FC<{
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() =>
-                        showConfirm(
-                          "Hoàn tiền booking",
-                          `Bạn có chắc chắn muốn hoàn tiền booking cho khách hàng "${booking.guest_name}"?`,
-                          handleRefundBooking,
-                          "Hoàn tiền"
-                        )
-                      }
+                      onClick={() => setShowRefundModal(true)}
                       className="bg-purple-600 hover:bg-purple-700 text-white"
                     >
                       <RefreshCw size={16} className="mr-2" />
@@ -1666,6 +1642,18 @@ const BookingDetail: React.FC<{
           // Refresh booking data after cancellation
           dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
           setShowCancelModal(false);
+        }}
+      />
+
+      {/* Refund Booking Modal */}
+      <RefundBookingModal
+        isOpen={showRefundModal}
+        onClose={() => setShowRefundModal(false)}
+        booking={booking}
+        onSuccess={() => {
+          // Refresh booking data after refund
+          dispatch(fetchAdminBookingDetail({ propertyId, id: bookingId }));
+          setShowRefundModal(false);
         }}
       />
     </div>
