@@ -48,7 +48,7 @@ export function getPaymentStatusVN(status: string): PaymentStatusVM {
       };
     case 'unpaid':
       return {
-        label: 'Chưa trả',
+        label: 'Chưa thanh toán',
         color: 'text-red-600 bg-red-50 border-red-200',
       };
     case 'paid':
