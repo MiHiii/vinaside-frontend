@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+// import { Textarea } from "@/components/ui/textarea";
 
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { api } from "@/services/api";
 import {
   CheckCircle,
-  FileText,
+  // FileText,
   Banknote,
   User,
   Building,
@@ -161,12 +161,12 @@ const RefundBookingModal: React.FC<RefundBookingModalProps> = ({
                     {new Date(booking.check_out_date).toLocaleDateString()}
                   </p>
                 </div>
-                <div>
-                  <span className="text-gray-500">Số tiền đã thanh toán:</span>
-                  <p className="font-medium text-green-600">
-                    {(booking.deposit_paid_amount || 0).toLocaleString()} VND
-                  </p>
-                </div>
+                                 <div>
+                   <span className="text-gray-500">Số tiền đã thanh toán:</span>
+                   <p className="font-medium text-green-600">
+                     {(booking.deposit_paid_amount || 0).toLocaleString('vi-VN')} VND
+                   </p>
+                 </div>
               </div>
             </div>
           </div>
@@ -190,24 +190,18 @@ const RefundBookingModal: React.FC<RefundBookingModalProps> = ({
                       <Shield className="w-4 h-4 text-emerald-600" />
                       Số tiền hoàn lại (VND)
                     </Label>
-                    <Input
-                      id="refundAmount"
-                      type="number"
-                      value={formData.refundAmount}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "refundAmount",
-                          Number(e.target.value)
-                        )
-                      }
-                      className="mt-1 border-emerald-200 focus:border-emerald-500 focus:ring-emerald-500"
-                      min="0"
-                      max={booking.deposit_paid_amount || 0}
-                    />
-                    <p className="text-xs text-emerald-600 mt-1">
-                      Tối đa:{" "}
-                      {(booking.deposit_paid_amount || 0).toLocaleString()} VND
-                    </p>
+                                         <Input
+                       id="refundAmount"
+                       type="text"
+                       value={(formData.refundAmount || 0).toLocaleString('vi-VN')}
+                       disabled
+                       className="mt-1 border-emerald-200 bg-emerald-50 text-emerald-800 font-semibold cursor-not-allowed"
+                       min="0"
+                       max={booking.deposit_paid_amount || 0}
+                     />
+                                         <p className="text-xs text-emerald-600 mt-1">
+                       Số tiền đã thanh toán: {(booking.deposit_paid_amount || 0).toLocaleString('vi-VN')} VND
+                     </p>
                   </div>
                   <div>
                     <Label
@@ -305,7 +299,7 @@ const RefundBookingModal: React.FC<RefundBookingModalProps> = ({
           </div>
 
           {/* Refund Note */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
             <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4">
               <h3 className="font-bold text-white text-lg flex items-center gap-3">
                 <FileText className="w-6 h-6" />
@@ -335,7 +329,7 @@ const RefundBookingModal: React.FC<RefundBookingModalProps> = ({
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Refund Images Upload - Card bắt buộc */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -383,9 +377,9 @@ const RefundBookingModal: React.FC<RefundBookingModalProps> = ({
 
         {/* Action Buttons - Footer đẹp */}
         <div className="flex items-center justify-between pt-6 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 rounded-b-2xl">
-          <div className="text-sm text-gray-500 font-mono">
+          {/* <div className="text-sm text-gray-500 font-mono">
             Booking ID: {booking._id}
-          </div>
+          </div> */}
 
           <div className="flex items-center gap-4">
             <Button

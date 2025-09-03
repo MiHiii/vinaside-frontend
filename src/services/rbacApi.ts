@@ -111,13 +111,13 @@ export const rbacApi = {
 
   // Xóa mềm role
   softDeleteRole: async (roleKey: string) => {
-    const response = await api.put(`/rbac/roles/${roleKey}/soft-delete`);
+    const response = await api.delete(`/rbac/roles/${roleKey}`);
     return response.data;
   },
 
   // Cập nhật role
   updateRole: async (roleData: CreateRoleDto) => {
-    const response = await api.put(`/rbac/roles/${roleData.key}`, roleData);
+    const response = await api.patch(`/rbac/roles/${roleData.key}`, roleData);
     return response.data;
   },
 

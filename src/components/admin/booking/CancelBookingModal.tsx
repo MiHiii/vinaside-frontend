@@ -555,9 +555,9 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
 
         {/* Action Buttons - Footer đẹp */}
         <div className="flex items-center justify-between pt-6 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 rounded-b-2xl">
-          <div className="text-sm text-gray-500 font-mono">
+          {/* <div className="text-sm text-gray-500 font-mono">
             Booking ID: {booking._id}
-          </div>
+          </div> */}
 
           <div className="flex items-center gap-4">
             <Button
