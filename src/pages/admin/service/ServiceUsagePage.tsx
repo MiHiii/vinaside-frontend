@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useServices } from "@/hooks/useServices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import {
   Building2,
   Package,
   List,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { TableCell, TableHead } from "@/components/ui/table";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -31,6 +33,10 @@ export default function ServiceUsagePage() {
     serviceDetailedStats,
     loading,
     error,
+    serviceBookingsTotal,
+    serviceBookingsPage,
+    serviceBookingsLimit,
+    serviceBookingsTotalPages,
     getServices,
     getServiceUsage,
     getServiceBookings,
@@ -77,7 +83,11 @@ export default function ServiceUsagePage() {
     if (id) {
       console.log("Fetching service data for ID:", id);
       getServiceUsage(id);
-      getServiceBookings(id);
+      getServiceBookings(
+        id,
+        serviceBookingsPage ?? 1,
+        serviceBookingsLimit ?? 10
+      );
       getServiceDetailedStats(id);
     }
 
@@ -90,8 +100,31 @@ export default function ServiceUsagePage() {
   const handleRefresh = () => {
     if (id) {
       getServiceUsage(id);
-      getServiceBookings(id);
+      getServiceBookings(
+        id,
+        serviceBookingsPage ?? 1,
+        serviceBookingsLimit ?? 10
+      );
     }
+  };
+
+  const currentPage = serviceBookingsPage ?? 1;
+  const totalPages = serviceBookingsTotalPages ?? 0;
+  const limit = serviceBookingsLimit ?? 10;
+  const adminTotal = serviceBookingsTotal ?? safeServiceBookings.length;
+  const startItem = useMemo(
+    () => (adminTotal === 0 ? 0 : (currentPage - 1) * limit + 1),
+    [adminTotal, currentPage, limit]
+  );
+  const endItem = useMemo(
+    () => Math.min(currentPage * limit, adminTotal),
+    [adminTotal, currentPage, limit]
+  );
+
+  const goToPage = (page: number) => {
+    if (!id) return;
+    if (page < 1 || (totalPages && page > totalPages)) return;
+    getServiceBookings(id, page, limit);
   };
 
   const formatDate = (dateString: string) => {
@@ -442,7 +475,7 @@ export default function ServiceUsagePage() {
         <CardHeader>
           <CardTitle className="flex items-center text-lg gap-2">
             <Clock className="w-5 h-5 text-blue-600" />
-            Danh sách Booking sử dụng Service ({safeServiceBookings.length})
+            Danh sách Booking sử dụng Service
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -457,6 +490,9 @@ export default function ServiceUsagePage() {
               <table className="w-full min-w-0 table-auto">
                 <thead className="bg-gray-100">
                   <tr>
+                    <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">
+                      STT
+                    </TableHead>
                     <TableHead className="py-3 px-4 text-left font-semibold text-gray-700">
                       Khách hàng
                     </TableHead>
@@ -481,20 +517,25 @@ export default function ServiceUsagePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {safeServiceBookings.map((booking) => (
+                  {safeServiceBookings.map((booking, index) => (
                     <tr
                       key={booking._id}
                       className="hover:bg-gray-50 transition"
                     >
-                      <TableCell className="py-4">
+                      <TableCell className="">
+                        <div className="text-sm font-medium text-gray-600 ml-5">
+                          {index + 1}
+                        </div>
+                      </TableCell>
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
                         >
-                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-none group-hover:border-blue-300 transition-all duration-300">
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <Users className="w-5 h-5 text-white" />
+                              <div className="w-10 h-10  flex items-center justify-center">
+                                <Users className="w-5 h-5 text-gray-500" />
                               </div>
                               <div>
                                 <div className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition-colors">
@@ -508,7 +549,7 @@ export default function ServiceUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -523,7 +564,7 @@ export default function ServiceUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -535,7 +576,7 @@ export default function ServiceUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -550,7 +591,7 @@ export default function ServiceUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -565,7 +606,7 @@ export default function ServiceUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -577,7 +618,7 @@ export default function ServiceUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -591,6 +632,72 @@ export default function ServiceUsagePage() {
                   ))}
                 </tbody>
               </table>
+              {totalPages > 0 && adminTotal > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6  border-t border-gray-200/50 gap-3 mt-3">
+                  <div className="text-sm text-gray-600 text-center sm:text-left mt-3">
+                    Hiển thị {startItem} đến {endItem} trong tổng số{" "}
+                    {adminTotal} booking
+                    {totalPages > 1 &&
+                      ` (Trang ${currentPage} / ${totalPages})`}
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0 bg-white hover:bg-gray-50 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Previous</span>
+                      <ChevronLeft className="h-4 w-4 text-gray-600" />
+                    </Button>
+
+                    {Array.from(
+                      { length: Math.min(5, totalPages || 0) },
+                      (_, i) => {
+                        let pageNum: number;
+                        if ((totalPages || 0) <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= (totalPages || 0) - 2) {
+                          pageNum = (totalPages || 0) - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={
+                              currentPage === pageNum ? "default" : "outline"
+                            }
+                            size="sm"
+                            onClick={() => goToPage(pageNum)}
+                            className={`h-8 w-8 p-0 ${
+                              currentPage === pageNum
+                                ? "bg-gray-800 text-white hover:bg-gray-700 border-gray-800"
+                                : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                            }`}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      }
+                    )}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 w-8 p-0 bg-white hover:bg-gray-50 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Next</span>
+                      <ChevronRight className="h-4 w-4 text-gray-600" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

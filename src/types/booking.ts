@@ -16,6 +16,7 @@ export interface BookingData {
   price_per_night: number;
   total_price: number;
   final_amount: number;
+  final_price?: number;
   deposit_paid_amount?: number;
   checkInDate: string;
   check_out_date: string;
@@ -32,6 +33,14 @@ export interface BookingData {
     total_price?: number;
   }>;
   services_total_amount?: number;
+  // Voucher information
+  voucher_code?: string;
+  voucher_discount_amount?: number;
+  // Additional booking information
+  property_name?: string;
+  listing_title?: string;
+  booking_status?: string;
+  nights?: number;
   // Thông tin hủy phòng
   cancellation_reason?: string;
   cancelled_at?: string;

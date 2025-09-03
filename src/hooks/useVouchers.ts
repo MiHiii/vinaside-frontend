@@ -27,6 +27,10 @@ export const useVouchers = () => {
     voucherDetailedStats,
     loading,
     error,
+    voucherBookingsTotal,
+    voucherBookingsPage,
+    voucherBookingsLimit,
+    voucherBookingsTotalPages,
   } = useAppSelector((state) => state.voucher);
 
   // Các hàm CRUD
@@ -52,8 +56,8 @@ export const useVouchers = () => {
   );
 
   const getVoucherBookings = useCallback(
-    (id: string) => {
-      dispatch(fetchVoucherBookings(id));
+    (id: string, page?: number, limit?: number) => {
+      dispatch(fetchVoucherBookings({ id, page, limit }));
     },
     [dispatch]
   );
@@ -120,6 +124,10 @@ export const useVouchers = () => {
     voucherDetailedStats,
     loading,
     error,
+    voucherBookingsTotal,
+    voucherBookingsPage,
+    voucherBookingsLimit,
+    voucherBookingsTotalPages,
     getVouchers,
     getVoucherDetail,
     getVoucherUsage,

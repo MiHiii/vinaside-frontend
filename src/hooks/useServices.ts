@@ -1,4 +1,4 @@
-import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
+import { useAppDispatch, useAppSelector } from "@/hooks/useRedux";
 import {
   fetchServices,
   fetchServiceDetail,
@@ -14,72 +14,82 @@ import {
   clearServiceDetail,
   fetchServiceDetailedStats,
   toggleServiceQuantity,
-} from '@/store/slices/serviceSlice';
-import { useCallback } from 'react';
-import { CreateServiceDto, UpdateServiceDto } from '@/types/services';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+} from "@/store/slices/serviceSlice";
+import { useCallback } from "react";
+import { CreateServiceDto, UpdateServiceDto } from "@/types/services";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 export const useServices = () => {
   const dispatch = useAppDispatch();
-  const { services, serviceDetail, serviceUsage, serviceBookings, serviceDetailedStats, loading, error } = useSelector(
-    (state: RootState) => state.service,
-  );
+  const {
+    services,
+    serviceDetail,
+    serviceUsage,
+    serviceBookings,
+    serviceDetailedStats,
+    loading,
+    error,
+    serviceBookingsTotal,
+    serviceBookingsPage,
+    serviceBookingsLimit,
+    serviceBookingsTotalPages,
+  } = useSelector((state: RootState) => state.service);
 
   const getServices = useCallback(
     (params?: Record<string, unknown>) => {
       dispatch(fetchServices(params ?? {}));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const getServiceDetail = useCallback(
     (id: string) => {
       dispatch(fetchServiceDetail(id));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const addService = useCallback(
     (dto: CreateServiceDto) => {
       return dispatch(createService(dto));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const editService = useCallback(
     (id: string, dto: UpdateServiceDto) => {
       return dispatch(updateService({ id, dto }));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const deleteService = useCallback(
     (id: string) => {
       return dispatch(removeService(id));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const restore = useCallback(
     (id: string) => {
       return dispatch(restoreService(id));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const toggleStatus = useCallback(
     (id: string) => {
       return dispatch(toggleServiceStatus(id));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const toggleQuantity = useCallback(
     (id: string) => {
       return dispatch(toggleServiceQuantity(id));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const clearError = useCallback(() => {
@@ -94,21 +104,21 @@ export const useServices = () => {
     (id: string) => {
       dispatch(fetchServiceUsage(id));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const getServiceBookings = useCallback(
-    (id: string) => {
-      dispatch(fetchServiceBookings(id));
+    (id: string, page?: number, limit?: number) => {
+      dispatch(fetchServiceBookings({ id, page, limit }));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const getServiceDetailedStats = useCallback(
     (id: string) => {
       dispatch(fetchServiceDetailedStats(id));
     },
-    [dispatch],
+    [dispatch]
   );
 
   const clearUsage = useCallback(() => {
@@ -123,6 +133,10 @@ export const useServices = () => {
     serviceDetailedStats,
     loading,
     error,
+    serviceBookingsTotal,
+    serviceBookingsPage,
+    serviceBookingsLimit,
+    serviceBookingsTotalPages,
     getServices,
     getServiceDetail,
     addService,
