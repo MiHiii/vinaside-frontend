@@ -42,6 +42,11 @@ interface VoucherState {
   voucherDetailedStats?: VoucherDetailedStats | null;
   loading: boolean;
   error: string | null;
+  // Pagination for voucherBookings
+  voucherBookingsTotal?: number;
+  voucherBookingsPage?: number;
+  voucherBookingsLimit?: number;
+  voucherBookingsTotalPages?: number;
 }
 
 const initialState: VoucherState = {
@@ -52,6 +57,10 @@ const initialState: VoucherState = {
   voucherDetailedStats: null,
   loading: false,
   error: null,
+  voucherBookingsTotal: 0,
+  voucherBookingsPage: 1,
+  voucherBookingsLimit: 10,
+  voucherBookingsTotalPages: 0,
 };
 
 // Detailed stats interface for voucher
@@ -195,13 +204,34 @@ export const fetchVoucherUsage = createAsyncThunk(
 
 export const fetchVoucherBookings = createAsyncThunk(
   "voucher/fetchVoucherBookings",
-  async (id: string, { rejectWithValue }) => {
+  async (
+    { id, page = 1, limit = 10 }: { id: string; page?: number; limit?: number },
+    { rejectWithValue }
+  ) => {
     try {
-      console.log("fetchVoucherBookings - Calling API with ID:", id);
-      const { data } = await voucherApi.getBookings(id);
+      console.log(
+        "fetchVoucherBookings - Calling API with ID:",
+        id,
+        page,
+        limit
+      );
+      const { data } = await voucherApi.getBookings(id, { page, limit });
       console.log("fetchVoucherBookings - API response:", data);
-      // API response có cấu trúc: { success: true, data: { data: [...], total: 1, ... } }
-      return data.data?.data || [];
+      // API response: { success, data: { data: [...], total, page, limit, totalPages } }
+      const payload = data?.data || {};
+      return {
+        data: payload.data || [],
+        total: payload.total ?? 0,
+        page: payload.page ?? page,
+        limit: payload.limit ?? limit,
+        totalPages: payload.totalPages ?? 0,
+      } as {
+        data: VoucherBookingData[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
     } catch (err: unknown) {
       console.error("fetchVoucherBookings - API error:", err);
       const error = err as { response?: { data?: { message?: string } } };
@@ -345,9 +375,22 @@ const voucherSlice = createSlice({
       })
       .addCase(
         fetchVoucherBookings.fulfilled,
-        (state, action: PayloadAction<VoucherBookingData[]>) => {
+        (
+          state,
+          action: PayloadAction<{
+            data: VoucherBookingData[];
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+          }>
+        ) => {
           state.loading = false;
-          state.voucherBookings = action.payload || [];
+          state.voucherBookings = action.payload.data || [];
+          state.voucherBookingsTotal = action.payload.total;
+          state.voucherBookingsPage = action.payload.page;
+          state.voucherBookingsLimit = action.payload.limit;
+          state.voucherBookingsTotalPages = action.payload.totalPages;
         }
       )
       .addCase(fetchVoucherBookings.rejected, (state, action) => {

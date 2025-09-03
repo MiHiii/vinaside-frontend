@@ -35,6 +35,7 @@ import {
   Plus,
   Package,
   AlertCircle,
+  Tag,
 } from "lucide-react";
 
 import { format, subDays } from "date-fns";
@@ -2206,17 +2207,18 @@ const PastTrip = () => {
               {/* Nút thêm dịch vụ - hiển thị cho tất cả booking đã thanh toán */}
 
               {(booking.payment_status === PaymentStatus.PAID ||
-                booking.payment_status === PaymentStatus.PARTIALLY_PAID) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 text-blue-600 border-blue-600 hover:bg-blue-50"
-                  onClick={() => handleAddService(booking)}
-                >
-                  <Plus size={16} />
-                  Thêm dịch vụ
-                </Button>
-              )}
+                booking.payment_status === PaymentStatus.PARTIALLY_PAID) &&
+                tab !== "history" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 text-blue-600 border-blue-600 hover:bg-blue-50"
+                    onClick={() => handleAddService(booking)}
+                  >
+                    <Plus size={16} />
+                    Thêm dịch vụ
+                  </Button>
+                )}
             </div>
           </div>
         </div>
@@ -2418,7 +2420,7 @@ const PastTrip = () => {
       {showDetail && selectedBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-lg">
-            <div className="flex justify-between items-center mb-4 border-b pb-2">
+            <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
                 <FileText size={22} className="text-blue-600" />
 
@@ -2440,12 +2442,12 @@ const PastTrip = () => {
                   selectedBooking.listingId.images?.[0] || "/placeholder.svg"
                 }
                 alt={selectedBooking.listingId.title}
-                className="w-full h-64 object-cover rounded-lg mb-4 border"
+                className="w-full h-64 object-cover rounded-lg mb-4 border border-gray-200"
               />
             )}
 
             <div className="space-y-6">
-              <div className="bg-gray-50 p-4 rounded-lg border">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <Info size={18} className="text-blue-500" />
                   Thông tin đặt phòng
@@ -2475,12 +2477,6 @@ const PastTrip = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-gray-400" />
-                    <span className="font-medium">Tổng tiền :</span>{" "}
-                    {(selectedBooking.final_amount || 0).toLocaleString()}₫
-                  </div>
-
-                  <div className="flex items-center gap-2">
                     <Info size={16} className="text-gray-400" />
 
                     <span className="font-medium">Trạng thái:</span>
@@ -2506,6 +2502,165 @@ const PastTrip = () => {
                         ).text
                       }
                     </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông tin dịch vụ đã sử dụng */}
+              {selectedBooking.selected_services &&
+                selectedBooking.selected_services.length > 0 && (
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-blue-800">
+                      <Package size={18} className="text-blue-600" />
+                      Dịch vụ đã sử dụng
+                    </h4>
+                    <div className="space-y-2">
+                      {selectedBooking.selected_services.map(
+                        (service: any, index: number) => (
+                          <div
+                            key={index}
+                            className="flex justify-between items-center text-sm"
+                          >
+                            <span className="text-blue-700">
+                              • {service.service_name || "Dịch vụ"} x
+                              {service.quantity || 1}
+                            </span>
+                            <span className="font-medium text-blue-800">
+                              {(
+                                (service.service_price || 0) *
+                                (service.quantity || 1)
+                              ).toLocaleString()}
+                              ₫
+                            </span>
+                          </div>
+                        )
+                      )}
+                      <div className="border-t border-blue-300 pt-2 mt-2">
+                        <div className="flex justify-between items-center font-semibold text-blue-900">
+                          <span>Tổng phí dịch vụ:</span>
+                          <span>
+                            {selectedBooking.selected_services
+                              .reduce(
+                                (total: number, service: any) =>
+                                  total +
+                                  (service.service_price || 0) *
+                                    (service.quantity || 1),
+                                0
+                              )
+                              .toLocaleString()}
+                            ₫
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              {/* Thông tin voucher */}
+              {selectedBooking.voucher_discount_amount &&
+                selectedBooking.voucher_discount_amount > 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-green-800">
+                      <Tag size={18} className="text-green-600" />
+                      Thông tin Voucher
+                    </h4>
+                    <div className="space-y-2 text-green-700">
+                      <div className="flex justify-between items-center">
+                        <span>Mã voucher:</span>
+                        <span className="font-medium">
+                          {selectedBooking.voucher_code || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Giảm giá:</span>
+                        <span className="font-medium">
+                          -
+                          {selectedBooking.voucher_discount_amount.toLocaleString()}
+                          ₫
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              {/* Chi tiết hóa đơn */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <DollarSign size={18} className="text-green-500" />
+                  Chi tiết hóa đơn
+                </h4>
+                <div className="space-y-3">
+                  {/* Giá phòng cơ bản */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Giá phòng cơ bản:</span>
+                    <span className="font-medium">
+                      {(selectedBooking.total_price || 0).toLocaleString()}₫
+                    </span>
+                  </div>
+
+                  {/* Phí dịch vụ */}
+                  {selectedBooking.selected_services &&
+                    selectedBooking.selected_services.length > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">Phí dịch vụ:</span>
+                        <span className="font-medium">
+                          {selectedBooking.selected_services
+                            .reduce(
+                              (total: number, service: any) =>
+                                total +
+                                (service.service_price || 0) *
+                                  (service.quantity || 1),
+                              0
+                            )
+                            .toLocaleString()}
+                          ₫
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Phí dịch vụ (10%) */}
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span>Phí dịch vụ (10%):</span>
+                    <span className="font-medium">
+                      {(
+                        (selectedBooking.total_price || 0) * 0.1
+                      ).toLocaleString()}
+                      ₫
+                    </span>
+                  </div>
+
+                  {/* Thuế VAT (8%) */}
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span>Thuế VAT (8%):</span>
+                    <span className="font-medium">
+                      {(
+                        (selectedBooking.total_price || 0) * 0.08
+                      ).toLocaleString()}
+                      ₫
+                    </span>
+                  </div>
+
+                  {/* Giảm giá voucher */}
+                  {selectedBooking.voucher_discount_amount &&
+                    selectedBooking.voucher_discount_amount > 0 && (
+                      <div className="flex justify-between items-center text-green-600">
+                        <span>Giảm giá voucher:</span>
+                        <span className="font-medium">
+                          -
+                          {selectedBooking.voucher_discount_amount.toLocaleString()}
+                          ₫
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Tổng tiền */}
+                  <div className="border-t border-gray-300 pt-3 mt-3">
+                    <div className="flex justify-between items-center font-bold text-lg text-gray-900">
+                      <span>Tổng tiền:</span>
+                      <span>
+                        {(selectedBooking.final_amount || 0).toLocaleString()}₫
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

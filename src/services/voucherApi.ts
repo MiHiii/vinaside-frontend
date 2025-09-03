@@ -16,6 +16,7 @@ export const voucherApi = {
   toggleStatus: (id: string) => api.put(`/vouchers/${id}/toggle-status`),
   useVoucher: (id: string) => api.post(`/vouchers/${id}/use`),
   getUsageStats: (id: string) => api.get(`/vouchers/${id}/usage-stats`),
-  getBookings: (id: string) => api.get(`/vouchers/${id}/bookings`),
+  getBookings: (id: string, params?: Record<string, unknown>) =>
+    api.get(`/vouchers/${id}/bookings`, { params }),
   getDetailedStats: (id: string) => api.get(`/vouchers/stats/detailed/${id}`),
 };
