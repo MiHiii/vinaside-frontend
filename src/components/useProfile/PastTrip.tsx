@@ -55,7 +55,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 import MessageHostDialog from '../roomdetail/MessageHostDialog';
-import { RefundMethod } from '@/types/cancel-booking.interface';
 
 const STATUS_UPCOMING = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
 
@@ -969,13 +968,7 @@ const PastTrip = () => {
                       {booking.cancellationDetails.refundMethod && (
                         <div>
                           <span className='font-medium text-red-800'>Phương thức hoàn tiền:</span>{' '}
-                          {booking.cancellationDetails.refundMethod === RefundMethod.BANK_TRANSFER
-                            ? 'Chuyển khoản ngân hàng'
-                            : booking.cancellationDetails.refundMethod === RefundMethod.CREDIT_CARD
-                            ? 'Thẻ tín dụng'
-                            : booking.cancellationDetails.refundMethod === RefundMethod.WALLET
-                            ? 'Ví điện tử'
-                            : 'Khác'}
+                          {booking.cancellationDetails.refundMethod}
                         </div>
                       )}
 
@@ -2294,30 +2287,35 @@ const PastTrip = () => {
               </div>
 
               {/* Thông tin dịch vụ đã sử dụng */}
-              {selectedBooking.selected_services.length > 0 && (
+              {selectedBooking.selected_services && selectedBooking.selected_services.length > 0 && (
                 <div className='bg-blue-50 p-4 rounded-lg border border-blue-200'>
                   <h4 className='font-semibold mb-3 flex items-center gap-2 text-blue-800'>
                     <Package size={18} className='text-blue-600' />
                     Dịch vụ đã sử dụng
                   </h4>
                   <div className='space-y-2'>
-                    {selectedBooking.selected_services.map((service: any, index: number) => (
-                      <div key={index} className='flex justify-between items-center text-sm'>
-                        <span className='text-blue-700'>
-                          • {service.service_name || 'Dịch vụ'} x{service.quantity || 1}
-                        </span>
-                        <span className='font-medium text-blue-800'>
-                          {((service.service_price || 0) * (service.quantity || 1)).toLocaleString()}₫
-                        </span>
-                      </div>
-                    ))}
+                    {selectedBooking.selected_services?.map(
+                      (
+                        service: { service_name?: string; quantity?: number; service_price?: number },
+                        index: number,
+                      ) => (
+                        <div key={index} className='flex justify-between items-center text-sm'>
+                          <span className='text-blue-700'>
+                            • {service.service_name || 'Dịch vụ'} x{service.quantity || 1}
+                          </span>
+                          <span className='font-medium text-blue-800'>
+                            {((service.service_price || 0) * (service.quantity || 1)).toLocaleString()}₫
+                          </span>
+                        </div>
+                      ),
+                    )}
                     <div className='border-t border-blue-300 pt-2 mt-2'>
                       <div className='flex justify-between items-center font-semibold text-blue-900'>
                         <span>Tổng phí dịch vụ:</span>
                         <span>
                           {selectedBooking.selected_services
                             .reduce(
-                              (total: number, service: any) =>
+                              (total: number, service: { service_price?: number; quantity?: number }) =>
                                 total + (service.service_price || 0) * (service.quantity || 1),
                               0,
                             )
@@ -2331,7 +2329,7 @@ const PastTrip = () => {
               )}
 
               {/* Thông tin voucher */}
-              {selectedBooking.voucher_discount_amount > 0 && (
+              {selectedBooking.voucher_discount_amount && selectedBooking.voucher_discount_amount > 0 && (
                 <div className='bg-green-50 p-4 rounded-lg border border-green-200'>
                   <h4 className='font-semibold mb-3 flex items-center gap-2 text-green-800'>
                     <Tag size={18} className='text-green-600' />
@@ -2349,6 +2347,7 @@ const PastTrip = () => {
                   </div>
                 </div>
               )}
+
               {/* Chi tiết hóa đơn */}
               <div className='bg-gray-50 p-4 rounded-lg border border-gray-200'>
                 <h4 className='font-semibold mb-3 flex items-center gap-2'>
@@ -2363,13 +2362,13 @@ const PastTrip = () => {
                   </div>
 
                   {/* Phí dịch vụ */}
-                  {selectedBooking.selected_services.length > 0 && (
+                  {selectedBooking.selected_services && selectedBooking.selected_services.length > 0 && (
                     <div className='flex justify-between items-center'>
                       <span className='text-gray-700'>Phí dịch vụ:</span>
                       <span className='font-medium'>
                         {selectedBooking.selected_services
                           .reduce(
-                            (total: number, service: any) =>
+                            (total: number, service: { service_price?: number; quantity?: number }) =>
                               total + (service.service_price || 0) * (service.quantity || 1),
                             0,
                           )
@@ -2392,7 +2391,7 @@ const PastTrip = () => {
                   </div>
 
                   {/* Giảm giá voucher */}
-                  {selectedBooking.voucher_discount_amount > 0 && (
+                  {selectedBooking.voucher_discount_amount && selectedBooking.voucher_discount_amount > 0 && (
                     <div className='flex justify-between items-center text-green-600'>
                       <span>Giảm giá voucher:</span>
                       <span className='font-medium'>-{selectedBooking.voucher_discount_amount.toLocaleString()}₫</span>

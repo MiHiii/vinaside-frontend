@@ -95,7 +95,7 @@ export default function Messages({ userRole }: MessagesProps) {
   return (
     <div className='min-h-screen bg-background'>
       <MessagesHeader />
-      <div className='flex h-[1170px] bg-background justify-center mt-6 mb-6' style={{ scrollBehavior: 'auto' }}>
+      <div className='flex h-[1180px] bg-background justify-center mt-6 mb-6' style={{ scrollBehavior: 'auto' }}>
         <div className='flex w-full max-w-[1480px] h-full overflow-hidden rounded-lg shadow-lg'>
           {/* Sidebar */}
           <div className='w-100 bg-card border-r border-gray-200 flex flex-col'>

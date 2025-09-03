@@ -834,7 +834,7 @@ export default function AdminMessages() {
   }
 
   return (
-    <div className='flex min-h-screen bg-background justify-center mt-6 mb-6' style={{ scrollBehavior: 'auto' }}>
+    <div className='flex h-[1180px] bg-background justify-center mt-6 mb-6' style={{ scrollBehavior: 'auto' }}>
       <div className='flex w-full max-w-[1450px] h-full overflow-hidden rounded-lg shadow-lg'>
         {/* Sidebar */}
         <div className='w-100 bg-card border-r border-gray-200 flex flex-col'>
