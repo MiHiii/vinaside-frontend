@@ -70,12 +70,24 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose,
     switch (paymentStatus) {
       case 'paid':
         return 'bg-green-100 text-green-800';
+      case 'partially_paid':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'unpaid':
+        return 'bg-red-100 text-red-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
+      case 'refunding':
+        return 'bg-orange-100 text-orange-800';
       case 'failed':
         return 'bg-red-100 text-red-800';
       case 'refunded':
         return 'bg-purple-100 text-purple-800';
+      case 'partially_paid':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'unpaid':
+        return 'bg-red-100 text-red-800';
+      case 'refunding':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -85,12 +97,24 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({ isOpen, onClose,
     switch (paymentStatus) {
       case 'paid':
         return 'Đã thanh toán';
+      case 'partially_paid':
+        return 'Thanh toán một phần';
+      case 'unpaid':
+        return 'Chưa thanh toán';
       case 'pending':
         return 'Chờ thanh toán';
+      case 'refunding':
+        return 'Đang hoàn tiền';
       case 'failed':
         return 'Thanh toán thất bại';
       case 'refunded':
         return 'Đã hoàn tiền';
+      case 'partially_paid':
+        return 'Thanh toán một phần';
+      case 'unpaid':
+        return 'Chưa thanh toán';
+      case 'refunding':
+        return 'Đang hoàn tiền';
       default:
         return paymentStatus;
     }

@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { useAppSelector } from "@/hooks/useRedux";
-import { RootState } from "@/store";
-import messageService from "@/services/message.service";
-import socketService from "@/services/socket.service";
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { useAppSelector } from '@/hooks/useRedux';
+import { RootState } from '@/store';
+import messageService from '@/services/message.service';
+import socketService from '@/services/socket.service';
 import {
   MessageWithUI,
   ConversationUI,
@@ -10,58 +10,47 @@ import {
   ReactionType,
   ConversationUpdateV2,
   Participant,
-} from "@/types/message";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import {
-  MoreHorizontal,
-  Send,
-  Smile,
-  Reply,
-  X,
-  Trash2,
-  User,
-} from "lucide-react";
+} from '@/types/message';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { MoreHorizontal, Send, Smile, Reply, X, Trash2, User } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import EmojiPicker from "emoji-picker-react";
-import { format, isSameDay as dfIsSameDay } from "date-fns";
-import { vi } from "date-fns/locale";
+} from '@/components/ui/dropdown-menu';
+import EmojiPicker from 'emoji-picker-react';
+import { format, isSameDay as dfIsSameDay } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 // Utility function to safely parse dates
-const safeParseDate = (
-  dateString: string | undefined,
-  fallback: Date = new Date()
-): Date => {
+const safeParseDate = (dateString: string | undefined, fallback: Date = new Date()): Date => {
   if (!dateString) {
-    console.warn("⚠️ [AdminMessages] Date string is undefined or null");
+    console.warn('⚠️ [AdminMessages] Date string is undefined or null');
     return fallback;
   }
 
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
-      console.warn("⚠️ [AdminMessages] Invalid date string:", dateString);
+      console.warn('⚠️ [AdminMessages] Invalid date string:', dateString);
       return fallback;
     }
     return date;
   } catch (error) {
-    console.error("❌ [AdminMessages] Error parsing date:", dateString, error);
+    console.error('❌ [AdminMessages] Error parsing date:', dateString, error);
     return fallback;
   }
 };
 
 function DayDivider({ date }: { date: Date }) {
   return (
-    <div className="flex items-center justify-center my-6">
-      <span className="text-xs text-muted-foreground bg-card border border-border rounded-full px-3 py-1 shadow-sm">
+    <div className='flex items-center justify-center my-6'>
+      <span className='text-xs text-muted-foreground bg-card border border-border rounded-full px-3 py-1 shadow-sm'>
         {format(date, "d 'thg' M", { locale: vi })}
       </span>
     </div>
@@ -69,52 +58,41 @@ function DayDivider({ date }: { date: Date }) {
 }
 
 // Helper function to get sender display name
-function getSenderDisplayName(
-  message: MessageWithUI,
-  conversation: ConversationUI | null
-): string {
+function getSenderDisplayName(message: MessageWithUI, conversation: ConversationUI | null): string {
   // First try from message UI
-  if (
-    message.ui?.sender_display_name &&
-    message.ui.sender_display_name !== "Unknown"
-  ) {
+  if (message.ui?.sender_display_name && message.ui.sender_display_name !== 'Unknown') {
     return message.ui.sender_display_name;
   }
 
   // Then try to find from conversation participants
   if (conversation?.participants && message.sender_id) {
-    const participant = conversation.participants.find(
-      (p) => p._id === message.sender_id
-    );
+    const participant = conversation.participants.find((p) => p._id === message.sender_id);
     if (participant?.name) {
       return participant.name;
     }
   }
 
   // Fallback based on role
-  if (message.ui_for === "admin") return "Admin";
-  if (message.ui_for === "staff") return "Staff";
-  if (message.ui_for === "guest") return "Guest";
+  if (message.ui_for === 'admin') return 'Admin';
+  if (message.ui_for === 'staff') return 'Staff';
+  if (message.ui_for === 'guest') return 'Guest';
 
-  return "Unknown User";
+  return 'Unknown User';
 }
 
 // Helper function to normalize sender_id (handle both string and object)
 function normalizeSenderId(senderId: any): string {
-  if (typeof senderId === "string") {
+  if (typeof senderId === 'string') {
     return senderId;
   }
-  if (typeof senderId === "object" && senderId !== null) {
-    return senderId._id || senderId.id || "";
+  if (typeof senderId === 'object' && senderId !== null) {
+    return senderId._id || senderId.id || '';
   }
-  return "";
+  return '';
 }
 
 // Helper function to get sender avatar URL
-function getSenderAvatarUrl(
-  message: MessageWithUI,
-  conversation: ConversationUI | null
-): string {
+function getSenderAvatarUrl(message: MessageWithUI, conversation: ConversationUI | null): string {
   // First try from message UI
   if (message.ui?.sender_avatar_url) {
     return message.ui.sender_avatar_url;
@@ -122,15 +100,13 @@ function getSenderAvatarUrl(
 
   // Then try to find from conversation participants
   if (conversation?.participants && message.sender_id) {
-    const participant = conversation.participants.find(
-      (p) => p._id === normalizeSenderId(message.sender_id)
-    );
+    const participant = conversation.participants.find((p) => p._id === normalizeSenderId(message.sender_id));
     if (participant?.avatar_url) {
       return participant.avatar_url;
     }
   }
 
-  return "/placeholder.svg";
+  return '/placeholder.svg';
 }
 
 export default function AdminMessages() {
@@ -138,19 +114,16 @@ export default function AdminMessages() {
 
   // States
   const [conversations, setConversations] = useState<ConversationUI[]>([]);
-  const [selectedConversation, setSelectedConversation] =
-    useState<ConversationUI | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<ConversationUI | null>(null);
   const [messages, setMessages] = useState<MessageWithUI[]>([]);
-  const [messageInput, setMessageInput] = useState("");
+  const [messageInput, setMessageInput] = useState('');
   const [replyingTo, setReplyingTo] = useState<MessageWithUI | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(
-    null
-  );
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [readStatus, setReadStatus] = useState<{
     [conversationId: string]: boolean;
@@ -172,12 +145,12 @@ export default function AdminMessages() {
 
   // Quick reactions
   const quickReactions: { emoji: string; type: ReactionType }[] = [
-    { emoji: "👍", type: "like" },
-    { emoji: "❤️", type: "love" },
-    { emoji: "😂", type: "laugh" },
-    { emoji: "😮", type: "wow" },
-    { emoji: "😢", type: "sad" },
-    { emoji: "😡", type: "angry" },
+    { emoji: '👍', type: 'like' },
+    { emoji: '❤️', type: 'love' },
+    { emoji: '😂', type: 'laugh' },
+    { emoji: '😮', type: 'wow' },
+    { emoji: '😢', type: 'sad' },
+    { emoji: '😡', type: 'angry' },
   ];
 
   // Load conversations for admin with debounce
@@ -198,14 +171,12 @@ export default function AdminMessages() {
 
       loadConversationsInternal();
     },
-    [user?.role]
+    [user?.role],
   );
 
   const loadConversationsInternal = useCallback(async () => {
     if (isLoadingConversations) {
-      console.log(
-        "🔄 [AdminMessages] Already loading conversations, skipping..."
-      );
+      console.log('🔄 [AdminMessages] Already loading conversations, skipping...');
       return;
     }
 
@@ -219,27 +190,25 @@ export default function AdminMessages() {
 
     try {
       setIsLoadingConversations(true);
-      const userRole = user?.role || "guest";
-      console.log("🔄 [AdminMessages] Loading conversations for:", userRole);
+      const userRole = user?.role || 'guest';
+      console.log('🔄 [AdminMessages] Loading conversations for:', userRole);
 
-      const data = await messageService.getConversations(
-        userRole as "guest" | "staff" | "admin"
-      );
+      const data = await messageService.getConversations(userRole as 'guest' | 'staff' | 'admin');
 
       // Check if request was aborted
       if (abortControllerRef.current?.signal.aborted) {
-        console.log("🔄 [AdminMessages] Request was aborted");
+        console.log('🔄 [AdminMessages] Request was aborted');
         return;
       }
 
-      console.log("✅ [AdminMessages] Loaded", data.length, "conversations");
+      console.log('✅ [AdminMessages] Loaded', data.length, 'conversations');
       setConversations(data);
     } catch (error: any) {
-      if (error.name === "AbortError") {
-        console.log("🔄 [AdminMessages] Request was aborted");
+      if (error.name === 'AbortError') {
+        console.log('🔄 [AdminMessages] Request was aborted');
         return;
       }
-      console.error("❌ [AdminMessages] Error loading conversations:", error);
+      console.error('❌ [AdminMessages] Error loading conversations:', error);
     } finally {
       setIsLoadingConversations(false);
       abortControllerRef.current = null;
@@ -250,58 +219,44 @@ export default function AdminMessages() {
   const loadConversationMessages = useCallback(
     async (conversation: ConversationUI) => {
       try {
-        console.log(
-          "🔄 [AdminMessages] Reloading messages for conversation:",
-          conversation._id
-        );
+        console.log('🔄 [AdminMessages] Reloading messages for conversation:', conversation._id);
 
-        const userRole = user?.role || "guest";
+        const userRole = user?.role || 'guest';
         const data = await messageService.getConversationMessages(
           conversation._id,
           50,
           1,
-          userRole as "guest" | "staff" | "admin"
+          userRole as 'guest' | 'staff' | 'admin',
         );
-        console.log("📥 [AdminMessages] Reloaded messages count:", data.length);
+        console.log('📥 [AdminMessages] Reloaded messages count:', data.length);
         setMessages(data);
       } catch (error: any) {
-        console.error("❌ [AdminMessages] Error reloading messages:", error);
+        console.error('❌ [AdminMessages] Error reloading messages:', error);
       }
     },
-    [user?.role]
+    [user?.role],
   );
 
   // Select conversation and load messages
   const selectConversation = useCallback(
     async (conversation: ConversationUI) => {
       try {
-        console.log(
-          "🎯 [AdminMessages] Selecting conversation:",
-          conversation._id
-        );
-        console.log("🎯 [AdminMessages] Conversation data:", conversation);
+        console.log('🎯 [AdminMessages] Selecting conversation:', conversation._id);
+        console.log('🎯 [AdminMessages] Conversation data:', conversation);
         setSelectedConversation(conversation);
         selectedConversationRef.current = conversation; // Update ref for socket handlers
         setMessages([]);
         setHasMoreMessages(true);
         setIsLoadingMessages(true);
 
-        console.log(
-          "📨 [AdminMessages] Loading messages for conversation:",
-          conversation._id
-        );
+        console.log('📨 [AdminMessages] Loading messages for conversation:', conversation._id);
 
-        const userRole = user?.role || "guest";
+        const userRole = user?.role || 'guest';
 
         // Try to get messages from cache first
-        const cachedMessages = socketService.getCachedMessages(
-          conversation._id
-        );
+        const cachedMessages = socketService.getCachedMessages(conversation._id);
         if (cachedMessages.length > 0) {
-          console.log(
-            "📨 [AdminMessages] Using cached messages:",
-            cachedMessages.length
-          );
+          console.log('📨 [AdminMessages] Using cached messages:', cachedMessages.length);
 
           // Process cached messages to ensure ui.mine is set correctly
           const processedCachedMessages = cachedMessages.map((message: any) => {
@@ -319,13 +274,13 @@ export default function AdminMessages() {
           });
 
           console.log(
-            "📨 [AdminMessages] Processed cached messages with ownership:",
+            '📨 [AdminMessages] Processed cached messages with ownership:',
             processedCachedMessages.map((m) => ({
               id: m._id,
               senderId: m.sender_id,
               uiMine: m.ui?.mine,
               isMine: normalizeSenderId(m.sender_id) === myId,
-            }))
+            })),
           );
 
           setMessages(processedCachedMessages);
@@ -333,24 +288,16 @@ export default function AdminMessages() {
 
           // Mark as read
           try {
-            const readResponse = await messageService.markConversationAsRead(
-              conversation._id
-            );
+            const readResponse = await messageService.markConversationAsRead(conversation._id);
             if (readResponse.ok) {
               setReadStatus((prev) => ({
                 ...prev,
                 [conversation._id]: true,
               }));
-              console.log(
-                "✅ [AdminMessages] Conversation marked as read:",
-                conversation._id
-              );
+              console.log('✅ [AdminMessages] Conversation marked as read:', conversation._id);
             }
           } catch (error) {
-            console.error(
-              "❌ [AdminMessages] Error marking conversation as read:",
-              error
-            );
+            console.error('❌ [AdminMessages] Error marking conversation as read:', error);
           }
           return;
         }
@@ -360,11 +307,11 @@ export default function AdminMessages() {
           conversation._id,
           50,
           1,
-          userRole as "guest" | "staff" | "admin"
+          userRole as 'guest' | 'staff' | 'admin',
         );
-        console.log("📥 [AdminMessages] Messages data received:", data);
-        console.log("📥 [AdminMessages] Messages count:", data.length);
-        console.log("📥 [AdminMessages] First message:", data[0]);
+        console.log('📥 [AdminMessages] Messages data received:', data);
+        console.log('📥 [AdminMessages] Messages count:', data.length);
+        console.log('📥 [AdminMessages] First message:', data[0]);
 
         // Process messages to ensure ui.mine is set correctly
         const processedMessages = data.map((message: any) => {
@@ -382,48 +329,37 @@ export default function AdminMessages() {
         });
 
         console.log(
-          "📥 [AdminMessages] Processed messages with ownership:",
+          '📥 [AdminMessages] Processed messages with ownership:',
           processedMessages.map((m) => ({
             id: m._id,
             senderId: m.sender_id,
             uiMine: m.ui?.mine,
             isMine: normalizeSenderId(m.sender_id) === myId,
-          }))
+          })),
         );
 
         setMessages(processedMessages);
 
         // Mark as read
         try {
-          const readResponse = await messageService.markConversationAsRead(
-            conversation._id
-          );
+          const readResponse = await messageService.markConversationAsRead(conversation._id);
           if (readResponse.ok) {
             setReadStatus((prev) => ({
               ...prev,
               [conversation._id]: true,
             }));
-            console.log(
-              "✅ [AdminMessages] Conversation marked as read:",
-              conversation._id
-            );
+            console.log('✅ [AdminMessages] Conversation marked as read:', conversation._id);
           }
         } catch (error) {
-          console.error(
-            "❌ [AdminMessages] Error marking conversation as read:",
-            error
-          );
+          console.error('❌ [AdminMessages] Error marking conversation as read:', error);
         }
       } catch (error: any) {
-        console.error(
-          "❌ [AdminMessages] Error selecting conversation:",
-          error
-        );
+        console.error('❌ [AdminMessages] Error selecting conversation:', error);
       } finally {
         setIsLoadingMessages(false);
       }
     },
-    [user?.role]
+    [user?.role],
   );
 
   // Send message
@@ -433,7 +369,7 @@ export default function AdminMessages() {
     }
 
     const content = messageInput.trim();
-    setMessageInput("");
+    setMessageInput('');
     setIsSending(true);
 
     try {
@@ -444,22 +380,22 @@ export default function AdminMessages() {
       };
 
       const newMessage = await messageService.sendMessage(messageData);
-      console.log("✅ [AdminMessages] Message sent successfully:", newMessage);
+      console.log('✅ [AdminMessages] Message sent successfully:', newMessage);
 
       // Convert MessageResponse to MessageWithUI
-      const userRole = user?.role || "guest";
+      const userRole = user?.role || 'guest';
       const messageWithUI: MessageWithUI = {
         ...newMessage,
-        ui_for: userRole as "guest" | "staff" | "admin",
+        ui_for: userRole as 'guest' | 'staff' | 'admin',
         ui: {
           mine: true,
           show_sender_meta: false,
-          sender_display_name: user?.name || "Admin",
+          sender_display_name: user?.name || 'Admin',
           sender_avatar_url: user?.avatar_url || null,
         },
       };
 
-      console.log("📤 [AdminMessages] Created messageWithUI:", {
+      console.log('📤 [AdminMessages] Created messageWithUI:', {
         messageId: messageWithUI._id,
         senderId: messageWithUI.sender_id,
         myId: myId,
@@ -478,14 +414,14 @@ export default function AdminMessages() {
       setTimeout(() => {
         if (messagesEndRef.current) {
           messagesEndRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "end",
-            inline: "nearest",
+            behavior: 'smooth',
+            block: 'end',
+            inline: 'nearest',
           });
         }
       }, 200);
     } catch (error: any) {
-      console.error("❌ [AdminMessages] Error sending message:", error);
+      console.error('❌ [AdminMessages] Error sending message:', error);
       setMessageInput(content);
     } finally {
       setIsSending(false);
@@ -493,27 +429,24 @@ export default function AdminMessages() {
   }, [messageInput, selectedConversation, replyingTo, isSending, user]);
 
   // Toggle reaction
-  const toggleReaction = useCallback(
-    async (messageId: string, type: ReactionType) => {
-      try {
-        const response = await messageService.toggleReaction(messageId, type);
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === messageId
-              ? {
-                  ...response.message,
-                  ui_for: msg.ui_for,
-                  ui: msg.ui,
-                }
-              : msg
-          )
-        );
-      } catch (error: any) {
-        console.error("❌ [AdminMessages] Error toggling reaction:", error);
-      }
-    },
-    []
-  );
+  const toggleReaction = useCallback(async (messageId: string, type: ReactionType) => {
+    try {
+      const response = await messageService.toggleReaction(messageId, type);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId
+            ? {
+                ...response.message,
+                ui_for: msg.ui_for,
+                ui: msg.ui,
+              }
+            : msg,
+        ),
+      );
+    } catch (error: any) {
+      console.error('❌ [AdminMessages] Error toggling reaction:', error);
+    }
+  }, []);
 
   // Reply to message
   const replyToMessage = useCallback((message: MessageWithUI) => {
@@ -525,17 +458,13 @@ export default function AdminMessages() {
     setReplyingTo(null);
   }, []);
 
-  const handleTextareaChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setMessageInput(e.target.value);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-        textareaRef.current.style.height =
-          textareaRef.current.scrollHeight + "px";
-      }
-    },
-    []
-  );
+  const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageInput(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, []);
 
   const handleEmojiSelect = useCallback((emojiObject: any) => {
     setMessageInput((prev) => prev + emojiObject.emoji);
@@ -549,42 +478,28 @@ export default function AdminMessages() {
     }
 
     // Get user role from Redux
-    const userRole = user?.role || "guest";
-    const isAdminOrStaff = userRole === "admin" || userRole === "staff";
+    const userRole = user?.role || 'guest';
+    const isAdminOrStaff = userRole === 'admin' || userRole === 'staff';
 
-    console.log(
-      "🟢 [AdminMessages] Setting up socket connection for:",
-      userRole
-    );
+    console.log('🟢 [AdminMessages] Setting up socket connection for:', userRole);
     socketService.connect(token, myId, userRole);
 
     // Setup all realtime event listeners
     const setupRealtimeListeners = () => {
       const handleNewMessage = (message: MessageWithUI) => {
-        console.log("📨 [AdminMessages] Received new message:", message._id);
-        console.log("📨 [AdminMessages] Message content:", message.content);
-        console.log("📨 [AdminMessages] Message sender role:", message.ui_for);
-        console.log("📨 [AdminMessages] Current user role:", userRole);
-        console.log("📨 [AdminMessages] Message UI data:", message.ui);
-        console.log(
-          "📨 [AdminMessages] Sender display name:",
-          message.ui?.sender_display_name
-        );
-        console.log(
-          "📨 [AdminMessages] Message conversation_id:",
-          message.conversation_id
-        );
-        console.log(
-          "📨 [AdminMessages] Selected conversation ID:",
-          selectedConversation?._id
-        );
+        console.log('📨 [AdminMessages] Received new message:', message._id);
+        console.log('📨 [AdminMessages] Message content:', message.content);
+        console.log('📨 [AdminMessages] Message sender role:', message.ui_for);
+        console.log('📨 [AdminMessages] Current user role:', userRole);
+        console.log('📨 [AdminMessages] Message UI data:', message.ui);
+        console.log('📨 [AdminMessages] Sender display name:', message.ui?.sender_display_name);
+        console.log('📨 [AdminMessages] Message conversation_id:', message.conversation_id);
+        console.log('📨 [AdminMessages] Selected conversation ID:', selectedConversation?._id);
 
         // Update conversations list
         setConversations((prev) => {
           const updated = [...prev];
-          const convIndex = updated.findIndex(
-            (c) => c._id === message.conversation_id
-          );
+          const convIndex = updated.findIndex((c) => c._id === message.conversation_id);
 
           if (convIndex >= 0) {
             // Update existing conversation
@@ -603,9 +518,7 @@ export default function AdminMessages() {
               display: {
                 ...updated[convIndex].display,
                 subtitle: `Người gửi cuối: ${message.content}`,
-                unreadCount: message.ui?.mine
-                  ? 0
-                  : (updated[convIndex].display.unreadCount || 0) + 1,
+                unreadCount: message.ui?.mine ? 0 : (updated[convIndex].display.unreadCount || 0) + 1,
               },
             };
 
@@ -638,10 +551,7 @@ export default function AdminMessages() {
                       ...updatedMessage.ui,
                       mine: true,
                     };
-                    console.log(
-                      "🔒 [AdminMessages] Preserving ui.mine for existing message:",
-                      message._id
-                    );
+                    console.log('🔒 [AdminMessages] Preserving ui.mine for existing message:', message._id);
                   }
 
                   return updatedMessage;
@@ -662,45 +572,33 @@ export default function AdminMessages() {
       };
 
       const handleConversationUpdate = (data: ConversationUpdateV2) => {
-        console.log("💬 [AdminMessages] Received conversation update:", data);
-        console.log(
-          "💬 [AdminMessages] Update type:",
-          data.isAdminUpdate ? "admin" : "regular"
-        );
+        console.log('💬 [AdminMessages] Received conversation update:', data);
+        console.log('💬 [AdminMessages] Update type:', data.isAdminUpdate ? 'admin' : 'regular');
 
         // Rate limiting - prevent too frequent updates (max 200ms)
         const now = Date.now();
         if (now - lastUpdateTimeRef.current < 200) {
-          console.log("⏳ [AdminMessages] Rate limiting - skipping update");
+          console.log('⏳ [AdminMessages] Rate limiting - skipping update');
           return;
         }
         lastUpdateTimeRef.current = now;
 
         // Skip update if currently loading conversations to prevent race conditions
         if (isLoadingConversations) {
-          console.log(
-            "⏳ [AdminMessages] Skipping conversation update - currently loading"
-          );
+          console.log('⏳ [AdminMessages] Skipping conversation update - currently loading');
           return;
         }
 
         // Instead of making API call, just log that we received an update
         // and rely on new_message events to update the actual message list
-        if (
-          data.lastMessageAt &&
-          selectedConversationRef.current?._id === data.conversationId
-        ) {
-          console.log(
-            "� [AdminMessages] Received update for current conversation, waiting for new_message event"
-          );
+        if (data.lastMessageAt && selectedConversationRef.current?._id === data.conversationId) {
+          console.log('� [AdminMessages] Received update for current conversation, waiting for new_message event');
         }
 
         // Instead of reloading all conversations, just update the specific one
         setConversations((prev) => {
           const updated = [...prev];
-          const convIndex = updated.findIndex(
-            (c) => c._id === data.conversationId
-          );
+          const convIndex = updated.findIndex((c) => c._id === data.conversationId);
 
           if (convIndex >= 0) {
             // Update the existing conversation
@@ -708,15 +606,12 @@ export default function AdminMessages() {
               ...updated[convIndex],
               lastMessage: data.lastMessage
                 ? {
-                    _id: data.lastMessage._id || "",
-                    content: data.lastMessage.content || "",
-                    sender_id: data.lastMessage.sender_id || "",
-                    sender_role: data.lastMessage.sender_role || "guest",
-                    sent_at:
-                      data.lastMessage.sent_at ||
-                      data.lastMessageAt ||
-                      new Date().toISOString(),
-                    is_read: data.lastMessage.is_read || "sent",
+                    _id: data.lastMessage._id || '',
+                    content: data.lastMessage.content || '',
+                    sender_id: data.lastMessage.sender_id || '',
+                    sender_role: data.lastMessage.sender_role || 'guest',
+                    sent_at: data.lastMessage.sent_at || data.lastMessageAt || new Date().toISOString(),
+                    is_read: data.lastMessage.is_read || 'sent',
                   }
                 : updated[convIndex].lastMessage,
               lastMessageAt: data.lastMessageAt,
@@ -740,14 +635,9 @@ export default function AdminMessages() {
         });
       };
 
-      const handleConversationUpdateV2 = (
-        conversationUpdate: ConversationUpdateV2
-      ) => {
+      const handleConversationUpdateV2 = (conversationUpdate: ConversationUpdateV2) => {
         console.log("✅ [CHECKLIST] Nhận được 'conversation_update_v2' event");
-        console.log(
-          "🔄 [AdminMessages] Received conversation_update_v2:",
-          conversationUpdate
-        );
+        console.log('🔄 [AdminMessages] Received conversation_update_v2:', conversationUpdate);
         setConversations((prev) =>
           prev.map((conv) =>
             conv._id === conversationUpdate.conversationId
@@ -757,16 +647,13 @@ export default function AdminMessages() {
                   lastMessageAt: conversationUpdate.lastMessageAt,
                   unreadCount: conversationUpdate.unreadCount,
                 }
-              : conv
-          )
+              : conv,
+          ),
         );
       };
 
       const handleReactionUpdate = (message: MessageWithUI) => {
-        console.log(
-          "😀 [AdminMessages] Received reaction update:",
-          message._id
-        );
+        console.log('😀 [AdminMessages] Received reaction update:', message._id);
         if (selectedConversationRef.current?._id === message.conversation_id) {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -776,14 +663,14 @@ export default function AdminMessages() {
                     ui_for: msg.ui_for,
                     ui: msg.ui,
                   }
-                : msg
-            )
+                : msg,
+            ),
           );
         }
       };
 
       const handleMessageRecall = (message: MessageWithUI) => {
-        console.log("🗑️ [AdminMessages] Received message recall:", message._id);
+        console.log('🗑️ [AdminMessages] Received message recall:', message._id);
         if (selectedConversationRef.current?._id === message.conversation_id) {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -793,24 +680,19 @@ export default function AdminMessages() {
                     ui_for: msg.ui_for,
                     ui: msg.ui,
                   }
-                : msg
-            )
+                : msg,
+            ),
           );
         }
       };
 
       const handleConversationListUpdate = (data: ConversationUpdateV2) => {
-        console.log(
-          "📋 [AdminMessages] Received conversation list update:",
-          data
-        );
+        console.log('📋 [AdminMessages] Received conversation list update:', data);
 
         // Rate limiting for conversation list updates
         const now = Date.now();
         if (now - lastUpdateTimeRef.current < 1000) {
-          console.log(
-            "⏳ [AdminMessages] Rate limiting - skipping conversation list update"
-          );
+          console.log('⏳ [AdminMessages] Rate limiting - skipping conversation list update');
           return;
         }
         lastUpdateTimeRef.current = now;
@@ -818,9 +700,7 @@ export default function AdminMessages() {
         // Update specific conversation in the list
         setConversations((prev) => {
           const updated = [...prev];
-          const convIndex = updated.findIndex(
-            (c) => c._id === data.conversationId
-          );
+          const convIndex = updated.findIndex((c) => c._id === data.conversationId);
 
           if (convIndex >= 0) {
             // Update existing conversation
@@ -828,15 +708,12 @@ export default function AdminMessages() {
               ...updated[convIndex],
               lastMessage: data.lastMessage
                 ? {
-                    _id: data.lastMessage._id || "",
-                    content: data.lastMessage.content || "",
-                    sender_id: data.lastMessage.sender_id || "",
-                    sender_role: data.lastMessage.sender_role || "guest",
-                    sent_at:
-                      data.lastMessage.sent_at ||
-                      data.lastMessageAt ||
-                      new Date().toISOString(),
-                    is_read: data.lastMessage.is_read || "sent",
+                    _id: data.lastMessage._id || '',
+                    content: data.lastMessage.content || '',
+                    sender_id: data.lastMessage.sender_id || '',
+                    sender_role: data.lastMessage.sender_role || 'guest',
+                    sent_at: data.lastMessage.sent_at || data.lastMessageAt || new Date().toISOString(),
+                    is_read: data.lastMessage.is_read || 'sent',
                   }
                 : updated[convIndex].lastMessage,
               lastMessageAt: data.lastMessageAt,
@@ -874,10 +751,7 @@ export default function AdminMessages() {
 
     // Force join admin_broadcast room for admin/staff
     if (isAdminOrStaff) {
-      console.log(
-        "👑 [AdminMessages] Joining admin_broadcast room for:",
-        userRole
-      );
+      console.log('👑 [AdminMessages] Joining admin_broadcast room for:', userRole);
       setTimeout(() => {
         // Force join admin_broadcast room
         socketService.joinAdminBroadcastRoom();
@@ -887,15 +761,12 @@ export default function AdminMessages() {
 
         // Debug
         socketService.debugEventListeners();
-        console.log(
-          "🔍 [AdminMessages] Socket status:",
-          socketService.getConnectionStatus()
-        );
+        console.log('🔍 [AdminMessages] Socket status:', socketService.getConnectionStatus());
       }, 1000);
     }
 
     return () => {
-      console.log("🧹 [AdminMessages] Cleaning up socket event listeners");
+      console.log('🧹 [AdminMessages] Cleaning up socket event listeners');
 
       // Clear timeout
       if (loadConversationsTimeoutRef.current) {
@@ -914,10 +785,7 @@ export default function AdminMessages() {
   // Initialize conversations
   useEffect(() => {
     if (token && user) {
-      console.log(
-        "🚀 [AdminMessages] Initializing conversations for admin:",
-        user.name
-      );
+      console.log('🚀 [AdminMessages] Initializing conversations for admin:', user.name);
       loadConversations(true); // Force reload on initial load
     }
   }, [token, user?.role]); // Remove loadConversations from deps to prevent loop
@@ -930,9 +798,9 @@ export default function AdminMessages() {
         setTimeout(() => {
           if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({
-              behavior: "smooth",
-              block: "end",
-              inline: "nearest",
+              behavior: 'smooth',
+              block: 'end',
+              inline: 'nearest',
             });
           }
         }, 50);
@@ -946,9 +814,9 @@ export default function AdminMessages() {
       setTimeout(() => {
         if (messagesEndRef.current) {
           messagesEndRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "end",
-            inline: "nearest",
+            behavior: 'smooth',
+            block: 'end',
+            inline: 'nearest',
           });
         }
       }, 150);
@@ -957,66 +825,54 @@ export default function AdminMessages() {
 
   if (!myId) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Đang tải...</p>
+      <div className='flex h-screen items-center justify-center'>
+        <div className='text-center'>
+          <p className='text-muted-foreground'>Đang tải...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="flex h-[810px] bg-background justify-center mt-6 mb-6"
-      style={{ scrollBehavior: "auto" }}
-    >
-      <div className="flex w-full max-w-[1450px] h-full overflow-hidden rounded-lg shadow-lg">
+    <div className='flex h-[1180px] bg-background justify-center mt-6 mb-6' style={{ scrollBehavior: 'auto' }}>
+      <div className='flex w-full max-w-[1450px] h-full overflow-hidden rounded-lg shadow-lg'>
         {/* Sidebar */}
-        <div className="w-100 bg-card border-r border-gray-200 flex flex-col">
-          <div className="px-4 py-4 border-b border-gray-200 flex-shrink-0 flex justify-between items-center">
-            <h1 className="text-[17px] font-semibold text-foreground">
-              Tin nhắn của quản trị viên
-            </h1>
-            <div className="mt-2 flex gap-2">
+        <div className='w-100 bg-card border-r border-gray-200 flex flex-col'>
+          <div className='px-4 py-4 border-b border-gray-200 flex-shrink-0 flex justify-between items-center'>
+            <h1 className='text-[17px] font-semibold text-foreground'>Tin nhắn của quản trị viên</h1>
+            <div className='mt-2 flex gap-2'>
               <Button
-                size="sm"
-                variant="secondary"
-                className="rounded-full h-8 px-3 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition"
-              >
+                size='sm'
+                variant='secondary'
+                className='rounded-full h-8 px-3 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition'>
                 Tất cả
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="rounded-full h-8 px-3 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition"
-              >
+                size='sm'
+                variant='ghost'
+                className='rounded-full h-8 px-3 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition'>
                 Chưa đọc
               </Button>
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="p-2">
+          <ScrollArea className='flex-1'>
+            <div className='p-2'>
               {isLoadingConversations ? (
-                <div className="space-y-2">
+                <div className='space-y-2'>
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 p-3 rounded-xl animate-pulse"
-                    >
-                      <div className="h-12 w-12 rounded-full bg-gray-200" />
-                      <div className="flex-1">
-                        <div className="h-4 rounded bg-gray-200 mb-2" />
-                        <div className="h-3 rounded bg-gray-200 w-3/4" />
+                    <div key={i} className='flex items-center gap-3 p-3 rounded-xl animate-pulse'>
+                      <div className='h-12 w-12 rounded-full bg-gray-200' />
+                      <div className='flex-1'>
+                        <div className='h-4 rounded bg-gray-200 mb-2' />
+                        <div className='h-3 rounded bg-gray-200 w-3/4' />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : conversations.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    Chưa có cuộc hội thoại nào
-                  </p>
+                <div className='text-center py-8'>
+                  <p className='text-muted-foreground'>Chưa có cuộc hội thoại nào</p>
                 </div>
               ) : (
                 conversations.map((c: ConversationUI) => (
@@ -1026,71 +882,47 @@ export default function AdminMessages() {
                     className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition
                       ${
                         selectedConversation?._id === c._id
-                          ? "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] font-semibold"
-                          : "bg-transparent"
-                      } hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] focus:outline-none`}
-                  >
-                    <Avatar className="h-12 w-12 ring-1 ring-gray-200">
+                          ? 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] font-semibold'
+                          : 'bg-transparent'
+                      } hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] focus:outline-none`}>
+                    <Avatar className='h-12 w-12 ring-1 ring-gray-200'>
                       <AvatarImage
-                        src={
-                          c.guest?.avatar_url ||
-                          c.property?.thumbnail ||
-                          c.display.avatar_url ||
-                          "/placeholder.svg"
-                        }
-                        alt={
-                          c.guest?.name || c.property?.name || c.display.title
-                        }
+                        src={c.guest?.avatar_url || c.property?.thumbnail || c.display.avatar_url || '/placeholder.svg'}
+                        alt={c.guest?.name || c.property?.name || c.display.title}
                       />
                       <AvatarFallback>
-                        {(
-                          c.guest?.name ||
-                          c.property?.name ||
-                          c.display.title
-                        )?.charAt(0) || "U"}
+                        {(c.guest?.name || c.property?.name || c.display.title)?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium truncate text-foreground text-base">
+                    <div className='min-w-0 flex-1'>
+                      <div className='flex items-center justify-between'>
+                        <h3 className='font-medium truncate text-foreground text-base'>
                           {c.guest?.name || c.property?.name || c.display.title}
                         </h3>
                         {c.lastMessage && (
-                          <span className="text-[11px] text-muted-foreground">
-                            {format(
-                              safeParseDate(c.lastMessage.sent_at),
-                              "HH:mm"
-                            )}
+                          <span className='text-[11px] text-muted-foreground'>
+                            {format(safeParseDate(c.lastMessage.sent_at), 'HH:mm')}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm text-muted-foreground truncate">
-                          Tin nhắn:{" "}
-                          {c.lastMessage?.content || "Chưa có tin nhắn"}
+                      <div className='flex items-center justify-between gap-2'>
+                        <p className='text-sm text-muted-foreground truncate'>
+                          Tin nhắn: {c.lastMessage?.content || 'Chưa có tin nhắn'}
                         </p>
                         {c.display.unreadCount > 0 && (
-                          <span className="text-[11px] px-2 py-[2px] rounded-full bg-rose-50 text-rose-600 border border-rose-100">
-                            {c.display.unreadCount > 99
-                              ? "99+"
-                              : c.display.unreadCount}
+                          <span className='text-[11px] px-2 py-[2px] rounded-full bg-rose-50 text-rose-600 border border-rose-100'>
+                            {c.display.unreadCount > 99 ? '99+' : c.display.unreadCount}
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 flex items-center gap-2">
+                      <div className='mt-1 flex items-center gap-2'>
                         {c.property && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs border border-gray-200"
-                          >
+                          <Badge variant='outline' className='text-xs border border-gray-200'>
                             🏠 {c.property.name}
                           </Badge>
                         )}
                         {c.staff_summary && c.staff_summary.count > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs border border-gray-200"
-                          >
+                          <Badge variant='secondary' className='text-xs border border-gray-200'>
                             {c.staff_summary.count} nhân viên
                           </Badge>
                         )}
@@ -1098,56 +930,38 @@ export default function AdminMessages() {
 
                       {/* Participants info */}
                       {c.participants && c.participants.length > 0 && (
-                        <div className="mt-2">
-                          <div className="flex items-center gap-1 mb-1">
-                            <span className="text-[10px] text-muted-foreground">
-                              Người tham gia:
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
+                        <div className='mt-2'>
+                          <div className='flex items-center gap-1 mb-1'>
+                            <span className='text-[10px] text-muted-foreground'>Người tham gia:</span>
+                            <span className='text-[10px] text-muted-foreground'>
                               {c.participant_count || c.participants.length}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {c.participants
-                              .slice(0, 3)
-                              .map((participant: Participant, idx: number) => (
-                                <div
-                                  key={participant._id}
-                                  className="flex items-center gap-1"
-                                >
-                                  <Avatar className="h-5 w-5">
-                                    <AvatarImage
-                                      src={
-                                        participant.avatar_url ||
-                                        "/placeholder.svg"
-                                      }
-                                      alt={participant.name}
-                                    />
-                                    <AvatarFallback className="text-[8px]">
-                                      {participant.name?.charAt(0) || "U"}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {participant.name}
-                                  </span>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-gray-100 text-gray-600">
-                                    {participant.role === "admin"}
-                                    {participant.role === "staff"}
-                                    {participant.role === "guest"}
-                                  </span>
-                                  {idx <
-                                    Math.min(
-                                      2,
-                                      (c.participants?.length || 0) - 1
-                                    ) && (
-                                    <span className="text-[8px] text-muted-foreground">
-                                      •
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
+                          <div className='flex items-center gap-1 flex-wrap'>
+                            {c.participants.slice(0, 3).map((participant: Participant, idx: number) => (
+                              <div key={participant._id} className='flex items-center gap-1'>
+                                <Avatar className='h-5 w-5'>
+                                  <AvatarImage
+                                    src={participant.avatar_url || '/placeholder.svg'}
+                                    alt={participant.name}
+                                  />
+                                  <AvatarFallback className='text-[8px]'>
+                                    {participant.name?.charAt(0) || 'U'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className='text-[10px] text-muted-foreground'>{participant.name}</span>
+                                <span className='text-[8px] px-1 py-0.5 rounded bg-gray-100 text-gray-600'>
+                                  {participant.role === 'admin'}
+                                  {participant.role === 'staff'}
+                                  {participant.role === 'guest'}
+                                </span>
+                                {idx < Math.min(2, (c.participants?.length || 0) - 1) && (
+                                  <span className='text-[8px] text-muted-foreground'>•</span>
+                                )}
+                              </div>
+                            ))}
                             {c.participants && c.participants.length > 3 && (
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className='text-[10px] text-muted-foreground'>
                                 +{c.participants.length - 3} more
                               </span>
                             )}
@@ -1163,19 +977,19 @@ export default function AdminMessages() {
         </div>
 
         {/* Main */}
-        <div className="flex-1 flex flex-col h-full">
+        <div className='flex-1 flex flex-col h-full'>
           {selectedConversation ? (
             <>
               {/* Header */}
-              <div className="h-19 px-6 flex items-center justify-between bg-card border-b border-gray-200 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 ring-1 ring-gray-200">
+              <div className='h-19 px-6 flex items-center justify-between bg-card border-b border-gray-200 flex-shrink-0'>
+                <div className='flex items-center gap-3'>
+                  <Avatar className='h-10 w-10 ring-1 ring-gray-200'>
                     <AvatarImage
                       src={
                         selectedConversation.guest?.avatar_url ||
                         selectedConversation.property?.thumbnail ||
                         selectedConversation.display?.avatar_url ||
-                        "/placeholder.svg"
+                        '/placeholder.svg'
                       }
                       alt={
                         selectedConversation.guest?.name ||
@@ -1188,16 +1002,15 @@ export default function AdminMessages() {
                         selectedConversation.guest?.name ||
                         selectedConversation.property?.name ||
                         selectedConversation.display?.title
-                      )?.charAt(0) || "U"}
+                      )?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0">
-                    <div className="font-medium truncate text-foreground">
-                      {selectedConversation.guest?.name ||
-                        selectedConversation.display?.title}
+                  <div className='min-w-0'>
+                    <div className='font-medium truncate text-foreground'>
+                      {selectedConversation.guest?.name || selectedConversation.display?.title}
                     </div>
                     {selectedConversation.property && (
-                      <div className="text-sm text-muted-foreground truncate">
+                      <div className='text-sm text-muted-foreground truncate'>
                         🏠 {selectedConversation.property.name}
                       </div>
                     )}
@@ -1207,25 +1020,17 @@ export default function AdminMessages() {
 
               {/* Messages */}
               <ScrollArea
-                className="flex-1 min-h-0"
-                style={{ scrollBehavior: "smooth" }}
-                data-radix-scroll-area-viewport
-              >
-                <div
-                  className="px-6 py-4 max-w-4xl mx-auto"
-                  style={{ scrollBehavior: "auto" }}
-                >
+                className='flex-1 min-h-0'
+                style={{ scrollBehavior: 'smooth' }}
+                data-radix-scroll-area-viewport>
+                <div className='px-6 py-4 max-w-4xl mx-auto' style={{ scrollBehavior: 'auto' }}>
                   {isLoading ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">
-                        Đang tải tin nhắn...
-                      </p>
+                    <div className='text-center py-8'>
+                      <p className='text-muted-foreground'>Đang tải tin nhắn...</p>
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">
-                        Chưa có tin nhắn nào
-                      </p>
+                    <div className='text-center py-8'>
+                      <p className='text-muted-foreground'>Chưa có tin nhắn nào</p>
                     </div>
                   ) : (
                     (() => {
@@ -1234,301 +1039,215 @@ export default function AdminMessages() {
 
                       // Messages are now in chronological order (oldest to newest)
                       const uniqueMessages = messages.filter(
-                        (m, index, self) =>
-                          index === self.findIndex((msg) => msg._id === m._id)
+                        (m, index, self) => index === self.findIndex((msg) => msg._id === m._id),
                       );
 
-                      uniqueMessages.forEach(
-                        (m: MessageWithUI, idx: number) => {
-                          // Use safe date parsing to prevent "Invalid time value" errors
-                          const sentAt = safeParseDate(m.sent_at);
+                      uniqueMessages.forEach((m: MessageWithUI, idx: number) => {
+                        // Use safe date parsing to prevent "Invalid time value" errors
+                        const sentAt = safeParseDate(m.sent_at);
 
-                          if (!lastDate || !dfIsSameDay(lastDate, sentAt)) {
-                            blocks.push(
-                              <DayDivider key={`d-${idx}`} date={sentAt} />
-                            );
-                            lastDate = sentAt;
-                          }
+                        if (!lastDate || !dfIsSameDay(lastDate, sentAt)) {
+                          blocks.push(<DayDivider key={`d-${idx}`} date={sentAt} />);
+                          lastDate = sentAt;
+                        }
 
-                          // Normalize sender_id for comparison
-                          const normalizedSenderId = normalizeSenderId(
-                            m.sender_id
-                          );
+                        // Normalize sender_id for comparison
+                        const normalizedSenderId = normalizeSenderId(m.sender_id);
 
-                          // Debug logging for message ownership
-                          console.log(
-                            "🔍 [AdminMessages] Message ownership check:",
-                            {
-                              messageId: m._id,
-                              originalSenderId: m.sender_id,
-                              normalizedSenderId: normalizedSenderId,
-                              myId: myId,
-                              uiMine: m.ui?.mine,
-                              senderIdType: typeof m.sender_id,
-                              myIdType: typeof myId,
-                              isEqual: normalizedSenderId === myId,
-                              finalIsMine:
-                                m.ui?.mine ?? normalizedSenderId === myId,
-                            }
-                          );
+                        // Debug logging for message ownership
+                        console.log('🔍 [AdminMessages] Message ownership check:', {
+                          messageId: m._id,
+                          originalSenderId: m.sender_id,
+                          normalizedSenderId: normalizedSenderId,
+                          myId: myId,
+                          uiMine: m.ui?.mine,
+                          senderIdType: typeof m.sender_id,
+                          myIdType: typeof myId,
+                          isEqual: normalizedSenderId === myId,
+                          finalIsMine: m.ui?.mine ?? normalizedSenderId === myId,
+                        });
 
-                          const isMine =
-                            m.ui?.mine ?? normalizedSenderId === myId;
-                          const showSenderMeta =
-                            m.ui?.show_sender_meta ?? !isMine;
+                        const isMine = m.ui?.mine ?? normalizedSenderId === myId;
+                        const showSenderMeta = m.ui?.show_sender_meta ?? !isMine;
 
-                          blocks.push(
-                            <div
-                              key={`${m._id}-${idx}`}
-                              className={`mb-3 flex ${
-                                isMine ? "justify-end" : "justify-start"
-                              } gap-2`}
-                            >
-                              {/* avatar người kia */}
-                              {!isMine && showSenderMeta ? (
-                                <Avatar className="h-8 w-8 mt-5">
-                                  <AvatarImage
-                                    src={getSenderAvatarUrl(
-                                      m,
-                                      selectedConversation
-                                    )}
-                                  />
-                                  <AvatarFallback className="text-xs">
-                                    {getSenderDisplayName(
-                                      m,
-                                      selectedConversation
-                                    )?.charAt(0) || "U"}
-                                  </AvatarFallback>
-                                </Avatar>
-                              ) : (
-                                <div className="w-8" />
+                        blocks.push(
+                          <div
+                            key={`${m._id}-${idx}`}
+                            className={`mb-3 flex ${isMine ? 'justify-end' : 'justify-start'} gap-2`}>
+                            {/* avatar người kia */}
+                            {!isMine && showSenderMeta ? (
+                              <Avatar className='h-8 w-8 mt-5'>
+                                <AvatarImage src={getSenderAvatarUrl(m, selectedConversation)} />
+                                <AvatarFallback className='text-xs'>
+                                  {getSenderDisplayName(m, selectedConversation)?.charAt(0) || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                            ) : (
+                              <div className='w-8' />
+                            )}
+
+                            <div className={`max-w-[72%] ${isMine ? '' : ''}`}>
+                              {/* meta giờ */}
+                              <div className={`mb-1 ${isMine ? 'text-right' : 'text-left'}`}>
+                                {!isMine && showSenderMeta && (
+                                  <span className='text-[13px] font-medium'>
+                                    {getSenderDisplayName(m, selectedConversation)}
+                                  </span>
+                                )}
+                                <span
+                                  className={`text-[11px] text-muted-foreground ${
+                                    !isMine && showSenderMeta ? 'ml-2' : ''
+                                  }`}>
+                                  {format(sentAt, 'HH:mm')}
+                                  {isMine && readStatus[selectedConversation._id] && (
+                                    <span className='ml-1 text-blue-500'>✓</span>
+                                  )}
+                                </span>
+                                {!isMine && (
+                                  <span className='text-[10px] ml-1 px-1 py-0.5 rounded bg-gray-100 text-gray-600'>
+                                    {m.ui_for === 'admin' && '👑'}
+                                    {m.ui_for === 'staff' && '👨‍💼'}
+                                    {m.ui_for === 'guest' && '👤'}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* reply preview */}
+                              {m.reply_to && !m.is_recalled && (
+                                <div className={`mb-2 rounded-xl border border-gray-200 bg-gray-50 p-2`}>
+                                  <div className='text-[11px] text-muted-foreground'>
+                                    Trả lời {m.reply_to.sender_name || 'Unknown'}
+                                  </div>
+                                  <div className='text-sm line-clamp-2 text-foreground'>
+                                    {(m.reply_to.content || '').length > 80
+                                      ? `${(m.reply_to.content || '').slice(0, 80)}...`
+                                      : m.reply_to.content || ''}
+                                  </div>
+                                </div>
                               )}
 
+                              {/* bubble */}
                               <div
-                                className={`max-w-[72%] ${isMine ? "" : ""}`}
-                              >
-                                {/* meta giờ */}
-                                <div
-                                  className={`mb-1 ${
-                                    isMine ? "text-right" : "text-left"
-                                  }`}
-                                >
-                                  {!isMine && showSenderMeta && (
-                                    <span className="text-[13px] font-medium">
-                                      {getSenderDisplayName(
-                                        m,
-                                        selectedConversation
-                                      )}
-                                    </span>
-                                  )}
-                                  <span
-                                    className={`text-[11px] text-muted-foreground ${
-                                      !isMine && showSenderMeta ? "ml-2" : ""
-                                    }`}
-                                  >
-                                    {format(sentAt, "HH:mm")}
-                                    {isMine &&
-                                      readStatus[selectedConversation._id] && (
-                                        <span className="ml-1 text-blue-500">
-                                          ✓
-                                        </span>
-                                      )}
-                                  </span>
-                                  {!isMine && (
-                                    <span className="text-[10px] ml-1 px-1 py-0.5 rounded bg-gray-100 text-gray-600">
-                                      {m.ui_for === "admin" && "👑"}
-                                      {m.ui_for === "staff" && "👨‍💼"}
-                                      {m.ui_for === "guest" && "👤"}
-                                    </span>
-                                  )}
-                                </div>
+                                className={[
+                                  'group relative px-4 py-3 rounded-2xl shadow-sm border',
+                                  m.is_recalled
+                                    ? 'bg-gray-100 border-gray-200 text-gray-500 italic'
+                                    : isMine
+                                    ? 'bg-blue-500 text-white border-blue-500'
+                                    : 'bg-white border-gray-200',
+                                ].join(' ')}>
+                                <p className='text-sm leading-relaxed whitespace-pre-wrap break-words'>
+                                  {m.content || ''}
+                                </p>
 
-                                {/* reply preview */}
-                                {m.reply_to && !m.is_recalled && (
+                                {!m.is_recalled && (
                                   <div
-                                    className={`mb-2 rounded-xl border border-gray-200 bg-gray-50 p-2`}
-                                  >
-                                    <div className="text-[11px] text-muted-foreground">
-                                      Trả lời{" "}
-                                      {m.reply_to.sender_name || "Unknown"}
-                                    </div>
-                                    <div className="text-sm line-clamp-2 text-foreground">
-                                      {(m.reply_to.content || "").length > 80
-                                        ? `${(m.reply_to.content || "").slice(
-                                            0,
-                                            80
-                                          )}...`
-                                        : m.reply_to.content || ""}
+                                    className={`absolute top-2 ${
+                                      isMine ? 'left-[-70px]' : 'right-[-70px]'
+                                    } opacity-0 group-hover:opacity-100 transition`}>
+                                    <div className='flex gap-1'>
+                                      <DropdownMenu
+                                        open={showReactionPicker === m._id}
+                                        onOpenChange={(o) => setShowReactionPicker(o ? m._id : null)}>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant='outline'
+                                            size='sm'
+                                            className='h-8 w-8 rounded-full p-0 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition'>
+                                            <Smile className='h-4 w-4' />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className='p-2'>
+                                          <div className='flex gap-1'>
+                                            {quickReactions.map(
+                                              ({ emoji, type }: { emoji: string; type: ReactionType }) => (
+                                                <Button
+                                                  key={type}
+                                                  variant='ghost'
+                                                  size='sm'
+                                                  className='h-8 w-8 p-0 text-lg hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition'
+                                                  onClick={() => toggleReaction(m._id, type)}>
+                                                  {emoji}
+                                                </Button>
+                                              ),
+                                            )}
+                                          </div>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant='outline'
+                                            size='sm'
+                                            className='h-8 w-8 rounded-full p-0 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition'>
+                                            <MoreHorizontal className='h-4 w-4' />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align={isMine ? 'start' : 'end'}>
+                                          {isMine ? (
+                                            <DropdownMenuItem className='text-destructive focus:text-destructive'>
+                                              <Trash2 className='h-4 w-4 mr-2' />
+                                              Thu hồi
+                                            </DropdownMenuItem>
+                                          ) : (
+                                            <>
+                                              <DropdownMenuItem onClick={() => replyToMessage(m)}>
+                                                <Reply className='h-4 w-4 mr-2' />
+                                                Trả lời
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem className='text-blue-600 focus:text-blue-600'>
+                                                <User className='h-4 w-4 mr-2' />
+                                                Xem thông tin người dùng
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem className='text-destructive focus:text-destructive'>
+                                                <Trash2 className='h-4 w-4 mr-2' />
+                                                Xóa tin nhắn (Admin)
+                                              </DropdownMenuItem>
+                                            </>
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
                                     </div>
                                   </div>
                                 )}
+                              </div>
 
-                                {/* bubble */}
-                                <div
-                                  className={[
-                                    "group relative px-4 py-3 rounded-2xl shadow-sm border",
-                                    m.is_recalled
-                                      ? "bg-gray-100 border-gray-200 text-gray-500 italic"
-                                      : isMine
-                                      ? "bg-blue-500 text-white border-blue-500"
-                                      : "bg-white border-gray-200",
-                                  ].join(" ")}
-                                >
-                                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                                    {m.content || ""}
-                                  </p>
-
-                                  {!m.is_recalled && (
-                                    <div
-                                      className={`absolute top-2 ${
-                                        isMine
-                                          ? "left-[-70px]"
-                                          : "right-[-70px]"
-                                      } opacity-0 group-hover:opacity-100 transition`}
-                                    >
-                                      <div className="flex gap-1">
-                                        <DropdownMenu
-                                          open={showReactionPicker === m._id}
-                                          onOpenChange={(o) =>
-                                            setShowReactionPicker(
-                                              o ? m._id : null
-                                            )
-                                          }
-                                        >
-                                          <DropdownMenuTrigger asChild>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              className="h-8 w-8 rounded-full p-0 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition"
-                                            >
-                                              <Smile className="h-4 w-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent className="p-2">
-                                            <div className="flex gap-1">
-                                              {quickReactions.map(
-                                                ({
-                                                  emoji,
-                                                  type,
-                                                }: {
-                                                  emoji: string;
-                                                  type: ReactionType;
-                                                }) => (
-                                                  <Button
-                                                    key={type}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 text-lg hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition"
-                                                    onClick={() =>
-                                                      toggleReaction(
-                                                        m._id,
-                                                        type
-                                                      )
-                                                    }
-                                                  >
-                                                    {emoji}
-                                                  </Button>
-                                                )
-                                              )}
-                                            </div>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              className="h-8 w-8 rounded-full p-0 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition"
-                                            >
-                                              <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent
-                                            align={isMine ? "start" : "end"}
-                                          >
-                                            {isMine ? (
-                                              <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                Thu hồi
-                                              </DropdownMenuItem>
-                                            ) : (
-                                              <>
-                                                <DropdownMenuItem
-                                                  onClick={() =>
-                                                    replyToMessage(m)
-                                                  }
-                                                >
-                                                  <Reply className="h-4 w-4 mr-2" />
-                                                  Trả lời
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-blue-600 focus:text-blue-600">
-                                                  <User className="h-4 w-4 mr-2" />
-                                                  Xem thông tin người dùng
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                                  <Trash2 className="h-4 w-4 mr-2" />
-                                                  Xóa tin nhắn (Admin)
-                                                </DropdownMenuItem>
-                                              </>
-                                            )}
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* reactions */}
-                                {!m.is_recalled &&
-                                  m.reactions &&
-                                  m.reactions.length > 0 && (
-                                    <div className="flex gap-1 mt-2 flex-wrap">
-                                      {Object.entries(
-                                        m.reactions.reduce((acc, r) => {
-                                          const k = r.type;
-                                          (acc[k] ||= []).push(r);
-                                          return acc;
-                                        }, {} as Record<string, typeof m.reactions>)
-                                      ).map(([type, rs]) => {
-                                        const me = rs.some(
-                                          (r) => r.userId === myId
-                                        );
-                                        const emoji = rs[0]?.emoji || "👍";
-                                        return (
-                                          <button
-                                            key={type}
-                                            onClick={() =>
-                                              toggleReaction(
-                                                m._id,
-                                                type as ReactionType
-                                              )
-                                            }
-                                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition
+                              {/* reactions */}
+                              {!m.is_recalled && m.reactions && m.reactions.length > 0 && (
+                                <div className='flex gap-1 mt-2 flex-wrap'>
+                                  {Object.entries(
+                                    m.reactions.reduce((acc, r) => {
+                                      const k = r.type;
+                                      (acc[k] ||= []).push(r);
+                                      return acc;
+                                    }, {} as Record<string, typeof m.reactions>),
+                                  ).map(([type, rs]) => {
+                                    const me = rs.some((r) => r.userId === myId);
+                                    const emoji = rs[0]?.emoji || '👍';
+                                    return (
+                                      <button
+                                        key={type}
+                                        onClick={() => toggleReaction(m._id, type as ReactionType)}
+                                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition
                                         ${
                                           me
-                                            ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
-                                            : "bg-gray-100 text-gray-700 border-gray-200"
-                                        }`}
-                                          >
-                                            <span>{emoji}</span>
-                                            {rs.length > 1 && (
-                                              <span className="font-medium">
-                                                {rs.length}
-                                              </span>
-                                            )}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                              </div>
+                                            ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+                                            : 'bg-gray-100 text-gray-700 border-gray-200'
+                                        }`}>
+                                        <span>{emoji}</span>
+                                        {rs.length > 1 && <span className='font-medium'>{rs.length}</span>}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                          );
-                        }
-                      );
+                          </div>,
+                        );
+                      });
 
-                      blocks.push(<div key="end" ref={messagesEndRef} />);
+                      blocks.push(<div key='end' ref={messagesEndRef} />);
                       return blocks;
                     })()
                   )}
@@ -1536,52 +1255,47 @@ export default function AdminMessages() {
               </ScrollArea>
 
               {/* Composer */}
-              <div className="border-t border-gray-200 bg-card/90 backdrop-blur flex-shrink-0">
-                <div className="max-w-4xl mx-auto px-6 py-4">
+              <div className='border-t border-gray-200 bg-card/90 backdrop-blur flex-shrink-0'>
+                <div className='max-w-4xl mx-auto px-6 py-4'>
                   {replyingTo && (
-                    <div className="mb-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <Reply className="h-4 w-4 text-foreground" />
-                          <span className="text-sm font-medium text-foreground">
-                            Đang trả lời{" "}
-                            {getSenderDisplayName(
-                              replyingTo,
-                              selectedConversation
-                            )}
+                    <div className='mb-3 p-3 bg-gray-50 rounded-xl border border-gray-200'>
+                      <div className='flex items-center justify-between mb-1'>
+                        <div className='flex items-center gap-2'>
+                          <Reply className='h-4 w-4 text-foreground' />
+                          <span className='text-sm font-medium text-foreground'>
+                            Đang trả lời {getSenderDisplayName(replyingTo, selectedConversation)}
                           </span>
                         </div>
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant='ghost'
+                          size='sm'
                           onClick={cancelReply}
-                          className="h-6 w-6 p-0 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition"
-                        >
-                          <X className="h-4 w-4" />
+                          className='h-6 w-6 p-0 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition'>
+                          <X className='h-4 w-4' />
                         </Button>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {(replyingTo.content || "").length > 100
-                          ? `${(replyingTo.content || "").substring(0, 100)}...`
-                          : replyingTo.content || ""}
+                      <div className='text-sm text-muted-foreground'>
+                        {(replyingTo.content || '').length > 100
+                          ? `${(replyingTo.content || '').substring(0, 100)}...`
+                          : replyingTo.content || ''}
                       </div>
                     </div>
                   )}
 
-                  <div className="relative flex items-end gap-2">
-                    <div className="flex-1 relative">
+                  <div className='relative flex items-end gap-2'>
+                    <div className='flex-1 relative'>
                       <Textarea
                         ref={textareaRef}
                         value={messageInput}
                         onChange={handleTextareaChange}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
+                          if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
                             sendMessage();
                           }
                         }}
-                        placeholder="Soạn tin nhắn..."
-                        className="min-h-[80px] max-h-[150px] resize-none pr-24 rounded-xl
+                        placeholder='Soạn tin nhắn...'
+                        className='min-h-[80px] max-h-[150px] resize-none pr-24 rounded-xl
                           border border-gray-200 
                           bg-white
                           shadow-sm
@@ -1597,7 +1311,7 @@ export default function AdminMessages() {
                           disabled:bg-gray-50
                           disabled:text-gray-500
                           disabled:border-gray-200
-                          disabled:shadow-none"
+                          disabled:shadow-none'
                         rows={1}
                         autoFocus={false}
                         onFocus={(e) => {
@@ -1609,42 +1323,37 @@ export default function AdminMessages() {
                           e.target.scrollIntoView = () => {};
                         }}
                       />
-                      <div className="absolute right-2 bottom-1.5 flex items-center gap-1">
+                      <div className='absolute right-2 bottom-1.5 flex items-center gap-1'>
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-9 w-9 p-0 rounded-full hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition"
-                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        >
-                          <Smile className="h-5 w-5" />
+                          variant='ghost'
+                          size='sm'
+                          className='h-9 w-9 p-0 rounded-full hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))] transition'
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                          <Smile className='h-5 w-5' />
                         </Button>
                         <Button
                           onClick={sendMessage}
                           disabled={!messageInput.trim() || isSending}
-                          className="h-9 w-9 p-0 rounded-full bg-blue-500 hover:bg-blue-600 transition"
-                          title="Gửi"
-                        >
+                          className='h-9 w-9 p-0 rounded-full bg-blue-500 hover:bg-blue-600 transition'
+                          title='Gửi'>
                           {isSending ? (
-                            <svg
-                              className="animate-spin h-4 w-4 text-white"
-                              viewBox="0 0 24 24"
-                            >
+                            <svg className='animate-spin h-4 w-4 text-white' viewBox='0 0 24 24'>
                               <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
+                                className='opacity-25'
+                                cx='12'
+                                cy='12'
+                                r='10'
+                                stroke='currentColor'
+                                strokeWidth='4'
                               />
                               <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z"
+                                className='opacity-75'
+                                fill='currentColor'
+                                d='M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z'
                               />
                             </svg>
                           ) : (
-                            <Send className="h-4 w-4 text-white" />
+                            <Send className='h-4 w-4 text-white' />
                           )}
                         </Button>
                       </div>
@@ -1652,13 +1361,9 @@ export default function AdminMessages() {
 
                     {/* Emoji picker */}
                     {showEmojiPicker && (
-                      <div className="absolute bottom-[72px] right-6 z-50">
-                        <div className="bg-white border border-gray-200 rounded-xl shadow-lg">
-                          <EmojiPicker
-                            onEmojiClick={handleEmojiSelect}
-                            width={320}
-                            height={400}
-                          />
+                      <div className='absolute bottom-[72px] right-6 z-50'>
+                        <div className='bg-white border border-gray-200 rounded-xl shadow-lg'>
+                          <EmojiPicker onEmojiClick={handleEmojiSelect} width={320} height={400} />
                         </div>
                       </div>
                     )}
@@ -1667,14 +1372,11 @@ export default function AdminMessages() {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center h-full">
-              <div className="text-center">
-                <h2 className="text-xl font-semibold mb-2 text-foreground">
-                  Chọn một cuộc hội thoại
-                </h2>
-                <p className="text-muted-foreground">
-                  Chọn một cuộc hội thoại từ danh sách bên trái để bắt đầu nhắn
-                  tin
+            <div className='flex-1 flex items-center justify-center h-full'>
+              <div className='text-center'>
+                <h2 className='text-xl font-semibold mb-2 text-foreground'>Chọn một cuộc hội thoại</h2>
+                <p className='text-muted-foreground'>
+                  Chọn một cuộc hội thoại từ danh sách bên trái để bắt đầu nhắn tin
                 </p>
               </div>
             </div>
