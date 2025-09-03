@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import MessageCard from './MessageCard';
+// import MessageCard from './MessageCard';
 import {
   Search,
   Filter,
@@ -179,7 +179,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 key={category}
                 variant={selectedCategory === category ? 'default' : 'outline'}
                 size='sm'
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => setSelectedCategory(category || 'all')}
                 className={cn(
                   selectedCategory === category
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
@@ -230,22 +230,10 @@ const MessageList: React.FC<MessageListProps> = ({
         className={cn('grid gap-6', viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1')}>
         {filteredMessages.length > 0 ? (
           filteredMessages.map((message) => (
-            <MessageCard
-              key={message.id}
-              type={message.type}
-              title={message.title}
-              content={message.content}
-              timestamp={message.timestamp}
-              author={message.author}
-              avatar={message.avatar}
-              isRead={message.isRead}
-              hasAttachment={message.hasAttachment}
-              priority={message.priority}
-              status={message.status}
-              onRead={() => onMessageRead?.(message.id)}
-              onReply={() => onMessageReply?.(message.id)}
-              onClose={() => onMessageDelete?.(message.id)}
-            />
+            <div key={message.id} className='p-4 border border-gray-200 rounded-lg'>
+              <h3 className='font-medium'>{message.title}</h3>
+              <p className='text-sm text-gray-600'>{message.content}</p>
+            </div>
           ))
         ) : (
           <div className='col-span-full text-center py-12'>

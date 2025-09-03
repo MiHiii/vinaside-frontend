@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import MessageCard from './MessageCard';
+// import MessageCard from './MessageCard';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
 import { Button } from './button';
@@ -103,7 +103,14 @@ const MessageDemo: React.FC = () => {
     // Implement star functionality
   };
 
-  const handleComposerSubmit = (messageData: any) => {
+  const handleComposerSubmit = (messageData: {
+    type: 'success' | 'error' | 'warning' | 'info' | 'default';
+    title: string;
+    content: string;
+    priority: 'low' | 'medium' | 'high';
+    category?: string;
+    tags?: string[];
+  }) => {
     const newMessage: Message = {
       id: Date.now().toString(),
       type: messageData.type,
@@ -178,20 +185,13 @@ const MessageDemo: React.FC = () => {
         <div className='mt-12'>
           <h2 className='text-2xl font-bold text-gray-900 mb-6 text-center'>Demo Message Card Đơn lẻ</h2>
           <div className='max-w-2xl mx-auto'>
-            <MessageCard
-              type='success'
-              title='Đặt phòng thành công - Demo Card'
-              content='Đây là một ví dụ về MessageCard đơn lẻ với giao diện đẹp và responsive. Card này có thể được sử dụng độc lập hoặc trong danh sách.'
-              timestamp='2024-01-15 15:30'
-              author='Demo User'
-              isRead={false}
-              hasAttachment={true}
-              priority='high'
-              status='pending'
-              onRead={() => console.log('Message read')}
-              onReply={() => console.log('Reply clicked')}
-              onClose={() => console.log('Close clicked')}
-            />
+            <div className='p-4 border border-gray-200 rounded-lg'>
+              <h3 className='font-medium'>Đặt phòng thành công - Demo Card</h3>
+              <p className='text-sm text-gray-600'>
+                Đây là một ví dụ về MessageCard đơn lẻ với giao diện đẹp và responsive. Card này có thể được sử dụng độc
+                lập hoặc trong danh sách.
+              </p>
+            </div>
           </div>
         </div>
       </div>
