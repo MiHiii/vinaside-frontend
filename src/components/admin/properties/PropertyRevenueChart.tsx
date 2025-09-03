@@ -110,7 +110,7 @@ export default function PropertyRevenueChart({
         </div>
       </CardHeader>
       <CardContent className="px-2">
-        <div className="w-full h-[300px]">
+        <div className="w-full h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={Array.isArray(chartData) ? chartData : []}
@@ -128,7 +128,7 @@ export default function PropertyRevenueChart({
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                minTickGap={32}
+                minTickGap={34}
                 fontSize={13}
                 tickFormatter={(value) => {
                   const date = new Date(value);

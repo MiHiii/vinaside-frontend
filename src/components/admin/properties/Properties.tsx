@@ -392,19 +392,29 @@ export default function AdminProperties() {
     }));
   };
 
+  // Pagination calculations
+  const currentPage = filters.page;
+  const itemsPerPage = filters.limit;
+  const totalPages = Math.ceil((total || 0) / itemsPerPage) || 0;
+  const startItem = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, total || 0);
+  const paginatedStaffProperties = React.useMemo(() => {
+    if (!isStaff) return displayProperties;
+    const start = (currentPage - 1) * itemsPerPage;
+    return (displayProperties || []).slice(start, start + itemsPerPage);
+  }, [isStaff, displayProperties, currentPage, itemsPerPage]);
+
   return (
-    <div className="dark:bg-gray-900 p-4">
+    <div className="p-4">
       <div className="max-w-full mx-auto space-y-6">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+              <h1 className="text-xl font-bold text-gray-900 mb-1">
                 Quản lý HomeStay
               </h1>
-              <p className="text-gray-400 text-sm dark:text-gray-300">
-                Quản lý tất cả homestay
-              </p>
+              <p className="text-gray-400 text-sm">Quản lý tất cả homestay</p>
             </div>
             <div className="flex gap-3">
               <PermissionGuard permission="property.create">
@@ -418,85 +428,28 @@ export default function AdminProperties() {
             </div>
           </div>
         </div>
-
-        {/* Filters + Tổng số properties */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Bộ lọc
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search Input */}
-            <div className="relative">
-              <div
-                className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-                style={{ top: "-45px" }}
-              >
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <Input
-                placeholder="Tìm kiếm theo tên..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
-                className="pl-10 w-full h-10 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-              />
-            </div>
-
-            {/* Items per page dropdown */}
-            <div className="relative">
-              <select
-                value={filters.limit}
-                onChange={(e) =>
-                  handleFilterChange("limit", Number(e.target.value))
-                }
-                className="w-full h-10 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 appearance-none cursor-pointer text-gray-900 dark:text-white"
-              >
-                <option value={10}>10 items/page</option>
-                <option value={20}>20 items/page</option>
-                <option value={50}>50 items/page</option>
-              </select>
-              <div
-                className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
-                style={{ top: "-45px" }}
-              >
-                <svg
-                  className="h-4 w-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            {/* Total count card */}
-            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 text-center">
-              <div className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-                Tổng số {isStaff ? staffProperties.length : total} homestay
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-gray-900">
                 Danh sách HomeStay
               </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              {/* Search Input */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 top- pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <Input
+                  placeholder="Tìm kiếm theo tên..."
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange("search", e.target.value)}
+                  className="pl-10 w-full h-10 border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+                />
+              </div>
             </div>
           </div>
 
@@ -513,35 +466,36 @@ export default function AdminProperties() {
             <div className="overflow-x-auto">
               <Table className="border-none">
                 <TableHeader>
-                  <TableRow className="border-none bg-gray-50 dark:bg-gray-700">
-                    <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm tracking-wide">
+                  <TableRow className="border-none bg-gray-50">
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6 text-sm tracking-wide">
                       Ảnh
                     </TableHead>
-                    <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm tracking-wide">
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6 text-sm tracking-wide">
                       Tên
                     </TableHead>
-                    <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm tracking-wide">
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6 text-sm tracking-wide">
                       Địa chỉ
                     </TableHead>
-                    <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm tracking-wide">
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6 text-sm tracking-wide">
                       Nhân Viên
                     </TableHead>
-                    <TableHead className="border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm tracking-wide">
+                    <TableHead className="border-none text-gray-700 font-semibold py-4 px-6 text-sm tracking-wide">
                       Ngày tạo
                     </TableHead>
-                    <TableHead className="text-right border-none text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 text-sm tracking-wide">
+                    <TableHead className="text-right border-none text-gray-700 font-semibold py-4 px-6 text-sm tracking-wide">
                       Thao tác
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayProperties?.map((property, index) => (
+                  {(isStaff
+                    ? paginatedStaffProperties
+                    : displayProperties
+                  )?.map((property, index) => (
                     <TableRow
                       key={property._id}
-                      className={`border-none hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 ${
-                        index % 2 === 0
-                          ? "bg-white dark:bg-gray-800"
-                          : "bg-gray-50 dark:bg-gray-700"
+                      className={`border-none hover:bg-blue-50 transition-all duration-200 ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
                       }`}
                     >
                       <TableCell className="border-none py-4 px-6">
@@ -557,8 +511,8 @@ export default function AdminProperties() {
                             }
                             alt={property.name}
                             style={{
-                              width: 56,
-                              height: 40,
+                              width: 76,
+                              height: 55,
                               objectFit: "cover",
                               borderRadius: 8,
                             }}
@@ -577,7 +531,7 @@ export default function AdminProperties() {
                           title="Xem chi tiết"
                         >
                           <div
-                            className="max-w-xs truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 font-semibold text-gray-800 dark:text-gray-200"
+                            className="max-w-xs truncate cursor-pointer hover:text-blue-600 transition-colors duration-200 font-semibold text-gray-800"
                             title={property.name}
                           >
                             {property.name}
@@ -586,7 +540,7 @@ export default function AdminProperties() {
                       </TableCell>
                       <TableCell className="border-none py-4 px-6">
                         <div
-                          className="max-w-xs truncate text-gray-600 dark:text-gray-300 text-sm"
+                          className="max-w-xs truncate text-gray-600 text-sm"
                           title={
                             property.location?.address ||
                             "Địa chỉ chưa cập nhật"
@@ -628,14 +582,14 @@ export default function AdminProperties() {
                                 propertyStaffCounts[property._id || ""] || 0
                               )}
                             </span>
-                            <span className="ml-1 text-xs text-blue-700 dark:text-blue-300 font-medium">
+                            <span className="ml-1 text-xs text-blue-700 font-medium">
                               staff
                             </span>
                           </button>
                         </div>
                       </TableCell>
                       <TableCell className="border-none py-4 px-6">
-                        <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                        <div className="text-sm text-gray-500 font-medium">
                           {property.createdAt
                             ? new Date(property.createdAt).toLocaleDateString(
                                 "vi-VN"
@@ -682,9 +636,9 @@ export default function AdminProperties() {
 
               {(!displayProperties || displayProperties.length === 0) && (
                 <div className="text-center py-12">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <svg
-                      className="w-10 h-10 text-gray-400 dark:text-gray-500"
+                      className="w-10 h-10 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -697,10 +651,10 @@ export default function AdminProperties() {
                       />
                     </svg>
                   </div>
-                  <div className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                  <div className="text-xl font-semibold text-gray-700 mb-2">
                     Không có properties nào
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  <div className="text-sm text-gray-500 mb-4">
                     Hãy thêm property đầu tiên để bắt đầu
                   </div>
                   <Link to="/admin/properties/create">
@@ -717,48 +671,84 @@ export default function AdminProperties() {
       </div>
 
       {/* Pagination */}
-      {total > filters.limit && (
-        <div className="flex justify-center items-center space-x-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-          <Button
-            variant="outline"
-            onClick={() =>
-              handleFilterChange("page", Math.max(1, filters.page - 1))
-            }
-            disabled={filters.page === 1}
-            className="flex items-center justify-center h-10 px-4 rounded-lg border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-              Trang {filters.page} / {Math.ceil(total / filters.limit)}
-            </span>
+      {totalPages > 0 && (displayProperties?.length || 0) > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200/50 gap-3 bg-white rounded-lg shadow-sm mt-4">
+          <div className="text-sm text-gray-600 text-center sm:text-left">
+            Hiển thị {startItem} đến {endItem} trong tổng số {total || 0}{" "}
+            homestay
+            {totalPages > 1 && ` (Trang ${currentPage} / ${totalPages})`}
           </div>
-          <Button
-            variant="outline"
-            onClick={() => handleFilterChange("page", filters.page + 1)}
-            disabled={filters.page >= Math.ceil(total / filters.limit)}
-            className="flex items-center justify-center h-10 px-4 rounded-lg border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() =>
+                handleFilterChange("page", Math.max(1, currentPage - 1))
+              }
+              disabled={currentPage === 1}
+              className="h-8 w-8 p-0 bg-white hover:bg-gray-50 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-4 w-4 text-gray-600" />
+            </Button>
+
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              return (
+                <Button
+                  key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFilterChange("page", pageNum)}
+                  className={`h-8 w-8 p-0 ${
+                    currentPage === pageNum
+                      ? "bg-gray-800 text-white hover:bg-gray-700 border-gray-800"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                  }`}
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+
+            <Button
+              variant="outline"
+              onClick={() =>
+                handleFilterChange(
+                  "page",
+                  Math.min(totalPages, currentPage + 1)
+                )
+              }
+              disabled={currentPage === totalPages}
+              className="h-8 w-8 p-0 bg-white hover:bg-gray-50 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="h-4 w-4 text-gray-600" />
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Modal hiển thị staff */}
       <Dialog open={staffModalOpen} onOpenChange={setStaffModalOpen}>
-        <DialogContent className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full p-6">
+        <DialogContent className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">
+            <DialogTitle className="text-xl font-semibold text-gray-900">
               Danh sách nhân viên
             </DialogTitle>
           </DialogHeader>
           {currentModalStaff.length === 0 ? (
             <div className="text-center py-6">
-              <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                <UsersIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+              <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                <UsersIcon className="w-6 h-6 text-gray-400" />
               </div>
-              <div className="text-base font-medium text-gray-600 dark:text-gray-300">
+              <div className="text-base font-medium text-gray-600">
                 Chưa có nhân viên nào
               </div>
             </div>
@@ -767,21 +757,21 @@ export default function AdminProperties() {
               {currentModalStaff.map((staff, idx) => (
                 <div
                   key={staff._id || idx}
-                  className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                 >
-                  <div className="font-semibold text-base text-gray-800 dark:text-gray-200 mb-2">
+                  <div className="font-semibold text-base text-gray-800 mb-2">
                     {staff.name || staff.email || staff._id}
                   </div>
                   <div className="space-y-1 text-sm">
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-600">
                       <span className="font-medium">Email:</span>{" "}
                       {staff.email || "-"}
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-600">
                       <span className="font-medium">SĐT:</span>{" "}
                       {staff.phone || "-"}
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-600">
                       <span className="font-medium">Role:</span>{" "}
                       {staff.role || "-"}
                     </div>

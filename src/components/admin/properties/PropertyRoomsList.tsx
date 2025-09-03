@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Star, Eye, Edit, Plus } from "lucide-react";
+import { Star, Eye, Edit, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PermissionGuard } from "@/components/common/PermissionGuard";
@@ -171,6 +171,8 @@ export default function PropertyRoomsList({
     const start = (currentPage - 1) * limit;
     return filteredListings.slice(start, start + limit);
   }, [filteredListings, currentPage, limit]);
+  const startItem = total === 0 ? 0 : (currentPage - 1) * limit + 1;
+  const endItem = Math.min(currentPage * limit, total);
 
   return (
     <Card className="bg-white border-0 !border-none w-full overflow-x-auto">
@@ -239,6 +241,9 @@ export default function PropertyRoomsList({
             <thead className="bg-gray-100">
               <tr className="border-0 !border-none">
                 <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">
+                  STT
+                </th>
+                <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">
                   Ảnh
                 </th>
                 <th className="py-3 px-4 text-left font-semibold text-gray-700 border-0 !border-none">
@@ -265,11 +270,16 @@ export default function PropertyRoomsList({
               </tr>
             </thead>
             <tbody>
-              {paginatedListings.map((listing) => (
+              {paginatedListings.map((listing, index) => (
                 <tr
                   key={listing._id}
                   className="hover:bg-gray-50 transition border-0 !border-none"
                 >
+                  <td className="py-3 px-4 border-0 !border-none">
+                    <div className="text-sm font-medium text-gray-600">
+                      {startItem + index}
+                    </div>
+                  </td>
                   <td className="py-3 px-4 border-0 !border-none">
                     <Link
                       to={`/admin/listings/${listing._id}`}
@@ -367,25 +377,63 @@ export default function PropertyRoomsList({
           </table>
         </div>
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-3 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              Trước
-            </Button>
-            <div className="text-sm text-gray-700">
-              Trang {currentPage} / {totalPages}
+        {totalPages > 0 && total > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200/50 gap-3 mt-4">
+            <div className="text-sm text-gray-600 text-center sm:text-left">
+              Hiển thị {startItem} đến {endItem} trong tổng số {total} phòng
+              {totalPages > 1 && ` (Trang ${currentPage} / ${totalPages})`}
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Sau
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0 bg-white hover:bg-gray-50 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="sr-only">Previous</span>
+                <ChevronLeft className="h-4 w-4 text-gray-600" />
+              </Button>
+
+              {Array.from({ length: Math.min(5, totalPages || 0) }, (_, i) => {
+                let pageNum: number;
+                if ((totalPages || 0) <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= (totalPages || 0) - 2) {
+                  pageNum = (totalPages || 0) - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPage(pageNum)}
+                    className={`h-8 w-8 p-0 ${
+                      currentPage === pageNum
+                        ? "bg-gray-800 text-white hover:bg-gray-700 border-gray-800"
+                        : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                    }`}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0 bg-white hover:bg-gray-50 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="sr-only">Next</span>
+                <ChevronRight className="h-4 w-4 text-gray-600" />
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

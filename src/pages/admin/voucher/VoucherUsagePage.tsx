@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useVouchers } from "@/hooks/useVouchers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,8 @@ import {
   Clock,
   List,
   Building2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { TableCell } from "@/components/ui/table";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -30,6 +32,10 @@ export default function VoucherUsagePage() {
     voucherDetailedStats,
     loading,
     error,
+    voucherBookingsTotal,
+    voucherBookingsPage,
+    voucherBookingsLimit,
+    voucherBookingsTotalPages,
     getVouchers,
     getVoucherUsage,
     getVoucherBookings,
@@ -37,33 +43,10 @@ export default function VoucherUsagePage() {
     clearUsage,
   } = useVouchers();
 
-  // Debug log
-  console.log("VoucherUsagePage - ID from params:", id);
-  console.log("VoucherUsagePage - vouchers:", vouchers);
-  console.log("VoucherUsagePage - voucherUsage:", voucherUsage);
-  console.log("VoucherUsagePage - voucherBookings:", voucherBookings);
-  console.log(
-    "VoucherUsagePage - voucherBookings type:",
-    typeof voucherBookings
-  );
-  console.log(
-    "VoucherUsagePage - voucherBookings isArray:",
-    Array.isArray(voucherBookings)
-  );
-  console.log("VoucherUsagePage - loading:", loading);
-  console.log("VoucherUsagePage - error:", error);
-
   // Đảm bảo voucherBookings luôn là array
   const safeVoucherBookings = Array.isArray(voucherBookings)
     ? voucherBookings
     : [];
-
-  // Debug log sau khi khai báo safeVoucherBookings
-  console.log("VoucherUsagePage - safeVoucherBookings:", safeVoucherBookings);
-  console.log(
-    "VoucherUsagePage - safeVoucherBookings length:",
-    safeVoucherBookings.length
-  );
 
   // Fetch vouchers list if no ID provided
   useEffect(() => {
@@ -76,7 +59,11 @@ export default function VoucherUsagePage() {
     if (id) {
       console.log("Fetching voucher data for ID:", id);
       getVoucherUsage(id);
-      getVoucherBookings(id);
+      getVoucherBookings(
+        id,
+        voucherBookingsPage ?? 1,
+        voucherBookingsLimit ?? 10
+      );
       getVoucherDetailedStats(id);
     }
 
@@ -89,8 +76,31 @@ export default function VoucherUsagePage() {
   const handleRefresh = () => {
     if (id) {
       getVoucherUsage(id);
-      getVoucherBookings(id);
+      getVoucherBookings(
+        id,
+        voucherBookingsPage ?? 1,
+        voucherBookingsLimit ?? 10
+      );
     }
+  };
+
+  const currentPage = voucherBookingsPage ?? 1;
+  const totalPages = voucherBookingsTotalPages ?? 0;
+  const limit = voucherBookingsLimit ?? 10;
+  const adminTotal = voucherBookingsTotal ?? safeVoucherBookings.length;
+  const startItem = useMemo(
+    () => (adminTotal === 0 ? 0 : (currentPage - 1) * limit + 1),
+    [adminTotal, currentPage, limit]
+  );
+  const endItem = useMemo(
+    () => Math.min(currentPage * limit, adminTotal),
+    [adminTotal, currentPage, limit]
+  );
+
+  const goToPage = (page: number) => {
+    if (!id) return;
+    if (page < 1 || (totalPages && page > totalPages)) return;
+    getVoucherBookings(id, page, limit);
   };
 
   const formatDate = (dateString: string) => {
@@ -443,7 +453,7 @@ export default function VoucherUsagePage() {
         <CardHeader>
           <CardTitle className="flex items-center text-lg gap-2">
             <Clock className="w-5 h-5 text-blue-600" />
-            Danh sách Booking sử dụng Voucher ({safeVoucherBookings.length})
+            Danh sách Booking sử dụng Voucher
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -458,6 +468,9 @@ export default function VoucherUsagePage() {
               <table className="w-full min-w-0 table-auto">
                 <thead className="bg-gray-100">
                   <tr>
+                    <th className="py-3 px-4 text-left font-semibold text-gray-700">
+                      STT
+                    </th>
                     <th className="py-3 px-4 text-left font-semibold text-gray-700">
                       Khách hàng
                     </th>
@@ -482,7 +495,7 @@ export default function VoucherUsagePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {safeVoucherBookings.map((booking) => (
+                  {safeVoucherBookings.map((booking, index) => (
                     <tr
                       key={booking._id}
                       className="hover:bg-gray-50 transition cursor-pointer"
@@ -492,18 +505,23 @@ export default function VoucherUsagePage() {
                         )
                       }
                     >
-                      <TableCell className="py-4">
+                      <TableCell className="">
+                        <div className="text-sm font-medium text-gray-600 ml-5">
+                          {index + 1}
+                        </div>
+                      </TableCell>
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
                         >
-                          <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-none group-hover:border-blue-300 transition-all duration-300">
+                          <div className="bg-white/60 backdrop-blur-sm rounded-xl border-none ">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <Users className="w-5 h-5 text-white" />
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                                <Users className="w-5 h-5 text-gray-500" />
                               </div>
                               <div>
-                                <div className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition-colors">
+                                <div className="font-semibold text-sm text-gray-900 group-hover:text-gray-600 transition-colors">
                                   {booking.guest_name}
                                 </div>
                                 <div className="text-xs text-gray-500">
@@ -514,7 +532,7 @@ export default function VoucherUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -529,7 +547,7 @@ export default function VoucherUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -541,7 +559,7 @@ export default function VoucherUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -556,7 +574,7 @@ export default function VoucherUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -571,7 +589,7 @@ export default function VoucherUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -583,7 +601,7 @@ export default function VoucherUsagePage() {
                           </div>
                         </Link>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="">
                         <Link
                           to={`/admin/bookings/${booking.propertyId}/${booking._id}`}
                           className="block group"
@@ -597,6 +615,73 @@ export default function VoucherUsagePage() {
                   ))}
                 </tbody>
               </table>
+              {/* Pagination */}
+              {totalPages > 0 && adminTotal > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200/50 gap-3">
+                  <div className="text-sm text-gray-600 text-center sm:text-left">
+                    Hiển thị {startItem} đến {endItem} trong tổng số{" "}
+                    {adminTotal} booking
+                    {totalPages > 1 &&
+                      ` (Trang ${currentPage} / ${totalPages})`}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0 bg-white hover:bg-gray-50 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Previous</span>
+                      <ChevronLeft className="h-4 w-4 text-gray-600" />
+                    </Button>
+
+                    {Array.from(
+                      { length: Math.min(5, totalPages || 0) },
+                      (_, i) => {
+                        let pageNum: number;
+                        if ((totalPages || 0) <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= (totalPages || 0) - 2) {
+                          pageNum = (totalPages || 0) - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={
+                              currentPage === pageNum ? "default" : "outline"
+                            }
+                            size="sm"
+                            onClick={() => goToPage(pageNum)}
+                            className={`h-8 w-8 p-0 ${
+                              currentPage === pageNum
+                                ? "bg-gray-800 text-white hover:bg-gray-700 border-gray-800"
+                                : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                            }`}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      }
+                    )}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 w-8 p-0 bg-white hover:bg-gray-50 border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Next</span>
+                      <ChevronRight className="h-4 w-4 text-gray-600" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

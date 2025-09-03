@@ -78,15 +78,17 @@ function ListingsMessage({ message }: { message: BotMessage }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header */}
       {message.header && (
-        <div className="text-sm text-gray-700 mb-3">{message.header}</div>
+        <div className="text-sm text-gray-700 mb-2 sm:mb-3">
+          {message.header}
+        </div>
       )}
 
       {/* Meta info */}
       {message.meta && (
-        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500 mb-2 sm:mb-3">
           {message.meta.city && (
             <div className="flex items-center gap-1">
               <MapPin className="h-3 w-3" />
@@ -109,7 +111,7 @@ function ListingsMessage({ message }: { message: BotMessage }) {
 
       {/* Listings */}
       {message.items && message.items.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {message.items.map((item, index) => {
             // Debug log để kiểm tra dữ liệu
             console.log("Listing item:", item);
@@ -118,14 +120,14 @@ function ListingsMessage({ message }: { message: BotMessage }) {
                 key={item.id || index}
                 className="border border-gray-200 hover:border-gray-300 transition-colors"
               >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start gap-3">
+                <CardHeader className="pb-2 px-3 sm:px-4">
+                  <div className="flex items-start gap-2 sm:gap-3">
                     <div className="flex-shrink-0">
                       {item.imageUrl ? (
                         <img
                           src={item.imageUrl}
                           alt={item.title}
-                          className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                          className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200"
                           onError={(e) => {
                             console.log("Image failed to load:", item.imageUrl);
                             e.currentTarget.style.display = "none";
@@ -138,7 +140,7 @@ function ListingsMessage({ message }: { message: BotMessage }) {
                           }}
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
                           <span className="text-xs text-gray-500">
                             No image
                           </span>
@@ -152,11 +154,11 @@ function ListingsMessage({ message }: { message: BotMessage }) {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4">
                   {/* Price */}
                   {item.pricePerNight > 0 && (
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-lg font-bold text-green-600">
+                      <span className="text-base sm:text-lg font-bold text-green-600">
                         {formatPrice(item.pricePerNight)}
                       </span>
                       <span className="text-xs text-gray-500">/đêm</span>
@@ -175,7 +177,7 @@ function ListingsMessage({ message }: { message: BotMessage }) {
 
                   {/* Tags */}
                   {item.tags && item.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
+                    <div className="flex flex-wrap gap-1 mb-2 sm:mb-3">
                       {item.tags.map((tag, tagIndex) => (
                         <Badge
                           key={tagIndex}
@@ -338,23 +340,25 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-4xl rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full w-full max-w-4xl mx-auto rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="bg-gray-900 text-white p-4 relative flex-shrink-0">
+      <div className="bg-gray-900 text-white p-3 sm:p-4 relative flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="border-2 border-white/20">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Avatar className="border-2 border-white/20 w-8 h-8 sm:w-10 sm:h-10">
               <AvatarImage src="/logo.png" alt="Vinaside Bot" />
-              <AvatarFallback className="bg-white/10 text-white">
+              <AvatarFallback className="bg-white/10 text-white text-xs sm:text-sm">
                 VB
               </AvatarFallback>
             </Avatar>
-            <div>
-              <div className="text-sm opacity-90">Chat với</div>
-              <div className="font-semibold text-lg">Vinaside Bot</div>
+            <div className="min-w-0">
+              <div className="text-xs sm:text-sm opacity-90">Chat với</div>
+              <div className="font-semibold text-base sm:text-lg truncate">
+                Vinaside Bot
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Connection status indicator */}
             <TooltipProvider>
               <Tooltip>
@@ -385,9 +389,9 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20"
+                  className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9"
                 >
-                  <MoreVertical className="h-5 w-5" />
+                  <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
@@ -400,10 +404,10 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9"
               onClick={onClose}
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
         </div>
@@ -411,17 +415,17 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
 
       {/* Message Area */}
       <div className="flex-1 overflow-hidden bg-gray-50">
-        <ScrollArea className="h-full p-4">
-          <div className="space-y-4 pb-4">
+        <ScrollArea className="h-full p-2 sm:p-4">
+          <div className="space-y-3 sm:space-y-4 pb-4">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 py-10">
-                <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Bot className="h-8 w-8 text-white" />
+              <div className="text-center text-gray-500 py-6 sm:py-10">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <Bot className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <p className="text-lg font-medium mb-2 text-gray-700">
+                <p className="text-base sm:text-lg font-medium mb-2 text-gray-700">
                   Chào mừng bạn đến với Vinaside Bot!
                 </p>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 mb-3 sm:mb-4">
                   Tôi có thể giúp bạn:
                 </p>
                 <div className="space-y-2 text-sm text-gray-600">
@@ -439,9 +443,9 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                   </div>
                 </div>
                 {!isConnected && (
-                  <div className="mt-6 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="mt-4 sm:mt-6 p-2 sm:p-3 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="flex items-center gap-2 text-orange-700">
-                      <AlertCircle className="h-4 w-4" />
+                      <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span className="text-xs font-medium">
                         Đang sử dụng chế độ API
                       </span>
@@ -451,10 +455,10 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
               </div>
             )}
             {messages.map((message) => (
-              <div key={message._id} className="space-y-3">
+              <div key={message._id} className="space-y-2 sm:space-y-3">
                 {/* User Message */}
-                <div className="flex items-start gap-3 justify-end">
-                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-3 max-w-[70%] shadow-sm">
+                <div className="flex items-start gap-2 sm:gap-3 justify-end">
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-2 sm:p-3 max-w-[75%] sm:max-w-[70%] shadow-sm">
                     <p className="text-sm whitespace-pre-wrap break-words">
                       {message.content}
                     </p>
@@ -462,7 +466,7 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                       {format(new Date(message.createdAt), "HH:mm")}
                     </div>
                   </div>
-                  <Avatar className="flex-shrink-0 border-2 border-gray-200">
+                  <Avatar className="flex-shrink-0 border-2 border-gray-200 w-7 h-7 sm:w-8 sm:h-8">
                     <AvatarImage
                       src={
                         user?.avatar_url ||
@@ -470,7 +474,7 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
                       }
                       alt="Bạn"
                     />
-                    <AvatarFallback className="bg-gray-100 text-gray-600">
+                    <AvatarFallback className="bg-gray-100 text-gray-600 text-xs sm:text-sm">
                       {user?.name?.charAt(0) || "B"}
                     </AvatarFallback>
                   </Avatar>
@@ -478,16 +482,16 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
 
                 {/* Bot Reply - chỉ hiển thị khi có reply */}
                 {message.reply && (
-                  <div className="flex items-start gap-3 justify-start">
-                    <Avatar className="flex-shrink-0 border-2 border-blue-200">
+                  <div className="flex items-start gap-2 sm:gap-3 justify-start">
+                    <Avatar className="flex-shrink-0 border-2 border-blue-200 w-7 h-7 sm:w-8 sm:h-8">
                       <AvatarImage src="/logo.png" alt="Vinaside Bot" />
-                      <AvatarFallback className="bg-blue-50 text-blue-600">
+                      <AvatarFallback className="bg-blue-50 text-blue-600 text-xs sm:text-sm">
                         VB
                       </AvatarFallback>
                     </Avatar>
-                    <div className="bg-white rounded-2xl p-4 max-w-[70%] shadow-sm border border-gray-200">
+                    <div className="bg-white rounded-2xl p-3 sm:p-4 max-w-[75%] sm:max-w-[70%] shadow-sm border border-gray-200">
                       <BotMessageRenderer message={message.reply} />
-                      <div className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+                      <div className="text-xs text-gray-500 mt-2 sm:mt-3 flex items-center gap-1">
                         <span>
                           {format(new Date(message.createdAt), "HH:mm")}
                         </span>
@@ -500,14 +504,14 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
               </div>
             ))}
             {isLoading && (
-              <div className="flex items-start gap-3 justify-start">
-                <Avatar className="flex-shrink-0 border-2 border-blue-200">
+              <div className="flex items-start gap-2 sm:gap-3 justify-start">
+                <Avatar className="flex-shrink-0 border-2 border-blue-200 w-7 h-7 sm:w-8 sm:h-8">
                   <AvatarImage src="/logo.png" alt="Vinaside Bot" />
-                  <AvatarFallback className="bg-blue-50 text-blue-600">
+                  <AvatarFallback className="bg-blue-50 text-blue-600 text-xs sm:text-sm">
                     VB
                   </AvatarFallback>
                 </Avatar>
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+                <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-200">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
                     <div
@@ -529,10 +533,13 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
 
       {/* Input Area */}
       <div className="flex-shrink-0 bg-white border-t border-gray-200">
-        <form onSubmit={handleSubmit} className="flex items-center gap-3 p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4"
+        >
           <Input
             ref={inputRef}
-            className="flex-1 px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
             value={input}
             placeholder={isLoading ? "Đang tải..." : "Nhập tin nhắn của bạn..."}
             onChange={handleInputChange}
@@ -542,10 +549,10 @@ export function ChatWindow({ onClose }: { onClose: () => void }) {
           <Button
             type="submit"
             size="icon"
-            className="rounded-full h-12 w-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md"
+            className="rounded-full h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md"
             disabled={isLoading || !input.trim()}
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </form>
       </div>
